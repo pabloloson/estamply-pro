@@ -1,0 +1,39 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - img [ref=e6]
+        - generic [ref=e10]: Estamply
+      - generic [ref=e11]:
+        - heading "El cerebro de tu taller de personalización" [level=1] [ref=e12]
+        - paragraph [ref=e13]: Cotiza en segundos, gestiona pedidos y conoce la rentabilidad real de tu negocio.
+        - generic [ref=e14]:
+          - generic [ref=e15]:
+            - img [ref=e17]
+            - generic [ref=e19]: Calculadora inteligente con costos exactos
+          - generic [ref=e20]:
+            - img [ref=e22]
+            - generic [ref=e25]: Rendimiento en $/hora por técnica
+          - generic [ref=e26]:
+            - img [ref=e28]
+            - generic [ref=e30]: Tus datos seguros en la nube
+      - paragraph [ref=e31]: © 2025 Estamply. Todos los derechos reservados.
+    - generic [ref=e33]:
+      - heading "Bienvenido de vuelta" [level=2] [ref=e34]
+      - paragraph [ref=e35]: Ingresá a tu taller
+      - generic [ref=e56]: Database error querying schema
+      - generic [ref=e36]:
+        - generic [ref=e37]:
+          - generic [ref=e38]: Email
+          - textbox "taller@ejemplo.com" [ref=e39]: taller@estamply.com
+        - generic [ref=e40]:
+          - generic [ref=e41]: Contraseña
+          - textbox "••••••••" [ref=e42]: Demo1234!
+        - button "Ingresar" [ref=e43] [cursor=pointer]
+      - paragraph [ref=e44]:
+        - text: ¿No tenés cuenta?
+        - link "Registrate gratis" [ref=e45] [cursor=pointer]:
+          - /url: /signup
+  - button "Open Next.js Dev Tools" [ref=e51] [cursor=pointer]:
+    - img [ref=e52]
+  - alert [ref=e55]

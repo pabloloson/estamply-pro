@@ -1,0 +1,44 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - img [ref=e6]
+        - generic [ref=e10]: Estamply
+      - generic [ref=e11]:
+        - heading "Empezá a gestionar tu taller de forma profesional" [level=1] [ref=e12]
+        - paragraph [ref=e13]: Calculadora, pedidos y rentabilidad en una sola plataforma.
+        - generic [ref=e14]:
+          - generic [ref=e15]:
+            - img [ref=e17]
+            - generic [ref=e19]: Configuración en menos de 5 minutos
+          - generic [ref=e20]:
+            - img [ref=e22]
+            - generic [ref=e25]: Conocé tu rentabilidad real
+          - generic [ref=e26]:
+            - img [ref=e28]
+            - generic [ref=e30]: Gratis para siempre en el plan básico
+      - paragraph [ref=e31]: © 2025 Estamply.
+    - generic [ref=e33]:
+      - heading "Crear cuenta" [level=2] [ref=e34]
+      - paragraph [ref=e35]: Configurá tu taller en minutos
+      - generic [ref=e36]:
+        - generic [ref=e37]:
+          - generic [ref=e38]: Nombre completo
+          - textbox "Juan García" [ref=e39]
+        - generic [ref=e40]:
+          - generic [ref=e41]: Nombre del taller
+          - textbox "Estampados García" [ref=e42]
+        - generic [ref=e43]:
+          - generic [ref=e44]: Email
+          - textbox "juan@taller.com" [ref=e45]
+        - generic [ref=e46]:
+          - generic [ref=e47]: Contraseña
+          - textbox "Mínimo 6 caracteres" [ref=e48]
+        - button "Crear cuenta gratis" [ref=e49] [cursor=pointer]
+      - paragraph [ref=e50]:
+        - text: ¿Ya tenés cuenta?
+        - link "Ingresar" [ref=e51] [cursor=pointer]:
+          - /url: /login
+  - button "Open Next.js Dev Tools" [ref=e57] [cursor=pointer]:
+    - img [ref=e58]
+  - alert [ref=e61]
