@@ -4,14 +4,11 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { logout } from '@/app/actions/auth'
-import { Layers, LayoutDashboard, Calculator, ShoppingBag, Settings, LogOut, Menu, X } from 'lucide-react'
-
-const navLinks = [
-  { href: '/', label: 'Inicio', icon: LayoutDashboard },
-  { href: '/calculator', label: 'Calculadora', icon: Calculator },
-  { href: '/orders', label: 'Pedidos', icon: ShoppingBag },
-  { href: '/settings', label: 'Configuración', icon: Settings },
-]
+import {
+  Layers, LayoutDashboard, Calculator, FileText, ShoppingBag,
+  Users, Database, Settings, LogOut, Menu, X,
+} from 'lucide-react'
+import { usePresupuesto } from '@/features/presupuesto/context/PresupuestoContext'
 
 interface SidebarProps {
   workshopName?: string
@@ -20,37 +17,86 @@ interface SidebarProps {
 export function Sidebar({ workshopName = 'Mi Taller' }: SidebarProps) {
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const { items } = usePresupuesto()
+
+  const isActive = (href: string) =>
+    href === '/' ? pathname === '/' : pathname.startsWith(href)
+
+  const NavLink = ({
+    href,
+    icon: Icon,
+    label,
+    badge,
+  }: {
+    href: string
+    icon: React.ElementType
+    label: string
+    badge?: number
+  }) => (
+    <Link
+      href={href}
+      onClick={() => setMobileOpen(false)}
+      className={`sidebar-link ${isActive(href) ? 'active' : ''}`}
+    >
+      <Icon size={17} />
+      <span className="flex-1">{label}</span>
+      {badge !== undefined && badge > 0 && (
+        <span
+          className="text-xs px-2 py-0.5 rounded-full text-white font-bold"
+          style={{ background: '#6C5CE7' }}
+        >
+          {badge}
+        </span>
+      )}
+    </Link>
+  )
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
-      {/* Logo */}
+      {/* ── Logo ── */}
       <div className="flex items-center gap-3 px-4 py-5 border-b border-gray-100">
-        <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #6C5CE7, #a29bfe)' }}>
+        <div
+          className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+          style={{ background: 'linear-gradient(135deg, #6C5CE7, #a29bfe)' }}
+        >
           <Layers size={18} className="text-white" />
         </div>
-        <div>
-          <span className="font-bold text-gray-900 block leading-tight" style={{ fontSize: 15 }}>Estamply</span>
-          <span className="text-xs text-gray-400 block leading-tight truncate max-w-[120px]">{workshopName}</span>
+        <div className="min-w-0">
+          <span className="font-bold text-gray-900 block leading-tight" style={{ fontSize: 15 }}>
+            Estamply
+          </span>
+          <span className="text-xs text-gray-400 block leading-tight truncate">{workshopName}</span>
         </div>
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 px-3 py-4 space-y-1">
-        {navLinks.map(({ href, label, icon: Icon }) => (
-          <Link
-            key={href}
-            href={href}
-            onClick={() => setMobileOpen(false)}
-            className={`sidebar-link ${pathname === href ? 'active' : ''}`}
-          >
-            <Icon size={17} />
-            {label}
-          </Link>
-        ))}
+      {/* ── Sección 1: Uso diario ── */}
+      <nav className="px-3 pt-4 space-y-0.5">
+        <NavLink href="/" icon={LayoutDashboard} label="Inicio" />
+        <NavLink href="/calculator" icon={Calculator} label="Calculadora" />
+        <NavLink href="/presupuesto" icon={FileText} label="Presupuesto" badge={items.length} />
+        <NavLink href="/orders" icon={ShoppingBag} label="Pedidos" />
+        <NavLink href="/clients" icon={Users} label="Clientes" />
       </nav>
 
-      {/* Logout */}
-      <div className="px-3 py-4 border-t border-gray-100">
+      {/* ── Separador + Sección 2: Motor del negocio ── */}
+      <div className="mx-4 mt-4 mb-1 border-t border-gray-100" />
+      <div className="px-3 space-y-0.5">
+        <p className="px-3 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+          Motor del negocio
+        </p>
+        <NavLink href="/base-de-costos" icon={Database} label="Base de Costos" />
+      </div>
+
+      {/* ── Spacer ── */}
+      <div className="flex-1" />
+
+      {/* ── Sección 3: Ajustes (anclado al fondo) ── */}
+      <div className="px-3 pt-3 border-t border-gray-100 space-y-0.5 pb-1">
+        <NavLink href="/settings" icon={Settings} label="Configuración" />
+      </div>
+
+      {/* ── Logout ── */}
+      <div className="px-3 pb-4">
         <form action={logout}>
           <button type="submit" className="sidebar-link w-full text-left">
             <LogOut size={17} />
@@ -63,12 +109,12 @@ export function Sidebar({ workshopName = 'Mi Taller' }: SidebarProps) {
 
   return (
     <>
-      {/* Desktop Sidebar */}
+      {/* Desktop */}
       <aside className="hidden lg:block w-64 bg-white h-screen sticky top-0 border-r border-gray-100 flex-shrink-0">
         <SidebarContent />
       </aside>
 
-      {/* Mobile Header */}
+      {/* Mobile header */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: '#6C5CE7' }}>
@@ -76,12 +122,24 @@ export function Sidebar({ workshopName = 'Mi Taller' }: SidebarProps) {
           </div>
           <span className="font-bold text-gray-900">Estamply</span>
         </div>
-        <button onClick={() => setMobileOpen(true)} className="p-2 rounded-lg hover:bg-gray-100">
-          <Menu size={20} className="text-gray-600" />
-        </button>
+        <div className="flex items-center gap-2">
+          {items.length > 0 && (
+            <Link
+              href="/presupuesto"
+              className="flex items-center gap-1 text-xs px-2 py-1 rounded-lg font-semibold text-white"
+              style={{ background: '#6C5CE7' }}
+            >
+              <FileText size={12} />
+              {items.length}
+            </Link>
+          )}
+          <button onClick={() => setMobileOpen(true)} className="p-2 rounded-lg hover:bg-gray-100">
+            <Menu size={20} className="text-gray-600" />
+          </button>
+        </div>
       </div>
 
-      {/* Mobile Overlay */}
+      {/* Mobile overlay */}
       {mobileOpen && (
         <div className="lg:hidden fixed inset-0 z-50 flex">
           <div className="absolute inset-0 bg-black/30" onClick={() => setMobileOpen(false)} />

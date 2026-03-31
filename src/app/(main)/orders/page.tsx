@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Plus, ChevronDown, ChevronUp } from 'lucide-react'
+import { ChevronDown, ChevronUp, CalendarDays, Pencil } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 
@@ -68,6 +68,11 @@ export default function OrdersPage() {
     await loadOrders()
   }
 
+  async function updateDueDate(orderId: string, date: string) {
+    await supabase.from('orders').update({ due_date: date || null }).eq('id', orderId)
+    await loadOrders()
+  }
+
   if (loading) return (
     <div className="flex items-center justify-center h-64">
       <div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" />
@@ -82,6 +87,10 @@ export default function OrdersPage() {
     const profit = order.total_price - order.total_cost
     const remaining = order.total_price - order.advance_payment
     const [advInput, setAdvInput] = useState(String(order.advance_payment))
+    const [editingDate, setEditingDate] = useState(false)
+    const [dateInput, setDateInput] = useState(order.due_date ? order.due_date.slice(0, 10) : '')
+
+    const isOverdue = order.due_date && new Date(order.due_date) < new Date() && order.status !== 'delivered' && order.status !== 'cancelled'
 
     return (
       <div className="card overflow-hidden">
@@ -94,12 +103,16 @@ export default function OrdersPage() {
               <span className="font-semibold text-gray-900">{order.clients?.name || 'Sin cliente'}</span>
               <span className={`badge-${order.status}`}>{STATUS_LABELS[order.status]}</span>
             </div>
-            <div className="flex items-center gap-4 text-sm text-gray-500">
-              <span>${Number(order.total_price).toLocaleString('es-AR')}</span>
+            <div className="flex items-center gap-4 text-sm flex-wrap">
+              <span className="font-semibold text-gray-700">${Number(order.total_price).toLocaleString('es-AR')}</span>
               {order.due_date && (
-                <span>Entrega: {format(new Date(order.due_date), "dd MMM", { locale: es })}</span>
+                <span className={`flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${isOverdue ? 'bg-red-50 text-red-500' : 'bg-amber-50 text-amber-600'}`}>
+                  <CalendarDays size={11} />
+                  {format(new Date(order.due_date), "dd MMM", { locale: es })}
+                  {isOverdue && ' · vencido'}
+                </span>
               )}
-              <span className="text-xs">{format(new Date(order.created_at), "dd/MM/yy")}</span>
+              <span className="text-xs text-gray-400">{format(new Date(order.created_at), "dd/MM/yy")}</span>
             </div>
           </div>
           <div className="flex items-center gap-3 flex-shrink-0">
@@ -132,7 +145,46 @@ export default function OrdersPage() {
                 </div>
               ))}
             </div>
-            
+
+            {/* Fecha de entrega */}
+            <div className="bg-white rounded-xl p-3">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs text-gray-400">Fecha de entrega estimada</p>
+                <button
+                  onClick={() => setEditingDate(!editingDate)}
+                  className="flex items-center gap-1 text-xs text-purple-600 hover:text-purple-700"
+                >
+                  <Pencil size={11} />
+                  {editingDate ? 'Cancelar' : 'Editar'}
+                </button>
+              </div>
+              {editingDate ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="date"
+                    value={dateInput}
+                    onChange={e => setDateInput(e.target.value)}
+                    className="input-base text-sm py-1.5 flex-1"
+                  />
+                  <button
+                    onClick={() => { updateDueDate(order.id, dateInput); setEditingDate(false) }}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white"
+                    style={{ background: '#6C5CE7' }}
+                  >
+                    Guardar
+                  </button>
+                </div>
+              ) : (
+                <p className="font-semibold text-sm text-gray-800">
+                  {order.due_date
+                    ? format(new Date(order.due_date), "EEEE dd 'de' MMMM, yyyy", { locale: es })
+                    : <span className="text-gray-400 font-normal">Sin fecha asignada</span>
+                  }
+                </p>
+              )}
+            </div>
+
+            {/* Seña */}
             <div className="flex items-end gap-3">
               <div className="flex-1">
                 <label className="block text-xs font-medium text-gray-500 mb-1">Seña registrada ($)</label>
@@ -177,13 +229,17 @@ export default function OrdersPage() {
       {orders.length === 0 ? (
         <div className="card p-12 text-center">
           <p className="text-gray-400 text-lg mb-2">Sin pedidos aún</p>
-          <p className="text-gray-300 text-sm">Los pedidos aparecerán aquí una vez que los agregues desde la base de datos</p>
+          <p className="text-gray-300 text-sm">Los pedidos se generan desde la sección de Presupuesto al convertirlos en orden</p>
         </div>
       ) : (
         <div className="space-y-6">
           {activeOrders.length > 0 && (
             <div>
-              <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Activos</h2>
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-2 h-2 rounded-full bg-green-400" />
+                <h2 className="text-sm font-semibold text-gray-600 uppercase tracking-wider">Activos</h2>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-semibold">{activeOrders.length}</span>
+              </div>
               <div className="space-y-3">
                 {activeOrders.map(o => <OrderCard key={o.id} order={o} />)}
               </div>
@@ -191,8 +247,12 @@ export default function OrdersPage() {
           )}
           {doneOrders.length > 0 && (
             <div>
-              <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Finalizados</h2>
-              <div className="space-y-3">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-2 h-2 rounded-full bg-gray-300" />
+                <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Finalizados</h2>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 font-semibold">{doneOrders.length}</span>
+              </div>
+              <div className="space-y-3 opacity-75">
                 {doneOrders.map(o => <OrderCard key={o.id} order={o} />)}
               </div>
             </div>
