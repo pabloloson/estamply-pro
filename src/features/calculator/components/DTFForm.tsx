@@ -80,7 +80,7 @@ export default function DTFForm({
     <div className="space-y-6">
       {/* Mode Toggle */}
       <div>
-        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
           Modo de impresión
         </label>
         <div
@@ -110,7 +110,7 @@ export default function DTFForm({
 
       {/* Product */}
       <div>
-        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
           Producto
         </label>
         <select
@@ -129,7 +129,7 @@ export default function DTFForm({
 
       {/* Quantity */}
       <div>
-        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
           Cantidad
         </label>
         <input
@@ -144,7 +144,7 @@ export default function DTFForm({
       {/* Design dimensions */}
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
             Ancho diseño (cm)
           </label>
           <input
@@ -156,7 +156,7 @@ export default function DTFForm({
           />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
             Alto diseño (cm)
           </label>
           <input
@@ -176,7 +176,7 @@ export default function DTFForm({
             Costos de impresión (tercerizado)
           </p>
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
               Precio por metro ($)
             </label>
             <input
@@ -188,7 +188,7 @@ export default function DTFForm({
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
               Ancho de rollo (cm)
             </label>
             <input
@@ -206,7 +206,7 @@ export default function DTFForm({
             Costos de impresión (impresora propia)
           </p>
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
               Film ($/m²)
             </label>
             <input
@@ -218,7 +218,7 @@ export default function DTFForm({
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
               Tinta CMYK+B ($/m²)
             </label>
             <input
@@ -230,7 +230,7 @@ export default function DTFForm({
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
               Polvo adhesivo ($/m²)
             </label>
             <input
@@ -243,7 +243,7 @@ export default function DTFForm({
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
                 Amort. impresora ($/m²)
               </label>
               <input
@@ -255,7 +255,7 @@ export default function DTFForm({
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
                 Amort. horno ($/m²)
               </label>
               <input
@@ -277,7 +277,7 @@ export default function DTFForm({
         </p>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
               Mano de obra ($/u)
             </label>
             <input
@@ -289,7 +289,7 @@ export default function DTFForm({
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
               Electricidad ($/u)
             </label>
             <input
@@ -303,7 +303,7 @@ export default function DTFForm({
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
               Merma (%)
             </label>
             <input
@@ -316,7 +316,7 @@ export default function DTFForm({
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
               Margen de ganancia (%)
             </label>
             <input

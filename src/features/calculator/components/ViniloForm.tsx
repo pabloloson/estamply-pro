@@ -54,7 +54,7 @@ export default function ViniloForm({
     <div className="space-y-6">
       {/* Product */}
       <div>
-        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
           Producto
         </label>
         <select
@@ -73,7 +73,7 @@ export default function ViniloForm({
 
       {/* Quantity */}
       <div>
-        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
           Cantidad
         </label>
         <input
@@ -87,7 +87,7 @@ export default function ViniloForm({
 
       {/* Number of colors */}
       <div>
-        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
           Número de colores
         </label>
         <div className="flex gap-2">
@@ -142,7 +142,7 @@ export default function ViniloForm({
               {/* Nombre + Tipo */}
               <div className="grid grid-cols-2 gap-2 mb-2">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-400 mb-2">
+                  <label className="block text-xs font-semibold text-gray-400 mb-3">
                     Nombre
                   </label>
                   <input
@@ -154,7 +154,7 @@ export default function ViniloForm({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-400 mb-2">
+                  <label className="block text-xs font-semibold text-gray-400 mb-3">
                     Tipo
                   </label>
                   <select
@@ -174,7 +174,7 @@ export default function ViniloForm({
               {/* Numeric inputs 2-col grid */}
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-400 mb-2">
+                  <label className="block text-xs font-semibold text-gray-400 mb-3">
                     $/metro
                   </label>
                   <input
@@ -186,7 +186,7 @@ export default function ViniloForm({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-400 mb-2">
+                  <label className="block text-xs font-semibold text-gray-400 mb-3">
                     Ancho rollo (cm)
                   </label>
                   <input
@@ -198,7 +198,7 @@ export default function ViniloForm({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-400 mb-2">
+                  <label className="block text-xs font-semibold text-gray-400 mb-3">
                     Ancho diseño (cm)
                   </label>
                   <input
@@ -210,7 +210,7 @@ export default function ViniloForm({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-400 mb-2">
+                  <label className="block text-xs font-semibold text-gray-400 mb-3">
                     Alto diseño (cm)
                   </label>
                   <input
@@ -234,7 +234,7 @@ export default function ViniloForm({
         </p>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
               Mano de obra ($/u)
             </label>
             <input
@@ -246,7 +246,7 @@ export default function ViniloForm({
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
               Tiempo despegue (min)
             </label>
             <input
@@ -260,7 +260,7 @@ export default function ViniloForm({
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
               Merma (%)
             </label>
             <input
@@ -273,7 +273,7 @@ export default function ViniloForm({
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
               Margen de ganancia (%)
             </label>
             <input

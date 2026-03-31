@@ -173,12 +173,12 @@ export default function CalculatorPage() {
       ) : (
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Left: Form */}
-          <div className="card lg:w-[420px] flex-shrink-0 p-6 lg:p-7">
+          <div className="card lg:w-[420px] flex-shrink-0 p-8 lg:p-10">
             {activeTab === 'subli' && (
               <div className="space-y-6">
                 {/* Cantidad */}
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
                     Cantidad
                   </label>
                   <input
@@ -192,7 +192,7 @@ export default function CalculatorPage() {
 
                 {/* Producto */}
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
                     Producto
                   </label>
                   <select
@@ -211,7 +211,7 @@ export default function CalculatorPage() {
 
                 {/* Plancha */}
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
                     Plancha
                   </label>
                   <select
@@ -230,7 +230,7 @@ export default function CalculatorPage() {
 
                 {/* Tamaño diseño */}
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
                     Tamaño diseño (cm)
                   </label>
                   <div className="flex items-center gap-2">
@@ -258,7 +258,7 @@ export default function CalculatorPage() {
                 {/* Margen y Merma */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
                       Margen (%)
                     </label>
                     <input
@@ -270,7 +270,7 @@ export default function CalculatorPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
                       Merma (%)
                     </label>
                     <input
@@ -298,7 +298,7 @@ export default function CalculatorPage() {
                   <div className="space-y-4 border-t border-gray-100 pt-4">
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
                           Mano de obra ($)
                         </label>
                         <input
@@ -310,7 +310,7 @@ export default function CalculatorPage() {
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
                           Electricidad ($)
                         </label>
                         <input
