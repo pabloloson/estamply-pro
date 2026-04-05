@@ -15,53 +15,14 @@ export function calcSheetNesting(dw: number, dh: number, sw: number, sh: number,
   return { count: Math.max(a, 1), rotated: false, cols: Math.floor(pw / dw), rows: Math.floor(ph / dh) }
 }
 
-/** Row-based greedy packing: place N sets of zone designs on a sheet.
- *  Each set contains one design per zone. Packs row by row, filling
- *  remaining width with smaller items from the same or next sets. */
-function fitSetsOnSheet(zones: Array<{ ancho: number; alto: number }>, nSets: number, pw: number, ph: number, gap = 0.5): boolean {
-  // Build pool: nSets copies of each zone design, track remaining count per zone
-  const pool: Array<{ ancho: number; alto: number; placed: boolean }> = []
-  for (let s = 0; s < nSets; s++) for (const z of zones) pool.push({ ancho: z.ancho, alto: z.alto, placed: false })
-  // Sort by alto desc so tallest items anchor each row
-  const indices = pool.map((_, i) => i).sort((a, b) => pool[b].alto - pool[a].alto)
-
-  let cy = 0
-  while (true) {
-    // Find tallest unplaced item to start a new row
-    const anchor = indices.find(i => !pool[i].placed)
-    if (anchor === undefined) break // all placed
-    const rowH = pool[anchor].alto
-    let cx = pool[anchor].ancho + gap
-    pool[anchor].placed = true
-    // Fill remaining width in this row with items that fit (height <= rowH)
-    for (const i of indices) {
-      if (pool[i].placed) continue
-      if (pool[i].alto <= rowH && cx + pool[i].ancho <= pw) {
-        cx += pool[i].ancho + gap
-        pool[i].placed = true
-      }
-    }
-    cy += (cy > 0 ? gap : 0) + rowH
-    if (cy > ph) return false
-  }
-  return cy <= ph
-}
-
 /** Multi-zone shared sheet calculation.
- *  Returns number of sheets needed (>0) if zones can share sheets,
- *  or -1 if they don't fit together on one sheet. */
+ *  Uses min of per-zone nesting counts as the bottleneck for sets per sheet.
+ *  Returns sheets needed (>0), or -1 if any zone doesn't fit at all. */
 export function calcMultiZoneSheets(zones: Array<{ ancho: number; alto: number }>, qty: number, sw: number, sh: number, margin = PRINTER_MARGIN): number {
-  const pw = sw - margin * 2, ph = sh - margin * 2
-  // Check if 1 set (1 design from each zone) fits on one sheet
-  if (!fitSetsOnSheet(zones, 1, pw, ph)) return -1
-  // Binary-search for max sets per sheet
-  let lo = 1, hi = Math.min(50, qty)
-  while (lo < hi) {
-    const mid = Math.ceil((lo + hi) / 2)
-    if (fitSetsOnSheet(zones, mid, pw, ph)) lo = mid
-    else hi = mid - 1
-  }
-  return Math.ceil(qty / Math.max(lo, 1))
+  const perZone = zones.map(z => calcSheetNesting(z.ancho, z.alto, sw, sh, margin))
+  const setsPorHoja = Math.min(...perZone.map(n => n.count))
+  if (setsPorHoja <= 0) return -1
+  return Math.ceil(qty / setsPorHoja)
 }
 
 export function calcRollNesting(dw: number, dh: number, rollW: number, qty: number, edgeM: number, gap: number) {
