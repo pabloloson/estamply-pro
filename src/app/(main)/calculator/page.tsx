@@ -127,7 +127,6 @@ export default function CotizadorPage() {
   // Roll dimensions for DTF nesting visual
   const isDTF = resolvedSlug === 'dtf' || resolvedSlug === 'dtf_uv'
   const isSubli = resolvedSlug === 'subli'
-  const isDTFTercerizado = isDTF && techniqueConfig?.modo === 'tercerizado'
   const dtfRollW = (() => {
     if (!isDTF) return 60
     const filmIns = engine.linkedInsumos.find(i => i.tipo === 'film')
@@ -138,7 +137,7 @@ export default function CotizadorPage() {
   })()
   const dtfGap = isDTF ? ((techniqueConfig?.margen_seguridad as number) ?? 1) : 1
   // Whether to show distribution in the left column
-  const showDistribution = isSubli || (isDTF && !isDTFTercerizado)
+  const showDistribution = isSubli || isDTF
 
   // Vinyl variants from linked insumos
   const vinylInsumos = engine.linkedInsumos.filter(i => i.tipo === 'vinilo')
