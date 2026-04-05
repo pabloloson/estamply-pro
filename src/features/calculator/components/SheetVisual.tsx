@@ -1,7 +1,5 @@
 'use client'
 
-const PRINTER_MARGIN = 0.5 // cm per side — must match hook
-
 interface SheetVisualProps {
   sheetW: number
   sheetH: number
@@ -13,17 +11,18 @@ interface SheetVisualProps {
   perSheet: number
   sheetsNeeded: number
   quantity: number
+  margin?: number
 }
 
-export function SheetVisual({ sheetW, sheetH, designW, designH, cols, rows, rotated, perSheet, sheetsNeeded, quantity }: SheetVisualProps) {
+export function SheetVisual({ sheetW, sheetH, designW, designH, cols, rows, rotated, perSheet, sheetsNeeded, quantity, margin = 0.5 }: SheetVisualProps) {
   const SVG_W = 140
   const SVG_H = Math.round(SVG_W * (sheetH / sheetW))
 
   const scaleX = SVG_W / sheetW
   const scaleY = SVG_H / sheetH
 
-  const mx = PRINTER_MARGIN * scaleX
-  const my = PRINTER_MARGIN * scaleY
+  const mx = margin * scaleX
+  const my = margin * scaleY
 
   const dW = (rotated ? designH : designW) * scaleX
   const dH = (rotated ? designW : designH) * scaleY
@@ -83,7 +82,7 @@ export function SheetVisual({ sheetW, sheetH, designW, designH, cols, rows, rota
         <p className="text-[10px] text-gray-400 mt-0.5">
           {usedOnFirstSheet} de {perSheet} posiciones usadas
           {rotated && ' (rotado 90°)'}
-          &middot; margen {PRINTER_MARGIN} cm
+          &middot; margen {margin} cm
         </p>
       </div>
     </div>

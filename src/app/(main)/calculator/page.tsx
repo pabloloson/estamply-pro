@@ -121,13 +121,13 @@ export default function CotizadorPage() {
   const paperCfg = paperInsumo ? (paperInsumo.config as Record<string, unknown>) : null
   const sheetW = (paperCfg?.ancho as number) || 21
   const sheetH = (paperCfg?.alto as number) || 29.7
-  const printerMargin = 0.5
+  const techniqueConfig = technique?.config as Record<string, unknown> | undefined
+  const printerMargin = (techniqueConfig?.margen_seguridad as number) ?? 0.5
 
   // Roll dimensions for DTF nesting visual
   const isDTF = resolvedSlug === 'dtf' || resolvedSlug === 'dtf_uv'
   const isSubli = resolvedSlug === 'subli'
-  const dtfConfig = technique?.config as Record<string, unknown> | undefined
-  const isDTFTercerizado = isDTF && dtfConfig?.modo === 'tercerizado'
+  const isDTFTercerizado = isDTF && techniqueConfig?.modo === 'tercerizado'
   const dtfRollW = (() => {
     if (!isDTF) return 60
     const filmIns = engine.linkedInsumos.find(i => i.tipo === 'film')
@@ -136,7 +136,7 @@ export default function CotizadorPage() {
     if (servicioIns) return ((servicioIns.config as Record<string, unknown>).ancho_material as number) || 60
     return 60
   })()
-  const dtfGap = isDTF ? ((dtfConfig?.margen_seguridad as number) ?? 1) : 1
+  const dtfGap = isDTF ? ((techniqueConfig?.margen_seguridad as number) ?? 1) : 1
   // Whether to show distribution in the left column
   const showDistribution = isSubli || (isDTF && !isDTFTercerizado)
 
@@ -263,7 +263,7 @@ export default function CotizadorPage() {
                             <div className="mt-2 p-3 rounded-lg" style={{ background: `${activeColor}08`, border: `1px solid ${activeColor}12` }}>
                               <SheetVisual sheetW={sheetW} sheetH={sheetH} designW={engine.designWidth} designH={engine.designHeight}
                                 cols={n.cols} rows={n.rows} rotated={n.rotated} perSheet={n.count}
-                                sheetsNeeded={sheets} quantity={engine.quantity} />
+                                sheetsNeeded={sheets} quantity={engine.quantity} margin={printerMargin} />
                             </div>
                           )}
                         </div>
@@ -335,7 +335,7 @@ export default function CotizadorPage() {
                                   <div className="mt-2 p-3 rounded-lg" style={{ background: `${activeColor}08`, border: `1px solid ${activeColor}12` }}>
                                     <SheetVisual sheetW={sheetW} sheetH={sheetH} designW={zone.ancho} designH={zone.alto}
                                       cols={zn.cols} rows={zn.rows} rotated={zn.rotated} perSheet={zn.count}
-                                      sheetsNeeded={sharedSheets || Math.ceil(engine.quantity / Math.max(zn.count, 1))} quantity={engine.quantity} />
+                                      sheetsNeeded={sharedSheets || Math.ceil(engine.quantity / Math.max(zn.count, 1))} quantity={engine.quantity} margin={printerMargin} />
                                   </div>
                                 )}
                               </div>
