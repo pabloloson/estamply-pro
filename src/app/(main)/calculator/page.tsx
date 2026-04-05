@@ -11,7 +11,7 @@ import { TECHNIQUE_DEFAULTS, ALL_TECNICA_SLUGS } from '@/features/taller/types'
 import { useCostEngine } from '@/features/taller/hooks/useCostEngine'
 import { RollVisual } from '@/features/calculator/components/RollVisual'
 import { SheetVisual } from '@/features/calculator/components/SheetVisual'
-import { calcSheetNesting, calcRollNesting } from '@/features/taller/services/cost-engine'
+import { calcSheetNesting, calcRollNesting, calcMultiZoneSheets } from '@/features/taller/services/cost-engine'
 import ProductPicker from '@/features/calculator/components/ProductPicker'
 import VinylPicker from '@/features/calculator/components/VinylPicker'
 import AuditTicket from '@/features/calculator/components/AuditTicket'
@@ -291,49 +291,54 @@ export default function CotizadorPage() {
                 </>)}
 
                 {/* Multiple zones */}
-                {engine.numZones > 1 && engine.zones.slice(0, engine.numZones).map((zone, zi) => {
-                  return (
-                    <div key={zi} className="rounded-xl p-3 border border-gray-100 bg-white shadow-sm space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Zona {zi + 1}</span>
-                        <select className="text-xs text-gray-500 bg-transparent border-none outline-none cursor-pointer" value={zone.ubicacion} onChange={e => engine.updateZone(zi, { ubicacion: e.target.value })}>
-                          <option value="">Ubicación...</option>
-                          <option value="Pecho">Pecho</option>
-                          <option value="Espalda">Espalda</option>
-                          <option value="Manga izq.">Manga izq.</option>
-                          <option value="Manga der.">Manga der.</option>
-                          <option value="Cuello / Nuca">Cuello / Nuca</option>
-                          <option value="Otro">Otro</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Tamaño diseño (cm)</label>
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1"><p className="text-[9px] text-gray-400 mb-0.5">Ancho</p><input type="number" className="input-base text-sm" min={0} value={zone.ancho} onChange={e => engine.updateZone(zi, { ancho: Number(e.target.value) })} /></div>
-                          <span className="text-gray-400 font-bold text-xs mt-3">&times;</span>
-                          <div className="flex-1"><p className="text-[9px] text-gray-400 mb-0.5">Alto</p><input type="number" className="input-base text-sm" min={0} value={zone.alto} onChange={e => engine.updateZone(zi, { alto: Number(e.target.value) })} /></div>
+                {engine.numZones > 1 && (() => {
+                  const activeZones = engine.zones.slice(0, engine.numZones)
+                  const validZones = activeZones.filter(z => z.ancho > 0 && z.alto > 0)
+                  const sharedSheets = isSubli && validZones.length > 1
+                    ? calcMultiZoneSheets(validZones, engine.quantity, sheetW, sheetH, printerMargin)
+                    : 0
+                  return activeZones.map((zone, zi) => {
+                    return (
+                      <div key={zi} className="rounded-xl p-3 border border-gray-100 bg-white shadow-sm space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Zona {zi + 1}</span>
+                          <select className="text-xs text-gray-500 bg-transparent border-none outline-none cursor-pointer" value={zone.ubicacion} onChange={e => engine.updateZone(zi, { ubicacion: e.target.value })}>
+                            <option value="">Ubicación...</option>
+                            <option value="Pecho">Pecho</option>
+                            <option value="Espalda">Espalda</option>
+                            <option value="Manga izq.">Manga izq.</option>
+                            <option value="Manga der.">Manga der.</option>
+                            <option value="Cuello / Nuca">Cuello / Nuca</option>
+                            <option value="Otro">Otro</option>
+                          </select>
                         </div>
-                      </div>
-                      {showDistribution && zone.ancho > 0 && zone.alto > 0 && (() => {
-                        if (isSubli) {
-                          const zn = calcSheetNesting(zone.ancho, zone.alto, sheetW, sheetH, printerMargin)
-                          const zSheets = Math.ceil(engine.quantity / Math.max(zn.count, 1))
-                          return (
-                            <div>
-                              <button type="button" onClick={() => setShowSheetNesting(prev => ({ ...prev, [zi]: !prev[zi] }))}
-                                className="flex items-center gap-1 text-[10px] font-medium text-gray-400 hover:text-gray-600 transition-colors">
-                                <LayoutGrid size={10} /> {showSheetNesting[zi] ? 'Ocultar distribución' : '+ Ver distribución'}
-                              </button>
-                              {showSheetNesting[zi] && (
-                                <div className="mt-2 p-3 rounded-lg" style={{ background: `${activeColor}08`, border: `1px solid ${activeColor}12` }}>
-                                  <SheetVisual sheetW={sheetW} sheetH={sheetH} designW={zone.ancho} designH={zone.alto}
-                                    cols={zn.cols} rows={zn.rows} rotated={zn.rotated} perSheet={zn.count}
-                                    sheetsNeeded={zSheets} quantity={engine.quantity} />
-                                </div>
-                              )}
-                            </div>
-                          )
-                        }
+                        <div>
+                          <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Tamaño diseño (cm)</label>
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1"><p className="text-[9px] text-gray-400 mb-0.5">Ancho</p><input type="number" className="input-base text-sm" min={0} value={zone.ancho} onChange={e => engine.updateZone(zi, { ancho: Number(e.target.value) })} /></div>
+                            <span className="text-gray-400 font-bold text-xs mt-3">&times;</span>
+                            <div className="flex-1"><p className="text-[9px] text-gray-400 mb-0.5">Alto</p><input type="number" className="input-base text-sm" min={0} value={zone.alto} onChange={e => engine.updateZone(zi, { alto: Number(e.target.value) })} /></div>
+                          </div>
+                        </div>
+                        {showDistribution && zone.ancho > 0 && zone.alto > 0 && (() => {
+                          if (isSubli) {
+                            const zn = calcSheetNesting(zone.ancho, zone.alto, sheetW, sheetH, printerMargin)
+                            return (
+                              <div>
+                                <button type="button" onClick={() => setShowSheetNesting(prev => ({ ...prev, [zi]: !prev[zi] }))}
+                                  className="flex items-center gap-1 text-[10px] font-medium text-gray-400 hover:text-gray-600 transition-colors">
+                                  <LayoutGrid size={10} /> {showSheetNesting[zi] ? 'Ocultar distribución' : '+ Ver distribución'}
+                                </button>
+                                {showSheetNesting[zi] && (
+                                  <div className="mt-2 p-3 rounded-lg" style={{ background: `${activeColor}08`, border: `1px solid ${activeColor}12` }}>
+                                    <SheetVisual sheetW={sheetW} sheetH={sheetH} designW={zone.ancho} designH={zone.alto}
+                                      cols={zn.cols} rows={zn.rows} rotated={zn.rotated} perSheet={zn.count}
+                                      sheetsNeeded={sharedSheets || Math.ceil(engine.quantity / Math.max(zn.count, 1))} quantity={engine.quantity} />
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          }
                         // DTF propia — roll nesting
                         const rn = calcRollNesting(zone.ancho, zone.alto, dtfRollW, engine.quantity, dtfGap, dtfGap)
                         const ml = rn.lengthCm / 100
@@ -352,10 +357,11 @@ export default function CotizadorPage() {
                             )}
                           </div>
                         )
-                      })()}
-                    </div>
-                  )
-                })}
+                        })()}
+                      </div>
+                    )
+                  })
+                })()}
               </>)}
 
               {needsColors && (

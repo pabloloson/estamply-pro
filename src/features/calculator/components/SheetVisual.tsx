@@ -28,7 +28,6 @@ export function SheetVisual({ sheetW, sheetH, designW, designH, cols, rows, rota
   const dW = (rotated ? designH : designW) * scaleX
   const dH = (rotated ? designW : designH) * scaleY
 
-  // Always show a full sheet layout — all positions filled
   const rects: { x: number; y: number }[] = []
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
@@ -36,11 +35,8 @@ export function SheetVisual({ sheetW, sheetH, designW, designH, cols, rows, rota
     }
   }
 
-  const sheetLabel = `${sheetW}×${sheetH} cm`
-  const totalSlots = sheetsNeeded * perSheet
-  const usedOnLast = quantity % perSheet
-  const allFull = usedOnLast === 0
-  const partialInfo = !allFull ? `(${quantity} de ${totalSlots} posiciones usadas)` : ''
+  // How many positions are actually used on the first sheet
+  const usedOnFirstSheet = Math.min(quantity, perSheet)
 
   return (
     <div className="flex flex-col items-center gap-2">
@@ -63,26 +59,32 @@ export function SheetVisual({ sheetW, sheetH, designW, designH, cols, rows, rota
         <rect x={mx} y={my} width={SVG_W - mx * 2} height={SVG_H - my * 2}
           fill="none" stroke="#C4B9F5" strokeWidth={0.5} strokeDasharray="3 2" />
 
-        {/* Design cells — all filled (showing full sheet layout) */}
-        {rects.map((r, i) => (
-          <rect key={i} x={r.x + 1} y={r.y + 1}
-            width={Math.max(dW - 2, 2)} height={Math.max(dH - 2, 2)}
-            fill="rgba(108,92,231,0.22)" stroke="#6C5CE7" strokeWidth={1} rx={2} />
-        ))}
+        {/* Design cells — used positions colored, empty positions dashed */}
+        {rects.map((r, i) => {
+          const isUsed = i < usedOnFirstSheet
+          return (
+            <rect key={i} x={r.x + 1} y={r.y + 1}
+              width={Math.max(dW - 2, 2)} height={Math.max(dH - 2, 2)}
+              fill={isUsed ? 'rgba(108,92,231,0.22)' : 'transparent'}
+              stroke={isUsed ? '#6C5CE7' : '#D0CAE8'}
+              strokeWidth={isUsed ? 1 : 0.5}
+              strokeDasharray={isUsed ? 'none' : '3 3'}
+              rx={2} />
+          )
+        })}
 
         <rect x={0} y={0} width={SVG_W} height={SVG_H} fill="none" stroke="#D0CAE8" strokeWidth={1.2} rx={4} />
       </svg>
 
       <div className="text-center leading-tight">
         <p className="text-sm font-bold text-gray-700">
-          Consumo estimado: <span style={{ color: '#6C5CE7' }}>{sheetsNeeded} {sheetsNeeded === 1 ? 'hoja' : 'hojas'} {sheetLabel}</span>
+          Consumo estimado: <span style={{ color: '#6C5CE7' }}>{sheetsNeeded} {sheetsNeeded === 1 ? 'hoja' : 'hojas'} {sheetW}×{sheetH} cm</span>
         </p>
         <p className="text-[10px] text-gray-400 mt-0.5">
-          Hoja de {sheetW}&times;{sheetH} cm &middot; {cols} col &times; {rows} filas = {perSheet} diseños
+          {usedOnFirstSheet} de {perSheet} posiciones usadas
           {rotated && ' (rotado 90°)'}
           &middot; margen {PRINTER_MARGIN} cm
         </p>
-        {partialInfo && <p className="text-[10px] text-gray-400">{partialInfo}</p>}
       </div>
     </div>
   )
