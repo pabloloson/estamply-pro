@@ -15,40 +15,50 @@ export function calcSheetNesting(dw: number, dh: number, sw: number, sh: number,
   return { count: Math.max(a, 1), rotated: false, cols: Math.floor(pw / dw), rows: Math.floor(ph / dh) }
 }
 
-/** Shelf-packing: check if a list of rectangles fits on one sheet */
-function shelfPack(items: Array<{ ancho: number; alto: number }>, pw: number, ph: number, gap = 0.5): boolean {
-  const sorted = [...items].sort((a, b) => b.alto - a.alto)
-  let cx = 0, cy = 0, rowH = 0
-  for (const it of sorted) {
-    if (cx + it.ancho <= pw) {
-      cx += it.ancho + gap
-      rowH = Math.max(rowH, it.alto)
-    } else {
-      cy += rowH + gap
-      cx = it.ancho + gap
-      rowH = it.alto
+/** Row-based greedy packing: place N sets of zone designs on a sheet.
+ *  Each set contains one design per zone. Packs row by row, filling
+ *  remaining width with smaller items from the same or next sets. */
+function fitSetsOnSheet(zones: Array<{ ancho: number; alto: number }>, nSets: number, pw: number, ph: number, gap = 0.5): boolean {
+  // Build pool: nSets copies of each zone design, track remaining count per zone
+  const pool: Array<{ ancho: number; alto: number; placed: boolean }> = []
+  for (let s = 0; s < nSets; s++) for (const z of zones) pool.push({ ancho: z.ancho, alto: z.alto, placed: false })
+  // Sort by alto desc so tallest items anchor each row
+  const indices = pool.map((_, i) => i).sort((a, b) => pool[b].alto - pool[a].alto)
+
+  let cy = 0
+  while (true) {
+    // Find tallest unplaced item to start a new row
+    const anchor = indices.find(i => !pool[i].placed)
+    if (anchor === undefined) break // all placed
+    const rowH = pool[anchor].alto
+    let cx = pool[anchor].ancho + gap
+    pool[anchor].placed = true
+    // Fill remaining width in this row with items that fit (height <= rowH)
+    for (const i of indices) {
+      if (pool[i].placed) continue
+      if (pool[i].alto <= rowH && cx + pool[i].ancho <= pw) {
+        cx += pool[i].ancho + gap
+        pool[i].placed = true
+      }
     }
+    cy += (cy > 0 ? gap : 0) + rowH
+    if (cy > ph) return false
   }
-  return cy + rowH <= ph
+  return cy <= ph
 }
 
-/** Multi-zone shared sheet calculation using shelf packing.
- *  Returns { combined: true, setsPorHoja, hojas } if zones share sheets,
- *  or { combined: false } if they must be printed independently. */
+/** Multi-zone shared sheet calculation.
+ *  Returns number of sheets needed (>0) if zones can share sheets,
+ *  or -1 if they don't fit together on one sheet. */
 export function calcMultiZoneSheets(zones: Array<{ ancho: number; alto: number }>, qty: number, sw: number, sh: number, margin = PRINTER_MARGIN): number {
   const pw = sw - margin * 2, ph = sh - margin * 2
   // Check if 1 set (1 design from each zone) fits on one sheet
-  if (!shelfPack(zones, pw, ph)) {
-    // Don't fit — fall back to independent per-zone sheets
-    return -1 // signal to caller to use per-zone calculation
-  }
+  if (!fitSetsOnSheet(zones, 1, pw, ph)) return -1
   // Binary-search for max sets per sheet
-  let lo = 1, hi = Math.min(50, Math.ceil(qty * zones.length))
+  let lo = 1, hi = Math.min(50, qty)
   while (lo < hi) {
     const mid = Math.ceil((lo + hi) / 2)
-    const items: Array<{ ancho: number; alto: number }> = []
-    for (let s = 0; s < mid; s++) for (const z of zones) items.push(z)
-    if (shelfPack(items, pw, ph)) lo = mid
+    if (fitSetsOnSheet(zones, mid, pw, ph)) lo = mid
     else hi = mid - 1
   }
   return Math.ceil(qty / Math.max(lo, 1))
