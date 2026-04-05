@@ -294,9 +294,11 @@ export default function CotizadorPage() {
                 {engine.numZones > 1 && (() => {
                   const activeZones = engine.zones.slice(0, engine.numZones)
                   const validZones = activeZones.filter(z => z.ancho > 0 && z.alto > 0)
-                  const sharedSheets = isSubli && validZones.length > 1
+                  const sharedResult = isSubli && validZones.length > 1
                     ? calcMultiZoneSheets(validZones, engine.quantity, sheetW, sheetH, printerMargin)
                     : 0
+                  // sharedResult > 0 = combined sheets, -1 = zones don't fit together, 0 = not applicable
+                  const sharedSheets = sharedResult > 0 ? sharedResult : 0
                   return activeZones.map((zone, zi) => {
                     return (
                       <div key={zi} className="rounded-xl p-3 border border-gray-100 bg-white shadow-sm space-y-2">
