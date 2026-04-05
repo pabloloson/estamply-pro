@@ -2,7 +2,10 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Save, User, Upload, Loader2, X } from 'lucide-react'
+import { Save, User, Upload, Loader2, X, Plus, Trash2 } from 'lucide-react'
+import { DEFAULT_SETTINGS, type WorkshopSettings, type DiscountTier, type ManoDeObraModo, type ComisionBase, DEFAULT_MO_CONFIG } from '@/features/presupuesto/types'
+
+function fmt(n: number) { return `$${Math.round(n).toLocaleString('es-AR')}` }
 
 interface BusinessProfile {
   business_name: string
@@ -33,6 +36,7 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [uploadingLogo, setUploadingLogo] = useState(false)
+  const [ws, setWs] = useState<WorkshopSettings>(DEFAULT_SETTINGS)
   const logoInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -57,11 +61,21 @@ export default function SettingsPage() {
           business_website: data.business_website || '',
         })
       }
+      // Load workshop settings for discount toggle
+      const { data: wsData } = await supabase.from('workshop_settings').select('settings').single()
+      if (wsData?.settings) setWs({ ...DEFAULT_SETTINGS, ...(wsData.settings as Partial<WorkshopSettings>) })
       setLoading(false)
     }
     load()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  async function saveWs() {
+    const { data: existing } = await supabase.from('workshop_settings').select('id').single()
+    if (existing) await supabase.from('workshop_settings').update({ settings: ws }).eq('id', existing.id)
+    else await supabase.from('workshop_settings').insert({ settings: ws })
+    alert('Guardado ✓')
+  }
 
   async function uploadLogo(file: File) {
     if (!userId) return
@@ -180,6 +194,98 @@ export default function SettingsPage() {
           <Save size={15} />
           {saving ? 'Guardando...' : 'Guardar perfil'}
         </button>
+      </div>
+
+      {/* Discount toggle */}
+      <div className="card p-6 max-w-2xl mt-6">
+        <h3 className="font-semibold text-gray-800 mb-4">Descuentos por volumen</h3>
+        <div className="flex items-center gap-3 mb-4">
+          <button type="button" onClick={() => { const next = { ...ws, descuento_global_enabled: !(ws.descuento_global_enabled ?? false) }; setWs(next); setTimeout(() => { const supabase2 = createClient(); supabase2.from('workshop_settings').select('id').single().then(({ data }) => { if (data) supabase2.from('workshop_settings').update({ settings: next }).eq('id', data.id) }) }, 0) }}
+            className="relative w-11 h-6 rounded-full transition-colors" style={{ background: (ws.descuento_global_enabled ?? false) ? '#6C5CE7' : '#D1D5DB' }}>
+            <span className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform" style={{ transform: (ws.descuento_global_enabled ?? false) ? 'translateX(20px)' : 'translateX(0)' }} />
+          </button>
+          <span className="text-sm text-gray-700">Usar tabla de descuentos única para todas las técnicas</span>
+        </div>
+        {(ws.descuento_global_enabled ?? false) && (
+          <div>
+            <table className="w-full"><thead><tr className="border-b border-gray-100">
+              {['Desde', 'Hasta', 'Desc (%)', ''].map(h => <th key={h} className="text-left text-xs font-semibold text-gray-400 uppercase px-3 py-2">{h}</th>)}
+            </tr></thead><tbody>
+              {(ws.descuentos_global ?? []).map((t: DiscountTier, i: number) => (
+                <tr key={i} className="border-b border-gray-50">
+                  <td className="px-3 py-1.5"><input type="number" value={t.desde} onChange={e => { const arr = [...(ws.descuentos_global ?? [])]; arr[i] = { ...arr[i], desde: parseInt(e.target.value) || 0 }; setWs({ ...ws, descuentos_global: arr }) }} className="w-20 input-base text-sm py-1" /></td>
+                  <td className="px-3 py-1.5"><input type="number" value={t.hasta} onChange={e => { const arr = [...(ws.descuentos_global ?? [])]; arr[i] = { ...arr[i], hasta: parseInt(e.target.value) || 0 }; setWs({ ...ws, descuentos_global: arr }) }} className="w-20 input-base text-sm py-1" /></td>
+                  <td className="px-3 py-1.5"><input type="number" min={0} max={100} value={Math.round(t.porcentaje * 100)} onChange={e => { const arr = [...(ws.descuentos_global ?? [])]; arr[i] = { ...arr[i], porcentaje: (parseFloat(e.target.value) || 0) / 100 }; setWs({ ...ws, descuentos_global: arr }) }} className="w-20 input-base text-sm py-1" /></td>
+                  <td className="px-3 py-1.5"><button onClick={() => setWs({ ...ws, descuentos_global: (ws.descuentos_global ?? []).filter((_: DiscountTier, j: number) => j !== i) })} className="p-1 rounded hover:bg-red-50"><Trash2 size={12} className="text-red-400" /></button></td>
+                </tr>
+              ))}
+            </tbody></table>
+            <button onClick={() => setWs({ ...ws, descuentos_global: [...(ws.descuentos_global ?? []), { desde: 0, hasta: 9999, porcentaje: 0 }] })} className="flex items-center gap-1 text-xs px-2.5 py-1.5 mt-2 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={12} /> Fila</button>
+            <button onClick={saveWs} className="mt-3 flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white" style={{ background: '#6C5CE7' }}><Save size={14} /> Guardar descuentos</button>
+          </div>
+        )}
+        {!(ws.descuento_global_enabled ?? false) && <p className="text-sm text-gray-400">Cada técnica gestiona sus descuentos de forma independiente.</p>}
+      </div>
+      {/* Mano de Obra */}
+      <div className="card p-6 max-w-2xl mt-6">
+        <h3 className="font-semibold text-gray-800 mb-1">Mano de Obra</h3>
+        <p className="text-xs text-gray-400 mb-4">Configurá el costo de mano de obra para incluirlo en tus cotizaciones.</p>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Modo de cálculo</label>
+            <select className="input-base" value={ws.mano_de_obra?.modo ?? 'por_unidad'} onChange={e => setWs({ ...ws, mano_de_obra: { ...(ws.mano_de_obra ?? DEFAULT_MO_CONFIG), modo: e.target.value as ManoDeObraModo } })}>
+              <option value="sueldo_fijo">Sueldo fijo</option>
+              <option value="por_unidad">Fijo por estampado</option>
+              <option value="porcentaje">Porcentaje sobre costo</option>
+            </select>
+          </div>
+
+          {(ws.mano_de_obra?.modo ?? 'por_unidad') === 'sueldo_fijo' && (
+            <div className="space-y-3 p-4 rounded-xl bg-gray-50">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Costo total MO mensual ($)</label>
+                  <input type="number" className="input-base" value={ws.mano_de_obra?.sueldo_mensual ?? 0} onChange={e => setWs({ ...ws, mano_de_obra: { ...(ws.mano_de_obra ?? DEFAULT_MO_CONFIG), sueldo_mensual: Number(e.target.value) } })} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Horas productivas mensuales</label>
+                  <input type="number" className="input-base" value={ws.mano_de_obra?.horas_mensuales ?? 160} onChange={e => setWs({ ...ws, mano_de_obra: { ...(ws.mano_de_obra ?? DEFAULT_MO_CONFIG), horas_mensuales: Number(e.target.value) } })} />
+                </div>
+              </div>
+              <p className="text-xs text-gray-400">Si tenés varios empleados en producción, sumá todos los sueldos y todas las horas.</p>
+              {(ws.mano_de_obra?.horas_mensuales ?? 160) > 0 && (ws.mano_de_obra?.sueldo_mensual ?? 0) > 0 && (
+                <p className="text-sm font-medium text-green-600">Costo por hora: {fmt(Math.round((ws.mano_de_obra?.sueldo_mensual ?? 0) / (ws.mano_de_obra?.horas_mensuales ?? 160)))}/h</p>
+              )}
+            </div>
+          )}
+
+          {(ws.mano_de_obra?.modo ?? 'por_unidad') === 'por_unidad' && (
+            <div className="p-4 rounded-xl bg-gray-50">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Costo por estampada ($)</label>
+              <input type="number" className="input-base" value={ws.mano_de_obra?.monto_por_unidad ?? 0} onChange={e => setWs({ ...ws, mano_de_obra: { ...(ws.mano_de_obra ?? DEFAULT_MO_CONFIG), monto_por_unidad: Number(e.target.value) } })} />
+            </div>
+          )}
+
+          {(ws.mano_de_obra?.modo ?? 'por_unidad') === 'porcentaje' && (
+            <div className="grid grid-cols-2 gap-3 p-4 rounded-xl bg-gray-50">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Porcentaje (%)</label>
+                <input type="number" className="input-base" value={ws.mano_de_obra?.porcentaje_comision ?? 10} onChange={e => setWs({ ...ws, mano_de_obra: { ...(ws.mano_de_obra ?? DEFAULT_MO_CONFIG), porcentaje_comision: Number(e.target.value) } })} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Base de cálculo</label>
+                <select className="input-base" value={ws.mano_de_obra?.comision_base ?? 'venta'} onChange={e => setWs({ ...ws, mano_de_obra: { ...(ws.mano_de_obra ?? DEFAULT_MO_CONFIG), comision_base: e.target.value as ComisionBase } })}>
+                  <option value="venta">Sobre precio de venta</option>
+                  <option value="ganancia">Sobre ganancia</option>
+                </select>
+              </div>
+            </div>
+          )}
+
+          <button onClick={saveWs} className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white" style={{ background: '#6C5CE7' }}>
+            <Save size={14} /> Guardar mano de obra
+          </button>
+        </div>
       </div>
     </div>
   )

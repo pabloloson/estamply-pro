@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Plus, Pencil, Trash2, X, Save, Package, Cpu, Settings2 } from 'lucide-react'
-import { DEFAULT_SETTINGS, type WorkshopSettings, type DiscountTier } from '@/features/presupuesto/types'
+import { Plus, Pencil, Trash2, X, Save, Package, Cpu, Settings2, Users } from 'lucide-react'
+import { DEFAULT_SETTINGS, type WorkshopSettings, type DiscountTier, type ManoDeObraConfig, type ManoDeObraModo, type ComisionBase, type VinylMaterial, DEFAULT_MO_CONFIG } from '@/features/presupuesto/types'
 
 interface Product {
   id: string
@@ -27,12 +27,13 @@ interface Equipment {
 const EQUIPMENT_TYPE_LABELS: Record<string, string> = {
   printer_subli: 'Impresora Subli',
   printer_dtf: 'Impresora DTF',
+  horno_dtf: 'Horno DTF',
   plotter: 'Plotter de Corte',
   press_flat: 'Plancha Plana',
   press_mug: 'Plancha Tazas',
 }
 
-const TABS = ['Productos', 'Equipos', 'Insumos', 'Descuentos'] as const
+const TABS = ['Productos', 'Equipos', 'Insumos', 'Descuentos', 'Mano de Obra'] as const
 type Tab = typeof TABS[number]
 
 function DiscountTable({ title, tiers, onChange }: {
@@ -87,6 +88,7 @@ export default function BaseDeCostosPage() {
   const [saving, setSaving] = useState(false)
   const [modalProduct, setModalProduct] = useState<Partial<Product> | null>(null)
   const [modalEquip, setModalEquip] = useState<Partial<Equipment> | null>(null)
+  const [insumoTab, setInsumoTab] = useState<'subli' | 'dtf' | 'vinyl'>('subli')
 
   async function load() {
     const [{ data: prods }, { data: equips }, { data: wsData }] = await Promise.all([
@@ -288,37 +290,230 @@ export default function BaseDeCostosPage() {
       {/* Insumos */}
       {tab === 'Insumos' && (
         <div className="space-y-4">
+          {/* Sub-tabs */}
+          <div className="flex rounded-full p-1 gap-1 w-fit" style={{ background: '#F1F1F1' }}>
+            {([['subli', 'Sublimación', '#6C5CE7'], ['dtf', 'DTF', '#E17055'], ['vinyl', 'Vinilo', '#E84393']] as const).map(([id, label, color]) => (
+              <button
+                key={id}
+                onClick={() => setInsumoTab(id)}
+                className="px-4 py-1.5 rounded-full text-xs font-semibold transition-all"
+                style={insumoTab === id
+                  ? { background: '#fff', color, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }
+                  : { color: '#888' }
+                }
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {/* ── SUBLIMACIÓN ── */}
+          {insumoTab === 'subli' && (
           <div className="card p-5">
-            <div className="flex items-center gap-2 mb-4"><div className="w-3 h-3 rounded-full" style={{ background: '#6C5CE7' }} /><span className="font-semibold text-gray-800">Insumos Sublimación</span></div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {([['subli_papel_precio', 'Resma papel ($)'], ['subli_papel_hojas', 'Hojas por resma'], ['subli_tinta_precio', 'Tinta set ($)'], ['subli_tinta_rendimiento', 'Rend. tinta (hojas)']] as const).map(([key, label]) => (
-                <div key={key}><label className="block text-xs font-medium text-gray-500 mb-1">{label}</label><input type="number" value={ws[key]} onChange={e => setWs({ ...ws, [key]: parseFloat(e.target.value) || 0 })} className="input-base" /></div>
-              ))}
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full" style={{ background: '#6C5CE7' }} />
+                <span className="font-semibold text-gray-800">Insumos Sublimación</span>
+              </div>
+              {/* Formato toggle */}
+              <div className="flex rounded-full p-0.5 gap-0.5" style={{ background: '#F1F1F1' }}>
+                {(['hojas', 'rollo'] as const).map(f => (
+                  <button
+                    key={f}
+                    onClick={() => setWs({ ...ws, subli_papel_formato: f })}
+                    className="px-3 py-1 rounded-full text-xs font-semibold transition-all"
+                    style={(ws.subli_papel_formato ?? 'hojas') === f
+                      ? { background: '#fff', color: '#6C5CE7', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }
+                      : { color: '#888' }
+                    }
+                  >
+                    {f === 'hojas' ? 'Hojas' : 'Rollo'}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {(ws.subli_papel_formato ?? 'hojas') === 'hojas' ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div><label className="block text-xs font-medium text-gray-500 mb-1">Precio resma ($)</label>
+                  <input type="number" value={ws.subli_papel_precio} onChange={e => setWs({ ...ws, subli_papel_precio: parseFloat(e.target.value) || 0 })} className="input-base" /></div>
+                <div><label className="block text-xs font-medium text-gray-500 mb-1">Hojas por resma</label>
+                  <input type="number" value={ws.subli_papel_hojas} onChange={e => setWs({ ...ws, subli_papel_hojas: parseFloat(e.target.value) || 0 })} className="input-base" /></div>
+                <div><label className="block text-xs font-medium text-gray-500 mb-1">Ancho hoja (cm)</label>
+                  <input type="number" value={ws.subli_papel_ancho ?? 21} onChange={e => setWs({ ...ws, subli_papel_ancho: parseFloat(e.target.value) || 0 })} className="input-base" /></div>
+                <div><label className="block text-xs font-medium text-gray-500 mb-1">Alto hoja (cm)</label>
+                  <input type="number" value={ws.subli_papel_alto ?? 29.7} onChange={e => setWs({ ...ws, subli_papel_alto: parseFloat(e.target.value) || 0 })} className="input-base" /></div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div><label className="block text-xs font-medium text-gray-500 mb-1">Precio rollo ($)</label>
+                  <input type="number" value={ws.subli_rollo_precio ?? 0} onChange={e => setWs({ ...ws, subli_rollo_precio: parseFloat(e.target.value) || 0 })} className="input-base" /></div>
+                <div><label className="block text-xs font-medium text-gray-500 mb-1">Ancho rollo (cm)</label>
+                  <input type="number" value={ws.subli_rollo_ancho ?? 61} onChange={e => setWs({ ...ws, subli_rollo_ancho: parseFloat(e.target.value) || 0 })} className="input-base" /></div>
+                <div><label className="block text-xs font-medium text-gray-500 mb-1">Largo rollo (metros)</label>
+                  <input type="number" value={ws.subli_rollo_largo ?? 100} onChange={e => setWs({ ...ws, subli_rollo_largo: parseFloat(e.target.value) || 0 })} className="input-base" /></div>
+              </div>
+            )}
+
+            {/* Tinta (aplica para ambos) */}
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Tinta</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md">
+                <div><label className="block text-xs font-medium text-gray-500 mb-1">Precio set/litro ($)</label>
+                  <input type="number" value={ws.subli_tinta_precio} onChange={e => setWs({ ...ws, subli_tinta_precio: parseFloat(e.target.value) || 0 })} className="input-base" /></div>
+                <div><label className="block text-xs font-medium text-gray-500 mb-1">Rendimiento (hojas equiv.)</label>
+                  <input type="number" value={ws.subli_tinta_rendimiento} onChange={e => setWs({ ...ws, subli_tinta_rendimiento: parseFloat(e.target.value) || 0 })} className="input-base" /></div>
+              </div>
             </div>
           </div>
+          )}
+
+          {/* ── DTF TERCERIZADO ── */}
+          {insumoTab === 'dtf' && (<>
           <div className="card p-5">
-            <div className="flex items-center gap-2 mb-4"><div className="w-3 h-3 rounded-full" style={{ background: '#E17055' }} /><span className="font-semibold text-gray-800">Insumos DTF</span></div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {([['dtf_precio_metro', 'Metro lineal ($)'], ['dtf_ancho_rollo', 'Ancho rollo (cm)'], ['dtf_film_costo', 'Film por uso ($)'], ['dtf_tinta_costo', 'Tinta por uso ($)'], ['dtf_polvo_costo', 'Polvo por uso ($)'], ['dtf_amort_impresora', 'Amort. impresora ($)'], ['dtf_amort_horno', 'Amort. horno ($)']] as const).map(([key, label]) => (
-                <div key={key}><label className="block text-xs font-medium text-gray-500 mb-1">{label}</label><input type="number" value={ws[key]} onChange={e => setWs({ ...ws, [key]: parseFloat(e.target.value) || 0 })} className="input-base" /></div>
-              ))}
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-3 h-3 rounded-full" style={{ background: '#E17055' }} />
+              <span className="font-semibold text-gray-800">DTF Tercerizado</span>
+              <span className="text-[10px] font-medium text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">Mando a imprimir</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md">
+              <div><label className="block text-xs font-medium text-gray-500 mb-1">Precio por metro lineal ($)</label>
+                <input type="number" value={ws.dtf_precio_metro} onChange={e => setWs({ ...ws, dtf_precio_metro: parseFloat(e.target.value) || 0 })} className="input-base" /></div>
+              <div><label className="block text-xs font-medium text-gray-500 mb-1">Ancho rollo (cm)</label>
+                <input type="number" value={ws.dtf_ancho_rollo} onChange={e => setWs({ ...ws, dtf_ancho_rollo: parseFloat(e.target.value) || 0 })} className="input-base" /></div>
             </div>
           </div>
+
+          {/* ── DTF PROPIA ── */}
           <div className="card p-5">
-            <div className="flex items-center gap-2 mb-4"><div className="w-3 h-3 rounded-full" style={{ background: '#E84393' }} /><span className="font-semibold text-gray-800">Insumos Vinilo</span></div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {([['vinyl_precio_metro', 'Metro cuadrado ($)'], ['vinyl_ancho_rollo', 'Ancho rollo (cm)']] as const).map(([key, label]) => (
-                <div key={key}><label className="block text-xs font-medium text-gray-500 mb-1">{label}</label><input type="number" value={ws[key]} onChange={e => setWs({ ...ws, [key]: parseFloat(e.target.value) || 0 })} className="input-base" /></div>
-              ))}
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-3 h-3 rounded-full" style={{ background: '#E17055' }} />
+              <span className="font-semibold text-gray-800">DTF Impresora Propia</span>
+              <span className="text-[10px] font-medium text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">Compras a granel</span>
+            </div>
+
+            {/* Film */}
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Film</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+              <div><label className="block text-xs font-medium text-gray-500 mb-1">Precio rollo ($)</label>
+                <input type="number" value={ws.dtf_film_rollo_precio ?? 0} onChange={e => setWs({ ...ws, dtf_film_rollo_precio: parseFloat(e.target.value) || 0 })} className="input-base" /></div>
+              <div><label className="block text-xs font-medium text-gray-500 mb-1">Ancho (cm)</label>
+                <input type="number" value={ws.dtf_film_ancho ?? 60} onChange={e => setWs({ ...ws, dtf_film_ancho: parseFloat(e.target.value) || 0 })} className="input-base" /></div>
+              <div><label className="block text-xs font-medium text-gray-500 mb-1">Largo (metros)</label>
+                <input type="number" value={ws.dtf_film_largo ?? 100} onChange={e => setWs({ ...ws, dtf_film_largo: parseFloat(e.target.value) || 0 })} className="input-base" /></div>
+            </div>
+
+            {/* Tinta */}
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Tinta (CMYK+W)</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4 max-w-md">
+              <div><label className="block text-xs font-medium text-gray-500 mb-1">Precio por litro ($)</label>
+                <input type="number" value={ws.dtf_tinta_precio_litro ?? 0} onChange={e => setWs({ ...ws, dtf_tinta_precio_litro: parseFloat(e.target.value) || 0 })} className="input-base" /></div>
+              <div><label className="block text-xs font-medium text-gray-500 mb-1">Rendimiento (m²/litro)</label>
+                <input type="number" value={ws.dtf_tinta_rendimiento_m2 ?? 40} onChange={e => setWs({ ...ws, dtf_tinta_rendimiento_m2: parseFloat(e.target.value) || 0 })} className="input-base" /></div>
+            </div>
+
+            {/* Polvo */}
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Polvo Poliamida</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md">
+              <div><label className="block text-xs font-medium text-gray-500 mb-1">Precio por kilo ($)</label>
+                <input type="number" value={ws.dtf_polvo_precio_kilo ?? 0} onChange={e => setWs({ ...ws, dtf_polvo_precio_kilo: parseFloat(e.target.value) || 0 })} className="input-base" /></div>
+              <div><label className="block text-xs font-medium text-gray-500 mb-1">Rendimiento (m²/kg)</label>
+                <input type="number" value={ws.dtf_polvo_rendimiento_m2 ?? 50} onChange={e => setWs({ ...ws, dtf_polvo_rendimiento_m2: parseFloat(e.target.value) || 0 })} className="input-base" /></div>
             </div>
           </div>
-          <div className="card p-5">
-            <div className="flex items-center gap-2 mb-4"><Settings2 size={15} className="text-gray-400" /><span className="font-semibold text-gray-800">General</span></div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-sm">
-              <div><label className="block text-xs font-medium text-gray-500 mb-1">Setup global (min)</label><input type="number" value={ws.setup_min} onChange={e => setWs({ ...ws, setup_min: parseFloat(e.target.value) || 0 })} className="input-base" /></div>
-              <div><label className="block text-xs font-medium text-gray-500 mb-1">Gastos fijos mensuales ($)</label><input type="number" value={ws.fixed_costs_monthly} onChange={e => setWs({ ...ws, fixed_costs_monthly: parseFloat(e.target.value) || 0 })} className="input-base" /></div>
-            </div>
-          </div>
+          </>)}
+
+          {/* ── VINILO: Materiales con variantes ── */}
+          {insumoTab === 'vinyl' && (<>
+          {(ws.vinyl_materiales ?? []).map((mat: VinylMaterial, mi: number) => {
+            const updateMat = (patch: Partial<VinylMaterial>) => {
+              const arr = [...(ws.vinyl_materiales ?? [])]
+              arr[mi] = { ...arr[mi], ...patch }
+              setWs({ ...ws, vinyl_materiales: arr })
+            }
+            return (
+              <div key={mi} className="card p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full" style={{ background: '#E84393' }} />
+                    <span className="font-semibold text-gray-800">
+                      {mat.acabado || 'Material'} {mat.aplicacion === 'autoadhesivo' ? '(Autoadhesivo)' : '(Textil)'}
+                    </span>
+                  </div>
+                  <button onClick={() => setWs({ ...ws, vinyl_materiales: (ws.vinyl_materiales ?? []).filter((_: VinylMaterial, j: number) => j !== mi) })}
+                    className="p-1.5 rounded-lg hover:bg-red-50"><Trash2 size={14} className="text-red-400" /></button>
+                </div>
+
+                {/* Parent fields */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Aplicación</label>
+                    <select className="input-base text-sm" value={mat.aplicacion} onChange={e => updateMat({ aplicacion: e.target.value as 'textil' | 'autoadhesivo' })}>
+                      <option value="textil">Textil</option>
+                      <option value="autoadhesivo">Autoadhesivo</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Acabado</label>
+                    <select className="input-base text-sm" value={mat.acabado} onChange={e => updateMat({ acabado: e.target.value })}>
+                      {['Liso', 'Glitter', 'Flock', 'Reflectivo', 'Metalizado', 'Holográfico', 'Puff', 'Otro'].map(a => (
+                        <option key={a} value={a}>{a}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Precio/metro ($)</label>
+                    <input type="number" className="input-base text-sm" min={0} value={mat.precio_metro}
+                      onChange={e => updateMat({ precio_metro: parseFloat(e.target.value) || 0 })} />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Ancho rollo (cm)</label>
+                    <input type="number" className="input-base text-sm" min={1} value={mat.ancho_rollo}
+                      onChange={e => updateMat({ ancho_rollo: parseFloat(e.target.value) || 0 })} />
+                  </div>
+                </div>
+                <div className="max-w-xs">
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Proveedor / Marca (opcional)</label>
+                  <input type="text" className="input-base text-sm" placeholder="Ej: Siser, Forever..." value={mat.proveedor}
+                    onChange={e => updateMat({ proveedor: e.target.value })} />
+                </div>
+
+                {/* Children: colores */}
+                <div className="pt-3 border-t border-gray-100">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Colores disponibles</span>
+                    <button onClick={() => updateMat({ colores: [...(mat.colores ?? []), ''] })}
+                      className="flex items-center gap-1 text-[10px] px-2 py-1 rounded font-semibold" style={{ color: '#E84393', background: 'rgba(232,67,147,0.08)' }}>
+                      <Plus size={10} /> Color
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {(mat.colores ?? []).map((color: string, ci: number) => (
+                      <div key={ci} className="flex items-center gap-1 bg-gray-50 rounded-lg px-2 py-1 border border-gray-100">
+                        <input type="text" className="bg-transparent outline-none text-sm w-20" placeholder="Color..."
+                          value={color} onChange={e => {
+                            const cols = [...(mat.colores ?? [])]
+                            cols[ci] = e.target.value
+                            updateMat({ colores: cols })
+                          }} />
+                        <button onClick={() => updateMat({ colores: (mat.colores ?? []).filter((_: string, j: number) => j !== ci) })}
+                          className="text-gray-300 hover:text-red-400"><X size={12} /></button>
+                      </div>
+                    ))}
+                    {(mat.colores ?? []).length === 0 && <span className="text-xs text-gray-300">Sin colores</span>}
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+
+          <button
+            onClick={() => setWs({ ...ws, vinyl_materiales: [...(ws.vinyl_materiales ?? []), { aplicacion: 'textil', acabado: 'Liso', precio_metro: 0, ancho_rollo: 50, proveedor: '', colores: ['Blanco', 'Negro'] }] })}
+            className="flex items-center gap-1.5 text-sm px-4 py-2.5 rounded-xl font-semibold text-white" style={{ background: '#E84393' }}>
+            <Plus size={14} /> Agregar material
+          </button>
+          </>)}
+
           <button onClick={saveSettings} disabled={saving} className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: '#6C5CE7' }}>
             <Save size={15} />{saving ? 'Guardando...' : 'Guardar cambios'}
           </button>
@@ -336,6 +531,115 @@ export default function BaseDeCostosPage() {
           </div>
           <button onClick={saveSettings} disabled={saving} className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: '#6C5CE7' }}>
             <Save size={15} />{saving ? 'Guardando...' : 'Guardar descuentos'}
+          </button>
+        </div>
+      )}
+
+      {/* Mano de Obra */}
+      {tab === 'Mano de Obra' && (
+        <div className="space-y-4">
+          <p className="text-sm text-gray-500">Configurá cómo se calcula la mano de obra. Se aplicará automáticamente en la calculadora.</p>
+          <div className="card p-5 max-w-lg">
+            <div className="flex items-center gap-2 mb-5">
+              <Users size={16} className="text-gray-400" />
+              <span className="font-semibold text-gray-800">Regla de Mano de Obra</span>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Modo de pago</label>
+                <select
+                  className="input-base"
+                  value={ws.mano_de_obra?.modo ?? 'por_unidad'}
+                  onChange={e => setWs({ ...ws, mano_de_obra: { ...(ws.mano_de_obra ?? DEFAULT_MO_CONFIG), modo: e.target.value as ManoDeObraModo } })}
+                >
+                  <option value="sueldo_fijo">Sueldo Fijo</option>
+                  <option value="por_unidad">Por Unidad (A destajo)</option>
+                  <option value="porcentaje">Porcentaje (Comisión)</option>
+                </select>
+              </div>
+
+              {(ws.mano_de_obra?.modo ?? 'por_unidad') === 'sueldo_fijo' && (
+                <div className="space-y-3 p-4 rounded-xl" style={{ background: '#F8F9FA' }}>
+                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Sueldo Fijo</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Sueldo mensual ($)</label>
+                      <input
+                        type="number"
+                        className="input-base"
+                        min={0}
+                        value={ws.mano_de_obra?.sueldo_mensual ?? 0}
+                        onChange={e => setWs({ ...ws, mano_de_obra: { ...(ws.mano_de_obra ?? DEFAULT_MO_CONFIG), sueldo_mensual: Number(e.target.value) } })}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Horas/mes trabajadas</label>
+                      <input
+                        type="number"
+                        className="input-base"
+                        min={1}
+                        value={ws.mano_de_obra?.horas_mensuales ?? 160}
+                        onChange={e => setWs({ ...ws, mano_de_obra: { ...(ws.mano_de_obra ?? DEFAULT_MO_CONFIG), horas_mensuales: Number(e.target.value) } })}
+                      />
+                    </div>
+                  </div>
+                  {(ws.mano_de_obra?.horas_mensuales ?? 160) > 0 && (ws.mano_de_obra?.sueldo_mensual ?? 0) > 0 && (
+                    <p className="text-xs text-green-600 font-medium">
+                      Costo por minuto: ${((ws.mano_de_obra?.sueldo_mensual ?? 0) / ((ws.mano_de_obra?.horas_mensuales ?? 160) * 60)).toFixed(2)}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {(ws.mano_de_obra?.modo ?? 'por_unidad') === 'por_unidad' && (
+                <div className="space-y-3 p-4 rounded-xl" style={{ background: '#F8F9FA' }}>
+                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Por Unidad</p>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Monto por unidad ($)</label>
+                    <input
+                      type="number"
+                      className="input-base"
+                      min={0}
+                      value={ws.mano_de_obra?.monto_por_unidad ?? 0}
+                      onChange={e => setWs({ ...ws, mano_de_obra: { ...(ws.mano_de_obra ?? DEFAULT_MO_CONFIG), monto_por_unidad: Number(e.target.value) } })}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {(ws.mano_de_obra?.modo ?? 'por_unidad') === 'porcentaje' && (
+                <div className="space-y-3 p-4 rounded-xl" style={{ background: '#F8F9FA' }}>
+                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Comisión</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">% de comisión</label>
+                      <input
+                        type="number"
+                        className="input-base"
+                        min={0}
+                        max={100}
+                        value={ws.mano_de_obra?.porcentaje_comision ?? 10}
+                        onChange={e => setWs({ ...ws, mano_de_obra: { ...(ws.mano_de_obra ?? DEFAULT_MO_CONFIG), porcentaje_comision: Number(e.target.value) } })}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Base de cálculo</label>
+                      <select
+                        className="input-base"
+                        value={ws.mano_de_obra?.comision_base ?? 'venta'}
+                        onChange={e => setWs({ ...ws, mano_de_obra: { ...(ws.mano_de_obra ?? DEFAULT_MO_CONFIG), comision_base: e.target.value as ComisionBase } })}
+                      >
+                        <option value="venta">Sobre el Precio de Venta</option>
+                        <option value="ganancia">Sobre la Ganancia neta</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+          <button onClick={saveSettings} disabled={saving} className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: '#6C5CE7' }}>
+            <Save size={15} />{saving ? 'Guardando...' : 'Guardar regla'}
           </button>
         </div>
       )}

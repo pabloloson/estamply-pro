@@ -104,6 +104,9 @@ export function PriceTicket({ result, technique, quantity, designWidth, designHe
               cols={result.sheetCols || 1}
               rows={result.sheetRows || 1}
               rotated={result.sheetRotated || false}
+              perSheet={result.designsPerSheet || 1}
+              sheetsNeeded={1}
+              quantity={1}
             />
           </div>
         </div>

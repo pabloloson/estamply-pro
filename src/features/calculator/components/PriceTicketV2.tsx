@@ -120,9 +120,12 @@ export default function PriceTicketV2({
               sheetH={29.7}
               designW={designWidth ?? 10}
               designH={designHeight ?? 10}
-              cols={result.sheetCols}
-              rows={result.sheetRows}
+              cols={result.sheetCols ?? 1}
+              rows={result.sheetRows ?? 1}
               rotated={result.sheetRotated ?? false}
+              perSheet={result.perSheet ?? 1}
+              sheetsNeeded={1}
+              quantity={quantity}
             />
           </div>
         )}

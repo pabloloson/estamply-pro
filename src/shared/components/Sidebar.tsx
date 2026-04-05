@@ -6,7 +6,8 @@ import { usePathname } from 'next/navigation'
 import { logout } from '@/app/actions/auth'
 import {
   Layers, LayoutDashboard, Calculator, FileText, ShoppingBag,
-  Users, Database, Settings, LogOut, Menu, X,
+  Users, Package, Droplets, Cpu, Palette, Tag,
+  Settings, LogOut, Menu, X,
 } from 'lucide-react'
 import { usePresupuesto } from '@/features/presupuesto/context/PresupuestoContext'
 
@@ -72,8 +73,8 @@ export function Sidebar({ workshopName = 'Mi Taller' }: SidebarProps) {
       {/* ── Sección 1: Uso diario ── */}
       <nav className="px-3 pt-4 space-y-0.5">
         <NavLink href="/" icon={LayoutDashboard} label="Inicio" />
-        <NavLink href="/calculator" icon={Calculator} label="Calculadora" />
-        <NavLink href="/presupuesto" icon={FileText} label="Presupuesto" badge={items.length} />
+        <NavLink href="/calculator" icon={Calculator} label="Cotizador" />
+        <NavLink href="/presupuesto" icon={FileText} label="Presupuestos" badge={items.length} />
         <NavLink href="/orders" icon={ShoppingBag} label="Pedidos" />
         <NavLink href="/clients" icon={Users} label="Clientes" />
       </nav>
@@ -82,9 +83,12 @@ export function Sidebar({ workshopName = 'Mi Taller' }: SidebarProps) {
       <div className="mx-4 mt-4 mb-1 border-t border-gray-100" />
       <div className="px-3 space-y-0.5">
         <p className="px-3 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-          Motor del negocio
+          Mi taller
         </p>
-        <NavLink href="/base-de-costos" icon={Database} label="Base de Costos" />
+        <NavLink href="/catalogo" icon={Package} label="Productos" />
+        <NavLink href="/insumos" icon={Droplets} label="Insumos" />
+        <NavLink href="/equipamiento" icon={Cpu} label="Equipamiento" />
+        <NavLink href="/tecnicas" icon={Palette} label="Técnicas" />
       </div>
 
       {/* ── Spacer ── */}

@@ -1,436 +1,494 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { ShoppingCart, ChevronDown, ChevronUp } from 'lucide-react'
+import { ShoppingCart, LayoutGrid, AlertTriangle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { usePresupuesto } from '@/features/presupuesto/context/PresupuestoContext'
-import { DEFAULT_SETTINGS, type WorkshopSettings } from '@/features/presupuesto/types'
-import { useCalcSubli } from '@/features/calculator/hooks/useCalcSubli'
-import { useCalcDTF } from '@/features/calculator/hooks/useCalcDTF'
-import { useCalcVinyl } from '@/features/calculator/hooks/useCalcVinyl'
-import DTFForm from '@/features/calculator/components/DTFForm'
-import ViniloForm from '@/features/calculator/components/ViniloForm'
-import PriceTicketV2 from '@/features/calculator/components/PriceTicketV2'
+import { DEFAULT_SETTINGS, DEFAULT_MO_CONFIG, type WorkshopSettings } from '@/features/presupuesto/types'
+import type { Tecnica, Category, Insumo, TecnicaSlug } from '@/features/taller/types'
+import { TECHNIQUE_DEFAULTS, ALL_TECNICA_SLUGS } from '@/features/taller/types'
+import { useCostEngine } from '@/features/taller/hooks/useCostEngine'
+import { RollVisual } from '@/features/calculator/components/RollVisual'
+import { SheetVisual } from '@/features/calculator/components/SheetVisual'
+import { calcSheetNesting, calcRollNesting } from '@/features/taller/services/cost-engine'
+import ProductPicker from '@/features/calculator/components/ProductPicker'
+import VinylPicker from '@/features/calculator/components/VinylPicker'
+import AuditTicket from '@/features/calculator/components/AuditTicket'
 
-type Tab = 'subli' | 'dtf' | 'vinyl'
+// Cotizador tabs: Sublimación, DTF (unified), Vinilo, Serigrafía
+type CotizadorTab = 'subli' | 'dtf_unified' | 'vinyl' | 'serigrafia'
 
-const TABS: { id: Tab; label: string; color: string }[] = [
-  { id: 'subli', label: 'Sublimación', color: '#6C5CE7' },
-  { id: 'dtf', label: 'DTF', color: '#E17055' },
-  { id: 'vinyl', label: 'Vinilo', color: '#E84393' },
-]
-
-export default function CalculatorPage() {
+export default function CotizadorPage() {
   const supabase = createClient()
   const { addItem, items } = usePresupuesto()
 
-  const [activeTab, setActiveTab] = useState<Tab>('subli')
   const [products, setProducts] = useState<any[]>([])
   const [equipment, setEquipment] = useState<any[]>([])
+  const [tecnicas, setTecnicas] = useState<Tecnica[]>([])
+  const [insumos, setInsumos] = useState<Insumo[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
   const [settings, setSettings] = useState<WorkshopSettings>(DEFAULT_SETTINGS)
   const [loading, setLoading] = useState(true)
-  const [showOptional, setShowOptional] = useState(false)
+  const [extraCosts, setExtraCosts] = useState<Array<{ name: string; amount: number; modo: 'total' | 'unidad' }>>([])
 
-  useEffect(() => {
-    async function load() {
-      const [{ data: prods }, { data: equip }, { data: ws }] = await Promise.all([
-        supabase.from('products').select('*').order('name'),
-        supabase.from('equipment').select('*'),
-        supabase.from('workshop_settings').select('settings').single(),
-      ])
-      if (prods) setProducts(prods)
-      if (equip) setEquipment(equip)
-      if (ws?.settings) {
-        setSettings({ ...DEFAULT_SETTINGS, ...(ws.settings as Partial<WorkshopSettings>) })
+  const [showVinylNesting, setShowVinylNesting] = useState<Record<number, boolean>>({})
+  const [showSheetNesting, setShowSheetNesting] = useState<Record<number, boolean>>({})
+  const [cotizadorTab, setCotizadorTab] = useState<CotizadorTab>('subli')
+  const [dtfVariant, setDtfVariant] = useState<'dtf' | 'dtf_uv'>('dtf') // internal DTF toggle
+
+  const loadedRef = useRef(false)
+  const loadData = async () => {
+    const [{ data: p }, { data: e }, { data: t }, { data: ins }, { data: c }, { data: ws }] = await Promise.all([
+      supabase.from('products').select('*').order('name'),
+      supabase.from('equipment').select('*'),
+      supabase.from('tecnicas').select('*'),
+      supabase.from('insumos').select('*'),
+      supabase.from('categories').select('*'),
+      supabase.from('workshop_settings').select('settings').single(),
+    ])
+    if (p) setProducts(p)
+    if (e) setEquipment(e)
+    if (ins) setInsumos(ins as Insumo[])
+    if (c) setCategories(c || [])
+    let tecs = (t || []) as Tecnica[]
+    if (tecs.length === 0) {
+      for (const slug of ALL_TECNICA_SLUGS) {
+        const def = TECHNIQUE_DEFAULTS[slug]
+        await supabase.from('tecnicas').insert({ slug, nombre: def.nombre, color: def.color, config: def.config, equipment_ids: [], insumo_ids: [], activa: def.activa })
       }
-      setLoading(false)
+      const { data: seeded } = await supabase.from('tecnicas').select('*')
+      tecs = (seeded || []) as Tecnica[]
     }
-    load()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (tecs.length === 0) {
+      tecs = ALL_TECNICA_SLUGS.map(slug => ({ id: `local-${slug}`, user_id: '', slug, created_at: '', ...TECHNIQUE_DEFAULTS[slug], equipment_ids: [], insumo_ids: [] }))
+    }
+    setTecnicas(tecs)
+    if (ws?.settings) {
+      const saved = ws.settings as Record<string, unknown>
+      setSettings({ ...DEFAULT_SETTINGS, ...saved, mano_de_obra: { ...DEFAULT_MO_CONFIG, ...((saved.mano_de_obra as Record<string, unknown>) ?? {}) } } as WorkshopSettings)
+    }
+    setLoading(false)
+  }
+
+  useEffect(() => { loadData(); loadedRef.current = true }, [])
+  useEffect(() => {
+    const h = () => { if (document.visibilityState === 'visible' && loadedRef.current) loadData() }
+    document.addEventListener('visibilitychange', h)
+    return () => document.removeEventListener('visibilitychange', h)
   }, [])
 
-  const subli = useCalcSubli(settings, products, equipment)
-  const dtf = useCalcDTF(settings, products)
-  const vinyl = useCalcVinyl(settings, products)
+  // Build cotizador tabs from active techniques
+  const dtfTextil = tecnicas.find(t => t.slug === 'dtf' && t.activa)
+  const dtfUv = tecnicas.find(t => t.slug === 'dtf_uv' && t.activa)
+  const hasDtf = !!(dtfTextil || dtfUv)
 
-  const subliProductName = products.find(p => p.id === subli.productId)?.name ?? 'Producto'
-  const dtfProductName = products.find(p => p.id === dtf.productId)?.name ?? 'Producto'
-  const vinylProductName = products.find(p => p.id === vinyl.productId)?.name ?? 'Producto'
+  const cotizadorTabs: { id: CotizadorTab; label: string; color: string }[] = []
+  if (tecnicas.find(t => t.slug === 'subli' && t.activa)) cotizadorTabs.push({ id: 'subli', label: 'Sublimación', color: '#6C5CE7' })
+  if (hasDtf) cotizadorTabs.push({ id: 'dtf_unified', label: 'DTF', color: '#E17055' })
+  if (tecnicas.find(t => t.slug === 'vinyl' && t.activa)) cotizadorTabs.push({ id: 'vinyl', label: 'Vinilo', color: '#E84393' })
+  if (tecnicas.find(t => t.slug === 'serigrafia' && t.activa)) cotizadorTabs.push({ id: 'serigrafia', label: 'Serigrafía', color: '#FDCB6E' })
 
-  const pressEquipment = equipment.filter(
-    e => e.type === 'press_flat' || e.type === 'press_mug'
-  )
+  // Resolve which actual technique to use
+  const resolvedSlug: TecnicaSlug = cotizadorTab === 'dtf_unified' ? dtfVariant : cotizadorTab as TecnicaSlug
+  const activeTecnicasForEngine = tecnicas.filter(t => t.activa)
 
-  function handleSubliAddToCart() {
-    if (!subli.result) return
+  // Pass ALL active to engine but set the selected one
+  const resolvedTec = tecnicas.find(t => t.slug === resolvedSlug && t.activa)
+
+  const engine = useCostEngine(activeTecnicasForEngine, products, equipment, insumos, settings)
+  const { technique, product, result } = engine
+
+  // Sync engine selection with cotizador tab
+  useEffect(() => {
+    if (resolvedTec && engine.selectedTechniqueId !== resolvedTec.id) {
+      engine.setSelectedTechniqueId(resolvedTec.id)
+    }
+  }, [resolvedSlug, resolvedTec?.id])
+
+  // Category margin
+  useEffect(() => {
+    if (product?.category_id && categories.length) {
+      const cat = categories.find(c => c.id === product.category_id)
+      if (cat) engine.setMargin(cat.margen_sugerido)
+    }
+  }, [product?.id, product?.category_id, categories])
+
+  // MO is now edited inline in the AuditTicket
+
+  // Paper dimensions for sheet nesting visual (subli)
+  const paperInsumo = engine.linkedInsumos.find(i => i.tipo === 'papel')
+  const paperCfg = paperInsumo ? (paperInsumo.config as Record<string, unknown>) : null
+  const sheetW = (paperCfg?.ancho as number) || 21
+  const sheetH = (paperCfg?.alto as number) || 29.7
+  const printerMargin = 0.5
+
+  // Roll dimensions for DTF nesting visual
+  const isDTF = resolvedSlug === 'dtf' || resolvedSlug === 'dtf_uv'
+  const isSubli = resolvedSlug === 'subli'
+  const dtfConfig = technique?.config as Record<string, unknown> | undefined
+  const isDTFTercerizado = isDTF && dtfConfig?.modo === 'tercerizado'
+  const dtfRollW = (() => {
+    if (!isDTF) return 60
+    const filmIns = engine.linkedInsumos.find(i => i.tipo === 'film')
+    const servicioIns = engine.linkedInsumos.find(i => i.tipo === 'servicio_impresion' || i.tipo === 'otro')
+    if (filmIns) return ((filmIns.config as Record<string, unknown>).ancho as number) || 60
+    if (servicioIns) return ((servicioIns.config as Record<string, unknown>).ancho_material as number) || 60
+    return 60
+  })()
+  const dtfGap = isDTF ? ((dtfConfig?.margen_seguridad as number) ?? 1) : 1
+  // Whether to show distribution in the left column
+  const showDistribution = isSubli || (isDTF && !isDTFTercerizado)
+
+  // Vinyl variants from linked insumos
+  const vinylInsumos = engine.linkedInsumos.filter(i => i.tipo === 'vinilo')
+  const vinylVariants = vinylInsumos.flatMap((ins, mi) => {
+    const c = ins.config as Record<string, unknown>
+    const colores = (c.colores as string[]) || []
+    return colores.map((color, ci) => ({
+      id: `${mi}-${ci}`, label: `${(c.acabado as string) || ins.nombre} - ${color}`,
+      precioMetro: (c.precio_metro as number) || 0, anchoRollo: (c.ancho as number) || 50,
+    }))
+  })
+
+  const [itemNotes, setItemNotes] = useState('')
+
+  function handleAddToCart() {
+    if (!result || !technique || !product || result.pedidoMinimoWarning) return
     addItem({
-      tecnica: 'subli',
-      nombre: subliProductName,
-      costoUnit: subli.result.costoTotal,
-      precioUnit: subli.result.precioConDesc,
-      precioSinDesc: subli.result.precioSugerido,
-      cantidad: subli.quantity,
-      subtotal: subli.result.subtotal,
-      ganancia: subli.result.ganancia,
+      tecnica: technique.slug, nombre: product.name,
+      costoUnit: result.costoTotal, precioUnit: result.precioConDesc,
+      precioSinDesc: result.precioSugerido, cantidad: engine.quantity,
+      subtotal: result.subtotal, ganancia: result.ganancia,
+      notas: itemNotes || undefined,
     })
+    setItemNotes('')
   }
 
-  function handleDTFAddToCart() {
-    if (!dtf.result) return
-    addItem({
-      tecnica: 'dtf',
-      nombre: dtfProductName,
-      costoUnit: dtf.result.costoTotal,
-      precioUnit: dtf.result.precioConDesc,
-      precioSinDesc: dtf.result.precioSugerido,
-      cantidad: dtf.quantity,
-      subtotal: dtf.result.subtotal,
-      ganancia: dtf.result.ganancia,
-    })
-  }
-
-  function handleVinylAddToCart() {
-    if (!vinyl.result) return
-    addItem({
-      tecnica: 'vinyl',
-      nombre: `${vinylProductName} Vinilo (${vinyl.numColors} col.)`,
-      costoUnit: vinyl.result.costoTotal,
-      precioUnit: vinyl.result.precioConDesc,
-      precioSinDesc: vinyl.result.precioSugerido,
-      cantidad: vinyl.quantity,
-      subtotal: vinyl.result.subtotal,
-      ganancia: vinyl.result.ganancia,
-    })
-  }
-
-  const activeColor = TABS.find(t => t.id === activeTab)?.color ?? '#6C5CE7'
+  const activeTabMeta = cotizadorTabs.find(t => t.id === cotizadorTab) ?? cotizadorTabs[0]
+  const activeColor = activeTabMeta?.color ?? '#6C5CE7'
+  const isVinyl = resolvedSlug === 'vinyl'
+  const isSerigrafia = resolvedSlug === 'serigrafia'
+  const needsDesignSize = !isVinyl && !isSerigrafia
+  const needsColors = isVinyl || isSerigrafia
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-6">
-      {/* Header */}
       <div className="flex items-start justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-black text-gray-900">Calculadora</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            Calculá el precio exacto de tu trabajo
-          </p>
-        </div>
-        <Link
-          href="/presupuesto"
-          className="relative flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm text-white transition-all"
-          style={{ backgroundColor: '#6C5CE7', boxShadow: '0 4px 14px rgba(108,92,231,0.35)' }}
-        >
-          <ShoppingCart size={16} />
-          Presupuesto
-          {items.length > 0 && (
-            <span
-              className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center text-xs font-black text-white"
-              style={{ backgroundColor: '#E84393' }}
-            >
-              {items.length}
-            </span>
-          )}
+        <div><h1 className="text-2xl font-black text-gray-900">Cotizador</h1><p className="text-sm text-gray-500 mt-0.5">Nueva cotización</p></div>
+        <Link href="/presupuesto" className="relative flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm text-white" style={{ backgroundColor: '#6C5CE7', boxShadow: '0 4px 14px rgba(108,92,231,0.35)' }}>
+          <ShoppingCart size={16} /> Presupuesto
+          {items.length > 0 && <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center text-xs font-black text-white" style={{ backgroundColor: '#E84393' }}>{items.length}</span>}
         </Link>
       </div>
 
-      {/* Technique Tabs */}
-      <div
-        className="flex rounded-full p-1 gap-1 mb-6 w-fit"
-        style={{ backgroundColor: '#F1F1F1' }}
-      >
-        {TABS.map(tab => {
-          const active = activeTab === tab.id
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveTab(tab.id)}
-              className="px-5 py-2 rounded-full text-sm font-semibold transition-all duration-200"
-              style={
-                active
-                  ? {
-                      backgroundColor: '#fff',
-                      color: tab.color,
-                      boxShadow: '0 1px 4px rgba(0,0,0,0.12)',
-                    }
-                  : { backgroundColor: 'transparent', color: '#888' }
-              }
-            >
-              {tab.label}
-            </button>
-          )
-        })}
+      {/* Main technique tabs: Sublimación | DTF | Vinilo | Serigrafía */}
+      <div className="flex rounded-full p-1 gap-1 mb-4 w-fit flex-wrap" style={{ backgroundColor: '#F1F1F1' }}>
+        {cotizadorTabs.map(tab => (
+          <button key={tab.id} type="button" onClick={() => setCotizadorTab(tab.id)}
+            className="px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-200"
+            style={cotizadorTab === tab.id
+              ? { backgroundColor: '#fff', color: tab.color, boxShadow: '0 1px 4px rgba(0,0,0,0.12)' }
+              : { backgroundColor: 'transparent', color: '#888' }}>
+            {tab.label}
+          </button>
+        ))}
       </div>
 
-      {loading ? (
-        <div className="flex items-center justify-center h-64">
-          <div
-            className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin"
-            style={{ borderColor: `${activeColor}40`, borderTopColor: activeColor }}
-          />
+      {/* DTF internal toggle: Textil / UV */}
+      {cotizadorTab === 'dtf_unified' && dtfTextil && dtfUv && (
+        <div className="flex gap-1 mb-4">
+          {([['dtf', 'DTF Textil', '#E17055'], ['dtf_uv', 'DTF UV', '#00B894']] as const).map(([slug, label, color]) => (
+            <button key={slug} onClick={() => setDtfVariant(slug)}
+              className="px-3 py-1 rounded-lg text-xs font-semibold transition-all"
+              style={dtfVariant === slug ? { background: color, color: '#fff' } : { background: '#F1F1F1', color: '#888' }}>
+              {label}
+            </button>
+          ))}
         </div>
+      )}
+
+      {loading ? (
+        <div className="flex items-center justify-center h-64"><div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: `${activeColor}40`, borderTopColor: activeColor }} /></div>
       ) : (
         <div className="flex flex-col lg:flex-row gap-6">
-          {/* Left: Form */}
-          <div className="card lg:w-[420px] flex-shrink-0 p-8 lg:p-10">
-            {activeTab === 'subli' && (
-              <div className="space-y-6">
-                {/* Cantidad */}
-                <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                    Cantidad
-                  </label>
-                  <input
-                    type="number"
-                    className="input-base"
-                    min={1}
-                    value={subli.quantity}
-                    onChange={e => subli.setQuantity(Number(e.target.value))}
-                  />
-                </div>
+          {/* LEFT */}
+          <div className="lg:w-[400px] flex-shrink-0 space-y-4">
+            <div className="card p-5 space-y-5">
+              <div><label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Producto</label>
+                <ProductPicker products={products} value={engine.productId} onChange={engine.setProductId} /></div>
 
-                {/* Producto */}
+              <div><label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Cantidad</label>
+                <input type="number" className="input-base" min={1} value={engine.quantity} onChange={e => engine.setQuantity(Number(e.target.value))} /></div>
+
+              {result?.pedidoMinimoWarning && (
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200">
+                  <AlertTriangle size={16} className="text-amber-500 flex-shrink-0" />
+                  <p className="text-xs font-medium text-amber-700">{result.pedidoMinimoWarning}</p>
+                </div>
+              )}
+
+              {needsDesignSize && (<>
+                {/* Zones selector */}
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                    Producto
-                  </label>
-                  <select
-                    className="input-base"
-                    value={subli.productId}
-                    onChange={e => subli.setProductId(e.target.value)}
-                  >
-                    <option value="">Seleccionar producto…</option>
-                    {products.map(p => (
-                      <option key={p.id} value={p.id}>
-                        {p.name}
-                      </option>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Zonas de estampado</label>
+                  <div className="flex gap-2">
+                    {[1, 2, 3, 4].map(n => (
+                      <button key={n} type="button" onClick={() => engine.setNumZones(n)}
+                        className="w-9 h-9 rounded-lg text-sm font-bold transition-all"
+                        style={engine.numZones === n ? { backgroundColor: activeColor, color: '#fff' } : { backgroundColor: '#F1F1F1', color: '#666' }}>{n}</button>
                     ))}
-                  </select>
-                </div>
-
-                {/* Plancha */}
-                <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                    Plancha
-                  </label>
-                  <select
-                    className="input-base"
-                    value={subli.pressId}
-                    onChange={e => subli.setPressId(e.target.value)}
-                  >
-                    <option value="">Seleccionar plancha…</option>
-                    {pressEquipment.map(e => (
-                      <option key={e.id} value={e.id}>
-                        {e.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Tamaño diseño */}
-                <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                    Tamaño diseño (cm)
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      className="input-base"
-                      min={0}
-                      placeholder="Ancho"
-                      value={subli.designWidth}
-                      onChange={e => subli.setDesignWidth(Number(e.target.value))}
-                    />
-                    <span className="text-gray-400 font-bold flex-shrink-0">×</span>
-                    <input
-                      type="number"
-                      className="input-base"
-                      min={0}
-                      placeholder="Alto"
-                      value={subli.designHeight}
-                      onChange={e => subli.setDesignHeight(Number(e.target.value))}
-                    />
-                  </div>
-                  <p className="text-xs text-gray-400 mt-1">para nesting en hoja A4</p>
-                </div>
-
-                {/* Margen y Merma */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                      Margen (%)
-                    </label>
-                    <input
-                      type="number"
-                      className="input-base"
-                      min={0}
-                      value={subli.margin}
-                      onChange={e => subli.setMargin(Number(e.target.value))}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                      Merma (%)
-                    </label>
-                    <input
-                      type="number"
-                      className="input-base"
-                      min={0}
-                      max={100}
-                      value={subli.merma}
-                      onChange={e => subli.setMerma(Number(e.target.value))}
-                    />
                   </div>
                 </div>
 
-                {/* Optional section toggle */}
-                <button
-                  type="button"
-                  onClick={() => setShowOptional(v => !v)}
-                  className="flex items-center gap-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wide hover:text-gray-600 transition-colors"
-                >
-                  {showOptional ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                  Costos opcionales
-                </button>
-
-                {showOptional && (
-                  <div className="space-y-4 border-t border-gray-100 pt-4">
-                    <div className="grid grid-cols-2 gap-3">
+                {/* Single zone — no label, just size fields */}
+                {engine.numZones === 1 && (<>
+                  <div><label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Tamaño diseño (cm)</label>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1"><p className="text-[10px] text-gray-400 mb-0.5">Ancho</p><input type="number" className="input-base" min={0} value={engine.designWidth} onChange={e => engine.setDesignWidth(Number(e.target.value))} /></div>
+                      <span className="text-gray-400 font-bold flex-shrink-0 mt-4">&times;</span>
+                      <div className="flex-1"><p className="text-[10px] text-gray-400 mb-0.5">Alto</p><input type="number" className="input-base" min={0} value={engine.designHeight} onChange={e => engine.setDesignHeight(Number(e.target.value))} /></div>
+                    </div></div>
+                  {showDistribution && engine.designWidth > 0 && engine.designHeight > 0 && (() => {
+                    if (isSubli) {
+                      const n = calcSheetNesting(engine.designWidth, engine.designHeight, sheetW, sheetH, printerMargin)
+                      const sheets = Math.ceil(engine.quantity / Math.max(n.count, 1))
+                      return (
+                        <div>
+                          <button type="button" onClick={() => setShowSheetNesting(prev => ({ ...prev, 0: !prev[0] }))}
+                            className="flex items-center gap-1 text-[10px] font-medium text-gray-400 hover:text-gray-600 transition-colors">
+                            <LayoutGrid size={10} /> {showSheetNesting[0] ? 'Ocultar distribución' : '+ Ver distribución'}
+                          </button>
+                          {showSheetNesting[0] && (
+                            <div className="mt-2 p-3 rounded-lg" style={{ background: `${activeColor}08`, border: `1px solid ${activeColor}12` }}>
+                              <SheetVisual sheetW={sheetW} sheetH={sheetH} designW={engine.designWidth} designH={engine.designHeight}
+                                cols={n.cols} rows={n.rows} rotated={n.rotated} perSheet={n.count}
+                                sheetsNeeded={sheets} quantity={engine.quantity} />
+                            </div>
+                          )}
+                        </div>
+                      )
+                    }
+                    // DTF propia — roll nesting
+                    const rn = calcRollNesting(engine.designWidth, engine.designHeight, dtfRollW, engine.quantity, dtfGap, dtfGap)
+                    const ml = rn.lengthCm / 100
+                    return (
                       <div>
-                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                          Mano de obra ($)
-                        </label>
-                        <input
-                          type="number"
-                          className="input-base"
-                          min={0}
-                          value={subli.mo}
-                          onChange={e => subli.setMo(Number(e.target.value))}
-                        />
+                        <button type="button" onClick={() => setShowSheetNesting(prev => ({ ...prev, 0: !prev[0] }))}
+                          className="flex items-center gap-1 text-[10px] font-medium text-gray-400 hover:text-gray-600 transition-colors">
+                          <LayoutGrid size={10} /> {showSheetNesting[0] ? 'Ocultar distribución' : '+ Ver distribución'}
+                        </button>
+                        {showSheetNesting[0] && (
+                          <div className="mt-2 p-3 rounded-lg" style={{ background: `${activeColor}08`, border: `1px solid ${activeColor}12` }}>
+                            <RollVisual rollWidth={dtfRollW} designW={engine.designWidth} designH={engine.designHeight}
+                              cols={rn.cols} rows={rn.rows} quantity={engine.quantity}
+                              rotated={rn.rotated} metrosLineales={ml} />
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })()}
+                </>)}
+
+                {/* Multiple zones */}
+                {engine.numZones > 1 && engine.zones.slice(0, engine.numZones).map((zone, zi) => {
+                  return (
+                    <div key={zi} className="rounded-xl p-3 border border-gray-100 bg-white shadow-sm space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Zona {zi + 1}</span>
+                        <select className="text-xs text-gray-500 bg-transparent border-none outline-none cursor-pointer" value={zone.ubicacion} onChange={e => engine.updateZone(zi, { ubicacion: e.target.value })}>
+                          <option value="">Ubicación...</option>
+                          <option value="Pecho">Pecho</option>
+                          <option value="Espalda">Espalda</option>
+                          <option value="Manga izq.">Manga izq.</option>
+                          <option value="Manga der.">Manga der.</option>
+                          <option value="Cuello / Nuca">Cuello / Nuca</option>
+                          <option value="Otro">Otro</option>
+                        </select>
                       </div>
                       <div>
-                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                          Electricidad ($)
-                        </label>
-                        <input
-                          type="number"
-                          className="input-base"
-                          min={0}
-                          value={subli.electricidad}
-                          onChange={e => subli.setElectricidad(Number(e.target.value))}
-                        />
+                        <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Tamaño diseño (cm)</label>
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1"><p className="text-[9px] text-gray-400 mb-0.5">Ancho</p><input type="number" className="input-base text-sm" min={0} value={zone.ancho} onChange={e => engine.updateZone(zi, { ancho: Number(e.target.value) })} /></div>
+                          <span className="text-gray-400 font-bold text-xs mt-3">&times;</span>
+                          <div className="flex-1"><p className="text-[9px] text-gray-400 mb-0.5">Alto</p><input type="number" className="input-base text-sm" min={0} value={zone.alto} onChange={e => engine.updateZone(zi, { alto: Number(e.target.value) })} /></div>
+                        </div>
                       </div>
+                      {showDistribution && zone.ancho > 0 && zone.alto > 0 && (() => {
+                        if (isSubli) {
+                          const zn = calcSheetNesting(zone.ancho, zone.alto, sheetW, sheetH, printerMargin)
+                          const zSheets = Math.ceil(engine.quantity / Math.max(zn.count, 1))
+                          return (
+                            <div>
+                              <button type="button" onClick={() => setShowSheetNesting(prev => ({ ...prev, [zi]: !prev[zi] }))}
+                                className="flex items-center gap-1 text-[10px] font-medium text-gray-400 hover:text-gray-600 transition-colors">
+                                <LayoutGrid size={10} /> {showSheetNesting[zi] ? 'Ocultar distribución' : '+ Ver distribución'}
+                              </button>
+                              {showSheetNesting[zi] && (
+                                <div className="mt-2 p-3 rounded-lg" style={{ background: `${activeColor}08`, border: `1px solid ${activeColor}12` }}>
+                                  <SheetVisual sheetW={sheetW} sheetH={sheetH} designW={zone.ancho} designH={zone.alto}
+                                    cols={zn.cols} rows={zn.rows} rotated={zn.rotated} perSheet={zn.count}
+                                    sheetsNeeded={zSheets} quantity={engine.quantity} />
+                                </div>
+                              )}
+                            </div>
+                          )
+                        }
+                        // DTF propia — roll nesting
+                        const rn = calcRollNesting(zone.ancho, zone.alto, dtfRollW, engine.quantity, dtfGap, dtfGap)
+                        const ml = rn.lengthCm / 100
+                        return (
+                          <div>
+                            <button type="button" onClick={() => setShowSheetNesting(prev => ({ ...prev, [zi]: !prev[zi] }))}
+                              className="flex items-center gap-1 text-[10px] font-medium text-gray-400 hover:text-gray-600 transition-colors">
+                              <LayoutGrid size={10} /> {showSheetNesting[zi] ? 'Ocultar distribución' : '+ Ver distribución'}
+                            </button>
+                            {showSheetNesting[zi] && (
+                              <div className="mt-2 p-3 rounded-lg" style={{ background: `${activeColor}08`, border: `1px solid ${activeColor}12` }}>
+                                <RollVisual rollWidth={dtfRollW} designW={zone.ancho} designH={zone.alto}
+                                  cols={rn.cols} rows={rn.rows} quantity={engine.quantity}
+                                  rotated={rn.rotated} metrosLineales={ml} />
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })()}
                     </div>
+                  )
+                })}
+              </>)}
+
+              {needsColors && (
+                <div><label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">{isSerigrafia ? 'Colores en el diseño' : 'Colores'}</label>
+                  <div className="flex gap-2">
+                    {[1, 2, 3, 4, 5, 6].map(n => (
+                      <button key={n} type="button" onClick={() => engine.setNumColors(n)}
+                        className="w-9 h-9 rounded-lg text-sm font-bold transition-all"
+                        style={engine.numColors === n ? { backgroundColor: activeColor, color: '#fff' } : { backgroundColor: '#F1F1F1', color: '#666' }}>{n}</button>
+                    ))}
+                  </div></div>
+              )}
+
+              {/* Vinyl per-color material + dimensions + per-color nesting */}
+              {isVinyl && Array.from({ length: engine.numColors }).map((_, i) => {
+                const sel = engine.vinylSelections[i] ?? { materialIdx: 0, colorIdx: 0, ancho: 10, alto: 10 }
+                const variantId = `${sel.materialIdx}-${sel.colorIdx}`
+                const vn = result?.vinylNesting?.[i]
+                const selectedV = vinylVariants.find(v => v.id === variantId)
+                const tooWide = selectedV && sel.ancho > selectedV.anchoRollo
+                return (
+                  <div key={i} className="rounded-xl p-3 border border-gray-100 bg-white shadow-sm space-y-2">
+                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Color {i + 1}</span>
+                    {vinylVariants.length > 0 ? (
+                      <VinylPicker variants={vinylVariants} value={variantId} onChange={id => {
+                        const [mi, ci] = id.split('-').map(Number)
+                        engine.updateVinylSelection(i, { materialIdx: mi, colorIdx: ci })
+                      }} />
+                    ) : (
+                      <p className="text-xs text-gray-400">Vinculá materiales de vinilo en Técnicas → Vinilo</p>
+                    )}
                     <div>
-                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                        Comisión plataforma (%)
-                      </label>
-                      <input
-                        type="number"
-                        className="input-base"
-                        min={0}
-                        max={100}
-                        value={subli.comision}
-                        onChange={e => subli.setComision(Number(e.target.value))}
-                      />
+                      <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Tamaño recorte (cm)</label>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1"><p className="text-[9px] text-gray-400 mb-0.5">Ancho</p><input type="number" className="input-base text-sm" min={0} value={sel.ancho} onChange={e => engine.updateVinylSelection(i, { ancho: Number(e.target.value) })} /></div>
+                        <span className="text-gray-400 font-bold text-xs mt-3">&times;</span>
+                        <div className="flex-1"><p className="text-[9px] text-gray-400 mb-0.5">Alto</p><input type="number" className="input-base text-sm" min={0} value={sel.alto} onChange={e => engine.updateVinylSelection(i, { alto: Number(e.target.value) })} /></div>
+                      </div>
                     </div>
+                    {tooWide && <p className="text-[10px] text-red-500 font-medium">⚠ El recorte ({sel.ancho}cm) es más ancho que el rollo ({selectedV.anchoRollo}cm)</p>}
+                    {vn && vn.cols > 0 && (
+                      <div>
+                        <button type="button" onClick={() => setShowVinylNesting(prev => ({ ...prev, [i]: !prev[i] }))}
+                          className="flex items-center gap-1 text-[10px] font-medium text-gray-400 hover:text-gray-600 transition-colors">
+                          <LayoutGrid size={10} /> {showVinylNesting[i] ? 'Ocultar distribución' : '+ Ver distribución'}
+                        </button>
+                        {showVinylNesting[i] && (
+                          <div className="mt-2 p-2 rounded-lg" style={{ background: '#E8439308', border: '1px solid #E8439312' }}>
+                            <RollVisual rollWidth={vn.anchoRollo} designW={sel.ancho} designH={sel.alto}
+                              cols={vn.cols} rows={vn.rows} quantity={engine.quantity}
+                              rotated={vn.rotated} metrosLineales={vn.metrosLineales} />
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
-                )}
+                )
+              })}
+
+              {/* Nesting now integrated in the AuditTicket desglose */}
+            </div>
+
+            {/* Notas */}
+            <div className="card p-5">
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Notas del ítem (opcional)</label>
+              <input type="text" className="input-base text-sm" value={itemNotes} onChange={e => setItemNotes(e.target.value)}
+                placeholder="Instrucciones de producción, detalles del diseño..." />
+            </div>
+
+            {/* Serigrafía upsell */}
+            {isSerigrafia && result && !result.pedidoMinimoWarning && result.costoSetupTotal && (
+              <div className="card p-4 bg-amber-50 border-amber-100">
+                <p className="text-xs text-amber-700">
+                  El costo de pantallas (${result.costoSetupTotal.toLocaleString('es-AR')}) se divide entre las unidades.
+                  Con {engine.quantity * 2} u. bajaría a ${Math.round(result.costoSetupTotal / (engine.quantity * 2)).toLocaleString('es-AR')}/u.
+                </p>
               </div>
             )}
 
-            {activeTab === 'dtf' && (
-              <DTFForm
-                products={products}
-                modo={dtf.modo}
-                setModo={dtf.setModo}
-                productId={dtf.productId}
-                setProductId={dtf.setProductId}
-                quantity={dtf.quantity}
-                setQuantity={dtf.setQuantity}
-                designWidth={dtf.designWidth}
-                setDesignWidth={dtf.setDesignWidth}
-                designHeight={dtf.designHeight}
-                setDesignHeight={dtf.setDesignHeight}
-                precioMetro={dtf.precioMetro}
-                setPrecioMetro={dtf.setPrecioMetro}
-                anchoRollo={dtf.anchoRollo}
-                setAnchoRollo={dtf.setAnchoRollo}
-                filmCosto={dtf.filmCosto}
-                setFilmCosto={dtf.setFilmCosto}
-                tintaCosto={dtf.tintaCosto}
-                setTintaCosto={dtf.setTintaCosto}
-                polvoCosto={dtf.polvoCosto}
-                setPolvoCosto={dtf.setPolvoCosto}
-                amortImpresora={dtf.amortImpresora}
-                setAmortImpresora={dtf.setAmortImpresora}
-                amortHorno={dtf.amortHorno}
-                setAmortHorno={dtf.setAmortHorno}
-                margin={dtf.margin}
-                setMargin={dtf.setMargin}
-                merma={dtf.merma}
-                setMerma={dtf.setMerma}
-                mo={dtf.mo}
-                setMo={dtf.setMo}
-                electricidad={dtf.electricidad}
-                setElectricidad={dtf.setElectricidad}
-              />
-            )}
-
-            {activeTab === 'vinyl' && (
-              <ViniloForm
-                products={products}
-                productId={vinyl.productId}
-                setProductId={vinyl.setProductId}
-                quantity={vinyl.quantity}
-                setQuantity={vinyl.setQuantity}
-                numColors={vinyl.numColors}
-                setNumColors={vinyl.setNumColors}
-                colors={vinyl.colors}
-                updateColor={vinyl.updateColor}
-                mo={vinyl.mo}
-                setMo={vinyl.setMo}
-                merma={vinyl.merma}
-                setMerma={vinyl.setMerma}
-                margin={vinyl.margin}
-                setMargin={vinyl.setMargin}
-                peelTime={vinyl.peelTime}
-                setPeelTime={vinyl.setPeelTime}
-              />
-            )}
+            {/* Agregar al Presupuesto */}
+            <button type="button" onClick={handleAddToCart} disabled={!result || !!result?.pedidoMinimoWarning}
+              className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-white text-sm transition-all disabled:opacity-40"
+              style={{ backgroundColor: activeColor, boxShadow: `0 4px 20px ${activeColor}40` }}>
+              <ShoppingCart size={16} /> Agregar al Presupuesto
+            </button>
           </div>
 
-          {/* Right: Price Ticket */}
-          <div className="flex-1">
-            {activeTab === 'subli' && (
-              <PriceTicketV2
-                technique="subli"
-                result={subli.result}
-                quantity={subli.quantity}
-                designWidth={subli.designWidth}
-                designHeight={subli.designHeight}
-                onAddToCart={handleSubliAddToCart}
-                addDisabled={!subli.result}
-              />
+          {/* RIGHT */}
+          <div className="flex-1 lg:sticky lg:top-8 lg:self-start space-y-3">
+            {result?.missingInsumosWarning && (
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200">
+                <AlertTriangle size={14} className="text-amber-500 flex-shrink-0" />
+                <p className="text-xs text-amber-700">{result.missingInsumosWarning}</p>
+              </div>
             )}
-            {activeTab === 'dtf' && (
-              <PriceTicketV2
-                technique="dtf"
-                result={dtf.result}
-                quantity={dtf.quantity}
-                onAddToCart={handleDTFAddToCart}
-                addDisabled={!dtf.result}
+            {!result?.pedidoMinimoWarning ? (
+              <AuditTicket
+                technique={resolvedSlug}
+                costLines={result?.costLines ?? []}
+                costoTotal={result?.costoTotal ?? 0}
+                margin={engine.margin}
+                precioSugerido={result?.precioSugerido ?? 0}
+                descPorcentaje={result?.descPorcentaje ?? 0}
+                precioConDesc={result?.precioConDesc ?? 0}
+                quantity={engine.quantity}
+                subtotal={result?.subtotal ?? 0}
+                ganancia={result?.ganancia ?? 0}
+                timeMinutes={result?.timeMinutes ?? 0}
+                profitPerHour={result?.profitPerHour ?? 0}
+                addDisabled={!result}
+                onMarginChange={engine.setMargin}
+                overrideMerma={engine.overrideMerma}
+                defaultMerma={engine.defaultMerma}
+                onMermaChange={engine.setOverrideMerma}
+                overrideAmortPrint={engine.overrideAmortPrint}
+                defaultAmortPrint={engine.defaultAmortPrint}
+                onAmortPrintChange={engine.setOverrideAmortPrint}
+                overrideAmortPress={engine.overrideAmortPress}
+                defaultAmortPress={engine.defaultAmortPress}
+                onAmortPressChange={engine.setOverrideAmortPress}
+                mo={engine.mo}
+                onMoChange={engine.setMo}
+                extraCosts={extraCosts}
+                onExtraCostsChange={setExtraCosts}
+                hasOverrides={engine.hasOverrides}
+                onResetOverrides={() => { engine.resetOverrides(); setExtraCosts([]) }}
+                onDiscountChange={engine.setOverrideDiscountPct}
               />
-            )}
-            {activeTab === 'vinyl' && (
-              <PriceTicketV2
-                technique="vinyl"
-                result={vinyl.result}
-                quantity={vinyl.quantity}
-                onAddToCart={handleVinylAddToCart}
-                addDisabled={!vinyl.result}
-              />
+            ) : (
+              <div className="rounded-2xl flex flex-col items-center justify-center min-h-[300px] gap-3 border-2 border-dashed border-amber-200 bg-amber-50">
+                <AlertTriangle size={28} className="text-amber-400" />
+                <p className="text-sm text-amber-600 font-medium text-center px-8">{result.pedidoMinimoWarning}</p>
+              </div>
             )}
           </div>
         </div>
