@@ -15,6 +15,7 @@ import { calcSheetNesting, calcRollNesting, calcMultiZoneSheets } from '@/featur
 import ProductPicker from '@/features/calculator/components/ProductPicker'
 import VinylPicker from '@/features/calculator/components/VinylPicker'
 import AuditTicket from '@/features/calculator/components/AuditTicket'
+import NumericInput from '@/shared/components/NumericInput'
 
 // Cotizador tabs: Sublimación, DTF (unified), Vinilo, Serigrafía
 type CotizadorTab = 'subli' | 'dtf_unified' | 'vinyl' | 'serigrafia'
@@ -218,7 +219,7 @@ export default function CotizadorPage() {
                 <ProductPicker products={products} value={engine.productId} onChange={engine.setProductId} /></div>
 
               <div><label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Cantidad</label>
-                <input type="number" className="input-base" min={1} value={engine.quantity} onFocus={e => e.target.select()} onChange={e => engine.setQuantity(Number(e.target.value))} /></div>
+                <NumericInput className="input-base" min={1} value={engine.quantity} onChange={engine.setQuantity} /></div>
 
               {result?.pedidoMinimoWarning && (
                 <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200">
@@ -244,9 +245,9 @@ export default function CotizadorPage() {
                 {engine.numZones === 1 && (<>
                   <div><label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Tamaño diseño (cm)</label>
                     <div className="flex items-center gap-2">
-                      <div className="flex-1"><p className="text-[10px] text-gray-400 mb-0.5">Ancho</p><input type="number" className="input-base" min={0} value={engine.designWidth} onFocus={e => e.target.select()} onChange={e => engine.setDesignWidth(Number(e.target.value))} /></div>
+                      <div className="flex-1"><p className="text-[10px] text-gray-400 mb-0.5">Ancho</p><NumericInput className="input-base" value={engine.designWidth} onChange={engine.setDesignWidth} /></div>
                       <span className="text-gray-400 font-bold flex-shrink-0 mt-4">&times;</span>
-                      <div className="flex-1"><p className="text-[10px] text-gray-400 mb-0.5">Alto</p><input type="number" className="input-base" min={0} value={engine.designHeight} onFocus={e => e.target.select()} onChange={e => engine.setDesignHeight(Number(e.target.value))} /></div>
+                      <div className="flex-1"><p className="text-[10px] text-gray-400 mb-0.5">Alto</p><NumericInput className="input-base" value={engine.designHeight} onChange={engine.setDesignHeight} /></div>
                     </div></div>
                   {showDistribution && engine.designWidth > 0 && engine.designHeight > 0 && (() => {
                     if (isSubli) {
@@ -316,9 +317,9 @@ export default function CotizadorPage() {
                         <div>
                           <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Tamaño diseño (cm)</label>
                           <div className="flex items-center gap-2">
-                            <div className="flex-1"><p className="text-[9px] text-gray-400 mb-0.5">Ancho</p><input type="number" className="input-base text-sm" min={0} value={zone.ancho} onFocus={e => e.target.select()} onChange={e => engine.updateZone(zi, { ancho: Number(e.target.value) })} /></div>
+                            <div className="flex-1"><p className="text-[9px] text-gray-400 mb-0.5">Ancho</p><NumericInput className="input-base text-sm" value={zone.ancho} onChange={v => engine.updateZone(zi, { ancho: v })} /></div>
                             <span className="text-gray-400 font-bold text-xs mt-3">&times;</span>
-                            <div className="flex-1"><p className="text-[9px] text-gray-400 mb-0.5">Alto</p><input type="number" className="input-base text-sm" min={0} value={zone.alto} onFocus={e => e.target.select()} onChange={e => engine.updateZone(zi, { alto: Number(e.target.value) })} /></div>
+                            <div className="flex-1"><p className="text-[9px] text-gray-400 mb-0.5">Alto</p><NumericInput className="input-base text-sm" value={zone.alto} onChange={v => engine.updateZone(zi, { alto: v })} /></div>
                           </div>
                         </div>
                         {showDistribution && zone.ancho > 0 && zone.alto > 0 && (() => {
@@ -397,9 +398,9 @@ export default function CotizadorPage() {
                     <div>
                       <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Tamaño recorte (cm)</label>
                       <div className="flex items-center gap-2">
-                        <div className="flex-1"><p className="text-[9px] text-gray-400 mb-0.5">Ancho</p><input type="number" className="input-base text-sm" min={0} value={sel.ancho} onFocus={e => e.target.select()} onChange={e => engine.updateVinylSelection(i, { ancho: Number(e.target.value) })} /></div>
+                        <div className="flex-1"><p className="text-[9px] text-gray-400 mb-0.5">Ancho</p><NumericInput className="input-base text-sm" value={sel.ancho} onChange={v => engine.updateVinylSelection(i, { ancho: v })} /></div>
                         <span className="text-gray-400 font-bold text-xs mt-3">&times;</span>
-                        <div className="flex-1"><p className="text-[9px] text-gray-400 mb-0.5">Alto</p><input type="number" className="input-base text-sm" min={0} value={sel.alto} onFocus={e => e.target.select()} onChange={e => engine.updateVinylSelection(i, { alto: Number(e.target.value) })} /></div>
+                        <div className="flex-1"><p className="text-[9px] text-gray-400 mb-0.5">Alto</p><NumericInput className="input-base text-sm" value={sel.alto} onChange={v => engine.updateVinylSelection(i, { alto: v })} /></div>
                       </div>
                     </div>
                     {tooWide && <p className="text-[10px] text-red-500 font-medium">⚠ El recorte ({sel.ancho}cm) es más ancho que el rollo ({selectedV.anchoRollo}cm)</p>}
