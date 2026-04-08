@@ -40,7 +40,7 @@ export default function ProduccionPage() {
   const [opModal, setOpModal] = useState<Partial<Operator> | null>(null)
 
   // Feature flag: labor cost management
-  const includeLabor = false
+  const includeLabor = true
 
   async function load() {
     const [{ data: t }, { data: wsData }, { data: ops }] = await Promise.all([
@@ -231,8 +231,8 @@ export default function ProduccionPage() {
                     <input type="number" className="input-base text-sm" min={1} value={(cfg as { pedido_minimo?: number }).pedido_minimo ?? 1}
                       onChange={e => updateConfig(tec.id, { pedido_minimo: parseInt(e.target.value) || 1 })} /></div>
                   {(cfg.tipo === 'dtf' || cfg.tipo === 'dtf_uv') && (
-                    <div><label className="block text-xs text-gray-500 mb-1">Modo por defecto</label>
-                      <select className="input-base text-sm" value={(cfg as DTFConfig).modo}
+                    <div className="col-span-2 lg:col-span-3"><label className="block text-xs text-gray-500 mb-1">Modo por defecto</label>
+                      <select className="input-base text-sm max-w-xs" value={(cfg as DTFConfig).modo}
                         onChange={e => updateConfig(tec.id, { modo: e.target.value as 'tercerizado' | 'propia' })}>
                         <option value="propia">Producción propia</option>
                         <option value="tercerizado">Tercerizado</option>

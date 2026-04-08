@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { type WorkshopSettings, type DiscountTier, DEFAULT_MO_CONFIG } from '@/features/presupuesto/types'
-import type { Tecnica, CostResult, Insumo } from '../types'
+import type { Tecnica, TecnicaConfig, CostResult, Insumo } from '../types'
 import { computeCost } from '../services/cost-engine'
 
 export interface VinylSelection {
@@ -42,6 +42,7 @@ export function useCostEngine(
   const [overridePrinterId, setOverridePrinterId] = useState<string | null>(null)
   const [overridePressId, setOverridePressId] = useState<string | null>(null)
   const [overridePapelId, setOverridePapelId] = useState<string | null>(null)
+  const [overrideDtfMode, setOverrideDtfMode] = useState<'propia' | 'tercerizado' | null>(null)
   const [overrideTintaId, setOverrideTintaId] = useState<string | null>(null)
   // Zones for subli/dtf
   const [numZones, setNumZones] = useState(1)
@@ -129,6 +130,10 @@ export function useCostEngine(
       ? [{ desde: 1, hasta: 999999, porcentaje: overrideDiscountPct / 100 }]
       : discountTiers
 
+    // Override DTF mode if user changed it in production config
+    const effectiveConfig = (overrideDtfMode && (technique.config.tipo === 'dtf' || technique.config.tipo === 'dtf_uv'))
+      ? { ...technique.config, modo: overrideDtfMode } as TecnicaConfig
+      : technique.config
     const isZonable = ['subli', 'dtf', 'dtf_uv'].includes(technique.slug)
     // Use overridden equipment if user changed in production config
     const effectiveEquipIds = overridePrinterId
@@ -138,7 +143,7 @@ export function useCostEngine(
       ? { ...product, press_equipment_id: overridePressId }
       : product
     return computeCost({
-      config: technique.config,
+      config: effectiveConfig,
       product: effectiveProduct,
       equipment,
       techniqueEquipmentIds: effectiveEquipIds,
@@ -151,7 +156,7 @@ export function useCostEngine(
       vinylSelections: technique.slug === 'vinyl' ? vinylSelections.slice(0, numColors) : undefined,
       overrideMerma, overrideAmortPrint, overrideAmortPress, overrideCostoPantalla,
     })
-  }, [technique, product, equipment, linkedInsumos, settings, quantity, designWidth, designHeight, numColors, numZones, zones, margin, mo, otrosGastos, vinylSelections, discountTiers, overrideMerma, overrideAmortPrint, overrideAmortPress, overrideCostoPantalla, overrideDiscountPct, overridePrinterId, overridePressId])
+  }, [technique, product, equipment, linkedInsumos, settings, quantity, designWidth, designHeight, numColors, numZones, zones, margin, mo, otrosGastos, vinylSelections, discountTiers, overrideMerma, overrideAmortPrint, overrideAmortPress, overrideCostoPantalla, overrideDiscountPct, overridePrinterId, overridePressId, overrideDtfMode])
 
   // Compute default values for overrides display
   const defaultMerma = useMemo(() => {
@@ -197,6 +202,7 @@ export function useCostEngine(
     overridePressId, setOverridePressId,
     overridePapelId, setOverridePapelId,
     overrideTintaId, setOverrideTintaId,
+    overrideDtfMode, setOverrideDtfMode,
     resetOverrides, hasOverrides,
   }
 }

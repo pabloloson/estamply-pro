@@ -210,7 +210,7 @@ function computeDTFZone(dw: number, dh: number, qty: number, config: DTFConfig |
   const nesting = calcRollNesting(dw, dh, rollW, qty, gap, gap)
   const metrosLineales = nesting.lengthCm / 100
 
-  let costoImpresion = 0
+  let costoImpresion = 0, costoFilm = 0, costoTintaDTF = 0, costoPolvo = 0, costoAmortPrint = 0
   if (config.modo === 'tercerizado') {
     const terc = servicioIns
     const tc2 = terc ? insCfg(terc) : null
@@ -221,13 +221,13 @@ function computeDTFZone(dw: number, dh: number, qty: number, config: DTFConfig |
     const film = findInsumo(insumos, 'film'), tinta = findInsumo(insumos, 'tinta'), polvo = findInsumo(insumos, 'polvo')
     const fc = insCfg(film), tc2 = insCfg(tinta), poc = insCfg(polvo)
     const filmArea = ((fc.ancho as number || 60) / 100) * ((fc.largo as number) || 100)
-    const filmCost = filmArea > 0 ? (consumedArea / filmArea) * ((fc.precio_rollo as number) || 0) : 0
-    const tintaCost = ((tc2.rendimiento as number) || 1) > 0 ? (consumedArea / (tc2.rendimiento as number || 1)) * ((tc2.precio as number) || 0) : 0
-    const polvoCost = ((poc.rendimiento_m2 as number) || 1) > 0 ? (consumedArea / (poc.rendimiento_m2 as number || 1)) * ((poc.precio_kg as number) || 0) : 0
-    const amortPrint = overrideAmortPrint ?? getAmort(equipment, techniqueEquipmentIds)
-    costoImpresion = (filmCost + tintaCost + polvoCost) / Math.max(qty, 1) + amortPrint
+    costoFilm = filmArea > 0 ? ((consumedArea / filmArea) * ((fc.precio_rollo as number) || 0)) / Math.max(qty, 1) : 0
+    costoTintaDTF = ((tc2.rendimiento as number) || 1) > 0 ? ((consumedArea / (tc2.rendimiento as number || 1)) * ((tc2.precio as number) || 0)) / Math.max(qty, 1) : 0
+    costoPolvo = ((poc.rendimiento_m2 as number) || 1) > 0 ? ((consumedArea / (poc.rendimiento_m2 as number || 1)) * ((poc.precio_kg as number) || 0)) / Math.max(qty, 1) : 0
+    costoAmortPrint = overrideAmortPrint ?? getAmort(equipment, techniqueEquipmentIds)
+    costoImpresion = costoFilm + costoTintaDTF + costoPolvo + costoAmortPrint
   }
-  return { costoImpresion, nesting, metrosLineales, rollW }
+  return { costoImpresion, costoFilm, costoTintaDTF, costoPolvo, costoAmortPrint, nesting, metrosLineales, rollW }
 }
 
 function computeDTF(input: ComputeInput, config: DTFConfig | DTFUVConfig): CostResult {
@@ -257,11 +257,20 @@ function computeDTF(input: ComputeInput, config: DTFConfig | DTFUVConfig): CostR
   const costoDesp = costoInsBase * (desperdicio / 100)
   const moAdjusted = mo * numZones
   const metrosStr = `${totalMetros.toFixed(2)}m`
-  const tecLabel = slug === 'dtf_uv' ? 'DTF UV' : 'DTF'
-  const insumoLabel = config.modo === 'tercerizado'
-    ? `Impresión tercerizada (${metrosStr}${isMultiZone ? `, ${numZones} zonas` : ''})`
-    : `Insumos ${tecLabel} (${metrosStr}${isMultiZone ? `, ${numZones} zonas` : ''})`
-  lines.push({ label: insumoLabel, value: totalImpresion })
+
+  if (config.modo === 'tercerizado') {
+    lines.push({ label: `Impresión tercerizada (${metrosStr}${isMultiZone ? `, ${numZones} zonas` : ''})`, value: totalImpresion })
+  } else {
+    // Separate component lines for propia
+    const tFilm = dtfZoneResults.reduce((s, z) => s + z.costoFilm, 0)
+    const tTinta = dtfZoneResults.reduce((s, z) => s + z.costoTintaDTF, 0)
+    const tPolvo = dtfZoneResults.reduce((s, z) => s + z.costoPolvo, 0)
+    const tAmortPrint = dtfZoneResults.reduce((s, z) => s + z.costoAmortPrint, 0)
+    if (tFilm > 0) lines.push({ label: `Film ${slug === 'dtf_uv' ? 'UV' : 'DTF'} (${metrosStr})`, value: tFilm })
+    if (tTinta > 0) lines.push({ label: 'Tinta', value: tTinta })
+    if (tPolvo > 0) lines.push({ label: 'Polvo adhesivo', value: tPolvo })
+    if (tAmortPrint > 0) lines.push({ label: `Amort. ${slug === 'dtf_uv' ? 'plotter UV' : 'plotter'}`, value: tAmortPrint })
+  }
   if (totalAmortPress > 0) lines.push({ label: `Amort. plancha${numZones > 1 ? ` (×${numZones})` : ''}`, value: totalAmortPress })
   if (costoDesp > 0) lines.push({ label: `Desperdicio (${desperdicio}%)`, value: costoDesp })
   if (moAdjusted > 0) lines.push({ label: 'Mano de obra', value: moAdjusted })

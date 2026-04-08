@@ -48,28 +48,48 @@ const noSpinnerCSS = `
   .no-spinner { -moz-appearance: textfield; }
 `
 
-function AddCostForm({ onConfirm, onCancel }: { onConfirm: (name: string, amount: number, modo: 'total' | 'unidad') => void; onCancel: () => void }) {
-  const nameRef = useRef<HTMLInputElement>(null)
-  const amountRef = useRef<HTMLInputElement>(null)
-  const [modo, setModo] = useState<'total' | 'unidad'>('total')
+function AddCostForm({ onConfirm, onCancel, suggestions = [] }: { onConfirm: (name: string, amount: number, modo: 'total' | 'unidad') => void; onCancel: () => void; suggestions?: Array<{ name: string; costPerUse: number }> }) {
+  const [name, setName] = useState('')
+  const [amount, setAmount] = useState('')
+  const [modo, setModo] = useState<'total' | 'unidad'>('unidad')
+  const [showSugg, setShowSugg] = useState(false)
+  const filtered = suggestions.filter(s => name.length > 0 && s.name.toLowerCase().includes(name.toLowerCase()))
   function tryConfirm() {
-    setTimeout(() => {
-      const name = nameRef.current?.value?.trim() || ''
-      const amount = parseFloat(amountRef.current?.value || '0')
-      if (name && amount > 0) onConfirm(name, amount, modo)
-    }, 10)
+    const n = name.trim(), a = parseFloat(amount) || 0
+    if (n && a > 0) onConfirm(n, a, modo)
+  }
+  function pickSuggestion(s: { name: string; costPerUse: number }) {
+    setName(s.name); setAmount(String(s.costPerUse)); setShowSugg(false)
   }
   return (
-    <div className="flex gap-1.5 items-center mt-2">
-      <input ref={nameRef} type="text" className="input-base text-xs py-1 flex-[2]" placeholder="Ej: Envío, Diseño..." autoFocus
-        onKeyUp={e => { if (e.key === 'Enter') tryConfirm() }} />
-      <input ref={amountRef} type="text" inputMode="decimal" className="input-base text-xs py-1 flex-1" placeholder="$"
-        onKeyUp={e => { if (e.key === 'Enter') tryConfirm() }} />
-      <button type="button" onClick={() => setModo(m => m === 'total' ? 'unidad' : 'total')}
-        className="text-[9px] font-bold px-1.5 py-1 rounded border border-gray-200 text-gray-500 hover:bg-gray-50 whitespace-nowrap">
-        {modo === 'total' ? 'total' : '/u'}
-      </button>
-      <button onClick={onCancel} className="text-xs text-gray-400 hover:text-gray-600">✕</button>
+    <div className="mt-2 space-y-1.5">
+      <div className="relative">
+        <div className="flex gap-1.5 items-center">
+          <input type="text" className="input-base text-xs py-1 flex-[2]" placeholder="Ej: Teflón, Envío, Diseño..." autoFocus
+            value={name} onChange={e => { setName(e.target.value); setShowSugg(true) }}
+            onKeyUp={e => { if (e.key === 'Enter') tryConfirm() }}
+            onFocus={() => setShowSugg(true)} />
+          <input type="text" inputMode="decimal" className="input-base text-xs py-1 flex-1" placeholder="$"
+            value={amount} onChange={e => setAmount(e.target.value)}
+            onKeyUp={e => { if (e.key === 'Enter') tryConfirm() }} />
+          <button type="button" onClick={() => setModo(m => m === 'total' ? 'unidad' : 'total')}
+            className="text-[9px] font-bold px-1.5 py-1 rounded border border-gray-200 text-gray-500 hover:bg-gray-50 whitespace-nowrap">
+            {modo === 'total' ? 'total' : '/u'}
+          </button>
+          <button onClick={onCancel} className="text-xs text-gray-400 hover:text-gray-600">✕</button>
+        </div>
+        {showSugg && filtered.length > 0 && (
+          <div className="absolute left-0 right-0 top-full mt-0.5 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-32 overflow-auto">
+            {filtered.map(s => (
+              <button key={s.name} type="button" onClick={() => pickSuggestion(s)}
+                className="w-full flex justify-between items-center px-3 py-1.5 text-xs hover:bg-purple-50 text-left">
+                <span className="text-gray-700">{s.name}</span>
+                <span className="text-gray-400">{fmt(s.costPerUse)}/uso</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
@@ -231,25 +251,17 @@ export default function AuditTicket(props: AuditTicketProps) {
               })}
             </div>
 
-            {/* Add cost: consumibles dropdown + custom form */}
+            {/* Add cost with autocomplete */}
             {onExtraCostsChange && (
               addingCost ? (
-                <AddCostForm onConfirm={(name, amount, modo) => { onExtraCostsChange([...extraCosts, { name, amount, modo }]); setAddingCost(false) }} onCancel={() => setAddingCost(false)} />
+                <AddCostForm
+                  suggestions={consumibles.filter(c => !extraCosts.some(ec => ec.name === c.name))}
+                  onConfirm={(name, amount, modo) => { onExtraCostsChange([...extraCosts, { name, amount, modo }]); setAddingCost(false) }}
+                  onCancel={() => setAddingCost(false)} />
               ) : (
-                <div className="mt-2 flex items-center gap-2">
-                  {consumibles.length > 0 && (
-                    <select className="text-[10px] text-gray-500 bg-transparent border border-gray-200 rounded px-1.5 py-0.5 cursor-pointer" value=""
-                      onChange={e => { if (e.target.value) { const c = consumibles.find(x => x.name === e.target.value); if (c) onExtraCostsChange([...extraCosts, { name: c.name, amount: c.costPerUse, modo: 'unidad' }]) } }}>
-                      <option value="">+ Consumible...</option>
-                      {consumibles.filter(c => !extraCosts.some(ec => ec.name === c.name)).map(c => (
-                        <option key={c.name} value={c.name}>{c.name} ({fmt(c.costPerUse)}/uso)</option>
-                      ))}
-                    </select>
-                  )}
-                  <button onClick={() => setAddingCost(true)} className="flex items-center gap-1 text-[10px] font-medium text-gray-400 hover:text-purple-600 transition-colors">
-                    <Plus size={10} /> {consumibles.length > 0 ? 'Otro costo' : 'Agregar costo'}
-                  </button>
-                </div>
+                <button onClick={() => setAddingCost(true)} className="mt-2 flex items-center gap-1 text-[10px] font-medium text-gray-400 hover:text-purple-600 transition-colors">
+                  <Plus size={10} /> Agregar costo
+                </button>
               )
             )}
 
