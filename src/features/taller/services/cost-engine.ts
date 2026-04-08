@@ -131,13 +131,16 @@ function computeSubli(input: ComputeInput, config: SubliConfig): CostResult {
   const isMultiZone = numZones > 1
 
   // Calculate per-zone nesting (for individual zone visuals)
-  let totalPapelTinta = 0
   const zoneResults: Array<ReturnType<typeof calcSubliZone>> = []
   effectiveZones.forEach(zone => {
     const z = calcSubliZone(zone.ancho, zone.alto, quantity, config, insumos)
     zoneResults.push(z)
-    totalPapelTinta += z.papelTinta
   })
+
+  // Separate papel and tinta totals
+  const totalPapel = zoneResults.reduce((s, z) => s + z.costoPapel, 0)
+  const totalTinta = zoneResults.reduce((s, z) => s + z.costoTinta, 0)
+  const totalPapelTinta = totalPapel + totalTinta
 
   // Detect if papel is roll or sheets
   const subliIsRollo = zoneResults.length > 0 && zoneResults[0].isRollo
@@ -151,17 +154,15 @@ function computeSubli(input: ComputeInput, config: SubliConfig): CostResult {
   const moAdjusted = mo * numZones
 
   const lines: { label: string; value: number }[] = [{ label: 'Producto base', value: costoProducto }]
+  // Papel line with consumption info
   let papelLabel: string
   if (subliIsRollo) {
-    papelLabel = isMultiZone
-      ? `Papel + tinta (${totalMetrosSubli.toFixed(2)}m, ${numZones} zonas)`
-      : `Papel + tinta (${totalMetrosSubli.toFixed(2)}m)`
+    papelLabel = isMultiZone ? `Papel (${totalMetrosSubli.toFixed(2)}m, ${numZones} zonas)` : `Papel (${totalMetrosSubli.toFixed(2)}m)`
   } else {
-    papelLabel = isMultiZone
-      ? `Papel + tinta (${totalHojas} hojas, ${numZones} zonas)`
-      : `Papel + tinta (${totalHojas} hojas)`
+    papelLabel = isMultiZone ? `Papel (${totalHojas} hojas, ${numZones} zonas)` : `Papel (${totalHojas} hojas)`
   }
-  lines.push({ label: papelLabel, value: totalPapelTinta })
+  lines.push({ label: papelLabel, value: totalPapel })
+  if (totalTinta > 0) lines.push({ label: 'Tinta', value: totalTinta })
   if (totalAmortPress > 0) lines.push({ label: `Amort. plancha${isMultiZone ? ` (×${numZones})` : ''}`, value: totalAmortPress })
   if (amortEquip > 0) lines.push({ label: 'Amort. impresora', value: amortEquip })
   if (costoDesp > 0) lines.push({ label: `Desperdicio (${desperdicio}%)`, value: costoDesp })

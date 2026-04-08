@@ -122,7 +122,10 @@ export default function CotizadorPage() {
   // MO is now edited inline in the AuditTicket
 
   // Production config: filtered equipment lists
-  const papelInsumos = engine.linkedInsumos.filter(i => i.tipo === 'papel' || i.tipo === 'film')
+  // Use ALL technique insumos for the dropdown (not linkedInsumos which may be filtered by overridePapelId)
+  const papelInsumos = technique
+    ? insumos.filter(ins => technique.insumo_ids.includes(ins.id) && (ins.tipo === 'papel' || ins.tipo === 'film'))
+    : []
   const printers = equipment.filter((e: Record<string, unknown>) => {
     const t = e.type as string || ''
     return t.startsWith('printer') || t === 'plotter'
