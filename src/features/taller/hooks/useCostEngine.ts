@@ -38,6 +38,9 @@ export function useCostEngine(
   const [overrideAmortPress, setOverrideAmortPress] = useState<number | null>(null)
   const [overrideCostoPantalla, setOverrideCostoPantalla] = useState<number | null>(null)
   const [overrideDiscountPct, setOverrideDiscountPct] = useState<number | null>(null)
+  // Production config overrides
+  const [overridePrinterId, setOverridePrinterId] = useState<string | null>(null)
+  const [overridePressId, setOverridePressId] = useState<string | null>(null)
   // Zones for subli/dtf
   const [numZones, setNumZones] = useState(1)
   const [zones, setZones] = useState<Array<{ ancho: number; alto: number; ubicacion: string }>>([
@@ -110,11 +113,18 @@ export function useCostEngine(
       : discountTiers
 
     const isZonable = ['subli', 'dtf', 'dtf_uv'].includes(technique.slug)
+    // Use overridden equipment if user changed in production config
+    const effectiveEquipIds = overridePrinterId
+      ? [...technique.equipment_ids.filter((id: string) => !equipment.some((e: { id: string; type: string }) => e.id === id && e.type.startsWith('printer'))), overridePrinterId]
+      : technique.equipment_ids
+    const effectiveProduct = overridePressId
+      ? { ...product, press_equipment_id: overridePressId }
+      : product
     return computeCost({
       config: technique.config,
-      product,
+      product: effectiveProduct,
       equipment,
-      techniqueEquipmentIds: technique.equipment_ids,
+      techniqueEquipmentIds: effectiveEquipIds,
       insumos: linkedInsumos,
       quantity, designWidth, designHeight, numColors,
       margin, mo, otrosGastos,
@@ -124,7 +134,7 @@ export function useCostEngine(
       vinylSelections: technique.slug === 'vinyl' ? vinylSelections.slice(0, numColors) : undefined,
       overrideMerma, overrideAmortPrint, overrideAmortPress, overrideCostoPantalla,
     })
-  }, [technique, product, equipment, linkedInsumos, settings, quantity, designWidth, designHeight, numColors, numZones, zones, margin, mo, otrosGastos, vinylSelections, discountTiers, overrideMerma, overrideAmortPrint, overrideAmortPress, overrideCostoPantalla, overrideDiscountPct])
+  }, [technique, product, equipment, linkedInsumos, settings, quantity, designWidth, designHeight, numColors, numZones, zones, margin, mo, otrosGastos, vinylSelections, discountTiers, overrideMerma, overrideAmortPrint, overrideAmortPress, overrideCostoPantalla, overrideDiscountPct, overridePrinterId, overridePressId])
 
   // Compute default values for overrides display
   const defaultMerma = useMemo(() => {
@@ -166,6 +176,8 @@ export function useCostEngine(
     overrideAmortPress, setOverrideAmortPress, defaultAmortPress,
     overrideCostoPantalla, setOverrideCostoPantalla,
     overrideDiscountPct, setOverrideDiscountPct,
+    overridePrinterId, setOverridePrinterId,
+    overridePressId, setOverridePressId,
     resetOverrides, hasOverrides,
   }
 }

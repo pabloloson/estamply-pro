@@ -16,6 +16,7 @@ import ProductPicker from '@/features/calculator/components/ProductPicker'
 import VinylPicker from '@/features/calculator/components/VinylPicker'
 import AuditTicket from '@/features/calculator/components/AuditTicket'
 import NumericInput from '@/shared/components/NumericInput'
+import ProductionConfig from '@/features/calculator/components/ProductionConfig'
 
 // Cotizador tabs: Sublimación, DTF (unified), Vinilo, Serigrafía
 type CotizadorTab = 'subli' | 'dtf_unified' | 'vinyl' | 'serigrafia'
@@ -37,6 +38,9 @@ export default function CotizadorPage() {
   const [showSheetNesting, setShowSheetNesting] = useState<Record<number, boolean>>({})
   const [cotizadorTab, setCotizadorTab] = useState<CotizadorTab>('subli')
   const [dtfVariant, setDtfVariant] = useState<'dtf' | 'dtf_uv'>('dtf') // internal DTF toggle
+  const [selectedPapelId, setSelectedPapelId] = useState('')
+  const [selectedPrinterId, setSelectedPrinterId] = useState('')
+  const [selectedPressId, setSelectedPressId] = useState('')
 
   const loadedRef = useRef(false)
   const loadData = async () => {
@@ -117,8 +121,46 @@ export default function CotizadorPage() {
 
   // MO is now edited inline in the AuditTicket
 
-  // Paper dimensions for subli nesting visual
-  const paperInsumo = engine.linkedInsumos.find(i => i.tipo === 'papel')
+  // Production config: filtered equipment lists
+  const papelInsumos = engine.linkedInsumos.filter(i => i.tipo === 'papel' || i.tipo === 'film')
+  const printers = equipment.filter((e: Record<string, unknown>) => {
+    const t = e.type as string || ''
+    return t.startsWith('printer') || t === 'plotter'
+  })
+  const presses = equipment.filter((e: Record<string, unknown>) => {
+    const t = e.type as string || ''
+    return t.startsWith('press')
+  })
+
+  // Auto-select defaults when technique or product changes
+  useEffect(() => {
+    if (papelInsumos.length && !selectedPapelId) setSelectedPapelId(papelInsumos[0].id)
+  }, [papelInsumos.length, selectedPapelId])
+
+  useEffect(() => {
+    if (product?.press_equipment_id) setSelectedPressId(product.press_equipment_id)
+    else if (presses.length) setSelectedPressId(presses[0].id)
+  }, [product?.id])
+
+  useEffect(() => {
+    if (technique?.equipment_ids?.length) {
+      const printerId = technique.equipment_ids.find((id: string) => printers.some((p: Record<string, unknown>) => p.id === id))
+      if (printerId) setSelectedPrinterId(printerId)
+    } else if (printers.length && !selectedPrinterId) {
+      setSelectedPrinterId(printers[0].id as string)
+    }
+  }, [technique?.id, printers.length])
+
+  // Sync production config selections to cost engine
+  useEffect(() => {
+    engine.setOverridePrinterId(selectedPrinterId || null)
+  }, [selectedPrinterId])
+  useEffect(() => {
+    engine.setOverridePressId(selectedPressId || null)
+  }, [selectedPressId])
+
+  // Get the actual selected papel insumo (for nesting visual)
+  const paperInsumo = papelInsumos.find(i => i.id === selectedPapelId) || engine.linkedInsumos.find(i => i.tipo === 'papel')
   const paperCfg = paperInsumo ? (paperInsumo.config as Record<string, unknown>) : null
   const subliIsRollo = paperCfg?.formato === 'rollo'
   const sheetW = (paperCfg?.ancho as number) || 21
@@ -434,6 +476,22 @@ export default function CotizadorPage() {
             </div>
 
             {product && (<>
+              {/* Production config */}
+              <div className="card p-5">
+                <ProductionConfig
+                  slug={resolvedSlug}
+                  papelInsumos={papelInsumos}
+                  printers={printers.map((p: Record<string, unknown>) => ({ id: p.id as string, name: p.name as string }))}
+                  presses={presses.map((p: Record<string, unknown>) => ({ id: p.id as string, name: p.name as string }))}
+                  selectedPapelId={selectedPapelId}
+                  selectedPrinterId={selectedPrinterId}
+                  selectedPressId={selectedPressId}
+                  onPapelChange={setSelectedPapelId}
+                  onPrinterChange={setSelectedPrinterId}
+                  onPressChange={setSelectedPressId}
+                />
+              </div>
+
               {/* Notas */}
               <div className="card p-5">
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Notas del ítem (opcional)</label>
