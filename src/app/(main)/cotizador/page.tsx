@@ -39,8 +39,10 @@ export default function CotizadorPage() {
   const [cotizadorTab, setCotizadorTab] = useState<CotizadorTab>('subli')
   const [dtfVariant, setDtfVariant] = useState<'dtf' | 'dtf_uv'>('dtf') // internal DTF toggle
   const [selectedPapelId, setSelectedPapelId] = useState('')
+  const [selectedTintaId, setSelectedTintaId] = useState('')
   const [selectedPrinterId, setSelectedPrinterId] = useState('')
   const [selectedPressId, setSelectedPressId] = useState('')
+  const [userOverrodePapel, setUserOverrodePapel] = useState(false) // track if user manually changed papel
 
   const loadedRef = useRef(false)
   const loadData = async () => {
@@ -122,9 +124,12 @@ export default function CotizadorPage() {
   // MO is now edited inline in the AuditTicket
 
   // Production config: filtered equipment lists
-  // Use ALL technique insumos for the dropdown (not linkedInsumos which may be filtered by overridePapelId)
+  // Production config: insumo and equipment lists for dropdowns
   const papelInsumos = technique
     ? insumos.filter(ins => technique.insumo_ids.includes(ins.id) && (ins.tipo === 'papel' || ins.tipo === 'film'))
+    : []
+  const tintaInsumos = technique
+    ? insumos.filter(ins => technique.insumo_ids.includes(ins.id) && ins.tipo === 'tinta')
     : []
   const printers = equipment.filter((e: Record<string, unknown>) => {
     const t = e.type as string || ''
@@ -135,35 +140,46 @@ export default function CotizadorPage() {
     return t.startsWith('press')
   })
 
-  // Auto-select defaults when technique or product changes
+  // Auto-select: Product → Printer + Press
   useEffect(() => {
-    if (papelInsumos.length && !selectedPapelId) setSelectedPapelId(papelInsumos[0].id)
-  }, [papelInsumos.length, selectedPapelId])
-
-  useEffect(() => {
-    if (product?.press_equipment_id) setSelectedPressId(product.press_equipment_id)
-    else if (presses.length) setSelectedPressId(presses[0].id)
+    if (!product) return
+    // Press from product
+    if (product.press_equipment_id) setSelectedPressId(product.press_equipment_id)
+    else if (presses.length) setSelectedPressId(presses[0].id as string)
+    // Printer from product
+    if (product.printer_equipment_id) setSelectedPrinterId(product.printer_equipment_id as string)
+    else if (printers.length) setSelectedPrinterId(printers[0].id as string)
+    setUserOverrodePapel(false) // reset on product change
   }, [product?.id])
 
+  // Auto-cascade: Printer → Paper + Ink
   useEffect(() => {
-    if (technique?.equipment_ids?.length) {
-      const printerId = technique.equipment_ids.find((id: string) => printers.some((p: Record<string, unknown>) => p.id === id))
-      if (printerId) setSelectedPrinterId(printerId)
-    } else if (printers.length && !selectedPrinterId) {
-      setSelectedPrinterId(printers[0].id as string)
+    if (!selectedPrinterId) return
+    const printer = equipment.find((e: Record<string, unknown>) => e.id === selectedPrinterId) as Record<string, unknown> | undefined
+    if (!printer) return
+    // Auto-set papel from printer (unless user manually overrode it)
+    if (!userOverrodePapel && printer.assigned_paper_id) {
+      setSelectedPapelId(printer.assigned_paper_id as string)
     }
-  }, [technique?.id, printers.length])
+    // Auto-set tinta from printer
+    if (printer.assigned_ink_id) {
+      setSelectedTintaId(printer.assigned_ink_id as string)
+    }
+  }, [selectedPrinterId])
+
+  // Fallbacks if no auto-selection happened
+  useEffect(() => {
+    if (!selectedPapelId && papelInsumos.length) setSelectedPapelId(papelInsumos[0].id)
+  }, [papelInsumos.length, selectedPapelId])
+  useEffect(() => {
+    if (!selectedTintaId && tintaInsumos.length) setSelectedTintaId(tintaInsumos[0].id)
+  }, [tintaInsumos.length, selectedTintaId])
 
   // Sync production config selections to cost engine
-  useEffect(() => {
-    engine.setOverridePapelId(selectedPapelId || null)
-  }, [selectedPapelId])
-  useEffect(() => {
-    engine.setOverridePrinterId(selectedPrinterId || null)
-  }, [selectedPrinterId])
-  useEffect(() => {
-    engine.setOverridePressId(selectedPressId || null)
-  }, [selectedPressId])
+  useEffect(() => { engine.setOverridePapelId(selectedPapelId || null) }, [selectedPapelId])
+  useEffect(() => { engine.setOverrideTintaId(selectedTintaId || null) }, [selectedTintaId])
+  useEffect(() => { engine.setOverridePrinterId(selectedPrinterId || null) }, [selectedPrinterId])
+  useEffect(() => { engine.setOverridePressId(selectedPressId || null) }, [selectedPressId])
 
   // Get the actual selected papel insumo (for nesting visual)
   const paperInsumo = papelInsumos.find(i => i.id === selectedPapelId) || engine.linkedInsumos.find(i => i.tipo === 'papel')
@@ -487,13 +503,16 @@ export default function CotizadorPage() {
                 <ProductionConfig
                   slug={resolvedSlug}
                   papelInsumos={papelInsumos}
+                  tintaInsumos={tintaInsumos}
                   printers={printers.map((p: Record<string, unknown>) => ({ id: p.id as string, name: p.name as string }))}
                   presses={presses.map((p: Record<string, unknown>) => ({ id: p.id as string, name: p.name as string }))}
                   selectedPapelId={selectedPapelId}
+                  selectedTintaId={selectedTintaId}
                   selectedPrinterId={selectedPrinterId}
                   selectedPressId={selectedPressId}
-                  onPapelChange={setSelectedPapelId}
-                  onPrinterChange={setSelectedPrinterId}
+                  onPapelChange={id => { setSelectedPapelId(id); setUserOverrodePapel(true) }}
+                  onTintaChange={setSelectedTintaId}
+                  onPrinterChange={id => { setSelectedPrinterId(id); setUserOverrodePapel(false) }}
                   onPressChange={setSelectedPressId}
                 />
               </div>

@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Plus, Pencil, Trash2, X } from 'lucide-react'
 
-interface Equipment { id: string; name: string; marca: string | null; type: string; clasificacion: string; cost: number; lifespan_uses: number; tecnicas_slugs: string[] }
+interface Equipment { id: string; name: string; marca: string | null; type: string; clasificacion: string; cost: number; lifespan_uses: number; tecnicas_slugs: string[]; assigned_paper_id: string | null; assigned_ink_id: string | null }
+interface InsumoRef { id: string; nombre: string; tipo: string; config: Record<string, unknown> }
 
 const CLASIF_LABELS: Record<string, string> = { impresora: 'Impresora', plotter: 'Plotter', plancha: 'Plancha', pulpo: 'Pulpo' }
 const CLASIF_COLORS: Record<string, string> = { impresora: '#E17055', plotter: '#00B894', plancha: '#6C5CE7', pulpo: '#FDCB6E' }
@@ -33,20 +34,26 @@ function fmt(n: number) { return `$${Math.round(n).toLocaleString('es-AR')}` }
 export default function EquipamientoPage() {
   const supabase = createClient()
   const [equipment, setEquipment] = useState<Equipment[]>([])
+  const [insumosAll, setInsumosAll] = useState<InsumoRef[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [modal, setModal] = useState<Partial<Equipment> | null>(null)
   const [filter, setFilter] = useState('')
 
   async function load() {
-    const { data } = await supabase.from('equipment').select('*').order('name')
-    setEquipment((data || []) as Equipment[]); setLoading(false)
+    const [{ data: eq }, { data: ins }] = await Promise.all([
+      supabase.from('equipment').select('*').order('name'),
+      supabase.from('insumos').select('*').order('nombre'),
+    ])
+    setEquipment((eq || []) as Equipment[])
+    setInsumosAll((ins || []) as InsumoRef[])
+    setLoading(false)
   }
   useEffect(() => { load() }, [])
 
   async function saveEquip() {
     if (!modal?.name) return; setSaving(true)
-    const payload = { name: modal.name, marca: modal.marca || null, type: modal.type || 'press_flat', clasificacion: modal.clasificacion || 'plancha', cost: modal.cost || 0, lifespan_uses: modal.lifespan_uses || 1000, tecnicas_slugs: modal.tecnicas_slugs || [] }
+    const payload = { name: modal.name, marca: modal.marca || null, type: modal.type || 'press_flat', clasificacion: modal.clasificacion || 'plancha', cost: modal.cost || 0, lifespan_uses: modal.lifespan_uses || 1000, tecnicas_slugs: modal.tecnicas_slugs || [], assigned_paper_id: modal.assigned_paper_id || null, assigned_ink_id: modal.assigned_ink_id || null }
     if (modal.id) await supabase.from('equipment').update(payload).eq('id', modal.id)
     else await supabase.from('equipment').insert(payload)
     setModal(null); setSaving(false); load()
@@ -184,6 +191,26 @@ export default function EquipamientoPage() {
                   <input type="number" className="input-base" value={modal.lifespan_uses || 10000} onChange={e => setModal({ ...modal, lifespan_uses: parseInt(e.target.value) || 1 })} />
                   <p className="text-[10px] text-gray-400 mt-0.5">Usos estimados antes de reemplazar</p></div>
               </div>
+
+              {(modal.clasificacion === 'impresora' || modal.clasificacion === 'plotter') && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div><label className="block text-sm font-medium text-gray-700 mb-1">Papel asignado</label>
+                    <select className="input-base" value={modal.assigned_paper_id || ''} onChange={e => setModal({ ...modal, assigned_paper_id: e.target.value || null })}>
+                      <option value="">Sin papel</option>
+                      {insumosAll.filter(i => i.tipo === 'papel' || i.tipo === 'film').map(i => {
+                        const fmt = (i.config as Record<string, unknown>)?.formato === 'rollo' ? 'Rollo' : 'Hojas'
+                        return <option key={i.id} value={i.id}>{i.nombre} — {fmt}</option>
+                      })}
+                    </select></div>
+                  <div><label className="block text-sm font-medium text-gray-700 mb-1">Tinta asignada</label>
+                    <select className="input-base" value={modal.assigned_ink_id || ''} onChange={e => setModal({ ...modal, assigned_ink_id: e.target.value || null })}>
+                      <option value="">Sin tinta</option>
+                      {insumosAll.filter(i => i.tipo === 'tinta').map(i => (
+                        <option key={i.id} value={i.id}>{i.nombre}</option>
+                      ))}
+                    </select></div>
+                </div>
+              )}
 
               {modalAmort > 0 && (
                 <div className="p-3 rounded-lg bg-green-50 border border-green-100 text-center">

@@ -7,26 +7,30 @@ import type { Insumo, TecnicaSlug } from '@/features/taller/types'
 interface ProductionConfigProps {
   slug: TecnicaSlug
   papelInsumos: Insumo[]
+  tintaInsumos: Insumo[]
   printers: Array<{ id: string; name: string }>
   presses: Array<{ id: string; name: string }>
   selectedPapelId: string
+  selectedTintaId: string
   selectedPrinterId: string
   selectedPressId: string
   onPapelChange: (id: string) => void
+  onTintaChange: (id: string) => void
   onPrinterChange: (id: string) => void
   onPressChange: (id: string) => void
 }
 
 export default function ProductionConfig({
-  slug, papelInsumos, printers, presses,
-  selectedPapelId, selectedPrinterId, selectedPressId,
-  onPapelChange, onPrinterChange, onPressChange,
+  slug, papelInsumos, tintaInsumos, printers, presses,
+  selectedPapelId, selectedTintaId, selectedPrinterId, selectedPressId,
+  onPapelChange, onTintaChange, onPrinterChange, onPressChange,
 }: ProductionConfigProps) {
   const [open, setOpen] = useState(false)
 
   const showPapel = ['subli', 'dtf', 'dtf_uv'].includes(slug)
+  const showTinta = ['subli', 'dtf', 'dtf_uv'].includes(slug)
   const showPrinter = ['subli', 'dtf', 'dtf_uv'].includes(slug)
-  const showPress = !['serigrafia'].includes(slug) // most techniques use a press
+  const showPress = !['serigrafia'].includes(slug)
 
   if (!showPapel && !showPrinter && !showPress) return null
 
@@ -39,8 +43,18 @@ export default function ProductionConfig({
         <span className="ml-auto text-[10px]">{open ? '▾' : '▸'}</span>
       </button>
 
-      <div className="overflow-hidden transition-all duration-200" style={{ maxHeight: open ? 300 : 0, opacity: open ? 1 : 0 }}>
+      <div className="overflow-hidden transition-all duration-200" style={{ maxHeight: open ? 400 : 0, opacity: open ? 1 : 0 }}>
         <div className="pt-3 space-y-3">
+          {showPrinter && printers.length > 0 && (
+            <div>
+              <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Impresora</label>
+              <select className="input-base text-sm" value={selectedPrinterId} onChange={e => onPrinterChange(e.target.value)}>
+                <option value="">Sin impresora</option>
+                {printers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            </div>
+          )}
+
           {showPapel && papelInsumos.length > 0 && (
             <div>
               <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Papel / Film</label>
@@ -54,12 +68,11 @@ export default function ProductionConfig({
             </div>
           )}
 
-          {showPrinter && printers.length > 0 && (
+          {showTinta && tintaInsumos.length > 0 && (
             <div>
-              <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Impresora</label>
-              <select className="input-base text-sm" value={selectedPrinterId} onChange={e => onPrinterChange(e.target.value)}>
-                <option value="">Sin impresora</option>
-                {printers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Tinta</label>
+              <select className="input-base text-sm" value={selectedTintaId} onChange={e => onTintaChange(e.target.value)}>
+                {tintaInsumos.map(ins => <option key={ins.id} value={ins.id}>{ins.nombre}</option>)}
               </select>
             </div>
           )}
