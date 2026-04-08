@@ -153,6 +153,9 @@ export default function CotizadorPage() {
 
   // Sync production config selections to cost engine
   useEffect(() => {
+    engine.setOverridePapelId(selectedPapelId || null)
+  }, [selectedPapelId])
+  useEffect(() => {
     engine.setOverridePrinterId(selectedPrinterId || null)
   }, [selectedPrinterId])
   useEffect(() => {

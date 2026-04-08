@@ -9,7 +9,7 @@ import CategoryModal from '@/features/taller/components/CategoryModal'
 interface Product {
   id: string; name: string; base_cost: number; category: string; category_id: string | null
   time_subli: number; time_dtf: number; time_vinyl: number
-  press_equipment_id: string | null; stock: number; stock_minimo: number; unidades_por_planchada: number
+  press_equipment_id: string | null; printer_equipment_id: string | null; stock: number; stock_minimo: number
 }
 interface Equipment { id: string; name: string; type: string }
 
@@ -33,7 +33,8 @@ export default function CatalogoPage() {
   }
   useEffect(() => { load() }, [])
 
-  const presses = equipment.filter(e => e.type === 'press_flat' || e.type === 'press_mug')
+  const presses = equipment.filter(e => e.type.startsWith('press'))
+  const printersList = equipment.filter(e => e.type.startsWith('printer') || e.type === 'plotter')
 
   async function saveProduct() {
     if (!modal?.name) return; setSaving(true)
@@ -42,7 +43,8 @@ export default function CatalogoPage() {
       category_id: modal.category_id || null,
       time_subli: modal.time_subli || 0, time_dtf: modal.time_dtf || 0, time_vinyl: modal.time_vinyl || 0,
       press_equipment_id: modal.press_equipment_id || null,
-      stock: modal.stock || 0, stock_minimo: modal.stock_minimo || 0, unidades_por_planchada: modal.unidades_por_planchada || 1,
+      printer_equipment_id: modal.printer_equipment_id || null,
+      stock: modal.stock || 0, stock_minimo: modal.stock_minimo || 0,
     }
     if (modal.id) await supabase.from('products').update(payload).eq('id', modal.id)
     else await supabase.from('products').insert(payload)
@@ -134,9 +136,11 @@ export default function CatalogoPage() {
                   <option value="">Sin plancha</option>
                   {presses.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
                 </select></div>
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">Unidades por planchada</label>
-                <input type="number" className="input-base" min={1} value={modal.unidades_por_planchada || 1} onChange={e => setModal({ ...modal, unidades_por_planchada: parseInt(e.target.value) || 1 })} />
-                <p className="text-[10px] text-gray-400 mt-0.5">Cuántas unidades se planchan a la vez</p></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Impresora asignada</label>
+                <select className="input-base" value={modal.printer_equipment_id || ''} onChange={e => setModal({ ...modal, printer_equipment_id: e.target.value || null })}>
+                  <option value="">Sin impresora</option>
+                  {printersList.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+                </select></div>
               <div className="grid grid-cols-2 gap-3">
                 <div><label className="block text-sm font-medium text-gray-700 mb-1">Stock actual</label>
                   <input type="number" className="input-base" value={modal.stock || 0} onChange={e => setModal({ ...modal, stock: parseInt(e.target.value) || 0 })} /></div>

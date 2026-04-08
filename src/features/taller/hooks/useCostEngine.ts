@@ -41,6 +41,7 @@ export function useCostEngine(
   // Production config overrides
   const [overridePrinterId, setOverridePrinterId] = useState<string | null>(null)
   const [overridePressId, setOverridePressId] = useState<string | null>(null)
+  const [overridePapelId, setOverridePapelId] = useState<string | null>(null)
   // Zones for subli/dtf
   const [numZones, setNumZones] = useState(1)
   const [zones, setZones] = useState<Array<{ ancho: number; alto: number; ubicacion: string }>>([
@@ -85,11 +86,20 @@ export function useCostEngine(
     setVinylSelections(prev => prev.map((s, j) => j === i ? { ...s, ...patch } : s))
   }
 
-  // Get insumos linked to current technique
+  // Get insumos linked to current technique, with optional papel override
   const linkedInsumos = useMemo(() => {
     if (!technique) return []
-    return insumos.filter(ins => technique.insumo_ids.includes(ins.id))
-  }, [technique, insumos])
+    let linked = insumos.filter(ins => technique.insumo_ids.includes(ins.id))
+    if (overridePapelId) {
+      const overridePapel = insumos.find(ins => ins.id === overridePapelId)
+      if (overridePapel) {
+        // Replace existing papel/film with the override
+        linked = linked.filter(ins => ins.tipo !== 'papel' && ins.tipo !== 'film')
+        linked.unshift(overridePapel)
+      }
+    }
+    return linked
+  }, [technique, insumos, overridePapelId])
 
   // Resolve discount tiers
   const discountTiers = useMemo((): DiscountTier[] => {
@@ -178,6 +188,7 @@ export function useCostEngine(
     overrideDiscountPct, setOverrideDiscountPct,
     overridePrinterId, setOverridePrinterId,
     overridePressId, setOverridePressId,
+    overridePapelId, setOverridePapelId,
     resetOverrides, hasOverrides,
   }
 }
