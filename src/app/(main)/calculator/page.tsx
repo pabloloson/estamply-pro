@@ -11,7 +11,7 @@ import { TECHNIQUE_DEFAULTS, ALL_TECNICA_SLUGS } from '@/features/taller/types'
 import { useCostEngine } from '@/features/taller/hooks/useCostEngine'
 import { RollVisual } from '@/features/calculator/components/RollVisual'
 import { SheetVisual } from '@/features/calculator/components/SheetVisual'
-import { calcSheetNesting, calcRollNesting, calcMultiZoneSheets } from '@/features/taller/services/cost-engine'
+import { calcSheetNesting, calcRollNesting } from '@/features/taller/services/cost-engine'
 import ProductPicker from '@/features/calculator/components/ProductPicker'
 import VinylPicker from '@/features/calculator/components/VinylPicker'
 import AuditTicket from '@/features/calculator/components/AuditTicket'
@@ -293,12 +293,6 @@ export default function CotizadorPage() {
                 {/* Multiple zones */}
                 {engine.numZones > 1 && (() => {
                   const activeZones = engine.zones.slice(0, engine.numZones)
-                  const validZones = activeZones.filter(z => z.ancho > 0 && z.alto > 0)
-                  const sharedResult = isSubli && validZones.length > 1
-                    ? calcMultiZoneSheets(validZones, engine.quantity, sheetW, sheetH, printerMargin)
-                    : 0
-                  // sharedResult > 0 = combined sheets, -1 = zones don't fit together, 0 = not applicable
-                  const sharedSheets = sharedResult > 0 ? sharedResult : 0
                   return activeZones.map((zone, zi) => {
                     return (
                       <div key={zi} className="rounded-xl p-3 border border-gray-100 bg-white shadow-sm space-y-2">
@@ -335,7 +329,7 @@ export default function CotizadorPage() {
                                   <div className="mt-2 p-3 rounded-lg" style={{ background: `${activeColor}08`, border: `1px solid ${activeColor}12` }}>
                                     <SheetVisual sheetW={sheetW} sheetH={sheetH} designW={zone.ancho} designH={zone.alto}
                                       cols={zn.cols} rows={zn.rows} rotated={zn.rotated} perSheet={zn.count}
-                                      sheetsNeeded={sharedSheets || Math.ceil(engine.quantity / Math.max(zn.count, 1))} quantity={engine.quantity} margin={printerMargin} />
+                                      sheetsNeeded={Math.ceil(engine.quantity / Math.max(zn.count, 1))} quantity={engine.quantity} margin={printerMargin} />
                                   </div>
                                 )}
                               </div>

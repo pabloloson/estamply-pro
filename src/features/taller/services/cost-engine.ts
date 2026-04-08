@@ -15,15 +15,6 @@ export function calcSheetNesting(dw: number, dh: number, sw: number, sh: number,
   return { count: Math.max(a, 1), rotated: false, cols: Math.floor(pw / dw), rows: Math.floor(ph / dh) }
 }
 
-/** Multi-zone shared sheet calculation.
- *  Uses min of per-zone nesting counts as the bottleneck for sets per sheet.
- *  Returns sheets needed (>0), or -1 if any zone doesn't fit at all. */
-export function calcMultiZoneSheets(zones: Array<{ ancho: number; alto: number }>, qty: number, sw: number, sh: number, margin = PRINTER_MARGIN): number {
-  const perZone = zones.map(z => calcSheetNesting(z.ancho, z.alto, sw, sh, margin))
-  const setsPorHoja = Math.min(...perZone.map(n => n.count))
-  if (setsPorHoja <= 0) return -1
-  return Math.ceil(qty / setsPorHoja)
-}
 
 export function calcRollNesting(dw: number, dh: number, rollW: number, qty: number, edgeM: number, gap: number) {
   const u = rollW - edgeM * 2
@@ -144,31 +135,8 @@ function computeSubli(input: ComputeInput, config: SubliConfig): CostResult {
     totalPapelTinta += z.papelTinta
   })
 
-  // Calculate total sheets: multi-zone tries to combine on same sheets, single-zone uses per-zone count
-  const papel = findInsumo(insumos, 'papel')
-  const pc = insCfg(papel)
-  const sW = (pc.ancho as number) || 21, sH = (pc.alto as number) || 29.7
-  let totalHojas: number
-  let zonesCombined = false
-  if (isMultiZone) {
-    const sharedResult = calcMultiZoneSheets(effectiveZones, quantity, sW, sH, config.margen_seguridad ?? PRINTER_MARGIN)
-    if (sharedResult > 0) {
-      // Zones fit together on same sheets
-      totalHojas = sharedResult
-      zonesCombined = true
-      // Recalculate paper cost based on shared sheets
-      if (papel) {
-        const costoPapelTotal = totalHojas * ((pc.precio_resma as number) || 0) / Math.max((pc.hojas_resma as number) || 1, 1)
-        const costoTintaTotal = zoneResults.reduce((s, z) => s + z.costoTinta, 0) * quantity
-        totalPapelTinta = (costoPapelTotal + costoTintaTotal) / quantity
-      }
-    } else {
-      // Zones too large to combine — independent sheets per zone
-      totalHojas = zoneResults.reduce((s, z) => s + z.sheetsNeeded, 0)
-    }
-  } else {
-    totalHojas = zoneResults[0]?.sheetsNeeded ?? 1
-  }
+  // Calculate total sheets: sum of per-zone sheets (each zone uses its own sheets)
+  const totalHojas = zoneResults.reduce((s, z) => s + z.sheetsNeeded, 0)
 
   // Resource-based desglose (NOT zone-based)
   const totalAmortPress = amortPress * numZones
@@ -178,7 +146,7 @@ function computeSubli(input: ComputeInput, config: SubliConfig): CostResult {
 
   const lines: { label: string; value: number }[] = [{ label: 'Producto base', value: costoProducto }]
   const papelLabel = isMultiZone
-    ? `Papel + tinta (${totalHojas} hojas, ${numZones} zonas${zonesCombined ? ' combinadas' : ''})`
+    ? `Papel + tinta (${totalHojas} hojas, ${numZones} zonas)`
     : `Papel + tinta (${totalHojas} hojas)`
   lines.push({ label: papelLabel, value: totalPapelTinta })
   if (totalAmortPress > 0) lines.push({ label: `Amort. plancha${isMultiZone ? ` (×${numZones})` : ''}`, value: totalAmortPress })
