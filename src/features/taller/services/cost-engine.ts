@@ -236,10 +236,15 @@ function computeDTF(input: ComputeInput, config: DTFConfig | DTFUVConfig): CostR
     totalAmortPress += amortPress
   })
 
+  const totalMetros = dtfZoneResults.reduce((s, z) => s + z.metrosLineales, 0)
   const costoInsBase = totalImpresion
   const costoDesp = costoInsBase * (desperdicio / 100)
   const moAdjusted = mo * numZones
-  const insumoLabel = config.modo === 'tercerizado' ? `Impresión tercerizada${numZones > 1 ? ` (${numZones} zonas)` : ''}` : `Insumos ${slug === 'dtf_uv' ? 'DTF UV' : 'DTF'}${numZones > 1 ? ` (${numZones} zonas)` : ''}`
+  const metrosStr = `${totalMetros.toFixed(2)}m`
+  const tecLabel = slug === 'dtf_uv' ? 'DTF UV' : 'DTF'
+  const insumoLabel = config.modo === 'tercerizado'
+    ? `Impresión tercerizada (${metrosStr}${isMultiZone ? `, ${numZones} zonas` : ''})`
+    : `Insumos ${tecLabel} (${metrosStr}${isMultiZone ? `, ${numZones} zonas` : ''})`
   lines.push({ label: insumoLabel, value: totalImpresion })
   if (totalAmortPress > 0) lines.push({ label: `Amort. plancha${numZones > 1 ? ` (×${numZones})` : ''}`, value: totalAmortPress })
   if (costoDesp > 0) lines.push({ label: `Desperdicio (${desperdicio}%)`, value: costoDesp })
@@ -288,7 +293,8 @@ function computeVinyl(input: ComputeInput, config: VinylConfig): CostResult {
   const amortPress = input.overrideAmortPress ?? getPressAmort(product, equipment, 'vinyl')
   const costoTotal = costoProducto + costoViniloRaw + costoDesp + amortPlotter + amortPress + mo + otrosGastos / Math.max(quantity, 1)
 
-  const lines = [{ label: 'Producto base', value: costoProducto }, { label: 'Vinilo', value: costoViniloRaw }]
+  const totalMetrosVinyl = vinylNesting.reduce((s, n) => s + n.metrosLineales, 0)
+  const lines = [{ label: 'Producto base', value: costoProducto }, { label: `Vinilo (${totalMetrosVinyl.toFixed(2)}m)`, value: costoViniloRaw }]
   if (costoDesp > 0) lines.push({ label: `Desperdicio pelado (${desperdicio}%)`, value: costoDesp })
   if (amortPlotter > 0) lines.push({ label: 'Amort. plotter', value: amortPlotter })
   if (amortPress > 0) lines.push({ label: 'Amort. plancha', value: amortPress })

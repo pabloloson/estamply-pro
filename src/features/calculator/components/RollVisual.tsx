@@ -14,19 +14,27 @@ interface RollVisualProps {
   metrosLineales: number
 }
 
+function fmtConsumo(cm: number) {
+  if (cm >= 100) return `${(cm / 100).toFixed(2)}m`
+  return `${Math.round(cm)} cm`
+}
+
 export function RollVisual({ rollWidth, designW, designH, cols, rows, quantity, rotated, metrosLineales }: RollVisualProps) {
   const cellDW = rotated ? designH : designW
   const cellDH = rotated ? designW : designH
 
-  // Total physical length (with margins and gaps)
-  const totalLengthCm = ROLL_MARGIN * 2 + rows * cellDH + Math.max(rows - 1, 0) * DESIGN_GAP
+  // Length consumed by designs (with margins and gaps)
+  const usedLengthCm = ROLL_MARGIN * 2 + rows * cellDH + Math.max(rows - 1, 0) * DESIGN_GAP
 
-  // SVG dimensions: fixed width, height grows proportionally
+  // Show at least 1 full meter, rounded up
+  const displayLengthCm = Math.max(Math.ceil(usedLengthCm / 100) * 100, 100)
+
+  // SVG dimensions: fixed width, height proportional to displayLength
   const SVG_W = 180
   const scaleX = SVG_W / rollWidth
-  const rawH = totalLengthCm * scaleX
-  const SVG_H = Math.max(Math.min(Math.round(rawH), 400), 60)
-  const scaleY = SVG_H / totalLengthCm
+  const rawH = displayLengthCm * scaleX
+  const SVG_H = Math.max(Math.min(Math.round(rawH), 500), 80)
+  const scaleY = SVG_H / displayLengthCm
 
   const marginX = ROLL_MARGIN * scaleX
   const marginY = ROLL_MARGIN * scaleY
@@ -36,7 +44,7 @@ export function RollVisual({ rollWidth, designW, designH, cols, rows, quantity, 
 
   // Meter markers
   const meterMarkers: { y: number; label: string }[] = []
-  for (let m = 1; m <= Math.floor(totalLengthCm / 100); m++) {
+  for (let m = 1; m <= Math.floor(displayLengthCm / 100); m++) {
     meterMarkers.push({ y: m * 100 * scaleY, label: `${m}m` })
   }
 
@@ -53,6 +61,7 @@ export function RollVisual({ rollWidth, designW, designH, cols, rows, quantity, 
   }
 
   const LABEL_COL = 32
+  const consumoCm = metrosLineales * 100
 
   return (
     <div className="flex flex-col items-center gap-2.5 w-full">
@@ -62,19 +71,9 @@ export function RollVisual({ rollWidth, designW, designH, cols, rows, quantity, 
         viewBox={`0 0 ${SVG_W + LABEL_COL + 6} ${SVG_H + 2}`}
         style={{ display: 'block' }}
       >
-        {/* Flat roll body */}
+        {/* Full roll body */}
         <rect x={1} y={1} width={SVG_W} height={SVG_H} rx={3}
           fill="#FFFBF9" stroke="#DFC4B6" strokeWidth={1} />
-
-        {/* Margin zone indicators */}
-        {/* Top margin */}
-        <rect x={1} y={1} width={SVG_W} height={marginY} fill="rgba(225,112,85,0.04)" rx={3} />
-        {/* Bottom margin */}
-        <rect x={1} y={1 + SVG_H - marginY} width={SVG_W} height={marginY} fill="rgba(225,112,85,0.04)" />
-        {/* Left margin */}
-        <rect x={1} y={1 + marginY} width={marginX} height={SVG_H - marginY * 2} fill="rgba(225,112,85,0.04)" />
-        {/* Right margin */}
-        <rect x={1 + SVG_W - marginX} y={1 + marginY} width={marginX} height={SVG_H - marginY * 2} fill="rgba(225,112,85,0.04)" />
 
         {/* Design cells */}
         {rects.map((r, i) => (
@@ -84,6 +83,7 @@ export function RollVisual({ rollWidth, designW, designH, cols, rows, quantity, 
             fill={r.active ? 'rgba(225,112,85,0.18)' : 'rgba(225,112,85,0.04)'}
             stroke={r.active ? '#E17055' : '#E1705525'}
             strokeWidth={r.active ? 1 : 0.5}
+            strokeDasharray={r.active ? 'none' : '3 3'}
             rx={2}
           />
         ))}
@@ -108,12 +108,11 @@ export function RollVisual({ rollWidth, designW, designH, cols, rows, quantity, 
 
       <div className="text-center leading-tight">
         <p className="text-sm font-bold text-gray-700">
-          Consumo estimado: <span style={{ color: '#E17055' }}>{metrosLineales.toFixed(2)} metros lineales</span>
+          Consumo: <span style={{ color: '#E17055' }}>{fmtConsumo(consumoCm)} de rollo (ancho {rollWidth} cm)</span>
         </p>
         <p className="text-[10px] text-gray-400 mt-0.5">
-          Rollo de {rollWidth} cm &middot; {cols} col &times; {rows} filas = {quantity} diseños
+          {quantity} diseños de {designW}&times;{designH} cm
           {rotated && ' (rotado 90°)'}
-          &middot; margen {ROLL_MARGIN} cm &middot; sep. {DESIGN_GAP} cm
         </p>
       </div>
     </div>
