@@ -583,6 +583,14 @@ export default function CotizadorPage() {
                 hasOverrides={engine.hasOverrides}
                 onResetOverrides={() => { engine.resetOverrides(); setExtraCosts([]) }}
                 onDiscountChange={engine.setOverrideDiscountPct}
+                consumibles={engine.linkedInsumos
+                  .filter(ins => !['papel', 'tinta', 'film', 'vinilo', 'tinta_serigrafica', 'servicio_impresion', 'emulsion'].includes(ins.tipo))
+                  .map(ins => {
+                    const c = ins.config as Record<string, unknown>
+                    const price = (c.precio as number) || (c.precio_kg as number) || 0
+                    const rend = (c.rendimiento as number) || 1
+                    return { name: ins.nombre, costPerUse: Math.round(price / rend) }
+                  })}
               />
             ) : (
               <div className="rounded-2xl flex flex-col items-center justify-center min-h-[300px] gap-3 border-2 border-dashed border-amber-200 bg-amber-50">

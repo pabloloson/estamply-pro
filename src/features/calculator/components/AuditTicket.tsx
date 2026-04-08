@@ -29,6 +29,7 @@ interface AuditTicketProps {
   extraCosts?: ExtraCost[]; onExtraCostsChange?: (costs: ExtraCost[]) => void
   hasOverrides?: boolean; onResetOverrides?: () => void
   onDiscountChange?: (pct: number) => void
+  consumibles?: Array<{ name: string; costPerUse: number }>
 }
 
 const COLORS: Record<string, string> = { subli: '#6C5CE7', dtf: '#E17055', dtf_uv: '#00B894', vinyl: '#E84393', serigrafia: '#FDCB6E' }
@@ -82,6 +83,7 @@ export default function AuditTicket(props: AuditTicketProps) {
     overrideAmortPress, onAmortPressChange,
     mo, onMoChange, extraCosts = [], onExtraCostsChange,
     hasOverrides, onResetOverrides, onDiscountChange,
+    consumibles = [],
   } = props
 
   const color = COLORS[technique] || '#6C5CE7'
@@ -229,14 +231,25 @@ export default function AuditTicket(props: AuditTicketProps) {
               })}
             </div>
 
-            {/* Add cost — BUG 1 fix: use ref to read final value */}
+            {/* Add cost: consumibles dropdown + custom form */}
             {onExtraCostsChange && (
               addingCost ? (
                 <AddCostForm onConfirm={(name, amount, modo) => { onExtraCostsChange([...extraCosts, { name, amount, modo }]); setAddingCost(false) }} onCancel={() => setAddingCost(false)} />
               ) : (
-                <button onClick={() => setAddingCost(true)} className="mt-2 flex items-center gap-1 text-[10px] font-medium text-gray-400 hover:text-purple-600 transition-colors">
-                  <Plus size={10} /> Agregar costo
-                </button>
+                <div className="mt-2 flex items-center gap-2">
+                  {consumibles.length > 0 && (
+                    <select className="text-[10px] text-gray-500 bg-transparent border border-gray-200 rounded px-1.5 py-0.5 cursor-pointer" value=""
+                      onChange={e => { if (e.target.value) { const c = consumibles.find(x => x.name === e.target.value); if (c) onExtraCostsChange([...extraCosts, { name: c.name, amount: c.costPerUse, modo: 'unidad' }]) } }}>
+                      <option value="">+ Consumible...</option>
+                      {consumibles.filter(c => !extraCosts.some(ec => ec.name === c.name)).map(c => (
+                        <option key={c.name} value={c.name}>{c.name} ({fmt(c.costPerUse)}/uso)</option>
+                      ))}
+                    </select>
+                  )}
+                  <button onClick={() => setAddingCost(true)} className="flex items-center gap-1 text-[10px] font-medium text-gray-400 hover:text-purple-600 transition-colors">
+                    <Plus size={10} /> {consumibles.length > 0 ? 'Otro costo' : 'Agregar costo'}
+                  </button>
+                </div>
               )
             )}
 

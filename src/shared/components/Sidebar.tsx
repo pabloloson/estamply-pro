@@ -88,7 +88,7 @@ export function Sidebar({ workshopName = 'Mi Taller' }: SidebarProps) {
         <NavLink href="/catalogo" icon={Package} label="Productos" />
         <NavLink href="/insumos" icon={Droplets} label="Insumos" />
         <NavLink href="/equipamiento" icon={Cpu} label="Equipamiento" />
-        <NavLink href="/tecnicas" icon={Palette} label="Técnicas" />
+        <NavLink href="/tecnicas" icon={Palette} label="Producción" />
       </div>
 
       {/* ── Spacer ── */}
