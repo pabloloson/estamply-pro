@@ -6,8 +6,19 @@ import { Save, Plus, Trash2, Settings, Lock } from 'lucide-react'
 import { DEFAULT_SETTINGS, type WorkshopSettings, type DiscountTier } from '@/features/presupuesto/types'
 import { TECHNIQUE_DEFAULTS, TECNICA_LABELS, ALL_TECNICA_SLUGS, type Tecnica, type TecnicaConfig, type TecnicaSlug, type DTFConfig, type SerigrafiaConfig } from '@/features/taller/types'
 
-interface Operator { id: string; name: string; hourly_rate: number; techniques: string[] }
+interface Operator {
+  id: string; name: string; hourly_rate: number; techniques: string[]
+  calculation_mode: 'salary' | 'percentage' | 'fixed'
+  monthly_salary: number; monthly_hours: number
+  percentage: number; percentage_base: 'cost' | 'profit'
+  fixed_amount: number
+}
 function fmt(n: number) { return `$${Math.round(n).toLocaleString('es-AR')}` }
+function opSummary(op: Operator): string {
+  if (op.calculation_mode === 'salary') return `${fmt(op.hourly_rate)}/h (sueldo)`
+  if (op.calculation_mode === 'percentage') return `${op.percentage}% sobre ${op.percentage_base === 'cost' ? 'costo' : 'ganancia'}`
+  return `${fmt(op.fixed_amount)}/unidad`
+}
 
 const TEC_LABELS: Record<string, string> = { subli: 'Subli', dtf: 'DTF', dtf_uv: 'DTF UV', vinyl: 'Vinilo', serigrafia: 'Serigrafía' }
 const TEC_COLORS: Record<string, string> = { subli: '#6C5CE7', dtf: '#E17055', dtf_uv: '#00B894', vinyl: '#E84393', serigrafia: '#FDCB6E' }
@@ -90,7 +101,17 @@ export default function ProduccionPage() {
 
   async function saveOperator() {
     if (!opModal?.name) return
-    const payload = { name: opModal.name, hourly_rate: opModal.hourly_rate || 0, techniques: opModal.techniques || [] }
+    const mode = opModal.calculation_mode || 'salary'
+    const mSalary = opModal.monthly_salary || 0
+    const mHours = opModal.monthly_hours || 160
+    const rate = mode === 'salary' && mHours > 0 ? Math.round(mSalary / mHours) : (opModal.hourly_rate || 0)
+    const payload = {
+      name: opModal.name, techniques: opModal.techniques || [],
+      calculation_mode: mode, hourly_rate: rate,
+      monthly_salary: mSalary, monthly_hours: mHours,
+      percentage: opModal.percentage || 0, percentage_base: opModal.percentage_base || 'cost',
+      fixed_amount: opModal.fixed_amount || 0,
+    }
     if (opModal.id) await supabase.from('operators').update(payload).eq('id', opModal.id)
     else await supabase.from('operators').insert(payload)
     setOpModal(null); load()
@@ -169,7 +190,7 @@ export default function ProduccionPage() {
                     <div key={op.id} className="flex items-center justify-between p-3 hover:bg-gray-50">
                       <div>
                         <p className="text-sm font-medium text-gray-800">{op.name}</p>
-                        <p className="text-xs text-gray-400">{fmt(op.hourly_rate)}/h &middot; {op.techniques.map(s => TEC_LABELS[s] || s).join(' · ')}</p>
+                        <p className="text-xs text-gray-400">{opSummary(op)} &middot; {op.techniques.map(s => TEC_LABELS[s] || s).join(' · ')}</p>
                       </div>
                       <div className="flex gap-1">
                         <button onClick={() => setOpModal(op)} className="p-1.5 rounded hover:bg-gray-100 text-gray-400">✎</button>
@@ -179,7 +200,7 @@ export default function ProduccionPage() {
                   ))}
                 </div>
               )}
-              <button onClick={() => setOpModal({ hourly_rate: 0, techniques: [] })}
+              <button onClick={() => setOpModal({ hourly_rate: 0, techniques: [], calculation_mode: 'salary', monthly_salary: 0, monthly_hours: 160, percentage: 0, percentage_base: 'cost', fixed_amount: 0 })}
                 className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700">
                 <Plus size={14} /> Agregar operario
               </button>
@@ -291,8 +312,6 @@ export default function ProduccionPage() {
             <h3 className="font-bold text-gray-900">{opModal.id ? 'Editar' : 'Nuevo'} operario</h3>
             <div><label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
               <input className="input-base" value={opModal.name || ''} onChange={e => setOpModal({ ...opModal, name: e.target.value })} /></div>
-            <div><label className="block text-sm font-medium text-gray-700 mb-1">Costo por hora ($) *</label>
-              <input type="number" className="input-base" min={0} value={opModal.hourly_rate || 0} onChange={e => setOpModal({ ...opModal, hourly_rate: parseFloat(e.target.value) || 0 })} /></div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Técnicas *</label>
               <div className="flex gap-3 flex-wrap">
@@ -309,6 +328,48 @@ export default function ProduccionPage() {
                 })}
               </div>
             </div>
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">Modo de cálculo *</label>
+              <select className="input-base" value={opModal.calculation_mode || 'salary'} onChange={e => setOpModal({ ...opModal, calculation_mode: e.target.value as Operator['calculation_mode'] })}>
+                <option value="salary">Sueldo fijo</option>
+                <option value="percentage">Porcentaje</option>
+                <option value="fixed">Monto fijo por unidad</option>
+              </select></div>
+
+            {(opModal.calculation_mode || 'salary') === 'salary' && (
+              <div className="space-y-3 p-3 rounded-xl bg-gray-50">
+                <div className="grid grid-cols-2 gap-3">
+                  <div><label className="block text-xs font-medium text-gray-600 mb-1">Costo mensual ($)</label>
+                    <input type="number" className="input-base" min={0} value={opModal.monthly_salary || 0} onChange={e => setOpModal({ ...opModal, monthly_salary: parseFloat(e.target.value) || 0 })} /></div>
+                  <div><label className="block text-xs font-medium text-gray-600 mb-1">Horas/mes</label>
+                    <input type="number" className="input-base" min={1} value={opModal.monthly_hours || 160} onChange={e => setOpModal({ ...opModal, monthly_hours: parseFloat(e.target.value) || 160 })} /></div>
+                </div>
+                {(opModal.monthly_hours || 160) > 0 && (opModal.monthly_salary || 0) > 0 && (
+                  <p className="text-sm font-medium text-green-600">Costo por hora: {fmt(Math.round((opModal.monthly_salary || 0) / (opModal.monthly_hours || 160)))}/h</p>
+                )}
+              </div>
+            )}
+
+            {(opModal.calculation_mode) === 'percentage' && (
+              <div className="space-y-3 p-3 rounded-xl bg-gray-50">
+                <div className="grid grid-cols-2 gap-3">
+                  <div><label className="block text-xs font-medium text-gray-600 mb-1">Porcentaje (%)</label>
+                    <input type="number" className="input-base" min={0} max={100} value={opModal.percentage || 0} onChange={e => setOpModal({ ...opModal, percentage: parseFloat(e.target.value) || 0 })} /></div>
+                  <div><label className="block text-xs font-medium text-gray-600 mb-1">Aplicar sobre</label>
+                    <select className="input-base" value={opModal.percentage_base || 'cost'} onChange={e => setOpModal({ ...opModal, percentage_base: e.target.value as 'cost' | 'profit' })}>
+                      <option value="cost">Costo total</option>
+                      <option value="profit">Ganancia</option>
+                    </select></div>
+                </div>
+              </div>
+            )}
+
+            {(opModal.calculation_mode) === 'fixed' && (
+              <div className="p-3 rounded-xl bg-gray-50">
+                <label className="block text-xs font-medium text-gray-600 mb-1">Monto por unidad ($)</label>
+                <input type="number" className="input-base" min={0} value={opModal.fixed_amount || 0} onChange={e => setOpModal({ ...opModal, fixed_amount: parseFloat(e.target.value) || 0 })} />
+              </div>
+            )}
+
             <div className="flex gap-3 mt-4">
               <button onClick={() => setOpModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">Cancelar</button>
               <button onClick={saveOperator} disabled={!opModal.name?.trim()} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#6C5CE7' }}>Guardar</button>
