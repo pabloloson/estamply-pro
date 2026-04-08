@@ -5,6 +5,11 @@ const nextConfig: NextConfig = {
   experimental: {
     mcpServer: true,
   },
+  async redirects() {
+    return [
+      { source: '/calculator', destination: '/cotizador', permanent: true },
+    ]
+  },
 }
 
 export default nextConfig

@@ -178,7 +178,7 @@ export default function PresupuestoPage() {
       <div className="max-w-6xl mx-auto px-4 py-6">
         <div className="flex items-center justify-between mb-6 no-print">
           <div className="flex items-center gap-2">
-            <Link href="/calculator" className="text-gray-400 hover:text-gray-600"><ArrowLeft size={18} /></Link>
+            <Link href="/cotizador" className="text-gray-400 hover:text-gray-600"><ArrowLeft size={18} /></Link>
             <h1 className="text-2xl font-black text-gray-900">Presupuesto</h1>
             <span className="text-sm text-gray-400">{items.length === 0 ? 'Sin ítems' : `${items.length} ${items.length === 1 ? 'ítem' : 'ítems'}`}</span>
           </div>
@@ -188,7 +188,7 @@ export default function PresupuestoPage() {
           <div className="card flex flex-col items-center justify-center py-16 gap-4">
             <div className="w-16 h-16 rounded-full flex items-center justify-center bg-gray-100"><ShoppingCart size={28} className="text-gray-400" /></div>
             <p className="text-gray-500 text-sm text-center max-w-xs">Tu presupuesto está vacío. Agregá ítems desde el Cotizador.</p>
-            <Link href="/calculator" className="btn-primary text-sm px-5 py-2 rounded-xl font-semibold">Ir al Cotizador</Link>
+            <Link href="/cotizador" className="btn-primary text-sm px-5 py-2 rounded-xl font-semibold">Ir al Cotizador</Link>
           </div>
         ) : (
           <div className="flex flex-col lg:flex-row gap-6">

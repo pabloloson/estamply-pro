@@ -218,7 +218,13 @@ export default function CotizadorPage() {
               <div><label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Producto</label>
                 <ProductPicker products={products} value={engine.productId} onChange={engine.setProductId} /></div>
 
-              <div><label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Cantidad</label>
+              {!product && (
+                <div className="flex flex-col items-center justify-center py-8 gap-2 text-center">
+                  <p className="text-sm text-gray-400">Seleccioná un producto para comenzar</p>
+                </div>
+              )}
+
+              {product && (<><div><label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Cantidad</label>
                 <NumericInput className="input-base" min={1} value={engine.quantity} onChange={engine.setQuantity} /></div>
 
               {result?.pedidoMinimoWarning && (
@@ -418,31 +424,34 @@ export default function CotizadorPage() {
               })}
 
               {/* Nesting now integrated in the AuditTicket desglose */}
+            </>)}
             </div>
 
-            {/* Notas */}
-            <div className="card p-5">
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Notas del ítem (opcional)</label>
-              <input type="text" className="input-base text-sm" value={itemNotes} onChange={e => setItemNotes(e.target.value)}
-                placeholder="Instrucciones de producción, detalles del diseño..." />
-            </div>
-
-            {/* Serigrafía upsell */}
-            {isSerigrafia && result && !result.pedidoMinimoWarning && result.costoSetupTotal && (
-              <div className="card p-4 bg-amber-50 border-amber-100">
-                <p className="text-xs text-amber-700">
-                  El costo de pantallas (${result.costoSetupTotal.toLocaleString('es-AR')}) se divide entre las unidades.
-                  Con {engine.quantity * 2} u. bajaría a ${Math.round(result.costoSetupTotal / (engine.quantity * 2)).toLocaleString('es-AR')}/u.
-                </p>
+            {product && (<>
+              {/* Notas */}
+              <div className="card p-5">
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Notas del ítem (opcional)</label>
+                <input type="text" className="input-base text-sm" value={itemNotes} onChange={e => setItemNotes(e.target.value)}
+                  placeholder="Instrucciones de producción, detalles del diseño..." />
               </div>
-            )}
 
-            {/* Agregar al Presupuesto */}
-            <button type="button" onClick={handleAddToCart} disabled={!result || !!result?.pedidoMinimoWarning}
-              className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-white text-sm transition-all disabled:opacity-40"
-              style={{ backgroundColor: activeColor, boxShadow: `0 4px 20px ${activeColor}40` }}>
-              <ShoppingCart size={16} /> Agregar al Presupuesto
-            </button>
+              {/* Serigrafía upsell */}
+              {isSerigrafia && result && !result.pedidoMinimoWarning && result.costoSetupTotal && (
+                <div className="card p-4 bg-amber-50 border-amber-100">
+                  <p className="text-xs text-amber-700">
+                    El costo de pantallas (${result.costoSetupTotal.toLocaleString('es-AR')}) se divide entre las unidades.
+                    Con {engine.quantity * 2} u. bajaría a ${Math.round(result.costoSetupTotal / (engine.quantity * 2)).toLocaleString('es-AR')}/u.
+                  </p>
+                </div>
+              )}
+
+              {/* Agregar al Presupuesto */}
+              <button type="button" onClick={handleAddToCart} disabled={!result || !!result?.pedidoMinimoWarning}
+                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-white text-sm transition-all disabled:opacity-40"
+                style={{ backgroundColor: activeColor, boxShadow: `0 4px 20px ${activeColor}40` }}>
+                <ShoppingCart size={16} /> Agregar al Presupuesto
+              </button>
+            </>)}
           </div>
 
           {/* RIGHT */}

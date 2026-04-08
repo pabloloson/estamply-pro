@@ -194,7 +194,7 @@ export default function DashboardClient({ userName, tallerName, orders, payments
 
         {/* Quick actions (~40%) */}
         <div className="lg:col-span-2 space-y-3">
-          <Link href="/calculator" className="card p-4 flex items-center gap-3 hover:shadow-md transition-shadow group">
+          <Link href="/cotizador" className="card p-4 flex items-center gap-3 hover:shadow-md transition-shadow group">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(108,92,231,0.1)' }}><Calculator size={18} style={{ color: '#6C5CE7' }} /></div>
             <span className="font-semibold text-gray-800 group-hover:text-purple-700">Nueva cotización</span>
           </Link>

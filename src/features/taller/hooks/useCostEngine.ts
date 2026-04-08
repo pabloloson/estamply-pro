@@ -54,7 +54,7 @@ export function useCostEngine(
     }
   }, [tecnicas, selectedTechniqueId])
 
-  useEffect(() => { if (products.length && !productId) setProductId(products[0].id) }, [products, productId])
+  // Product starts empty — user must select one
 
   const product = useMemo(() => products.find((p: any) => p.id === productId), [products, productId])
   const technique = useMemo(() => tecnicas.find(t => t.id === selectedTechniqueId), [tecnicas, selectedTechniqueId])

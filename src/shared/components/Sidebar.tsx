@@ -73,7 +73,7 @@ export function Sidebar({ workshopName = 'Mi Taller' }: SidebarProps) {
       {/* ── Sección 1: Uso diario ── */}
       <nav className="px-3 pt-4 space-y-0.5">
         <NavLink href="/" icon={LayoutDashboard} label="Inicio" />
-        <NavLink href="/calculator" icon={Calculator} label="Cotizador" />
+        <NavLink href="/cotizador" icon={Calculator} label="Cotizador" />
         <NavLink href="/presupuesto" icon={FileText} label="Presupuestos" badge={items.length} />
         <NavLink href="/orders" icon={ShoppingBag} label="Pedidos" />
         <NavLink href="/clients" icon={Users} label="Clientes" />
