@@ -12,6 +12,7 @@ interface RollVisualProps {
   quantity: number
   rotated: boolean
   metrosLineales: number
+  color?: string
 }
 
 function fmtConsumo(cm: number) {
@@ -19,7 +20,7 @@ function fmtConsumo(cm: number) {
   return `${Math.round(cm)} cm`
 }
 
-export function RollVisual({ rollWidth, designW, designH, cols, rows, quantity, rotated, metrosLineales }: RollVisualProps) {
+export function RollVisual({ rollWidth, designW, designH, cols, rows, quantity, rotated, metrosLineales, color = '#E17055' }: RollVisualProps) {
   const cellDW = rotated ? designH : designW
   const cellDH = rotated ? designW : designH
 
@@ -80,8 +81,8 @@ export function RollVisual({ rollWidth, designW, designH, cols, rows, quantity, 
           <rect key={i}
             x={1 + r.x} y={1 + r.y}
             width={Math.max(cellW, 3)} height={Math.max(cellH, 3)}
-            fill={r.active ? 'rgba(225,112,85,0.18)' : 'rgba(225,112,85,0.04)'}
-            stroke={r.active ? '#E17055' : '#E1705525'}
+            fill={r.active ? `${color}2E` : `${color}0A`}
+            stroke={r.active ? color : `${color}25`}
             strokeWidth={r.active ? 1 : 0.5}
             strokeDasharray={r.active ? 'none' : '3 3'}
             rx={2}
@@ -92,11 +93,11 @@ export function RollVisual({ rollWidth, designW, designH, cols, rows, quantity, 
         {meterMarkers.map((m, i) => (
           <g key={i}>
             <line x1={1} y1={1 + m.y} x2={1 + SVG_W} y2={1 + m.y}
-              stroke="#E17055" strokeWidth={0.7} strokeDasharray="4 3" opacity={0.3} />
+              stroke={color} strokeWidth={0.7} strokeDasharray="4 3" opacity={0.3} />
             <rect x={SVG_W + 5} y={1 + m.y - 7} width={LABEL_COL} height={14} rx={3}
-              fill="#E17055" opacity={0.08} />
+              fill={color} opacity={0.08} />
             <text x={SVG_W + 5 + LABEL_COL / 2} y={1 + m.y + 3.5}
-              textAnchor="middle" fontSize={8} fontWeight={700} fill="#E17055" opacity={0.6}>
+              textAnchor="middle" fontSize={8} fontWeight={700} fill={color} opacity={0.6}>
               {m.label}
             </text>
           </g>
@@ -108,7 +109,7 @@ export function RollVisual({ rollWidth, designW, designH, cols, rows, quantity, 
 
       <div className="text-center leading-tight">
         <p className="text-sm font-bold text-gray-700">
-          Consumo: <span style={{ color: '#E17055' }}>{fmtConsumo(consumoCm)} de rollo (ancho {rollWidth} cm)</span>
+          Consumo: <span style={{ color }}>{fmtConsumo(consumoCm)} de rollo (ancho {rollWidth} cm)</span>
         </p>
         <p className="text-[10px] text-gray-400 mt-0.5">
           {quantity} diseños de {designW}&times;{designH} cm

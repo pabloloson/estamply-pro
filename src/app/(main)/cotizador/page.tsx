@@ -292,7 +292,7 @@ export default function CotizadorPage() {
                           <div className="mt-2 p-3 rounded-lg" style={{ background: `${activeColor}08`, border: `1px solid ${activeColor}12` }}>
                             <RollVisual rollWidth={rw} designW={engine.designWidth} designH={engine.designHeight}
                               cols={rn.cols} rows={rn.rows} quantity={engine.quantity}
-                              rotated={rn.rotated} metrosLineales={ml} />
+                              rotated={rn.rotated} metrosLineales={ml} color={activeColor} />
                           </div>
                         )}
                       </div>
@@ -360,7 +360,7 @@ export default function CotizadorPage() {
                                 <div className="mt-2 p-3 rounded-lg" style={{ background: `${activeColor}08`, border: `1px solid ${activeColor}12` }}>
                                   <RollVisual rollWidth={rw} designW={zone.ancho} designH={zone.alto}
                                     cols={rn.cols} rows={rn.rows} quantity={engine.quantity}
-                                    rotated={rn.rotated} metrosLineales={ml} />
+                                    rotated={rn.rotated} metrosLineales={ml} color={activeColor} />
                                 </div>
                               )}
                             </div>
@@ -420,7 +420,7 @@ export default function CotizadorPage() {
                           <div className="mt-2 p-2 rounded-lg" style={{ background: '#E8439308', border: '1px solid #E8439312' }}>
                             <RollVisual rollWidth={vn.anchoRollo} designW={sel.ancho} designH={sel.alto}
                               cols={vn.cols} rows={vn.rows} quantity={engine.quantity}
-                              rotated={vn.rotated} metrosLineales={vn.metrosLineales} />
+                              rotated={vn.rotated} metrosLineales={vn.metrosLineales} color={activeColor} />
                           </div>
                         )}
                       </div>
