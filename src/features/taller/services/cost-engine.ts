@@ -88,15 +88,19 @@ function calcSubliZone(dw: number, dh: number, qty: number, config: SubliConfig,
   const papel = findInsumo(insumos, 'papel'), tinta = findInsumo(insumos, 'tinta')
   const pc = insCfg(papel), tc = insCfg(tinta)
   let costoPapel = 0, perSheet = 1, sheetsNeeded = 1, sheetRotated = false, sheetCols = 1, sheetRows = 1
+  let isRollo = false, rollW = 0, rollCols = 0, rollRows = 0, rollRotated = false, metrosLineales = 0
 
   if (papel) {
     if (pc.formato === 'rollo') {
-      const rW = (pc.rollo_ancho as number) || 61, rLcm = ((pc.rollo_largo as number) || 100) * 100
+      isRollo = true
+      rollW = (pc.rollo_ancho as number) || 61
+      const gap = config.margen_seguridad ?? PRINTER_MARGIN
+      const rn = calcRollNesting(dw, dh, rollW, qty, gap, gap)
+      metrosLineales = rn.lengthCm / 100
+      rollCols = rn.cols; rollRows = rn.rows; rollRotated = rn.rotated
+      const rLcm = ((pc.rollo_largo as number) || 100) * 100
       const costPerCm = ((pc.precio_rollo as number) || 0) / Math.max(rLcm, 1)
-      const cA = Math.floor(rW / dw), cB = Math.floor(rW / dh)
-      const a = cA > 0 ? (costPerCm * dh) / cA : Infinity, b = cB > 0 ? (costPerCm * dw) / cB : Infinity
-      if (a <= b && cA > 0) { costoPapel = a; sheetCols = cA; perSheet = cA }
-      else if (cB > 0) { costoPapel = b; sheetCols = cB; sheetRotated = true; perSheet = cB }
+      costoPapel = (rn.lengthCm * costPerCm) / qty
     } else {
       const sW = (pc.ancho as number) || 21, sH = (pc.alto as number) || 29.7
       const n = calcSheetNesting(dw, dh, sW, sH, config.margen_seguridad ?? PRINTER_MARGIN)
@@ -110,7 +114,7 @@ function calcSubliZone(dw: number, dh: number, qty: number, config: SubliConfig,
     const refArea = ((pc.ancho as number) || 21) * ((pc.alto as number) || 29.7)
     costoTinta = (dw * dh / (Math.max((tc.rendimiento as number) || 1, 1) * refArea)) * ((tc.precio as number) || 0)
   }
-  return { papelTinta: costoPapel + costoTinta, costoPapel, costoTinta, perSheet, sheetsNeeded, sheetRotated, sheetCols, sheetRows }
+  return { papelTinta: costoPapel + costoTinta, costoPapel, costoTinta, perSheet, sheetsNeeded, sheetRotated, sheetCols, sheetRows, isRollo, rollW, rollCols, rollRows, rollRotated, metrosLineales }
 }
 
 // ── Sublimación ──
@@ -135,8 +139,10 @@ function computeSubli(input: ComputeInput, config: SubliConfig): CostResult {
     totalPapelTinta += z.papelTinta
   })
 
-  // Calculate total sheets: sum of per-zone sheets (each zone uses its own sheets)
+  // Detect if papel is roll or sheets
+  const subliIsRollo = zoneResults.length > 0 && zoneResults[0].isRollo
   const totalHojas = zoneResults.reduce((s, z) => s + z.sheetsNeeded, 0)
+  const totalMetrosSubli = zoneResults.reduce((s, z) => s + z.metrosLineales, 0)
 
   // Resource-based desglose (NOT zone-based)
   const totalAmortPress = amortPress * numZones
@@ -145,9 +151,16 @@ function computeSubli(input: ComputeInput, config: SubliConfig): CostResult {
   const moAdjusted = mo * numZones
 
   const lines: { label: string; value: number }[] = [{ label: 'Producto base', value: costoProducto }]
-  const papelLabel = isMultiZone
-    ? `Papel + tinta (${totalHojas} hojas, ${numZones} zonas)`
-    : `Papel + tinta (${totalHojas} hojas)`
+  let papelLabel: string
+  if (subliIsRollo) {
+    papelLabel = isMultiZone
+      ? `Papel + tinta (${totalMetrosSubli.toFixed(2)}m, ${numZones} zonas)`
+      : `Papel + tinta (${totalMetrosSubli.toFixed(2)}m)`
+  } else {
+    papelLabel = isMultiZone
+      ? `Papel + tinta (${totalHojas} hojas, ${numZones} zonas)`
+      : `Papel + tinta (${totalHojas} hojas)`
+  }
   lines.push({ label: papelLabel, value: totalPapelTinta })
   if (totalAmortPress > 0) lines.push({ label: `Amort. plancha${isMultiZone ? ` (×${numZones})` : ''}`, value: totalAmortPress })
   if (amortEquip > 0) lines.push({ label: 'Amort. impresora', value: amortEquip })
@@ -161,7 +174,9 @@ function computeSubli(input: ComputeInput, config: SubliConfig): CostResult {
   const fn = zoneResults.length > 0 ? zoneResults[0] : undefined
   let nesting: CostResult['nesting'] = undefined
   if (fn) {
-    nesting = { type: 'sheet', cols: fn.sheetCols, rows: fn.sheetRows, rotated: fn.sheetRotated, perSheet: fn.perSheet, sheetsNeeded: totalHojas, quantity }
+    nesting = subliIsRollo
+      ? { type: 'roll', cols: fn.rollCols, rows: fn.rollRows, rotated: fn.rollRotated, metrosLineales: fn.metrosLineales, anchoRollo: fn.rollW, quantity }
+      : { type: 'sheet', cols: fn.sheetCols, rows: fn.sheetRows, rotated: fn.sheetRotated, perSheet: fn.perSheet, sheetsNeeded: totalHojas, quantity }
   }
   // Build per-zone nesting details for expandable view
   const zoneNesting = effectiveZones.map((zone, i) => {

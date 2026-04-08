@@ -117,11 +117,13 @@ export default function CotizadorPage() {
 
   // MO is now edited inline in the AuditTicket
 
-  // Paper dimensions for sheet nesting visual (subli)
+  // Paper dimensions for subli nesting visual
   const paperInsumo = engine.linkedInsumos.find(i => i.tipo === 'papel')
   const paperCfg = paperInsumo ? (paperInsumo.config as Record<string, unknown>) : null
+  const subliIsRollo = paperCfg?.formato === 'rollo'
   const sheetW = (paperCfg?.ancho as number) || 21
   const sheetH = (paperCfg?.alto as number) || 29.7
+  const subliRollW = (paperCfg?.rollo_ancho as number) || 61
   const techniqueConfig = technique?.config as Record<string, unknown> | undefined
   const printerMargin = (techniqueConfig?.margen_seguridad as number) ?? 0.5
 
@@ -256,7 +258,7 @@ export default function CotizadorPage() {
                       <div className="flex-1"><p className="text-[10px] text-gray-400 mb-0.5">Alto</p><NumericInput className="input-base" value={engine.designHeight} onChange={engine.setDesignHeight} /></div>
                     </div></div>
                   {showDistribution && engine.designWidth > 0 && engine.designHeight > 0 && (() => {
-                    if (isSubli) {
+                    if (isSubli && !subliIsRollo) {
                       const n = calcSheetNesting(engine.designWidth, engine.designHeight, sheetW, sheetH, printerMargin)
                       const sheets = Math.ceil(engine.quantity / Math.max(n.count, 1))
                       return (
@@ -275,8 +277,10 @@ export default function CotizadorPage() {
                         </div>
                       )
                     }
-                    // DTF propia — roll nesting
-                    const rn = calcRollNesting(engine.designWidth, engine.designHeight, dtfRollW, engine.quantity, dtfGap, dtfGap)
+                    // Subli rollo or DTF — roll nesting
+                    const rw = isSubli ? subliRollW : dtfRollW
+                    const gap = isSubli ? printerMargin : dtfGap
+                    const rn = calcRollNesting(engine.designWidth, engine.designHeight, rw, engine.quantity, gap, gap)
                     const ml = rn.lengthCm / 100
                     return (
                       <div>
@@ -286,7 +290,7 @@ export default function CotizadorPage() {
                         </button>
                         {showSheetNesting[0] && (
                           <div className="mt-2 p-3 rounded-lg" style={{ background: `${activeColor}08`, border: `1px solid ${activeColor}12` }}>
-                            <RollVisual rollWidth={dtfRollW} designW={engine.designWidth} designH={engine.designHeight}
+                            <RollVisual rollWidth={rw} designW={engine.designWidth} designH={engine.designHeight}
                               cols={rn.cols} rows={rn.rows} quantity={engine.quantity}
                               rotated={rn.rotated} metrosLineales={ml} />
                           </div>
@@ -323,7 +327,7 @@ export default function CotizadorPage() {
                           </div>
                         </div>
                         {showDistribution && zone.ancho > 0 && zone.alto > 0 && (() => {
-                          if (isSubli) {
+                          if (isSubli && !subliIsRollo) {
                             const zn = calcSheetNesting(zone.ancho, zone.alto, sheetW, sheetH, printerMargin)
                             return (
                               <div>
@@ -341,24 +345,26 @@ export default function CotizadorPage() {
                               </div>
                             )
                           }
-                        // DTF propia — roll nesting
-                        const rn = calcRollNesting(zone.ancho, zone.alto, dtfRollW, engine.quantity, dtfGap, dtfGap)
-                        const ml = rn.lengthCm / 100
-                        return (
-                          <div>
-                            <button type="button" onClick={() => setShowSheetNesting(prev => ({ ...prev, [zi]: !prev[zi] }))}
-                              className="flex items-center gap-1 text-[10px] font-medium text-gray-400 hover:text-gray-600 transition-colors">
-                              <LayoutGrid size={10} /> {showSheetNesting[zi] ? 'Ocultar distribución' : '+ Ver distribución'}
-                            </button>
-                            {showSheetNesting[zi] && (
-                              <div className="mt-2 p-3 rounded-lg" style={{ background: `${activeColor}08`, border: `1px solid ${activeColor}12` }}>
-                                <RollVisual rollWidth={dtfRollW} designW={zone.ancho} designH={zone.alto}
-                                  cols={rn.cols} rows={rn.rows} quantity={engine.quantity}
-                                  rotated={rn.rotated} metrosLineales={ml} />
-                              </div>
-                            )}
-                          </div>
-                        )
+                          // Subli rollo or DTF — roll nesting
+                          const rw = isSubli ? subliRollW : dtfRollW
+                          const gap = isSubli ? printerMargin : dtfGap
+                          const rn = calcRollNesting(zone.ancho, zone.alto, rw, engine.quantity, gap, gap)
+                          const ml = rn.lengthCm / 100
+                          return (
+                            <div>
+                              <button type="button" onClick={() => setShowSheetNesting(prev => ({ ...prev, [zi]: !prev[zi] }))}
+                                className="flex items-center gap-1 text-[10px] font-medium text-gray-400 hover:text-gray-600 transition-colors">
+                                <LayoutGrid size={10} /> {showSheetNesting[zi] ? 'Ocultar distribución' : '+ Ver distribución'}
+                              </button>
+                              {showSheetNesting[zi] && (
+                                <div className="mt-2 p-3 rounded-lg" style={{ background: `${activeColor}08`, border: `1px solid ${activeColor}12` }}>
+                                  <RollVisual rollWidth={rw} designW={zone.ancho} designH={zone.alto}
+                                    cols={rn.cols} rows={rn.rows} quantity={engine.quantity}
+                                    rotated={rn.rotated} metrosLineales={ml} />
+                                </div>
+                              )}
+                            </div>
+                          )
                         })()}
                       </div>
                     )
