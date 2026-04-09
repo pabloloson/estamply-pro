@@ -33,7 +33,7 @@ interface BusinessProfile {
 export default function PresupuestoPage() {
   const router = useRouter()
   const supabase = createClient()
-  const { items, removeItem, clearItems, totalVenta, totalCosto, totalGanancia } = usePresupuesto()
+  const { items, removeItem, clearItems, loadItems, totalVenta, totalCosto, totalGanancia, loadedPresupuestoId, setLoadedPresupuestoId } = usePresupuesto()
 
   const [clients, setClients] = useState<DBClient[]>([])
   const [loadingClients, setLoadingClients] = useState(true)
@@ -91,6 +91,31 @@ export default function PresupuestoPage() {
     const link = `${window.location.origin}/p/${codigo}`
     setPublicLink(link)
     return link
+  }
+
+  async function loadSavedPresupuesto(presId: string) {
+    const { data } = await supabase.from('presupuestos').select('*').eq('id', presId).single()
+    if (!data) return
+    const dbItems = (data.items || []) as Array<Record<string, unknown>>
+    const mapped: import('@/features/presupuesto/types').PresupuestoItem[] = dbItems.map((i, idx) => ({
+      id: `loaded-${idx}`,
+      tecnica: ((i.tecnica as string) || 'subli') as import('@/features/presupuesto/types').Tecnica,
+      nombre: (i.nombre as string) || '',
+      costoUnit: (i.costoUnit as number) || 0,
+      precioUnit: (i.precioUnit as number) || 0,
+      precioSinDesc: (i.precioSinDesc as number) || (i.precioUnit as number) || 0,
+      cantidad: (i.cantidad as number) || 1,
+      subtotal: (i.subtotal as number) || 0,
+      ganancia: ((i.subtotal as number) || 0) - ((i.costoUnit as number) || 0) * ((i.cantidad as number) || 1),
+      notas: (i.notas as string) || undefined,
+    }))
+    loadItems(mapped)
+    setLoadedPresupuestoId(presId)
+    // Load client
+    if (data.client_id) setClientId(data.client_id)
+    else if (data.client_name) setNewClientName(data.client_name)
+    // Load public link
+    if (data.codigo) setPublicLink(`/p/${data.codigo}`)
   }
 
   const selectedClient = clients.find(c => c.id === clientId)
@@ -202,17 +227,20 @@ export default function PresupuestoPage() {
               <div className="border-t border-gray-100">
                 {savedPresupuestos.map(p => {
                   const cName = p.client_name || clients.find(c => c.id === p.client_id)?.name || 'Sin cliente'
+                  const isActive = loadedPresupuestoId === p.id
                   return (
-                  <a key={p.id} href={`/p/${p.codigo}`} target="_blank" rel="noopener" className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 border-b border-gray-50 last:border-0">
+                  <button key={p.id} onClick={() => loadSavedPresupuesto(p.id)}
+                    className={`w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 border-b border-gray-50 last:border-0 text-left ${isActive ? 'bg-purple-50' : ''}`}>
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium text-gray-800">#{p.codigo}</span>
                         {p.origen === 'catalogo_web' && <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold bg-green-100 text-green-600">Catálogo Web</span>}
+                        {isActive && <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold bg-purple-100 text-purple-600">Activo</span>}
                       </div>
                       <p className="text-xs text-gray-400">{cName} · {new Date(p.created_at).toLocaleDateString('es-AR')}</p>
                     </div>
                     <span className="font-bold text-gray-800 text-sm">{fmt(p.total)}</span>
-                  </a>
+                  </button>
                 )})}
               </div>
             )}

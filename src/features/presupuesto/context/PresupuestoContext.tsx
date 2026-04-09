@@ -8,9 +8,12 @@ interface PresupuestoContextType {
   addItem: (item: Omit<PresupuestoItem, 'id'>) => void
   removeItem: (id: string) => void
   clearItems: () => void
+  loadItems: (items: PresupuestoItem[]) => void
   totalVenta: number
   totalCosto: number
   totalGanancia: number
+  loadedPresupuestoId: string | null
+  setLoadedPresupuestoId: (id: string | null) => void
 }
 
 const PresupuestoContext = createContext<PresupuestoContextType | null>(null)
@@ -19,6 +22,7 @@ const LS_KEY = 'estamply-presupuesto'
 
 export function PresupuestoProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<PresupuestoItem[]>([])
+  const [loadedPresupuestoId, setLoadedPresupuestoId] = useState<string | null>(null)
 
   useEffect(() => {
     try {
@@ -39,14 +43,18 @@ export function PresupuestoProvider({ children }: { children: ReactNode }) {
     setItems(p => p.filter(i => i.id !== id))
   }, [])
 
-  const clearItems = useCallback(() => setItems([]), [])
+  const clearItems = useCallback(() => { setItems([]); setLoadedPresupuestoId(null) }, [])
+
+  const loadItems = useCallback((newItems: PresupuestoItem[]) => {
+    setItems(newItems)
+  }, [])
 
   const totalVenta = items.reduce((s, i) => s + i.subtotal, 0)
   const totalCosto = items.reduce((s, i) => s + i.costoUnit * i.cantidad, 0)
   const totalGanancia = items.reduce((s, i) => s + i.ganancia, 0)
 
   return (
-    <PresupuestoContext.Provider value={{ items, addItem, removeItem, clearItems, totalVenta, totalCosto, totalGanancia }}>
+    <PresupuestoContext.Provider value={{ items, addItem, removeItem, clearItems, loadItems, totalVenta, totalCosto, totalGanancia, loadedPresupuestoId, setLoadedPresupuestoId }}>
       {children}
     </PresupuestoContext.Provider>
   )
