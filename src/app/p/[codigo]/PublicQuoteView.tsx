@@ -17,16 +17,17 @@ interface Item {
 
 interface Props {
   presupuesto: {
-    numero: string; fecha: string; validez_dias: number
+    codigo: string; numero: string; fecha: string; validez_dias: number
     client_name: string | null; items: Item[]; total: number
     condiciones: string | null; business_profile: Record<string, string | null>
   }
 }
 
 export default function PublicQuoteView({ presupuesto }: Props) {
-  const { numero, fecha, validez_dias, client_name, items, total, condiciones, business_profile: biz } = presupuesto
+  const { codigo, numero, fecha, validez_dias, client_name, items, total, condiciones, business_profile: biz } = presupuesto
+  const displayNumber = (numero && numero !== '0') ? numero : codigo
   const fechaStr = new Date(fecha).toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })
-  const displayName = biz?.business_name || biz?.workshop_name || ''
+  const displayName = biz?.business_name || biz?.workshop_name || 'Mi Taller'
 
   return (
     <>
@@ -78,7 +79,7 @@ export default function PublicQuoteView({ presupuesto }: Props) {
               </div>
               <div className="text-right flex-shrink-0">
                 <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-0.5">Presupuesto</p>
-                <p className="text-2xl font-black" style={{ color: '#6C5CE7' }}>#{numero}</p>
+                <p className="text-2xl font-black" style={{ color: '#6C5CE7' }}>#{displayNumber}</p>
                 <p className="text-xs text-gray-500 mt-2">{fechaStr}</p>
                 <p className="text-xs text-gray-400 mt-0.5">Válido por {validez_dias} días</p>
               </div>
