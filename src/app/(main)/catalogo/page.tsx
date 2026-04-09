@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Plus, Pencil, Trash2, X, Package, FolderOpen, Eye, EyeOff, AlertTriangle, ArrowUpDown } from 'lucide-react'
-import type { Category } from '@/features/taller/types'
+import { Plus, Pencil, Trash2, X, Package, FolderOpen, Eye, EyeOff, AlertTriangle, Upload, Image as ImageIcon } from 'lucide-react'
+import type { Category, Tecnica, TecnicaSlug, Insumo } from '@/features/taller/types'
+import { ALL_TECNICA_SLUGS, TECNICA_LABELS } from '@/features/taller/types'
 import CategoryModal from '@/features/taller/components/CategoryModal'
 import NumericInput from '@/shared/components/NumericInput'
 
@@ -14,14 +15,15 @@ interface Product {
 }
 interface Equipment { id: string; name: string; type: string }
 interface CatalogProduct {
-  id: string; name: string; description: string | null; category_id: string | null
+  id: string; name: string; description: string | null; category_id: string | null; photos: string[]
   cost_mode: 'calculated' | 'manual'; unit_cost: number; selling_price: number
-  manage_stock: boolean; current_stock: number; min_stock: number
-  visible_in_catalog: boolean; base_product_id: string | null; technique: string | null
+  base_product_id: string | null; technique: string | null; zone_config: unknown; production_config: unknown; cost_breakdown: unknown
+  manage_stock: boolean; current_stock: number; min_stock: number; visible_in_catalog: boolean
 }
 interface StockMovement { id: string; product_id: string; type: string; quantity: number; note: string | null; created_at: string }
 
 function fmt(n: number) { return `$${Math.round(n).toLocaleString('es-AR')}` }
+function marginColor(m: number) { return m >= 40 ? 'text-green-600' : m >= 20 ? 'text-amber-600' : 'text-red-500' }
 
 export default function CatalogoPage() {
   const supabase = createClient()
@@ -35,8 +37,11 @@ export default function CatalogoPage() {
   const [modal, setModal] = useState<Partial<Product> | null>(null)
   const [catModal, setCatModal] = useState<Partial<CatalogProduct> | null>(null)
   const [stockModal, setStockModal] = useState<{ product: CatalogProduct; type: 'produce' | 'sell' | 'adjust' | 'history'; qty: number; note: string; movements: StockMovement[] } | null>(null)
+  const [stockPopover, setStockPopover] = useState<string | null>(null)
   const [showCats, setShowCats] = useState(false)
   const [catFilter, setCatFilter] = useState('all')
+  const [uploading, setUploading] = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
 
   async function load() {
     const [{ data: p }, { data: cp }, { data: e }, { data: c }] = await Promise.all([
@@ -59,8 +64,7 @@ export default function CatalogoPage() {
       name: modal.name, base_cost: modal.base_cost || 0, category: modal.category || 'General',
       category_id: modal.category_id || null,
       time_subli: modal.time_subli || 0, time_dtf: modal.time_dtf || 0, time_vinyl: modal.time_vinyl || 0,
-      press_equipment_id: modal.press_equipment_id || null,
-      printer_equipment_id: modal.printer_equipment_id || null,
+      press_equipment_id: modal.press_equipment_id || null, printer_equipment_id: modal.printer_equipment_id || null,
       stock: modal.stock || 0, stock_minimo: modal.stock_minimo || 0,
     }
     if (modal.id) await supabase.from('products').update(payload).eq('id', modal.id)
@@ -69,14 +73,44 @@ export default function CatalogoPage() {
   }
   async function deleteProduct(id: string) { if (confirm('¿Eliminar?')) { await supabase.from('products').delete().eq('id', id); load() } }
 
+  // Photo upload
+  async function uploadPhoto(file: File) {
+    setUploading(true)
+    const { data: { user } } = await supabase.auth.getUser()
+    const path = `${user?.id}/${Date.now()}-${file.name}`
+    const { error } = await supabase.storage.from('product-photos').upload(path, file)
+    setUploading(false)
+    if (error) { alert('Error subiendo foto'); return null }
+    const { data: { publicUrl } } = supabase.storage.from('product-photos').getPublicUrl(path)
+    return publicUrl
+  }
+  async function handlePhotoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files
+    if (!files || !catModal) return
+    const currentPhotos = catModal.photos || []
+    if (currentPhotos.length >= 5) return
+    for (const file of Array.from(files).slice(0, 5 - currentPhotos.length)) {
+      const url = await uploadPhoto(file)
+      if (url) setCatModal(prev => prev ? { ...prev, photos: [...(prev.photos || []), url] } : prev)
+    }
+    if (fileRef.current) fileRef.current.value = ''
+  }
+  function removePhoto(idx: number) {
+    if (!catModal) return
+    setCatModal({ ...catModal, photos: (catModal.photos || []).filter((_, i) => i !== idx) })
+  }
+
   // Catalog product CRUD
   async function saveCatalogProduct() {
     if (!catModal?.name) return; setSaving(true)
     const payload = {
       name: catModal.name, description: catModal.description || null,
-      category_id: catModal.category_id || null, cost_mode: catModal.cost_mode || 'manual',
+      category_id: catModal.category_id || null, photos: catModal.photos || [],
+      cost_mode: catModal.cost_mode || 'manual',
       base_product_id: catModal.base_product_id || null, technique: catModal.technique || null,
-      unit_cost: catModal.unit_cost || 0, selling_price: catModal.selling_price || 0,
+      zone_config: catModal.zone_config || null, production_config: catModal.production_config || null,
+      unit_cost: catModal.unit_cost || 0, cost_breakdown: catModal.cost_breakdown || null,
+      selling_price: catModal.selling_price || 0,
       manage_stock: catModal.manage_stock ?? false, current_stock: catModal.current_stock || 0,
       min_stock: catModal.min_stock || 0, visible_in_catalog: catModal.visible_in_catalog ?? true,
     }
@@ -112,7 +146,6 @@ export default function CatalogoPage() {
   }
   async function deleteCat(id: string) { await supabase.from('categories').delete().eq('id', id); load() }
 
-  // Filter catalog products
   const filteredCatalog = catalogProducts.filter(p => {
     if (catFilter === 'stock') return p.manage_stock && p.current_stock > 0
     if (catFilter === 'ondemand') return !p.manage_stock
@@ -120,6 +153,9 @@ export default function CatalogoPage() {
     if (catFilter === 'hidden') return !p.visible_in_catalog
     return true
   })
+
+  const catMargin = (catModal?.selling_price || 0) > 0 && (catModal?.unit_cost || 0) > 0
+    ? Math.round((((catModal?.selling_price || 0) - (catModal?.unit_cost || 0)) / (catModal?.selling_price || 1)) * 100) : 0
 
   if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>
 
@@ -185,41 +221,53 @@ export default function CatalogoPage() {
                   className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${catFilter === id ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-500'}`}>{label}</button>
               ))}
             </div>
-            <button onClick={() => setCatModal({ cost_mode: 'manual', unit_cost: 0, selling_price: 0, manage_stock: false, current_stock: 0, min_stock: 0, visible_in_catalog: true })}
+            <button onClick={() => setCatModal({ cost_mode: 'manual', unit_cost: 0, selling_price: 0, manage_stock: false, current_stock: 0, min_stock: 0, visible_in_catalog: true, photos: [] })}
               className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={14} /> Agregar</button>
           </div>
 
           <div className="card overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full"><thead><tr className="border-b border-gray-100">
-                {['Nombre', 'Costo', 'Precio', 'Margen', 'Stock', 'Visible', ''].map(h =>
-                  <th key={h} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">{h}</th>)}
+                {['', 'Nombre', 'Costo', 'Precio', 'Margen', 'Stock', '', ''].map((h, i) =>
+                  <th key={i} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 py-3">{h}</th>)}
               </tr></thead><tbody>
                 {filteredCatalog.map(p => {
                   const margin = p.selling_price > 0 ? Math.round(((p.selling_price - p.unit_cost) / p.selling_price) * 100) : 0
                   const lowStock = p.manage_stock && p.current_stock <= p.min_stock
+                  const photo = (p.photos || [])[0]
                   return (
                     <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50">
-                      <td className="px-4 py-3">
+                      <td className="px-3 py-2 w-10">
+                        {photo ? <img src={photo} alt="" className="w-9 h-9 rounded-lg object-cover" /> : <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center"><ImageIcon size={14} className="text-gray-300" /></div>}
+                      </td>
+                      <td className="px-3 py-3">
                         <p className="font-medium text-gray-800">{p.name}</p>
                         {p.description && <p className="text-xs text-gray-400 truncate max-w-[200px]">{p.description}</p>}
                       </td>
-                      <td className="px-4 py-3 text-gray-600">{fmt(p.unit_cost)}</td>
-                      <td className="px-4 py-3 font-semibold text-gray-800">{fmt(p.selling_price)}</td>
-                      <td className="px-4 py-3"><span className={`text-sm font-medium ${margin >= 40 ? 'text-green-600' : margin >= 20 ? 'text-amber-600' : 'text-red-500'}`}>{margin}%</span></td>
-                      <td className="px-4 py-3 text-sm">
+                      <td className="px-3 py-3 text-gray-600 text-sm">{fmt(p.unit_cost)}</td>
+                      <td className="px-3 py-3 font-semibold text-gray-800 text-sm">{fmt(p.selling_price)}</td>
+                      <td className="px-3 py-3"><span className={`text-sm font-medium ${marginColor(margin)}`}>{margin}%</span></td>
+                      <td className="px-3 py-3 text-sm relative">
                         {p.manage_stock ? (
-                          <button onClick={() => openHistory(p)} className={`flex items-center gap-1 ${lowStock ? 'text-red-500 font-medium' : 'text-gray-600'}`}>
+                          <button onClick={() => setStockPopover(stockPopover === p.id ? null : p.id)} className={`flex items-center gap-1 ${lowStock ? 'text-red-500 font-medium' : 'text-gray-600'}`}>
                             {lowStock && <AlertTriangle size={12} />}{p.current_stock} u.
                           </button>
                         ) : <span className="text-gray-400 text-xs">A pedido</span>}
+                        {/* Stock popover */}
+                        {stockPopover === p.id && p.manage_stock && (
+                          <div className="absolute left-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-20 w-44 py-1">
+                            <p className="px-3 py-1.5 text-xs font-semibold text-gray-500">Stock: {p.current_stock} u.</p>
+                            <button onClick={() => { setStockPopover(null); setStockModal({ product: p, type: 'produce', qty: 0, note: '', movements: [] }) }} className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 text-gray-700">+ Producir</button>
+                            <button onClick={() => { setStockPopover(null); setStockModal({ product: p, type: 'sell', qty: 0, note: '', movements: [] }) }} className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 text-gray-700">− Vender</button>
+                            <button onClick={() => { setStockPopover(null); setStockModal({ product: p, type: 'adjust', qty: p.current_stock, note: '', movements: [] }) }} className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 text-gray-700">⟳ Ajustar</button>
+                            <div className="border-t border-gray-100 mt-1 pt-1">
+                              <button onClick={() => { setStockPopover(null); openHistory(p) }} className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 text-gray-500">Ver historial</button>
+                            </div>
+                          </div>
+                        )}
                       </td>
-                      <td className="px-4 py-3">{p.visible_in_catalog ? <Eye size={14} className="text-green-500" /> : <EyeOff size={14} className="text-gray-300" />}</td>
-                      <td className="px-4 py-3"><div className="flex gap-1">
-                        {p.manage_stock && (<>
-                          <button onClick={() => setStockModal({ product: p, type: 'produce', qty: 0, note: '', movements: [] })} className="p-1 rounded hover:bg-green-50 text-xs text-green-600 font-medium" title="Producir">+</button>
-                          <button onClick={() => setStockModal({ product: p, type: 'sell', qty: 0, note: '', movements: [] })} className="p-1 rounded hover:bg-blue-50 text-xs text-blue-600 font-medium" title="Vender">−</button>
-                        </>)}
+                      <td className="px-3 py-3">{p.visible_in_catalog ? <Eye size={14} className="text-green-500" /> : <EyeOff size={14} className="text-gray-300" />}</td>
+                      <td className="px-3 py-3"><div className="flex gap-1">
                         <button onClick={() => setCatModal(p)} className="p-1.5 rounded-lg hover:bg-gray-100"><Pencil size={14} className="text-gray-400" /></button>
                         <button onClick={() => deleteCatalogProduct(p.id)} className="p-1.5 rounded-lg hover:bg-red-50"><Trash2 size={14} className="text-red-400" /></button>
                       </div></td>
@@ -291,6 +339,27 @@ export default function CatalogoPage() {
               <button onClick={() => setCatModal(null)} className="p-2 rounded-lg hover:bg-gray-100"><X size={16} /></button>
             </div>
             <div className="space-y-4">
+              {/* Photos */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Fotos</label>
+                <div className="flex gap-2 flex-wrap">
+                  {(catModal.photos || []).map((url, i) => (
+                    <div key={i} className="relative w-16 h-16 rounded-lg overflow-hidden border border-gray-200 group">
+                      <img src={url} alt="" className="w-full h-full object-cover" />
+                      <button onClick={() => removePhoto(i)} className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"><X size={14} className="text-white" /></button>
+                      {i === 0 && <span className="absolute bottom-0 left-0 right-0 text-[8px] text-center bg-purple-600 text-white">Principal</span>}
+                    </div>
+                  ))}
+                  {(catModal.photos || []).length < 5 && (
+                    <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading}
+                      className="w-16 h-16 rounded-lg border-2 border-dashed border-gray-200 flex items-center justify-center hover:border-purple-300 transition-colors">
+                      {uploading ? <div className="w-4 h-4 border-2 border-purple-300 border-t-purple-600 rounded-full animate-spin" /> : <Upload size={16} className="text-gray-300" />}
+                    </button>
+                  )}
+                </div>
+                <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={handlePhotoUpload} />
+              </div>
+
               <div><label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
                 <input className="input-base" value={catModal.name || ''} onChange={e => setCatModal({ ...catModal, name: e.target.value })} /></div>
               <div><label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
@@ -301,19 +370,56 @@ export default function CatalogoPage() {
                   {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select></div>
 
+              {/* Cost section */}
               <div className="border-t border-gray-100 pt-4">
                 <p className="text-sm font-semibold text-gray-700 mb-3">Costos</p>
-                <div className="grid grid-cols-2 gap-3">
-                  <div><label className="block text-sm font-medium text-gray-700 mb-1">Costo unitario ($)</label>
-                    <NumericInput className="input-base" value={catModal.unit_cost || 0} onChange={v => setCatModal({ ...catModal, unit_cost: v })} /></div>
-                  <div><label className="block text-sm font-medium text-gray-700 mb-1">Precio de venta ($) *</label>
-                    <NumericInput className="input-base" value={catModal.selling_price || 0} onChange={v => setCatModal({ ...catModal, selling_price: v })} /></div>
+                <div className="flex gap-3 mb-3">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="costMode" checked={catModal.cost_mode !== 'calculated'} onChange={() => setCatModal({ ...catModal, cost_mode: 'manual' })} className="text-purple-600" />
+                    <span className="text-sm text-gray-700">Costo manual</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="costMode" checked={catModal.cost_mode === 'calculated'} onChange={() => setCatModal({ ...catModal, cost_mode: 'calculated' })} className="text-purple-600" />
+                    <span className="text-sm text-gray-700">Calcular con cotizador</span>
+                  </label>
                 </div>
-                {(catModal.selling_price || 0) > 0 && (catModal.unit_cost || 0) > 0 && (
-                  <p className="text-xs text-gray-400 mt-1">Margen: {Math.round((((catModal.selling_price || 0) - (catModal.unit_cost || 0)) / (catModal.selling_price || 1)) * 100)}%</p>
+
+                {catModal.cost_mode !== 'calculated' ? (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><label className="block text-xs font-medium text-gray-600 mb-1">Costo unitario ($)</label>
+                      <NumericInput className="input-base" value={catModal.unit_cost || 0} onChange={v => setCatModal({ ...catModal, unit_cost: v })} /></div>
+                    <div><label className="block text-xs font-medium text-gray-600 mb-1">Precio de venta ($) *</label>
+                      <NumericInput className="input-base" value={catModal.selling_price || 0} onChange={v => setCatModal({ ...catModal, selling_price: v })} /></div>
+                  </div>
+                ) : (
+                  <div className="space-y-3 p-3 rounded-xl bg-purple-50/50 border border-purple-100">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div><label className="block text-xs font-medium text-gray-600 mb-1">Producto base</label>
+                        <select className="input-base text-sm" value={catModal.base_product_id || ''} onChange={e => setCatModal({ ...catModal, base_product_id: e.target.value || null })}>
+                          <option value="">Seleccionar...</option>
+                          {products.map(p => <option key={p.id} value={p.id}>{p.name} ({fmt(p.base_cost)})</option>)}
+                        </select></div>
+                      <div><label className="block text-xs font-medium text-gray-600 mb-1">Técnica</label>
+                        <select className="input-base text-sm" value={catModal.technique || ''} onChange={e => setCatModal({ ...catModal, technique: e.target.value || null })}>
+                          <option value="">Seleccionar...</option>
+                          {ALL_TECNICA_SLUGS.map(s => <option key={s} value={s}>{TECNICA_LABELS[s]}</option>)}
+                        </select></div>
+                    </div>
+                    <p className="text-[10px] text-purple-600">El cálculo detallado se hace desde el cotizador. Usá el botón "Guardar producto" del cotizador para vincular automáticamente el desglose de costos.</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div><label className="block text-xs font-medium text-gray-600 mb-1">Costo calculado ($)</label>
+                        <NumericInput className="input-base" value={catModal.unit_cost || 0} onChange={v => setCatModal({ ...catModal, unit_cost: v })} /></div>
+                      <div><label className="block text-xs font-medium text-gray-600 mb-1">Precio de venta ($) *</label>
+                        <NumericInput className="input-base" value={catModal.selling_price || 0} onChange={v => setCatModal({ ...catModal, selling_price: v })} /></div>
+                    </div>
+                  </div>
+                )}
+                {catMargin > 0 && (
+                  <p className={`text-xs font-medium mt-1.5 ${marginColor(catMargin)}`}>Margen: {catMargin}%</p>
                 )}
               </div>
 
+              {/* Stock */}
               <div className="border-t border-gray-100 pt-4">
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-sm font-semibold text-gray-700">Stock</p>
@@ -364,7 +470,7 @@ export default function CatalogoPage() {
                   {stockModal.movements.map(m => (
                     <tr key={m.id} className="border-b border-gray-50">
                       <td className="px-2 py-1.5 text-xs text-gray-500">{new Date(m.created_at).toLocaleDateString('es-AR')}</td>
-                      <td className="px-2 py-1.5"><span className={`text-xs font-medium ${m.type === 'production' ? 'text-green-600' : m.type === 'sale' ? 'text-blue-600' : 'text-gray-600'}`}>{m.type === 'production' ? 'Producción' : m.type === 'sale' ? 'Venta' : 'Ajuste'}</span></td>
+                      <td className="px-2 py-1.5"><span className={`text-xs font-medium ${m.type === 'produce' ? 'text-green-600' : m.type === 'sell' ? 'text-blue-600' : 'text-gray-600'}`}>{m.type === 'produce' ? 'Producción' : m.type === 'sell' ? 'Venta' : 'Ajuste'}</span></td>
                       <td className="px-2 py-1.5 text-xs font-medium">{m.quantity > 0 ? `+${m.quantity}` : m.quantity}</td>
                       <td className="px-2 py-1.5 text-xs text-gray-400 truncate max-w-[120px]">{m.note || '—'}</td>
                     </tr>
@@ -374,7 +480,7 @@ export default function CatalogoPage() {
               <button onClick={() => setStockModal(null)} className="w-full mt-4 py-2 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">Cerrar</button>
             </>) : (<>
               <h3 className="font-bold text-gray-900 mb-4">
-                {stockModal.type === 'produce' ? 'Producir unidades' : stockModal.type === 'sell' ? 'Registrar venta' : 'Ajustar stock'}
+                {stockModal.type === 'produce' ? '+ Producir' : stockModal.type === 'sell' ? '− Vender' : '⟳ Ajustar stock'}
               </h3>
               <p className="text-sm text-gray-500 mb-3">{stockModal.product.name} — Stock actual: {stockModal.product.current_stock} u.</p>
               <div className="space-y-3">
