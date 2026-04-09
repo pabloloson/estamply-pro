@@ -132,26 +132,33 @@ export default function CotizadorPage() {
   const tintaInsumos = technique
     ? insumos.filter(ins => technique.insumo_ids.includes(ins.id) && ins.tipo === 'tinta')
     : []
+  // Filter equipment by technique compatibility
   const printers = equipment.filter((e: Record<string, unknown>) => {
     const t = e.type as string || ''
-    return t.startsWith('printer') || t === 'plotter'
+    if (!t.startsWith('printer') && t !== 'plotter') return false
+    const slugs = (e.tecnicas_slugs as string[]) || []
+    return slugs.length === 0 || slugs.includes(resolvedSlug) // show if no techniques set (legacy) or matches
   })
   const presses = equipment.filter((e: Record<string, unknown>) => {
     const t = e.type as string || ''
-    return t.startsWith('press')
+    if (!t.startsWith('press')) return false
+    const slugs = (e.tecnicas_slugs as string[]) || []
+    return slugs.length === 0 || slugs.includes(resolvedSlug)
   })
 
-  // Auto-select: Product → Printer + Press
+  // Auto-select: Product → Printer + Press (filtered by technique)
   useEffect(() => {
     if (!product) return
-    // Press from product
-    if (product.press_equipment_id) setSelectedPressId(product.press_equipment_id)
-    else if (presses.length) setSelectedPressId(presses[0].id as string)
-    // Printer from product
-    if (product.printer_equipment_id) setSelectedPrinterId(product.printer_equipment_id as string)
-    else if (printers.length) setSelectedPrinterId(printers[0].id as string)
-    setUserOverrodePapel(false) // reset on product change
-  }, [product?.id])
+    // Press: use product's if compatible, else first compatible
+    const productPress = product.press_equipment_id
+    const pressCompatible = productPress && presses.some((e: Record<string, unknown>) => e.id === productPress)
+    setSelectedPressId(pressCompatible ? productPress : (presses[0]?.id as string || ''))
+    // Printer: use product's if compatible, else first compatible
+    const productPrinter = product.printer_equipment_id as string | null
+    const printerCompatible = productPrinter && printers.some((e: Record<string, unknown>) => e.id === productPrinter)
+    setSelectedPrinterId(printerCompatible ? productPrinter : (printers[0]?.id as string || ''))
+    setUserOverrodePapel(false)
+  }, [product?.id, resolvedSlug])
 
   // Auto-cascade: Printer → Paper + Ink
   useEffect(() => {
