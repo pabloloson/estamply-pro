@@ -242,16 +242,17 @@ export default function ProduccionPage() {
                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 max-w-lg">
                   {(cfg.tipo === 'subli') && (
                     <div><label className="block text-xs text-gray-500 mb-1">Margen seguridad (cm)</label>
-                      <input type="number" className="input-base text-sm" min={0} step={0.5} value={(cfg as { margen_seguridad?: number }).margen_seguridad ?? 0.5}
-                        onChange={e => updateConfig(tec.id, { margen_seguridad: parseFloat(e.target.value) || 0 })} /></div>
+                      <NumericInput className="input-base text-sm" value={(cfg as { margen_seguridad?: number }).margen_seguridad ?? 0.5}
+                        onChange={v => updateConfig(tec.id, { margen_seguridad: v })} /></div>
                   )}
                   <div><label className="block text-xs text-gray-500 mb-1">{cfg.tipo === 'vinyl' ? 'Desperdicio pelado (%)' : 'Desperdicio / Merma (%)'}</label>
-                    <input type="number" className="input-base text-sm" min={0} max={100}
+                    <NumericInput className="input-base text-sm"
                       value={cfg.tipo === 'vinyl' ? (cfg.desperdicio_pelado_pct ?? 15) : ((cfg as { desperdicio_pct?: number }).desperdicio_pct ?? 5)}
-                      onChange={e => updateConfig(tec.id, cfg.tipo === 'vinyl' ? { desperdicio_pelado_pct: parseFloat(e.target.value) || 0 } : { desperdicio_pct: parseFloat(e.target.value) || 0 })} /></div>
+                      onChange={v => updateConfig(tec.id, cfg.tipo === 'vinyl' ? { desperdicio_pelado_pct: v } : { desperdicio_pct: v })} /></div>
                   <div><label className="block text-xs text-gray-500 mb-1">Pedido mínimo</label>
-                    <input type="number" className="input-base text-sm" min={1} value={(cfg as { pedido_minimo?: number }).pedido_minimo ?? 1}
-                      onChange={e => updateConfig(tec.id, { pedido_minimo: parseInt(e.target.value) || 1 })} /></div>
+                    <NumericInput className="input-base text-sm" min={1}
+                      value={(cfg as { pedido_minimo?: number }).pedido_minimo ?? 1}
+                      onChange={v => updateConfig(tec.id, { pedido_minimo: v })} /></div>
                   {(cfg.tipo === 'dtf' || cfg.tipo === 'dtf_uv') && (
                     <div className="col-span-2 lg:col-span-3"><label className="block text-xs text-gray-500 mb-1">Modo por defecto</label>
                       <select className="input-base text-sm max-w-xs" value={(cfg as DTFConfig).modo}
@@ -262,11 +263,13 @@ export default function ProduccionPage() {
                   )}
                   {cfg.tipo === 'serigrafia' && (<>
                     <div><label className="block text-xs text-gray-500 mb-1">Costo pantalla/color ($)</label>
-                      <input type="number" className="input-base text-sm" min={0} value={(cfg as SerigrafiaConfig).costo_pantalla_por_color ?? 5000}
-                        onChange={e => updateConfig(tec.id, { costo_pantalla_por_color: parseFloat(e.target.value) || 0 })} /></div>
+                      <NumericInput className="input-base text-sm"
+                        value={(cfg as SerigrafiaConfig).costo_pantalla_por_color ?? 5000}
+                        onChange={v => updateConfig(tec.id, { costo_pantalla_por_color: v })} /></div>
                     <div><label className="block text-xs text-gray-500 mb-1">Prep. pantalla (min/color)</label>
-                      <input type="number" className="input-base text-sm" min={0} value={Math.round(((cfg as SerigrafiaConfig).tiempo_preparacion_por_color ?? 600) / 60)}
-                        onChange={e => updateConfig(tec.id, { tiempo_preparacion_por_color: (parseInt(e.target.value) || 0) * 60 })} /></div>
+                      <NumericInput className="input-base text-sm"
+                        value={Math.round(((cfg as SerigrafiaConfig).tiempo_preparacion_por_color ?? 600) / 60)}
+                        onChange={v => updateConfig(tec.id, { tiempo_preparacion_por_color: v * 60 })} /></div>
                   </>)}
                 </div>
               </div>

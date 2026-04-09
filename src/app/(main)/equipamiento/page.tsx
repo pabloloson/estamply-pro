@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Plus, Pencil, Trash2, X } from 'lucide-react'
+import NumericInput from '@/shared/components/NumericInput'
 
 interface Equipment { id: string; name: string; marca: string | null; type: string; clasificacion: string; cost: number; lifespan_uses: number; tecnicas_slugs: string[]; assigned_paper_id: string | null; assigned_ink_id: string | null }
 interface InsumoRef { id: string; nombre: string; tipo: string; config: Record<string, unknown> }
@@ -54,8 +55,10 @@ export default function EquipamientoPage() {
   async function saveEquip() {
     if (!modal?.name) return; setSaving(true)
     const payload = { name: modal.name, marca: modal.marca || null, type: modal.type || 'press_flat', clasificacion: modal.clasificacion || 'plancha', cost: modal.cost || 0, lifespan_uses: modal.lifespan_uses || 1000, tecnicas_slugs: modal.tecnicas_slugs || [], assigned_paper_id: modal.assigned_paper_id || null, assigned_ink_id: modal.assigned_ink_id || null }
-    if (modal.id) await supabase.from('equipment').update(payload).eq('id', modal.id)
-    else await supabase.from('equipment').insert(payload)
+    const { error } = modal.id
+      ? await supabase.from('equipment').update(payload).eq('id', modal.id)
+      : await supabase.from('equipment').insert(payload)
+    if (error) { alert(`Error: ${error.message}`); setSaving(false); return }
     setModal(null); setSaving(false); load()
   }
 
@@ -186,9 +189,9 @@ export default function EquipamientoPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div><label className="block text-sm font-medium text-gray-700 mb-1">Valor de compra ($) *</label>
-                  <input type="number" className="input-base" value={modal.cost || 0} onChange={e => setModal({ ...modal, cost: parseFloat(e.target.value) || 0 })} /></div>
+                  <NumericInput className="input-base" value={modal.cost || 0} onChange={v => setModal({ ...modal, cost: v })} /></div>
                 <div><label className="block text-sm font-medium text-gray-700 mb-1">Vida útil (usos) *</label>
-                  <input type="number" className="input-base" value={modal.lifespan_uses || 10000} onChange={e => setModal({ ...modal, lifespan_uses: parseInt(e.target.value) || 1 })} />
+                  <NumericInput className="input-base" min={1} value={modal.lifespan_uses || 10000} onChange={v => setModal({ ...modal, lifespan_uses: v })} />
                   <p className="text-[10px] text-gray-400 mt-0.5">Usos estimados antes de reemplazar</p></div>
               </div>
 

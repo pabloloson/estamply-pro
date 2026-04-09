@@ -648,8 +648,7 @@ export default function CotizadorPage() {
               <div><label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
                 <input className="input-base" value={saveProductModal.name} onChange={e => setSaveProductModal({ ...saveProductModal, name: e.target.value })} /></div>
               <div><label className="block text-sm font-medium text-gray-700 mb-1">Precio de venta ($)</label>
-                <input type="number" className="input-base" value={saveProductModal.price} onFocus={e => e.target.select()}
-                  onChange={e => setSaveProductModal({ ...saveProductModal, price: parseInt(e.target.value) || 0 })} /></div>
+                <NumericInput className="input-base" value={saveProductModal.price} onChange={v => setSaveProductModal({ ...saveProductModal, price: v })} /></div>
               <p className="text-xs text-gray-400">Costo: {result ? `$${Math.round(result.costoTotal).toLocaleString('es-AR')}` : '—'} /unidad</p>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" className="rounded border-gray-300 text-purple-600" checked={saveProductModal.visible}
