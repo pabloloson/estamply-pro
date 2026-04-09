@@ -2,18 +2,13 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Plus, Pencil, Trash2, X, Package, FolderOpen, Eye, EyeOff, AlertTriangle, Upload, Image as ImageIcon } from 'lucide-react'
-import type { Category, Tecnica, TecnicaSlug, Insumo } from '@/features/taller/types'
+import { Plus, Pencil, Trash2, X, Eye, EyeOff, AlertTriangle, Upload, Image as ImageIcon, FolderOpen } from 'lucide-react'
+import type { Category } from '@/features/taller/types'
 import { ALL_TECNICA_SLUGS, TECNICA_LABELS } from '@/features/taller/types'
 import CategoryModal from '@/features/taller/components/CategoryModal'
 import NumericInput from '@/shared/components/NumericInput'
 
-interface Product {
-  id: string; name: string; base_cost: number; category: string; category_id: string | null
-  time_subli: number; time_dtf: number; time_vinyl: number
-  press_equipment_id: string | null; printer_equipment_id: string | null; stock: number; stock_minimo: number
-}
-interface Equipment { id: string; name: string; type: string }
+interface Product { id: string; name: string; base_cost: number }
 interface CatalogProduct {
   id: string; name: string; description: string | null; category_id: string | null; photos: string[]
   cost_mode: 'calculated' | 'manual'; unit_cost: number; selling_price: number
@@ -27,14 +22,11 @@ function marginColor(m: number) { return m >= 40 ? 'text-green-600' : m >= 20 ? 
 
 export default function CatalogoPage() {
   const supabase = createClient()
-  const [tab, setTab] = useState<'base' | 'catalog'>('base')
   const [products, setProducts] = useState<Product[]>([])
   const [catalogProducts, setCatalogProducts] = useState<CatalogProduct[]>([])
-  const [equipment, setEquipment] = useState<Equipment[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [modal, setModal] = useState<Partial<Product> | null>(null)
   const [catModal, setCatModal] = useState<Partial<CatalogProduct> | null>(null)
   const [stockModal, setStockModal] = useState<{ product: CatalogProduct; type: 'produce' | 'sell' | 'adjust' | 'history'; qty: number; note: string; movements: StockMovement[] } | null>(null)
   const [stockPopover, setStockPopover] = useState<string | null>(null)
@@ -44,34 +36,14 @@ export default function CatalogoPage() {
   const fileRef = useRef<HTMLInputElement>(null)
 
   async function load() {
-    const [{ data: p }, { data: cp }, { data: e }, { data: c }] = await Promise.all([
-      supabase.from('products').select('*').order('name'),
+    const [{ data: p }, { data: cp }, { data: c }] = await Promise.all([
+      supabase.from('products').select('id,name,base_cost').order('name'),
       supabase.from('catalog_products').select('*').order('name'),
-      supabase.from('equipment').select('*').order('name'),
       supabase.from('categories').select('*').order('name'),
     ])
-    setProducts(p || []); setCatalogProducts((cp || []) as CatalogProduct[]); setEquipment(e || []); setCategories(c || []); setLoading(false)
+    setProducts(p || []); setCatalogProducts((cp || []) as CatalogProduct[]); setCategories(c || []); setLoading(false)
   }
   useEffect(() => { load() }, [])
-
-  const presses = equipment.filter(e => e.type.startsWith('press'))
-  const printersList = equipment.filter(e => e.type.startsWith('printer') || e.type === 'plotter')
-
-  // Base product CRUD
-  async function saveProduct() {
-    if (!modal?.name) return; setSaving(true)
-    const payload = {
-      name: modal.name, base_cost: modal.base_cost || 0, category: modal.category || 'General',
-      category_id: modal.category_id || null,
-      time_subli: modal.time_subli || 0, time_dtf: modal.time_dtf || 0, time_vinyl: modal.time_vinyl || 0,
-      press_equipment_id: modal.press_equipment_id || null, printer_equipment_id: modal.printer_equipment_id || null,
-      stock: modal.stock || 0, stock_minimo: modal.stock_minimo || 0,
-    }
-    if (modal.id) await supabase.from('products').update(payload).eq('id', modal.id)
-    else await supabase.from('products').insert(payload)
-    setModal(null); setSaving(false); load()
-  }
-  async function deleteProduct(id: string) { if (confirm('¿Eliminar?')) { await supabase.from('products').delete().eq('id', id); load() } }
 
   // Photo upload
   async function uploadPhoto(file: File) {
@@ -120,14 +92,11 @@ export default function CatalogoPage() {
   }
   async function deleteCatalogProduct(id: string) { if (confirm('¿Eliminar?')) { await supabase.from('catalog_products').delete().eq('id', id); load() } }
 
-  // Stock operations
+  // Stock
   async function doStockAction() {
     if (!stockModal) return
     const { product, type, qty, note } = stockModal
-    let delta = 0
-    if (type === 'produce') delta = qty
-    else if (type === 'sell') delta = -qty
-    else if (type === 'adjust') delta = qty - product.current_stock
+    let delta = type === 'produce' ? qty : type === 'sell' ? -qty : qty - product.current_stock
     if (delta === 0 && type !== 'adjust') return
     await supabase.from('stock_movements').insert({ product_id: product.id, type, quantity: delta, note: note || null })
     await supabase.from('catalog_products').update({ current_stock: product.current_stock + delta }).eq('id', product.id)
@@ -146,7 +115,7 @@ export default function CatalogoPage() {
   }
   async function deleteCat(id: string) { await supabase.from('categories').delete().eq('id', id); load() }
 
-  const filteredCatalog = catalogProducts.filter(p => {
+  const filtered = catalogProducts.filter(p => {
     if (catFilter === 'stock') return p.manage_stock && p.current_stock > 0
     if (catFilter === 'ondemand') return !p.manage_stock
     if (catFilter === 'visible') return p.visible_in_catalog
@@ -160,175 +129,80 @@ export default function CatalogoPage() {
   if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>
 
   return (
-    <div>
+    <div onClick={() => stockPopover && setStockPopover(null)}>
       <div className="flex items-start justify-between mb-4">
         <div><h1 className="text-2xl font-bold text-gray-900">Catálogo</h1>
-          <p className="text-gray-500 text-sm mt-1">Gestión de productos base y productos de tu marca</p></div>
-        <button onClick={() => setShowCats(true)} className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50">
-          <FolderOpen size={14} /> Categorías
-        </button>
+          <p className="text-gray-500 text-sm mt-1">Tus productos de venta y marca propia</p></div>
+        <div className="flex gap-2">
+          <button onClick={() => setShowCats(true)} className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50">
+            <FolderOpen size={14} /> Categorías
+          </button>
+          <button onClick={() => setCatModal({ cost_mode: 'manual', unit_cost: 0, selling_price: 0, manage_stock: false, current_stock: 0, min_stock: 0, visible_in_catalog: true, photos: [] })}
+            className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={14} /> Agregar</button>
+        </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 mb-6">
-        <button onClick={() => setTab('base')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'base' ? 'bg-gray-800 text-white shadow-md' : 'bg-gray-100 text-gray-600'}`}>Productos base</button>
-        <button onClick={() => setTab('catalog')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'catalog' ? 'text-white shadow-md' : 'bg-gray-100 text-gray-600'}`} style={tab === 'catalog' ? { background: '#6C5CE7' } : {}}>Mis productos</button>
+      {/* Filters */}
+      <div className="flex gap-1.5 mb-4 flex-wrap">
+        {[['all', 'Todos'], ['stock', 'Con stock'], ['ondemand', 'A pedido'], ['visible', 'Visible'], ['hidden', 'No visible']].map(([id, label]) => (
+          <button key={id} onClick={() => setCatFilter(id)}
+            className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${catFilter === id ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-500'}`}>{label}</button>
+        ))}
       </div>
 
-      {/* ══ Tab: Productos base ══ */}
-      {tab === 'base' && (
-        <div className="card overflow-hidden">
-          <div className="p-5 border-b border-gray-100 flex items-center justify-between">
-            <div><span className="font-semibold text-gray-800">Productos base</span><p className="text-xs text-gray-400 mt-0.5">Materia prima: prendas, tazas, blanks y soportes</p></div>
-            <button onClick={() => setModal({ time_subli: 0, time_dtf: 0, time_vinyl: 0, base_cost: 0, stock: 0, stock_minimo: 0 })} className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={14} /> Agregar</button>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full"><thead><tr className="border-b border-gray-100">
-              {['Nombre', 'Costo', 'Categoría', 'Plancha', 'Impresora', ''].map(h =>
-                <th key={h} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">{h}</th>)}
-            </tr></thead><tbody>
-              {products.map(p => {
-                const cat = categories.find(c => c.id === p.category_id)
-                const press = equipment.find(e => e.id === p.press_equipment_id)
-                const printer = equipment.find(e => e.id === p.printer_equipment_id)
-                return (
-                  <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50">
-                    <td className="px-4 py-3 font-medium text-gray-800">{p.name}</td>
-                    <td className="px-4 py-3 text-gray-600">{fmt(p.base_cost)}</td>
-                    <td className="px-4 py-3">{cat ? <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-purple-50 text-purple-600">{cat.name}</span> : <span className="text-xs text-gray-300">—</span>}</td>
-                    <td className="px-4 py-3 text-sm text-gray-500">{press?.name ?? <span className="text-gray-300">—</span>}</td>
-                    <td className="px-4 py-3 text-sm text-gray-500">{printer?.name ?? <span className="text-gray-300">—</span>}</td>
-                    <td className="px-4 py-3"><div className="flex gap-1">
-                      <button onClick={() => setModal(p)} className="p-1.5 rounded-lg hover:bg-gray-100"><Pencil size={14} className="text-gray-400" /></button>
-                      <button onClick={() => deleteProduct(p.id)} className="p-1.5 rounded-lg hover:bg-red-50"><Trash2 size={14} className="text-red-400" /></button>
-                    </div></td>
-                  </tr>
-                )
-              })}
-            </tbody></table>
-            {products.length === 0 && <div className="text-center py-12 text-gray-400">No hay productos base.</div>}
-          </div>
+      {/* Product table */}
+      <div className="card overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full"><thead><tr className="border-b border-gray-100">
+            {['', 'Nombre', 'Costo', 'Precio', 'Margen', 'Stock', '', ''].map((h, i) =>
+              <th key={i} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 py-3">{h}</th>)}
+          </tr></thead><tbody>
+            {filtered.map(p => {
+              const margin = p.selling_price > 0 ? Math.round(((p.selling_price - p.unit_cost) / p.selling_price) * 100) : 0
+              const lowStock = p.manage_stock && p.current_stock <= p.min_stock
+              const photo = (p.photos || [])[0]
+              return (
+                <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50">
+                  <td className="px-3 py-2 w-10">
+                    {photo ? <img src={photo} alt="" className="w-9 h-9 rounded-lg object-cover" /> : <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center"><ImageIcon size={14} className="text-gray-300" /></div>}
+                  </td>
+                  <td className="px-3 py-3">
+                    <p className="font-medium text-gray-800">{p.name}</p>
+                    {p.description && <p className="text-xs text-gray-400 truncate max-w-[200px]">{p.description}</p>}
+                  </td>
+                  <td className="px-3 py-3 text-gray-600 text-sm">{fmt(p.unit_cost)}</td>
+                  <td className="px-3 py-3 font-semibold text-gray-800 text-sm">{fmt(p.selling_price)}</td>
+                  <td className="px-3 py-3"><span className={`text-sm font-medium ${marginColor(margin)}`}>{margin}%</span></td>
+                  <td className="px-3 py-3 text-sm relative">
+                    {p.manage_stock ? (
+                      <button onClick={e => { e.stopPropagation(); setStockPopover(stockPopover === p.id ? null : p.id) }} className={`flex items-center gap-1 ${lowStock ? 'text-red-500 font-medium' : 'text-gray-600'}`}>
+                        {lowStock && <AlertTriangle size={12} />}{p.current_stock} u.
+                      </button>
+                    ) : <span className="text-gray-400 text-xs">A pedido</span>}
+                    {stockPopover === p.id && p.manage_stock && (
+                      <div className="absolute left-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-20 w-44 py-1" onClick={e => e.stopPropagation()}>
+                        <p className="px-3 py-1.5 text-xs font-semibold text-gray-500">Stock: {p.current_stock} u.</p>
+                        <button onClick={() => { setStockPopover(null); setStockModal({ product: p, type: 'produce', qty: 0, note: '', movements: [] }) }} className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 text-gray-700">+ Producir</button>
+                        <button onClick={() => { setStockPopover(null); setStockModal({ product: p, type: 'sell', qty: 0, note: '', movements: [] }) }} className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 text-gray-700">− Vender</button>
+                        <button onClick={() => { setStockPopover(null); setStockModal({ product: p, type: 'adjust', qty: p.current_stock, note: '', movements: [] }) }} className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 text-gray-700">⟳ Ajustar</button>
+                        <div className="border-t border-gray-100 mt-1 pt-1">
+                          <button onClick={() => { setStockPopover(null); openHistory(p) }} className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 text-gray-500">Ver historial</button>
+                        </div>
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-3 py-3">{p.visible_in_catalog ? <Eye size={14} className="text-green-500" /> : <EyeOff size={14} className="text-gray-300" />}</td>
+                  <td className="px-3 py-3"><div className="flex gap-1">
+                    <button onClick={() => setCatModal(p)} className="p-1.5 rounded-lg hover:bg-gray-100"><Pencil size={14} className="text-gray-400" /></button>
+                    <button onClick={() => deleteCatalogProduct(p.id)} className="p-1.5 rounded-lg hover:bg-red-50"><Trash2 size={14} className="text-red-400" /></button>
+                  </div></td>
+                </tr>
+              )
+            })}
+          </tbody></table>
+          {filtered.length === 0 && <div className="text-center py-12 text-gray-400">No hay productos en esta vista.</div>}
         </div>
-      )}
-
-      {/* ══ Tab: Mis productos ══ */}
-      {tab === 'catalog' && (
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex gap-1.5 flex-wrap">
-              {[['all', 'Todos'], ['stock', 'Con stock'], ['ondemand', 'A pedido'], ['visible', 'Visible'], ['hidden', 'No visible']].map(([id, label]) => (
-                <button key={id} onClick={() => setCatFilter(id)}
-                  className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${catFilter === id ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-500'}`}>{label}</button>
-              ))}
-            </div>
-            <button onClick={() => setCatModal({ cost_mode: 'manual', unit_cost: 0, selling_price: 0, manage_stock: false, current_stock: 0, min_stock: 0, visible_in_catalog: true, photos: [] })}
-              className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={14} /> Agregar</button>
-          </div>
-
-          <div className="card overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full"><thead><tr className="border-b border-gray-100">
-                {['', 'Nombre', 'Costo', 'Precio', 'Margen', 'Stock', '', ''].map((h, i) =>
-                  <th key={i} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 py-3">{h}</th>)}
-              </tr></thead><tbody>
-                {filteredCatalog.map(p => {
-                  const margin = p.selling_price > 0 ? Math.round(((p.selling_price - p.unit_cost) / p.selling_price) * 100) : 0
-                  const lowStock = p.manage_stock && p.current_stock <= p.min_stock
-                  const photo = (p.photos || [])[0]
-                  return (
-                    <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50">
-                      <td className="px-3 py-2 w-10">
-                        {photo ? <img src={photo} alt="" className="w-9 h-9 rounded-lg object-cover" /> : <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center"><ImageIcon size={14} className="text-gray-300" /></div>}
-                      </td>
-                      <td className="px-3 py-3">
-                        <p className="font-medium text-gray-800">{p.name}</p>
-                        {p.description && <p className="text-xs text-gray-400 truncate max-w-[200px]">{p.description}</p>}
-                      </td>
-                      <td className="px-3 py-3 text-gray-600 text-sm">{fmt(p.unit_cost)}</td>
-                      <td className="px-3 py-3 font-semibold text-gray-800 text-sm">{fmt(p.selling_price)}</td>
-                      <td className="px-3 py-3"><span className={`text-sm font-medium ${marginColor(margin)}`}>{margin}%</span></td>
-                      <td className="px-3 py-3 text-sm relative">
-                        {p.manage_stock ? (
-                          <button onClick={() => setStockPopover(stockPopover === p.id ? null : p.id)} className={`flex items-center gap-1 ${lowStock ? 'text-red-500 font-medium' : 'text-gray-600'}`}>
-                            {lowStock && <AlertTriangle size={12} />}{p.current_stock} u.
-                          </button>
-                        ) : <span className="text-gray-400 text-xs">A pedido</span>}
-                        {/* Stock popover */}
-                        {stockPopover === p.id && p.manage_stock && (
-                          <div className="absolute left-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-20 w-44 py-1">
-                            <p className="px-3 py-1.5 text-xs font-semibold text-gray-500">Stock: {p.current_stock} u.</p>
-                            <button onClick={() => { setStockPopover(null); setStockModal({ product: p, type: 'produce', qty: 0, note: '', movements: [] }) }} className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 text-gray-700">+ Producir</button>
-                            <button onClick={() => { setStockPopover(null); setStockModal({ product: p, type: 'sell', qty: 0, note: '', movements: [] }) }} className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 text-gray-700">− Vender</button>
-                            <button onClick={() => { setStockPopover(null); setStockModal({ product: p, type: 'adjust', qty: p.current_stock, note: '', movements: [] }) }} className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 text-gray-700">⟳ Ajustar</button>
-                            <div className="border-t border-gray-100 mt-1 pt-1">
-                              <button onClick={() => { setStockPopover(null); openHistory(p) }} className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 text-gray-500">Ver historial</button>
-                            </div>
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-3 py-3">{p.visible_in_catalog ? <Eye size={14} className="text-green-500" /> : <EyeOff size={14} className="text-gray-300" />}</td>
-                      <td className="px-3 py-3"><div className="flex gap-1">
-                        <button onClick={() => setCatModal(p)} className="p-1.5 rounded-lg hover:bg-gray-100"><Pencil size={14} className="text-gray-400" /></button>
-                        <button onClick={() => deleteCatalogProduct(p.id)} className="p-1.5 rounded-lg hover:bg-red-50"><Trash2 size={14} className="text-red-400" /></button>
-                      </div></td>
-                    </tr>
-                  )
-                })}
-              </tbody></table>
-              {filteredCatalog.length === 0 && <div className="text-center py-12 text-gray-400">No hay productos en esta vista.</div>}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Base Product Modal */}
-      {modal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)' }}>
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="font-bold text-gray-900">{modal.id ? 'Editar' : 'Nuevo'} Producto base</h3>
-              <button onClick={() => setModal(null)} className="p-2 rounded-lg hover:bg-gray-100"><X size={16} /></button>
-            </div>
-            <div className="space-y-4">
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
-                <input className="input-base" value={modal.name || ''} onChange={e => setModal({ ...modal, name: e.target.value })} /></div>
-              <div className="grid grid-cols-2 gap-3">
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">Costo base ($)</label>
-                  <NumericInput className="input-base" value={modal.base_cost || 0} onChange={v => setModal({ ...modal, base_cost: v })} /></div>
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
-                  <select className="input-base" value={modal.category_id || ''} onChange={e => setModal({ ...modal, category_id: e.target.value || null })}>
-                    <option value="">Sin categoría</option>
-                    {categories.map(c => <option key={c.id} value={c.id}>{c.name} ({c.margen_sugerido}%)</option>)}
-                  </select></div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">Plancha asignada</label>
-                  <select className="input-base" value={modal.press_equipment_id || ''} onChange={e => setModal({ ...modal, press_equipment_id: e.target.value || null })}>
-                    <option value="">Sin plancha</option>
-                    {presses.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
-                  </select></div>
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">Impresora asignada</label>
-                  <select className="input-base" value={modal.printer_equipment_id || ''} onChange={e => setModal({ ...modal, printer_equipment_id: e.target.value || null })}>
-                    <option value="">Sin impresora</option>
-                    {printersList.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
-                  </select></div>
-              </div>
-              <div><label className="block text-sm font-semibold text-gray-600 mb-2">Tiempos de planchado (seg/unidad)</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {[['time_subli', 'Subli', '#6C5CE7'], ['time_dtf', 'DTF', '#E17055'], ['time_vinyl', 'Vinilo', '#E84393']].map(([k, l, c]) => (
-                    <div key={k}><label className="block text-xs font-medium mb-1" style={{ color: c as string }}>{l as string}</label>
-                      <NumericInput className="input-base text-center" value={(modal as Record<string, number>)[k as string] || 0}
-                        onChange={v => setModal({ ...modal, [k as string]: v })} /></div>
-                  ))}
-                </div></div>
-            </div>
-            <div className="flex gap-3 mt-6">
-              <button onClick={() => setModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">Cancelar</button>
-              <button onClick={saveProduct} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: '#6C5CE7' }}>{saving ? 'Guardando...' : 'Guardar'}</button>
-            </div>
-          </div>
-        </div>
-      )}
+      </div>
 
       {/* Catalog Product Modal */}
       {catModal && (
@@ -359,7 +233,6 @@ export default function CatalogoPage() {
                 </div>
                 <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={handlePhotoUpload} />
               </div>
-
               <div><label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
                 <input className="input-base" value={catModal.name || ''} onChange={e => setCatModal({ ...catModal, name: e.target.value })} /></div>
               <div><label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
@@ -370,7 +243,7 @@ export default function CatalogoPage() {
                   {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select></div>
 
-              {/* Cost section */}
+              {/* Cost */}
               <div className="border-t border-gray-100 pt-4">
                 <p className="text-sm font-semibold text-gray-700 mb-3">Costos</p>
                 <div className="flex gap-3 mb-3">
@@ -383,7 +256,6 @@ export default function CatalogoPage() {
                     <span className="text-sm text-gray-700">Calcular con cotizador</span>
                   </label>
                 </div>
-
                 {catModal.cost_mode !== 'calculated' ? (
                   <div className="grid grid-cols-2 gap-3">
                     <div><label className="block text-xs font-medium text-gray-600 mb-1">Costo unitario ($)</label>
@@ -405,7 +277,7 @@ export default function CatalogoPage() {
                           {ALL_TECNICA_SLUGS.map(s => <option key={s} value={s}>{TECNICA_LABELS[s]}</option>)}
                         </select></div>
                     </div>
-                    <p className="text-[10px] text-purple-600">El cálculo detallado se hace desde el cotizador. Usá el botón "Guardar producto" del cotizador para vincular automáticamente el desglose de costos.</p>
+                    <p className="text-[10px] text-purple-600">Usá el botón "Guardar producto" del cotizador para vincular automáticamente el desglose de costos.</p>
                     <div className="grid grid-cols-2 gap-3">
                       <div><label className="block text-xs font-medium text-gray-600 mb-1">Costo calculado ($)</label>
                         <NumericInput className="input-base" value={catModal.unit_cost || 0} onChange={v => setCatModal({ ...catModal, unit_cost: v })} /></div>
@@ -414,28 +286,23 @@ export default function CatalogoPage() {
                     </div>
                   </div>
                 )}
-                {catMargin > 0 && (
-                  <p className={`text-xs font-medium mt-1.5 ${marginColor(catMargin)}`}>Margen: {catMargin}%</p>
-                )}
+                {catMargin > 0 && <p className={`text-xs font-medium mt-1.5 ${marginColor(catMargin)}`}>Margen: {catMargin}%</p>}
               </div>
 
               {/* Stock */}
               <div className="border-t border-gray-100 pt-4">
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-sm font-semibold text-gray-700">Stock</p>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <span className="text-xs text-gray-500">Gestionar stock</span>
-                    <button type="button" onClick={() => setCatModal({ ...catModal, manage_stock: !catModal.manage_stock })}
-                      className="relative w-9 h-5 rounded-full transition-colors" style={{ background: catModal.manage_stock ? '#6C5CE7' : '#D1D5DB' }}>
-                      <span className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform" style={{ transform: catModal.manage_stock ? 'translateX(16px)' : 'translateX(0)' }} />
-                    </button>
-                  </label>
+                  <button type="button" onClick={() => setCatModal({ ...catModal, manage_stock: !catModal.manage_stock })}
+                    className="relative w-9 h-5 rounded-full transition-colors" style={{ background: catModal.manage_stock ? '#6C5CE7' : '#D1D5DB' }}>
+                    <span className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform" style={{ transform: catModal.manage_stock ? 'translateX(16px)' : 'translateX(0)' }} />
+                  </button>
                 </div>
                 {catModal.manage_stock && (
                   <div className="grid grid-cols-2 gap-3">
                     <div><label className="block text-xs font-medium text-gray-600 mb-1">Stock actual</label>
                       <NumericInput className="input-base" value={catModal.current_stock || 0} onChange={v => setCatModal({ ...catModal, current_stock: v })} /></div>
-                    <div><label className="block text-xs font-medium text-gray-600 mb-1">Stock mínimo (alerta)</label>
+                    <div><label className="block text-xs font-medium text-gray-600 mb-1">Stock mínimo</label>
                       <NumericInput className="input-base" value={catModal.min_stock || 0} onChange={v => setCatModal({ ...catModal, min_stock: v })} /></div>
                   </div>
                 )}
@@ -476,18 +343,18 @@ export default function CatalogoPage() {
                     </tr>
                   ))}
                 </tbody></table>
-              ) : <p className="text-sm text-gray-400 text-center py-6">Sin movimientos registrados.</p>}
+              ) : <p className="text-sm text-gray-400 text-center py-6">Sin movimientos.</p>}
               <button onClick={() => setStockModal(null)} className="w-full mt-4 py-2 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">Cerrar</button>
             </>) : (<>
               <h3 className="font-bold text-gray-900 mb-4">
                 {stockModal.type === 'produce' ? '+ Producir' : stockModal.type === 'sell' ? '− Vender' : '⟳ Ajustar stock'}
               </h3>
-              <p className="text-sm text-gray-500 mb-3">{stockModal.product.name} — Stock actual: {stockModal.product.current_stock} u.</p>
+              <p className="text-sm text-gray-500 mb-3">{stockModal.product.name} — Stock: {stockModal.product.current_stock} u.</p>
               <div className="space-y-3">
                 <div><label className="block text-sm font-medium text-gray-700 mb-1">{stockModal.type === 'adjust' ? 'Nuevo stock' : 'Cantidad'}</label>
                   <NumericInput className="input-base" min={0} value={stockModal.qty} onChange={v => setStockModal({ ...stockModal, qty: v })} /></div>
                 <div><label className="block text-sm font-medium text-gray-700 mb-1">Nota (opcional)</label>
-                  <input className="input-base text-sm" value={stockModal.note} onChange={e => setStockModal({ ...stockModal, note: e.target.value })} placeholder="Ej: Lote enero, Venta ML..." /></div>
+                  <input className="input-base text-sm" value={stockModal.note} onChange={e => setStockModal({ ...stockModal, note: e.target.value })} /></div>
               </div>
               <div className="flex gap-3 mt-5">
                 <button onClick={() => setStockModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">Cancelar</button>

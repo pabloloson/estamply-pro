@@ -8,6 +8,7 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       { source: '/calculator', destination: '/cotizador', permanent: true },
+      { source: '/insumos', destination: '/materiales?tab=insumos', permanent: false },
     ]
   },
 }
