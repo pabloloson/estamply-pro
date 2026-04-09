@@ -29,15 +29,20 @@ export async function POST(req: Request) {
     // Generate code
     const codigo = `WEB-${Date.now().toString(36).toUpperCase()}`
 
+    // Fetch business profile for the presupuesto header
+    const { data: profile } = await supabase.from('profiles').select('business_name,business_cuit,business_address,business_phone,business_email,business_instagram,business_logo_url').eq('id', userId).single()
+
     // Create presupuesto
     const { error } = await supabase.from('presupuestos').insert({
       user_id: userId, client_id: clientId || null, codigo,
+      numero: codigo, client_name: nombre,
       items: items.map((i: { name: string; variant: string; quantity: number; price: number }) => ({
         nombre: `${i.name}${i.variant ? ` (${i.variant})` : ''}`,
         cantidad: i.quantity, precioUnit: i.price, subtotal: i.price * i.quantity,
       })),
       total, origen: 'catalogo_web',
       notas: comentarios || null,
+      business_profile: profile || {},
     })
 
     if (error) {

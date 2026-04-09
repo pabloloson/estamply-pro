@@ -55,6 +55,8 @@ export default function PresupuestoPage() {
   const [publicLink, setPublicLink] = useState('')
   const [savingLink, setSavingLink] = useState(false)
   const [showEmailModal, setShowEmailModal] = useState(false)
+  const [savedPresupuestos, setSavedPresupuestos] = useState<Array<{ id: string; codigo: string; numero: string; client_name: string | null; total: number; origen: string; created_at: string }>>([])
+  const [showSaved, setShowSaved] = useState(true)
   const [emailTo, setEmailTo] = useState('')
   const [emailSubject, setEmailSubject] = useState('')
   const [emailBody, setEmailBody] = useState('')
@@ -97,12 +99,14 @@ export default function PresupuestoPage() {
   useEffect(() => {
     async function loadData() {
       const { data: { user } } = await supabase.auth.getUser()
-      const [{ data: cls }, { data: prof }, { data: wsData }] = await Promise.all([
+      const [{ data: cls }, { data: prof }, { data: wsData }, { data: saved }] = await Promise.all([
         supabase.from('clients').select('id, name, phone, email, whatsapp').order('name'),
         user ? supabase.from('profiles').select('business_name,business_logo_url,business_cuit,business_address,business_phone,business_email,business_instagram,business_website,workshop_name').eq('id', user.id).single() : Promise.resolve({ data: null }),
         supabase.from('workshop_settings').select('settings').single(),
+        supabase.from('presupuestos').select('id,codigo,numero,client_name,total,origen,created_at').order('created_at', { ascending: false }).limit(20),
       ])
       if (cls) setClients(cls)
+      if (saved) setSavedPresupuestos(saved as typeof savedPresupuestos)
       if (prof) setBizProfile(prof)
       if (wsData?.settings) {
         const s = { ...DEFAULT_SETTINGS, ...(wsData.settings as Partial<WorkshopSettings>) }
@@ -183,6 +187,35 @@ export default function PresupuestoPage() {
             <span className="text-sm text-gray-400">{items.length === 0 ? 'Sin ítems' : `${items.length} ${items.length === 1 ? 'ítem' : 'ítems'}`}</span>
           </div>
         </div>
+
+        {/* Saved presupuestos list */}
+        {savedPresupuestos.length > 0 && (
+          <div className="card mb-6 no-print" style={{ overflow: 'visible' }}>
+            <button onClick={() => setShowSaved(v => !v)} className="w-full p-4 flex items-center justify-between text-left">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-gray-800">Presupuestos guardados</span>
+                <span className="text-xs bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full font-medium">{savedPresupuestos.length}</span>
+              </div>
+              {showSaved ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
+            </button>
+            {showSaved && (
+              <div className="border-t border-gray-100">
+                {savedPresupuestos.map(p => (
+                  <a key={p.id} href={`/p/${p.codigo}`} target="_blank" rel="noopener" className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 border-b border-gray-50 last:border-0">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-gray-800">#{p.codigo}</span>
+                        {p.origen === 'catalogo_web' && <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold bg-green-100 text-green-600">Catálogo Web</span>}
+                      </div>
+                      <p className="text-xs text-gray-400">{p.client_name || 'Sin cliente'} · {new Date(p.created_at).toLocaleDateString('es-AR')}</p>
+                    </div>
+                    <span className="font-bold text-gray-800 text-sm">{fmt(p.total)}</span>
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {items.length === 0 ? (
           <div className="card flex flex-col items-center justify-center py-16 gap-4">
