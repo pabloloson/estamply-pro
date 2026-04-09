@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Save, User, Upload, Loader2, X, Plus, Trash2 } from 'lucide-react'
+import { Save, User, Upload, Loader2, X, Plus, Trash2, QrCode } from 'lucide-react'
+import { QRCodeCanvas } from 'qrcode.react'
 import { DEFAULT_SETTINGS, type WorkshopSettings, type DiscountTier, type ManoDeObraModo, type ComisionBase, DEFAULT_MO_CONFIG } from '@/features/presupuesto/types'
 
 function fmt(n: number) { return `$${Math.round(n).toLocaleString('es-AR')}` }
@@ -35,6 +36,7 @@ export default function SettingsPage() {
   const [userId, setUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [showQR, setShowQR] = useState(false)
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const [ws, setWs] = useState<WorkshopSettings>(DEFAULT_SETTINGS)
   const logoInputRef = useRef<HTMLInputElement>(null)
@@ -209,6 +211,7 @@ export default function SettingsPage() {
                 <button onClick={() => { navigator.clipboard.writeText(`https://www.estamply.app/catalogo/${(ws as Record<string, unknown>).catalog_slug}`); alert('Link copiado') }}
                   className="text-xs px-2 py-1 rounded-lg font-semibold text-purple-600 bg-purple-100 hover:bg-purple-200">Copiar</button>
                 <a href={`/catalogo/${(ws as Record<string, unknown>).catalog_slug}`} target="_blank" className="text-xs px-2 py-1 rounded-lg font-semibold text-purple-600 bg-purple-100 hover:bg-purple-200">Ver</a>
+                <button onClick={() => setShowQR(true)} className="text-xs px-2 py-1 rounded-lg font-semibold text-purple-600 bg-purple-100 hover:bg-purple-200 flex items-center gap-1"><QrCode size={12} />QR</button>
               </div>
             </div>
           )}
@@ -239,6 +242,27 @@ export default function SettingsPage() {
           </button>
         </div>
       </div>
+      {/* QR Modal */}
+      {showQR && !!(ws as Record<string, unknown>).catalog_slug && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)' }} onClick={() => setShowQR(false)}>
+          <div className="bg-white rounded-2xl p-6 shadow-2xl text-center" onClick={e => e.stopPropagation()}>
+            <h3 className="font-bold text-gray-900 mb-4">QR de tu catálogo</h3>
+            <QRCodeCanvas id="catalog-qr" value={`https://www.estamply.app/catalogo/${(ws as Record<string, unknown>).catalog_slug}`} size={300} level="M" />
+            <p className="text-xs text-gray-400 mt-3">estamply.app/catalogo/{(ws as Record<string, unknown>).catalog_slug as string}</p>
+            <div className="flex gap-3 mt-4">
+              <button onClick={() => setShowQR(false)} className="flex-1 py-2 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">Cerrar</button>
+              <button onClick={() => {
+                const canvas = document.getElementById('catalog-qr') as HTMLCanvasElement
+                if (!canvas) return
+                const link = document.createElement('a')
+                link.download = `qr-catalogo-${(ws as Record<string, unknown>).catalog_slug}.png`
+                link.href = canvas.toDataURL('image/png')
+                link.click()
+              }} className="flex-1 py-2 rounded-xl text-sm font-semibold text-white" style={{ background: '#6C5CE7' }}>Descargar PNG</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

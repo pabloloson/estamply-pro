@@ -76,7 +76,7 @@ export default function PublicCatalogPage() {
         user_id: userId,
       })
       const [{ data: prods }, { data: cats }] = await Promise.all([
-        supabase.from('catalog_products').select('id,name,description,photos,selling_price,manage_stock,current_stock,category_id,visible_in_catalog').eq('user_id', userId).eq('visible_in_catalog', true),
+        supabase.from('catalog_products').select('id,name,description,photos,selling_price,manage_stock,current_stock,category_id,visible_in_catalog').eq('user_id', userId).eq('visible_in_catalog', true).gt('selling_price', 0),
         supabase.from('categories').select('id,name').eq('user_id', userId),
       ])
       setProducts((prods || []) as CatalogProduct[])
@@ -101,7 +101,7 @@ function CatalogContent({ shop, products, categories }: { shop: ShopInfo; produc
   const [selectedCat, setSelectedCat] = useState<string | null>(null)
   const [detail, setDetail] = useState<CatalogProduct | null>(null)
   const [showCart, setShowCart] = useState(false)
-  const { items } = useContext(CartCtx)
+  const { items, add } = useContext(CartCtx)
   const color = shop.color
   const filtered = selectedCat ? products.filter(p => p.category_id === selectedCat) : products
   const usedCats = categories.filter(c => products.some(p => p.category_id === c.id))
@@ -159,11 +159,18 @@ function CatalogContent({ shop, products, categories }: { shop: ShopInfo; produc
                 <div className="relative aspect-square bg-gray-100">
                   {photo ? <img src={photo} alt={p.name} className="w-full h-full object-cover" loading="lazy" /> : <div className="w-full h-full flex items-center justify-center text-gray-300 text-3xl">📷</div>}
                   {status === 'soldout' && <div className="absolute inset-0 bg-black/40 flex items-center justify-center"><span className="text-white font-bold text-sm bg-black/60 px-3 py-1 rounded-full">SIN STOCK</span></div>}
+                  {status === 'instock' && (
+                    <button onClick={e => { e.stopPropagation(); add(p, 1) }}
+                      className="absolute bottom-2 right-2 w-9 h-9 rounded-full flex items-center justify-center text-white shadow-lg active:scale-95 transition-transform"
+                      style={{ background: color }}>
+                      <Plus size={18} />
+                    </button>
+                  )}
                 </div>
                 <div className="p-3">
-                  <p className="font-semibold text-gray-800 text-sm truncate">{p.name}</p>
-                  <p className="font-bold text-gray-900 mt-0.5">{status === 'ondemand' && <span className="text-xs font-normal text-gray-400">desde </span>}{fmt(p.selling_price)}</p>
-                  <p className={`text-xs mt-1 ${status === 'instock' ? 'text-green-600' : status === 'soldout' ? 'text-red-500' : 'text-gray-400'}`}>
+                  <p className="font-semibold text-gray-800 text-sm leading-tight" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{p.name}</p>
+                  <p className="font-bold text-gray-900 mt-1">{status === 'ondemand' && <span className="text-xs font-normal text-gray-400">desde </span>}{fmt(p.selling_price)}</p>
+                  <p className={`text-xs mt-0.5 ${status === 'instock' ? 'text-green-600' : status === 'soldout' ? 'text-red-500' : 'text-gray-400'}`}>
                     {status === 'instock' ? '✓ En stock' : status === 'soldout' ? '✗ Agotado' : '⏱ A pedido'}
                   </p>
                 </div>
@@ -207,7 +214,7 @@ function ProductDetail({ product, shop, onClose }: { product: CatalogProduct; sh
   const canAdd = status === 'instock'
 
   function handleConsult() {
-    const msg = encodeURIComponent(`Hola! 👋 Vi en tu catálogo el producto "${product.name}" (${status === 'ondemand' ? 'desde ' : ''}${fmt(product.selling_price)}) y me gustaría consultar.\n\n(Visto en estamply.app)`)
+    const msg = encodeURIComponent(`Hola! 👋 Me interesa este producto de tu catálogo:\n\n📦 ${product.name}\n💰 ${status === 'ondemand' ? 'desde ' : ''}${fmt(product.selling_price)}\n\n¿Podrías darme más info?`)
     window.open(`https://wa.me/${shop.whatsapp.replace(/\D/g, '')}?text=${msg}`, '_blank')
   }
 
@@ -281,7 +288,7 @@ function CartScreen({ shop, onClose }: { shop: ShopInfo; onClose: () => void }) 
 
   function sendWhatsApp() {
     const lines = items.map(i => `• ${i.quantity}× ${i.name} — ${fmt(i.price * i.quantity)}`).join('\n')
-    const msg = `Hola! 👋 Quiero hacer un pedido:\n\n${lines}\n\nTotal: ${fmt(total)}\n\nNombre: ${nombre}${comentarios ? `\nComentarios: ${comentarios}` : ''}\n\n(Pedido desde estamply.app)`
+    const msg = `Hola! 👋 Quiero hacer un pedido:\n\n${lines}\n\nTotal: ${fmt(total)}\n\nNombre: ${nombre}${comentarios ? `\nComentarios: ${comentarios}` : ''}\n\nPedido desde tu catálogo web`
     window.open(`https://wa.me/${shop.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank')
   }
 
