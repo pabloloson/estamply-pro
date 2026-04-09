@@ -157,11 +157,7 @@ function CatalogContent({ shop, products, categories }: { shop: ShopInfo; produc
               {shop.description && <p className="text-sm opacity-80 mt-0.5">{shop.description}</p>}
             </div>
           </div>
-          <div className="flex gap-3 mt-3 flex-wrap">
-            {shop.whatsapp && <a href={`https://wa.me/${shop.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener" className="text-sm opacity-80 hover:opacity-100 flex items-center gap-1"><MessageCircle size={14} /> WhatsApp</a>}
-            {shop.instagram && <a href={`https://instagram.com/${shop.instagram.replace('@', '')}`} target="_blank" rel="noopener" className="text-sm opacity-80 hover:opacity-100">@{shop.instagram.replace('@', '')}</a>}
-            {shop.direccion && <a href={`https://maps.google.com/?q=${encodeURIComponent(shop.direccion)}`} target="_blank" rel="noopener" className="text-sm opacity-80 hover:opacity-100 flex items-center gap-1">📍 {shop.direccion}</a>}
-          </div>
+          {/* Contact info moved to footer */}
         </div>
         </div>
       </div>
@@ -217,9 +213,34 @@ function CatalogContent({ shop, products, categories }: { shop: ShopInfo; produc
       </div>
 
       {/* Footer */}
-      <div className="text-center py-8 text-xs text-gray-400">
-        Powered by <a href="https://www.estamply.app" className="font-semibold hover:text-gray-600">Estamply</a>
+      <div className="bg-gray-100 px-4 py-8">
+        <div className="max-w-5xl mx-auto text-center">
+          <div className="flex items-center justify-center gap-3 mb-3">
+            {shop.logo && <img src={shop.logo} alt="" className="w-10 h-10 rounded-xl object-cover" />}
+            <span className="font-bold text-gray-800">{shop.nombre}</span>
+          </div>
+          <div className="space-y-1 text-sm text-gray-500 mb-4">
+            {shop.direccion && <p>📍 {shop.direccion}</p>}
+            {shop.whatsapp && <p>📱 {shop.whatsapp}</p>}
+          </div>
+          {(shop.instagram || shop.whatsapp) && (
+            <div className="flex items-center justify-center gap-4 mb-4">
+              {shop.instagram && <a href={`https://instagram.com/${shop.instagram.replace('@', '')}`} target="_blank" rel="noopener" className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-300 transition-colors"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5"/></svg></a>}
+              {shop.whatsapp && <a href={`https://wa.me/${shop.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener" className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-300 transition-colors"><MessageCircle size={16} /></a>}
+            </div>
+          )}
+          <p className="text-xs text-gray-400">Powered by <a href="https://www.estamply.app" className="font-semibold hover:text-gray-500">Estamply</a></p>
+        </div>
       </div>
+
+      {/* WhatsApp floating button */}
+      {shop.whatsapp && (
+        <a href={`https://wa.me/${shop.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer"
+          className="fixed right-5 z-30 w-14 h-14 rounded-full flex items-center justify-center text-white shadow-lg hover:shadow-xl transition-shadow"
+          style={{ background: '#25D366', bottom: itemCount > 0 ? '88px' : '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
+          <MessageCircle size={24} />
+        </a>
+      )}
 
       {/* Cart bar */}
       {itemCount > 0 && !showCart && !detail && (
