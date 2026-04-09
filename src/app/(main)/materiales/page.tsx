@@ -344,10 +344,9 @@ export default function MaterialesPage() {
                 })()}
                 {insModal.tipo === 'tinta' && (() => {
                   const c = (insModal.config || {}) as Record<string, unknown>
-                  return (<div className="grid grid-cols-3 gap-3">
+                  return (<div className="grid grid-cols-2 gap-3">
                     <div><label className="block text-xs text-gray-500 mb-1">Precio ($)</label><NumericInput className="input-base" value={c.precio as number || 0} onChange={v => up({ precio: v })} /></div>
-                    <div><label className="block text-xs text-gray-500 mb-1">Rendimiento</label><NumericInput className="input-base" value={c.rendimiento as number || 0} onChange={v => up({ rendimiento: v })} /></div>
-                    <div><label className="block text-xs text-gray-500 mb-1">Unidad</label><select className="input-base" value={c.unidad_rendimiento as string || 'hojas'} onChange={e => up({ unidad_rendimiento: e.target.value })}><option value="hojas">Hojas</option><option value="m2">m²</option></select></div>
+                    <div><label className="block text-xs text-gray-500 mb-1">Rendimiento (hojas)</label><NumericInput className="input-base" value={c.rendimiento as number || 0} onChange={v => up({ rendimiento: v })} /></div>
                   </div>)
                 })()}
                 {insModal.tipo === 'film' && (() => {
@@ -417,11 +416,8 @@ export default function MaterialesPage() {
                 })()}
                 {insModal.tipo === 'otro' && (() => {
                   const c = (insModal.config || {}) as Record<string, unknown>
-                  return (<div className="grid grid-cols-2 gap-3">
+                  return (<div>
                     <div><label className="block text-xs text-gray-500 mb-1">Precio ($)</label><NumericInput className="input-base" value={c.precio as number || 0} onChange={v => up({ precio: v })} /></div>
-                    <div><label className="block text-xs text-gray-500 mb-1">Unidad</label><input className="input-base" value={c.unidad as string || ''} onChange={e => up({ unidad: e.target.value })} /></div>
-                    <div><label className="block text-xs text-gray-500 mb-1">Rendimiento</label><NumericInput className="input-base" value={c.rendimiento as number || 0} onChange={v => up({ rendimiento: v })} /></div>
-                    <div><label className="block text-xs text-gray-500 mb-1">Unidad rend.</label><input className="input-base" value={c.unidad_rendimiento as string || ''} onChange={e => up({ unidad_rendimiento: e.target.value })} /></div>
                   </div>)
                 })()}
               </div>
