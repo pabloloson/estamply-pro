@@ -11,7 +11,7 @@ import NumericInput from '@/shared/components/NumericInput'
 interface Product {
   id: string; name: string; base_cost: number; category_id: string | null
   time_subli: number; time_dtf: number; time_vinyl: number
-  press_equipment_id: string | null; printer_equipment_id: string | null
+  press_equipment_id: string | null
 }
 interface Equipment { id: string; name: string; type: string }
 
@@ -79,7 +79,6 @@ export default function MaterialesPage() {
   useEffect(() => { load() }, [])
 
   const presses = equipment.filter(e => e.type.startsWith('press'))
-  const printersList = equipment.filter(e => e.type.startsWith('printer') || e.type === 'plotter')
 
   // ── Base product CRUD ──
   async function saveProduct() {
@@ -87,7 +86,7 @@ export default function MaterialesPage() {
     const payload = {
       name: modal.name, base_cost: modal.base_cost || 0, category_id: modal.category_id || null,
       time_subli: modal.time_subli || 0, time_dtf: modal.time_dtf || 0, time_vinyl: modal.time_vinyl || 0,
-      press_equipment_id: modal.press_equipment_id || null, printer_equipment_id: modal.printer_equipment_id || null,
+      press_equipment_id: modal.press_equipment_id || null,
     }
     if (modal.id) await supabase.from('products').update(payload).eq('id', modal.id)
     else await supabase.from('products').insert(payload)
@@ -175,19 +174,17 @@ export default function MaterialesPage() {
             <button onClick={() => setModal({ time_subli: 0, time_dtf: 0, time_vinyl: 0, base_cost: 0 } as Partial<Product>)} className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={14} /> Agregar</button>
           </div>
           <table className="w-full"><thead><tr className="border-b border-gray-100">
-            {['Nombre', 'Costo', 'Categoría', 'Plancha', 'Impresora', ''].map(h => <th key={h} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">{h}</th>)}
+            {['Nombre', 'Costo', 'Categoría', 'Plancha', ''].map(h => <th key={h} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">{h}</th>)}
           </tr></thead><tbody>
             {products.map(p => {
               const cat = categories.find(c => c.id === p.category_id)
               const press = equipment.find(e => e.id === p.press_equipment_id)
-              const printer = equipment.find(e => e.id === p.printer_equipment_id)
               return (
                 <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50">
                   <td className="px-4 py-3 font-medium text-gray-800">{p.name}</td>
                   <td className="px-4 py-3 text-gray-600">{fmt(p.base_cost)}</td>
                   <td className="px-4 py-3">{cat ? <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-purple-50 text-purple-600">{cat.name}</span> : <span className="text-xs text-gray-300">—</span>}</td>
                   <td className="px-4 py-3 text-sm text-gray-500">{press?.name ?? <span className="text-gray-300">—</span>}</td>
-                  <td className="px-4 py-3 text-sm text-gray-500">{printer?.name ?? <span className="text-gray-300">—</span>}</td>
                   <td className="px-4 py-3"><div className="flex gap-1">
                     <button onClick={() => setModal(p as Partial<Product>)} className="p-1.5 rounded-lg hover:bg-gray-100"><Pencil size={14} className="text-gray-400" /></button>
                     <button onClick={() => deleteProduct(p.id)} className="p-1.5 rounded-lg hover:bg-red-50"><Trash2 size={14} className="text-red-400" /></button>
@@ -266,16 +263,11 @@ export default function MaterialesPage() {
                     {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select></div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">Plancha</label>
+              <div>
+                <div><label className="block text-sm font-medium text-gray-700 mb-1">Plancha asignada</label>
                   <select className="input-base" value={modal.press_equipment_id || ''} onChange={e => setModal({ ...modal, press_equipment_id: e.target.value || null })}>
                     <option value="">Sin plancha</option>
                     {presses.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
-                  </select></div>
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">Impresora</label>
-                  <select className="input-base" value={modal.printer_equipment_id || ''} onChange={e => setModal({ ...modal, printer_equipment_id: e.target.value || null })}>
-                    <option value="">Sin impresora</option>
-                    {printersList.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
                   </select></div>
               </div>
               <div><label className="block text-sm font-semibold text-gray-600 mb-2">Tiempos de planchado (seg/unidad)</label>
