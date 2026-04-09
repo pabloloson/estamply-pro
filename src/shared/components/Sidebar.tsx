@@ -85,7 +85,7 @@ export function Sidebar({ workshopName = 'Mi Taller' }: SidebarProps) {
         <p className="px-3 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
           Mi taller
         </p>
-        <NavLink href="/catalogo" icon={Package} label="Productos" />
+        <NavLink href="/catalogo" icon={Package} label="Catálogo" />
         <NavLink href="/insumos" icon={Droplets} label="Insumos" />
         <NavLink href="/equipamiento" icon={Cpu} label="Equipamiento" />
         <NavLink href="/tecnicas" icon={Palette} label="Producción" />

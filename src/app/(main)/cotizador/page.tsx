@@ -241,6 +241,27 @@ export default function CotizadorPage() {
     setItemNotes('')
   }
 
+  const [saveProductModal, setSaveProductModal] = useState<{ name: string; price: number; visible: boolean } | null>(null)
+  function handleSaveAsProduct() {
+    if (!result || !product) return
+    setSaveProductModal({ name: `${product.name} — ${technique?.nombre || ''}`, price: Math.round(result.precioConDesc), visible: true })
+  }
+  async function doSaveProduct() {
+    if (!saveProductModal || !result || !product) return
+    await supabase.from('catalog_products').insert({
+      name: saveProductModal.name,
+      cost_mode: 'calculated',
+      base_product_id: product.id,
+      technique: technique?.slug || null,
+      unit_cost: Math.round(result.costoTotal),
+      cost_breakdown: result.costLines,
+      selling_price: saveProductModal.price,
+      visible_in_catalog: saveProductModal.visible,
+    })
+    setSaveProductModal(null)
+    alert('Producto guardado en "Mis productos" ✓')
+  }
+
   const activeTabMeta = cotizadorTabs.find(t => t.id === cotizadorTab) ?? cotizadorTabs[0]
   const activeColor = activeTabMeta?.color ?? '#6C5CE7'
   const isVinyl = resolvedSlug === 'vinyl'
@@ -546,12 +567,19 @@ export default function CotizadorPage() {
                 </div>
               )}
 
-              {/* Agregar al Presupuesto */}
-              <button type="button" onClick={handleAddToCart} disabled={!result || !!result?.pedidoMinimoWarning}
-                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-white text-sm transition-all disabled:opacity-40"
-                style={{ backgroundColor: activeColor, boxShadow: `0 4px 20px ${activeColor}40` }}>
-                <ShoppingCart size={16} /> Agregar al Presupuesto
-              </button>
+              {/* Action buttons */}
+              <div className="flex gap-2">
+                <button type="button" onClick={handleAddToCart} disabled={!result || !!result?.pedidoMinimoWarning}
+                  className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-white text-sm transition-all disabled:opacity-40"
+                  style={{ backgroundColor: activeColor, boxShadow: `0 4px 20px ${activeColor}40` }}>
+                  <ShoppingCart size={16} /> Al Presupuesto
+                </button>
+                <button type="button" onClick={handleSaveAsProduct} disabled={!result || !!result?.pedidoMinimoWarning}
+                  className="px-4 py-3.5 rounded-xl font-bold text-sm transition-all disabled:opacity-40 border-2 hover:bg-gray-50"
+                  style={{ borderColor: activeColor, color: activeColor }}>
+                  Guardar producto
+                </button>
+              </div>
             </>)}
           </div>
 
@@ -610,6 +638,32 @@ export default function CotizadorPage() {
                 <p className="text-sm text-amber-600 font-medium text-center px-8">{result.pedidoMinimoWarning}</p>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Save as product modal */}
+      {saveProductModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)' }} onClick={() => setSaveProductModal(null)}>
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
+            <h3 className="font-bold text-gray-900 mb-4">Guardar como producto</h3>
+            <div className="space-y-3">
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+                <input className="input-base" value={saveProductModal.name} onChange={e => setSaveProductModal({ ...saveProductModal, name: e.target.value })} /></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Precio de venta ($)</label>
+                <input type="number" className="input-base" value={saveProductModal.price} onFocus={e => e.target.select()}
+                  onChange={e => setSaveProductModal({ ...saveProductModal, price: parseInt(e.target.value) || 0 })} /></div>
+              <p className="text-xs text-gray-400">Costo: {result ? `$${Math.round(result.costoTotal).toLocaleString('es-AR')}` : '—'} /unidad</p>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" className="rounded border-gray-300 text-purple-600" checked={saveProductModal.visible}
+                  onChange={() => setSaveProductModal({ ...saveProductModal, visible: !saveProductModal.visible })} />
+                <span className="text-sm text-gray-700">Visible en catálogo web</span>
+              </label>
+            </div>
+            <div className="flex gap-3 mt-5">
+              <button onClick={() => setSaveProductModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">Cancelar</button>
+              <button onClick={doSaveProduct} disabled={!saveProductModal.name.trim()} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#6C5CE7' }}>Guardar</button>
+            </div>
           </div>
         </div>
       )}

@@ -196,7 +196,28 @@ export default function SettingsPage() {
         </button>
       </div>
 
-      {/* Discounts and labor now managed in Producción → General */}
+      {/* Catálogo web (preparación) */}
+      <div className="card p-6 max-w-2xl mt-6">
+        <h3 className="font-semibold text-gray-800 mb-1">Catálogo web</h3>
+        <p className="text-xs text-gray-400 mb-4">Configurá cómo se ve tu catálogo público online (próximamente).</p>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Color principal de la marca</label>
+            <input type="color" className="w-10 h-10 rounded-lg border border-gray-200 cursor-pointer" value={(ws as Record<string, unknown>).brand_color as string || '#6C5CE7'}
+              onChange={e => setWs({ ...ws, brand_color: e.target.value } as WorkshopSettings)} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Descripción corta del taller</label>
+            <textarea className="input-base text-sm" rows={2} maxLength={280} placeholder="Ej: Taller de sublimación y serigrafía en Córdoba..."
+              value={(ws as Record<string, unknown>).brand_description as string || ''}
+              onChange={e => setWs({ ...ws, brand_description: e.target.value } as WorkshopSettings)} />
+            <p className="text-[10px] text-gray-400 mt-0.5">{((ws as Record<string, unknown>).brand_description as string || '').length}/280</p>
+          </div>
+          <button onClick={saveWs} className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white" style={{ background: '#6C5CE7' }}>
+            <Save size={14} /> Guardar catálogo web
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
