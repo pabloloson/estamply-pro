@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Save, Plus, Trash2, Settings, Lock } from 'lucide-react'
 import { DEFAULT_SETTINGS, type WorkshopSettings, type DiscountTier } from '@/features/presupuesto/types'
 import { TECHNIQUE_DEFAULTS, TECNICA_LABELS, ALL_TECNICA_SLUGS, type Tecnica, type TecnicaConfig, type TecnicaSlug, type DTFConfig, type SerigrafiaConfig } from '@/features/taller/types'
+import NumericInput from '@/shared/components/NumericInput'
 
 interface Operator {
   id: string; name: string; hourly_rate: number; techniques: string[]
@@ -16,7 +17,7 @@ interface Operator {
 function fmt(n: number) { return `$${Math.round(n).toLocaleString('es-AR')}` }
 function opSummary(op: Operator): string {
   if (op.calculation_mode === 'salary') return `${fmt(op.hourly_rate)}/h (sueldo)`
-  if (op.calculation_mode === 'percentage') return `${op.percentage}% sobre ${op.percentage_base === 'cost' ? 'costo' : 'ganancia'}`
+  if (op.calculation_mode === 'percentage') return `${op.percentage}% sobre ${op.percentage_base === 'cost' ? 'precio de venta' : 'ganancia'}`
   return `${fmt(op.fixed_amount)}/unidad`
 }
 
@@ -338,10 +339,10 @@ export default function ProduccionPage() {
             {(opModal.calculation_mode || 'salary') === 'salary' && (
               <div className="space-y-3 p-3 rounded-xl bg-gray-50">
                 <div className="grid grid-cols-2 gap-3">
-                  <div><label className="block text-xs font-medium text-gray-600 mb-1">Costo mensual ($)</label>
-                    <input type="number" className="input-base" min={0} value={opModal.monthly_salary || 0} onChange={e => setOpModal({ ...opModal, monthly_salary: parseFloat(e.target.value) || 0 })} /></div>
-                  <div><label className="block text-xs font-medium text-gray-600 mb-1">Horas/mes</label>
-                    <input type="number" className="input-base" min={1} value={opModal.monthly_hours || 160} onChange={e => setOpModal({ ...opModal, monthly_hours: parseFloat(e.target.value) || 160 })} /></div>
+                  <div><label className="block text-xs font-medium text-gray-600 mb-1">Sueldo ($)</label>
+                    <NumericInput className="input-base" value={opModal.monthly_salary || 0} onChange={v => setOpModal({ ...opModal, monthly_salary: v })} /></div>
+                  <div><label className="block text-xs font-medium text-gray-600 mb-1">Horas</label>
+                    <NumericInput className="input-base" min={1} value={opModal.monthly_hours || 160} onChange={v => setOpModal({ ...opModal, monthly_hours: v })} /></div>
                 </div>
                 {(opModal.monthly_hours || 160) > 0 && (opModal.monthly_salary || 0) > 0 && (
                   <p className="text-sm font-medium text-green-600">Costo por hora: {fmt(Math.round((opModal.monthly_salary || 0) / (opModal.monthly_hours || 160)))}/h</p>
@@ -353,10 +354,10 @@ export default function ProduccionPage() {
               <div className="space-y-3 p-3 rounded-xl bg-gray-50">
                 <div className="grid grid-cols-2 gap-3">
                   <div><label className="block text-xs font-medium text-gray-600 mb-1">Porcentaje (%)</label>
-                    <input type="number" className="input-base" min={0} max={100} value={opModal.percentage || 0} onChange={e => setOpModal({ ...opModal, percentage: parseFloat(e.target.value) || 0 })} /></div>
+                    <NumericInput className="input-base" value={opModal.percentage || 0} onChange={v => setOpModal({ ...opModal, percentage: v })} /></div>
                   <div><label className="block text-xs font-medium text-gray-600 mb-1">Aplicar sobre</label>
                     <select className="input-base" value={opModal.percentage_base || 'cost'} onChange={e => setOpModal({ ...opModal, percentage_base: e.target.value as 'cost' | 'profit' })}>
-                      <option value="cost">Costo total</option>
+                      <option value="cost">Precio de venta</option>
                       <option value="profit">Ganancia</option>
                     </select></div>
                 </div>
@@ -366,7 +367,7 @@ export default function ProduccionPage() {
             {(opModal.calculation_mode) === 'fixed' && (
               <div className="p-3 rounded-xl bg-gray-50">
                 <label className="block text-xs font-medium text-gray-600 mb-1">Monto por unidad ($)</label>
-                <input type="number" className="input-base" min={0} value={opModal.fixed_amount || 0} onChange={e => setOpModal({ ...opModal, fixed_amount: parseFloat(e.target.value) || 0 })} />
+                <NumericInput className="input-base" value={opModal.fixed_amount || 0} onChange={v => setOpModal({ ...opModal, fixed_amount: v })} />
               </div>
             )}
 
