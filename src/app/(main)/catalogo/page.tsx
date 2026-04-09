@@ -151,7 +151,7 @@ export default function CatalogoPage() {
       </div>
 
       {/* Product table */}
-      <div className="card overflow-hidden">
+      <div className="card">
         <div className="overflow-x-auto">
           <table className="w-full"><thead><tr className="border-b border-gray-100">
             {['', 'Nombre', 'Costo', 'Precio', 'Margen', 'Stock', '', ''].map((h, i) =>
@@ -173,23 +173,26 @@ export default function CatalogoPage() {
                   <td className="px-3 py-3 text-gray-600 text-sm">{fmt(p.unit_cost)}</td>
                   <td className="px-3 py-3 font-semibold text-gray-800 text-sm">{fmt(p.selling_price)}</td>
                   <td className="px-3 py-3"><span className={`text-sm font-medium ${marginColor(margin)}`}>{margin}%</span></td>
-                  <td className="px-3 py-3 text-sm relative">
+                  <td className="px-3 py-3 text-sm">
                     {p.manage_stock ? (
-                      <button onClick={e => { e.stopPropagation(); setStockPopover(stockPopover === p.id ? null : p.id) }} className={`flex items-center gap-1 ${lowStock ? 'text-red-500 font-medium' : 'text-gray-600'}`}>
-                        {lowStock && <AlertTriangle size={12} />}{p.current_stock} u.
-                      </button>
-                    ) : <span className="text-gray-400 text-xs">A pedido</span>}
-                    {stockPopover === p.id && p.manage_stock && (
-                      <div className="absolute left-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-20 w-44 py-1" onClick={e => e.stopPropagation()}>
-                        <p className="px-3 py-1.5 text-xs font-semibold text-gray-500">Stock: {p.current_stock} u.</p>
-                        <button onClick={() => { setStockPopover(null); setStockModal({ product: p, type: 'produce', qty: 0, note: '', movements: [] }) }} className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 text-gray-700">+ Producir</button>
-                        <button onClick={() => { setStockPopover(null); setStockModal({ product: p, type: 'sell', qty: 0, note: '', movements: [] }) }} className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 text-gray-700">− Vender</button>
-                        <button onClick={() => { setStockPopover(null); setStockModal({ product: p, type: 'adjust', qty: p.current_stock, note: '', movements: [] }) }} className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 text-gray-700">⟳ Ajustar</button>
-                        <div className="border-t border-gray-100 mt-1 pt-1">
-                          <button onClick={() => { setStockPopover(null); openHistory(p) }} className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 text-gray-500">Ver historial</button>
-                        </div>
+                      <div className="relative inline-block">
+                        <button onClick={e => { e.stopPropagation(); setStockPopover(stockPopover === p.id ? null : p.id) }} className={`flex items-center gap-1 cursor-pointer ${lowStock ? 'text-red-500 font-medium' : 'text-gray-600 hover:text-gray-800'}`}>
+                          {lowStock && <AlertTriangle size={12} />}{p.current_stock} u.
+                        </button>
+                        {stockPopover === p.id && (
+                          <div className="absolute left-0 top-full mt-1 w-48 py-2 bg-white rounded-lg z-50" onClick={e => e.stopPropagation()}
+                            style={{ border: '1px solid #e5e5e5', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+                            <p className="px-3 py-1 text-xs font-semibold text-gray-500 border-b border-gray-100 mb-1 pb-1.5">Stock: {p.current_stock} u.</p>
+                            <button onClick={() => { setStockPopover(null); setStockModal({ product: p, type: 'produce', qty: 0, note: '', movements: [] }) }} className="w-full text-left px-3 py-1.5 text-sm hover:bg-purple-50 text-gray-700 transition-colors">+ Producir</button>
+                            <button onClick={() => { setStockPopover(null); setStockModal({ product: p, type: 'sell', qty: 0, note: '', movements: [] }) }} className="w-full text-left px-3 py-1.5 text-sm hover:bg-purple-50 text-gray-700 transition-colors">− Vender</button>
+                            <button onClick={() => { setStockPopover(null); setStockModal({ product: p, type: 'adjust', qty: p.current_stock, note: '', movements: [] }) }} className="w-full text-left px-3 py-1.5 text-sm hover:bg-purple-50 text-gray-700 transition-colors">⟳ Ajustar</button>
+                            <div className="border-t border-gray-100 mt-1 pt-1">
+                              <button onClick={() => { setStockPopover(null); openHistory(p) }} className="w-full text-left px-3 py-1.5 text-sm hover:bg-purple-50 text-gray-400 transition-colors">📋 Historial</button>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    )}
+                    ) : <span className="text-gray-400 text-xs">A pedido</span>}
                   </td>
                   <td className="px-3 py-3">{p.visible_in_catalog ? <Eye size={14} className="text-green-500" /> : <EyeOff size={14} className="text-gray-300" />}</td>
                   <td className="px-3 py-3"><div className="flex gap-1">
