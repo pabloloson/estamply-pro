@@ -205,52 +205,71 @@ export default function PresupuestoPage() {
       `}</style>
 
       <div className="max-w-6xl mx-auto px-4 py-6">
-        <div className="flex items-center justify-between mb-6 no-print">
-          <div className="flex items-center gap-2">
-            <Link href="/cotizador" className="text-gray-400 hover:text-gray-600"><ArrowLeft size={18} /></Link>
-            <h1 className="text-2xl font-black text-gray-900">Presupuesto</h1>
-            <span className="text-sm text-gray-400">{items.length === 0 ? 'Sin ítems' : `${items.length} ${items.length === 1 ? 'ítem' : 'ítems'}`}</span>
-          </div>
-        </div>
 
-        {/* Saved presupuestos list */}
-        {savedPresupuestos.length > 0 && (
-          <div className="card mb-6 no-print" style={{ overflow: 'visible' }}>
-            <button onClick={() => setShowSaved(v => !v)} className="w-full p-4 flex items-center justify-between text-left">
-              <div className="flex items-center gap-2">
-                <span className="font-semibold text-gray-800">Presupuestos guardados</span>
-                <span className="text-xs bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full font-medium">{savedPresupuestos.length}</span>
-              </div>
-              {showSaved ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
-            </button>
-            {showSaved && (
-              <div className="border-t border-gray-100">
+        {/* ══ LIST VIEW: when no presupuesto is loaded ══ */}
+        {items.length === 0 && !loadedPresupuestoId ? (<>
+          <div className="flex items-center justify-between mb-6 no-print">
+            <div>
+              <h1 className="text-2xl font-black text-gray-900">Presupuestos</h1>
+              <p className="text-sm text-gray-400 mt-0.5">{savedPresupuestos.length} presupuesto{savedPresupuestos.length !== 1 ? 's' : ''}</p>
+            </div>
+            <Link href="/cotizador" className="flex items-center gap-1.5 text-sm px-4 py-2 rounded-xl font-semibold text-white" style={{ background: '#6C5CE7' }}>
+              + Nuevo presupuesto
+            </Link>
+          </div>
+
+          {savedPresupuestos.length > 0 ? (
+            <div className="card overflow-hidden">
+              <table className="w-full"><thead><tr className="border-b border-gray-100">
+                {['Código', 'Cliente', 'Fecha', 'Total', ''].map(h => <th key={h} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">{h}</th>)}
+              </tr></thead><tbody>
                 {savedPresupuestos.map(p => {
                   const cName = p.client_name || clients.find(c => c.id === p.client_id)?.name || 'Sin cliente'
-                  const isActive = loadedPresupuestoId === p.id
                   return (
-                  <button key={p.id} onClick={() => loadSavedPresupuesto(p.id)}
-                    className={`w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 border-b border-gray-50 last:border-0 text-left ${isActive ? 'bg-purple-50' : ''}`}>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-gray-800">#{p.codigo}</span>
-                        {p.origen === 'catalogo_web' && <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold bg-green-100 text-green-600">Catálogo Web</span>}
-                        {isActive && <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold bg-purple-100 text-purple-600">Activo</span>}
-                      </div>
-                      <p className="text-xs text-gray-400">{cName} · {new Date(p.created_at).toLocaleDateString('es-AR')}</p>
-                    </div>
-                    <span className="font-bold text-gray-800 text-sm">{fmt(p.total)}</span>
-                  </button>
-                )})}
-              </div>
+                    <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50 cursor-pointer" onClick={() => loadSavedPresupuesto(p.id)}>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-gray-800 text-sm">#{p.codigo}</span>
+                          {p.origen === 'catalogo_web' && <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold bg-green-100 text-green-600">Web</span>}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600">{cName}</td>
+                      <td className="px-4 py-3 text-sm text-gray-400">{new Date(p.created_at).toLocaleDateString('es-AR')}</td>
+                      <td className="px-4 py-3 font-bold text-gray-800 text-sm">{fmt(p.total)}</td>
+                      <td className="px-4 py-3">
+                        <a href={`/p/${p.codigo}`} target="_blank" rel="noopener" onClick={e => e.stopPropagation()} className="text-xs text-purple-500 hover:text-purple-700">Ver público</a>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody></table>
+            </div>
+          ) : (
+            <div className="card flex flex-col items-center justify-center py-16 gap-4">
+              <div className="w-16 h-16 rounded-full flex items-center justify-center bg-gray-100"><ShoppingCart size={28} className="text-gray-400" /></div>
+              <p className="text-gray-500 text-sm text-center max-w-xs">No tenés presupuestos todavía. Creá uno desde el Cotizador.</p>
+              <Link href="/cotizador" className="btn-primary text-sm px-5 py-2 rounded-xl font-semibold">Ir al Cotizador</Link>
+            </div>
+          )}
+        </>) : (<>
+
+        {/* ══ DETAIL VIEW: when items are loaded ══ */}
+        <div className="flex items-center justify-between mb-6 no-print">
+          <div className="flex items-center gap-2">
+            <button onClick={() => { clearItems(); setPublicLink('') }} className="text-gray-400 hover:text-gray-600"><ArrowLeft size={18} /></button>
+            <h1 className="text-2xl font-black text-gray-900">Presupuesto</h1>
+            {loadedPresupuestoId && <span className="text-sm text-gray-400">#{savedPresupuestos.find(p => p.id === loadedPresupuestoId)?.codigo || ''}</span>}
+            {!loadedPresupuestoId && <span className="text-sm text-gray-400">{items.length} {items.length === 1 ? 'ítem' : 'ítems'}</span>}
+            {loadedPresupuestoId && savedPresupuestos.find(p => p.id === loadedPresupuestoId)?.origen === 'catalogo_web' && (
+              <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold bg-green-100 text-green-600">Catálogo Web</span>
             )}
           </div>
-        )}
+        </div>
 
         {items.length === 0 ? (
           <div className="card flex flex-col items-center justify-center py-16 gap-4">
             <div className="w-16 h-16 rounded-full flex items-center justify-center bg-gray-100"><ShoppingCart size={28} className="text-gray-400" /></div>
-            <p className="text-gray-500 text-sm text-center max-w-xs">Tu presupuesto está vacío. Agregá ítems desde el Cotizador.</p>
+            <p className="text-gray-500 text-sm text-center max-w-xs">Este presupuesto no tiene ítems. Agregá desde el Cotizador.</p>
             <Link href="/cotizador" className="btn-primary text-sm px-5 py-2 rounded-xl font-semibold">Ir al Cotizador</Link>
           </div>
         ) : (
@@ -507,6 +526,7 @@ export default function PresupuestoPage() {
             </div>
           </div>
         )}
+        </>)}
       </div>
 
       {/* Email Modal */}
