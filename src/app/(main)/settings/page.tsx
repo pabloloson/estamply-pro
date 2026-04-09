@@ -196,18 +196,39 @@ export default function SettingsPage() {
         </button>
       </div>
 
-      {/* Catálogo web (preparación) */}
+      {/* Catálogo web */}
       <div className="card p-6 max-w-2xl mt-6">
         <h3 className="font-semibold text-gray-800 mb-1">Catálogo web</h3>
-        <p className="text-xs text-gray-400 mb-4">Configurá cómo se ve tu catálogo público online (próximamente).</p>
+        <p className="text-xs text-gray-400 mb-4">Tu catálogo público para compartir con clientes.</p>
         <div className="space-y-4">
+          {!!(ws as Record<string, unknown>).catalog_slug && (
+            <div className="p-3 rounded-xl bg-purple-50 border border-purple-100">
+              <p className="text-xs text-gray-500 mb-1">Tu catálogo:</p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-semibold text-purple-700 flex-1 truncate">estamply.app/catalogo/{(ws as Record<string, unknown>).catalog_slug as string}</p>
+                <button onClick={() => { navigator.clipboard.writeText(`https://www.estamply.app/catalogo/${(ws as Record<string, unknown>).catalog_slug}`); alert('Link copiado') }}
+                  className="text-xs px-2 py-1 rounded-lg font-semibold text-purple-600 bg-purple-100 hover:bg-purple-200">Copiar</button>
+                <a href={`/catalogo/${(ws as Record<string, unknown>).catalog_slug}`} target="_blank" className="text-xs px-2 py-1 rounded-lg font-semibold text-purple-600 bg-purple-100 hover:bg-purple-200">Ver</a>
+              </div>
+            </div>
+          )}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Color principal de la marca</label>
-            <input type="color" className="w-10 h-10 rounded-lg border border-gray-200 cursor-pointer" value={(ws as Record<string, unknown>).brand_color as string || '#6C5CE7'}
-              onChange={e => setWs({ ...ws, brand_color: e.target.value } as WorkshopSettings)} />
+            <label className="block text-sm font-medium text-gray-700 mb-1">Slug del catálogo *</label>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-400">estamply.app/catalogo/</span>
+              <input className="input-base flex-1" value={(ws as Record<string, unknown>).catalog_slug as string || ''} placeholder="mi-taller"
+                onChange={e => setWs({ ...ws, catalog_slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') } as WorkshopSettings)} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Color de marca</label>
+              <input type="color" className="w-10 h-10 rounded-lg border border-gray-200 cursor-pointer" value={(ws as Record<string, unknown>).brand_color as string || '#6C5CE7'}
+                onChange={e => setWs({ ...ws, brand_color: e.target.value } as WorkshopSettings)} />
+            </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Descripción corta del taller</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Descripción corta</label>
             <textarea className="input-base text-sm" rows={2} maxLength={280} placeholder="Ej: Taller de sublimación y serigrafía en Córdoba..."
               value={(ws as Record<string, unknown>).brand_description as string || ''}
               onChange={e => setWs({ ...ws, brand_description: e.target.value } as WorkshopSettings)} />
