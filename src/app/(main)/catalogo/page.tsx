@@ -13,6 +13,7 @@ interface CatalogProduct {
   base_product_id: string | null; technique: string | null; zone_config: unknown; production_config: unknown; cost_breakdown: unknown
   manage_stock: boolean; current_stock: number; min_stock: number; visible_in_catalog: boolean
   sizes: string[] | null; colors: Array<{ name: string; hex: string }> | null; estimated_delivery: string | null
+  precio_anterior: number | null
 }
 interface StockMovement { id: string; product_id: string; type: string; quantity: number; note: string | null; created_at: string }
 
@@ -85,6 +86,7 @@ export default function CatalogoPage() {
       sizes: (catModal.sizes?.length) ? catModal.sizes : null,
       colors: (catModal.colors?.length) ? catModal.colors : null,
       estimated_delivery: catModal.estimated_delivery || null,
+      precio_anterior: catModal.precio_anterior || null,
     }
     if (catModal.id) await supabase.from('catalog_products').update(payload).eq('id', catModal.id)
     else await supabase.from('catalog_products').insert(payload)
@@ -248,13 +250,16 @@ export default function CatalogoPage() {
 
               {/* Cost & Price */}
               <div className="border-t border-gray-100 pt-4">
-                <div className="grid grid-cols-2 gap-3">
-                  <div><label className="block text-sm font-medium text-gray-700 mb-1">Costo unitario ($)</label>
+                <div className="grid grid-cols-3 gap-3">
+                  <div><label className="block text-sm font-medium text-gray-700 mb-1">Costo ($)</label>
                     <NumericInput className="input-base" value={catModal.unit_cost || 0} onChange={v => setCatModal({ ...catModal, unit_cost: v })} /></div>
-                  <div><label className="block text-sm font-medium text-gray-700 mb-1">Precio de venta ($) *</label>
+                  <div><label className="block text-sm font-medium text-gray-700 mb-1">Precio ($) *</label>
                     <NumericInput className="input-base" value={catModal.selling_price || 0} onChange={v => setCatModal({ ...catModal, selling_price: v })} /></div>
+                  <div><label className="block text-sm font-medium text-gray-700 mb-1">Precio anterior</label>
+                    <NumericInput className="input-base" value={catModal.precio_anterior || 0} onChange={v => setCatModal({ ...catModal, precio_anterior: v || null })} /></div>
                 </div>
                 {catMargin > 0 && <p className={`text-xs font-medium mt-1.5 ${marginColor(catMargin)}`}>Margen: {catMargin}%</p>}
+                {(catModal.precio_anterior || 0) > (catModal.selling_price || 0) && <p className="text-xs text-red-500 mt-0.5">-{Math.round((1 - (catModal.selling_price || 0) / (catModal.precio_anterior || 1)) * 100)}% de descuento</p>}
               </div>
 
               {/* Variants */}

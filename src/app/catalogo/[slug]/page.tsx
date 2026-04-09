@@ -11,10 +11,14 @@ interface CatalogProduct {
   selling_price: number; manage_stock: boolean; current_stock: number
   category_id: string | null; visible_in_catalog: boolean
   sizes: string[] | null; colors: Array<{ name: string; hex: string }> | null
-  estimated_delivery: string | null
+  estimated_delivery: string | null; precio_anterior: number | null
 }
 interface Category { id: string; name: string }
-interface ShopInfo { nombre: string; logo: string | null; color: string; description: string; whatsapp: string; instagram: string; user_id: string; banner: string | null; direccion: string; discountTiers: Array<{ desde: number; hasta: number; porcentaje: number }> }
+interface ShopInfo {
+  nombre: string; logo: string | null; color: string; description: string
+  whatsapp: string; instagram: string; user_id: string; banner: string | null; direccion: string
+  anuncio: { activo: boolean; texto: string; bgColor: string; textColor: string }
+}
 interface CartItem { productId: string; name: string; price: number; quantity: number; photo: string; variant: string }
 
 // ── Cart Context ──
@@ -80,10 +84,15 @@ export default function PublicCatalogPage() {
         user_id: userId,
         banner: (s.banner_url as string) || null,
         direccion: (s.direccion as string) || '',
-        discountTiers: (s.descuento_global_enabled && Array.isArray(s.descuentos_global)) ? s.descuentos_global as ShopInfo['discountTiers'] : [],
+        anuncio: {
+          activo: !!(s.anuncio_activo) && !!(s.anuncio_texto),
+          texto: (s.anuncio_texto as string) || '',
+          bgColor: (s.anuncio_color_fondo as string) || (s.brand_color as string) || '#6C5CE7',
+          textColor: (s.anuncio_color_texto as string) || '#FFFFFF',
+        },
       })
       const [{ data: prods }, { data: cats }] = await Promise.all([
-        supabase.from('catalog_products').select('id,name,description,photos,selling_price,manage_stock,current_stock,category_id,visible_in_catalog,sizes,colors,estimated_delivery').eq('user_id', userId).eq('visible_in_catalog', true).gt('selling_price', 0),
+        supabase.from('catalog_products').select('id,name,description,photos,selling_price,manage_stock,current_stock,category_id,visible_in_catalog,sizes,colors,estimated_delivery,precio_anterior').eq('user_id', userId).eq('visible_in_catalog', true).gt('selling_price', 0),
         supabase.from('categories').select('id,name').eq('user_id', userId),
       ])
       setProducts((prods || []) as CatalogProduct[])
@@ -108,6 +117,7 @@ function CatalogContent({ shop, products, categories }: { shop: ShopInfo; produc
   const [selectedCat, setSelectedCat] = useState<string | null>(null)
   const [detail, setDetail] = useState<CatalogProduct | null>(null)
   const [showCart, setShowCart] = useState(false)
+  const [annDismissed, setAnnDismissed] = useState(false)
   const { items } = useContext(CartCtx)
   const color = shop.color
   const filtered = selectedCat ? products.filter(p => p.category_id === selectedCat) : products
@@ -121,6 +131,14 @@ function CatalogContent({ shop, products, categories }: { shop: ShopInfo; produc
 
   return (
     <div className="min-h-screen pb-20">
+      {/* Announcement bar */}
+      {shop.anuncio.activo && !annDismissed && (
+        <div className="flex items-center justify-center px-4 py-2 text-sm" style={{ background: shop.anuncio.bgColor, color: shop.anuncio.textColor }}>
+          <span className="flex-1 text-center">{shop.anuncio.texto}</span>
+          <button onClick={() => setAnnDismissed(true)} className="ml-2 opacity-60 hover:opacity-100"><X size={14} /></button>
+        </div>
+      )}
+
       {/* Header */}
       <div className="relative text-white" style={shop.banner ? {} : { background: color }}>
         {shop.banner && (<>
@@ -173,10 +191,16 @@ function CatalogContent({ shop, products, categories }: { shop: ShopInfo; produc
                 <div className="relative aspect-square bg-gray-100">
                   {photo ? <img src={photo} alt={p.name} className="w-full h-full object-cover" loading="lazy" /> : <div className="w-full h-full flex items-center justify-center text-gray-300 text-3xl">📷</div>}
                   {status === 'soldout' && <div className="absolute inset-0 bg-black/40 flex items-center justify-center"><span className="text-white font-bold text-sm bg-black/60 px-3 py-1 rounded-full">SIN STOCK</span></div>}
+                  {(p.precio_anterior || 0) > p.selling_price && (
+                    <span className="absolute top-2 left-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md">-{Math.round((1 - p.selling_price / (p.precio_anterior || 1)) * 100)}%</span>
+                  )}
                 </div>
                 <div className="p-3">
                   <p className="font-semibold text-gray-800 text-sm leading-tight" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{p.name}</p>
-                  <p className="font-bold text-gray-900 mt-1">{status === 'ondemand' && <span className="text-xs font-normal text-gray-400">desde </span>}{fmt(p.selling_price)}</p>
+                  <div className="mt-1">
+                    {(p.precio_anterior || 0) > p.selling_price && <span className="text-xs text-gray-400 line-through mr-1.5">{fmt(p.precio_anterior!)}</span>}
+                    <span className="font-bold text-gray-900">{status === 'ondemand' && <span className="text-xs font-normal text-gray-400">desde </span>}{fmt(p.selling_price)}</span>
+                  </div>
                   <p className={`text-xs mt-0.5 ${status === 'instock' ? 'text-green-600' : status === 'soldout' ? 'text-red-500' : 'text-gray-400'}`}>
                     {status === 'instock' ? '✓ En stock' : status === 'soldout' ? '✗ Agotado' : '⏱ A pedido'}
                     {p.estimated_delivery && status === 'ondemand' && <span className="text-gray-400"> · {p.estimated_delivery}</span>}
@@ -225,14 +249,7 @@ function ProductDetail({ product, shop, onClose }: { product: CatalogProduct; sh
   const colors = product.colors || []
   const status = !product.manage_stock ? 'ondemand' : product.current_stock > 0 ? 'instock' : 'soldout'
   const canAdd = status === 'instock'
-  const tiers = shop.discountTiers || []
-
-  // Volume pricing
-  function getUnitPrice(q: number) {
-    for (const t of tiers) { if (q >= t.desde && q <= t.hasta) return Math.round(product.selling_price * (1 - t.porcentaje)) }
-    return product.selling_price
-  }
-  const unitPrice = getUnitPrice(qty)
+  const hasDiscount = (product.precio_anterior || 0) > product.selling_price
 
   function handleAdd() {
     if (sizes.length && !selSize) { setSizeError(true); return }
@@ -270,27 +287,17 @@ function ProductDetail({ product, shop, onClose }: { product: CatalogProduct; sh
 
         <div className="p-5">
           <h2 className="text-xl font-bold text-gray-900">{product.name}</h2>
-          <p className="text-2xl font-black text-gray-900 mt-1">{status === 'ondemand' && <span className="text-sm font-normal text-gray-400">desde </span>}{fmt(product.selling_price)}</p>
+          <div className="mt-1">
+            {hasDiscount && <p className="text-sm text-gray-400 line-through">{fmt(product.precio_anterior!)}</p>}
+            <p className="text-2xl font-black text-gray-900">{status === 'ondemand' && <span className="text-sm font-normal text-gray-400">desde </span>}{fmt(product.selling_price)}
+              {hasDiscount && <span className="ml-2 text-sm font-bold text-red-500">-{Math.round((1 - product.selling_price / (product.precio_anterior || 1)) * 100)}%</span>}
+            </p>
+          </div>
           <p className={`text-sm mt-1 ${status === 'instock' ? 'text-green-600' : status === 'soldout' ? 'text-red-500' : 'text-gray-400'}`}>
             {status === 'instock' ? '✓ En stock' : status === 'soldout' ? '✗ Agotado' : '⏱ A pedido'}
             {product.estimated_delivery && <span className="text-gray-400"> · {product.estimated_delivery}</span>}
           </p>
           {product.description && <p className="text-sm text-gray-600 mt-4 leading-relaxed">{product.description}</p>}
-
-          {/* Volume pricing table */}
-          {tiers.length > 0 && canAdd && (
-            <div className="mt-4 p-3 rounded-lg bg-gray-50">
-              <p className="text-xs font-semibold text-gray-500 mb-2">Precios por cantidad:</p>
-              <div className="space-y-1">
-                {tiers.map((t, i) => (
-                  <div key={i} className="flex justify-between text-xs">
-                    <span className="text-gray-600">{t.desde}{t.hasta >= 9999 ? '+' : `-${t.hasta}`} u.</span>
-                    <span className="font-semibold text-gray-800">{fmt(Math.round(product.selling_price * (1 - t.porcentaje)))} c/u <span className="text-gray-400">(-{Math.round(t.porcentaje * 100)}%)</span></span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
           {canAdd ? (
             <div className="mt-6 space-y-4">
@@ -339,7 +346,7 @@ function ProductDetail({ product, shop, onClose }: { product: CatalogProduct; sh
               <button onClick={handleAdd}
                 className="w-full py-3.5 rounded-xl font-bold text-white text-sm flex items-center justify-center gap-2"
                 style={{ background: shop.color }}>
-                <ShoppingCart size={16} /> Agregar al pedido — {fmt(unitPrice * qty)}
+                <ShoppingCart size={16} /> Agregar al pedido — {fmt(product.selling_price * qty)}
               </button>
             </div>
           ) : (
@@ -358,14 +365,40 @@ function ProductDetail({ product, shop, onClose }: { product: CatalogProduct; sh
 // ── Cart Screen ──
 function CartScreen({ shop, onClose }: { shop: ShopInfo; onClose: () => void }) {
   const { items, update, remove, total } = useContext(CartCtx)
+  const supabase = createClient()
   const [nombre, setNombre] = useState('')
+  const [whatsapp, setWhatsapp] = useState('')
   const [comentarios, setComentarios] = useState('')
+  const [sending, setSending] = useState(false)
+  const [sent, setSent] = useState(false)
 
   const itemKey = (i: CartItem) => i.variant ? `${i.productId}::${i.variant}` : i.productId
-  function sendWhatsApp() {
+
+  async function sendOrder() {
+    if (!nombre.trim() || !whatsapp.trim()) return
+    setSending(true)
+    // Create presupuesto in Estamply
+    try {
+      // Find or create client
+      const { data: existing } = await supabase.from('clients').select('id').eq('user_id', shop.user_id).eq('whatsapp', whatsapp).single()
+      let clientId = existing?.id
+      if (!clientId) {
+        const { data: newClient } = await supabase.from('clients').insert({ user_id: shop.user_id, name: nombre, whatsapp }).select('id').single()
+        clientId = newClient?.id
+      }
+      // Create presupuesto
+      const codigo = `WEB-${Date.now().toString(36).toUpperCase()}`
+      await supabase.from('presupuestos').insert({
+        user_id: shop.user_id, client_id: clientId || null, codigo,
+        items: items.map(i => ({ nombre: `${i.name}${i.variant ? ` (${i.variant})` : ''}`, cantidad: i.quantity, precioUnit: i.price, subtotal: i.price * i.quantity })),
+        total: total, estado: 'borrador', origen: 'catalogo_web', notas: comentarios || null,
+      })
+    } catch { /* proceed with WhatsApp even if DB fails */ }
+    // Send WhatsApp
     const lines = items.map(i => `• ${i.quantity}× ${i.name}${i.variant ? ` (${i.variant})` : ''} — ${fmt(i.price * i.quantity)}`).join('\n')
-    const msg = `Hola! 👋 Quiero hacer un pedido:\n\n${lines}\n\nTotal: ${fmt(total)}\n\nNombre: ${nombre}${comentarios ? `\nComentarios: ${comentarios}` : ''}\n\nPedido desde tu catálogo web`
+    const msg = `Hola! 👋 Quiero hacer un pedido:\n\n${lines}\n\nTotal: ${fmt(total)}\n\nNombre: ${nombre}\nWhatsApp: ${whatsapp}${comentarios ? `\nComentarios: ${comentarios}` : ''}\n\nPedido desde tu catálogo web`
     window.open(`https://wa.me/${shop.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank')
+    setSending(false); setSent(true)
   }
 
   return (
@@ -407,17 +440,27 @@ function CartScreen({ shop, onClose }: { shop: ShopInfo; onClose: () => void }) 
               <span className="text-xl font-black text-gray-900">{fmt(total)}</span>
             </div>
 
-            <div className="space-y-3 mb-4">
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Tus datos</p>
-              <input className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm" placeholder="Nombre *" value={nombre} onChange={e => setNombre(e.target.value)} />
-              <textarea className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm" rows={2} placeholder="Comentarios (opcional)" value={comentarios} onChange={e => setComentarios(e.target.value)} />
-            </div>
-
-            <button onClick={sendWhatsApp} disabled={!nombre.trim()}
-              className="w-full py-3.5 rounded-xl font-bold text-white text-sm flex items-center justify-center gap-2 disabled:opacity-40 mb-6"
-              style={{ background: shop.color }}>
-              <MessageCircle size={16} /> Enviar pedido por WhatsApp
-            </button>
+            {sent ? (
+              <div className="text-center py-8">
+                <p className="text-3xl mb-3">✅</p>
+                <h3 className="font-bold text-gray-900 text-lg">Pedido enviado</h3>
+                <p className="text-sm text-gray-500 mt-1">Te contactaremos por WhatsApp para confirmar tu pedido.</p>
+              </div>
+            ) : (
+              <div>
+                <div className="space-y-3 mb-4">
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Tus datos</p>
+                  <input className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm" placeholder="Nombre *" value={nombre} onChange={e => setNombre(e.target.value)} />
+                  <input className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm" placeholder="WhatsApp *" inputMode="tel" value={whatsapp} onChange={e => setWhatsapp(e.target.value)} />
+                  <textarea className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm" rows={2} placeholder="Comentarios (opcional)" value={comentarios} onChange={e => setComentarios(e.target.value)} />
+                </div>
+                <button onClick={sendOrder} disabled={!nombre.trim() || !whatsapp.trim() || sending}
+                  className="w-full py-3.5 rounded-xl font-bold text-white text-sm flex items-center justify-center gap-2 disabled:opacity-40 mb-6"
+                  style={{ background: shop.color }}>
+                  <MessageCircle size={16} /> {sending ? 'Enviando...' : 'Enviar pedido por WhatsApp'}
+                </button>
+              </div>
+            )}
           </div>
         </>)}
       </div>

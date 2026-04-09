@@ -253,6 +253,30 @@ export default function SettingsPage() {
               onChange={e => setWs({ ...ws, brand_description: e.target.value } as WorkshopSettings)} />
             <p className="text-[10px] text-gray-400 mt-0.5">{((ws as Record<string, unknown>).brand_description as string || '').length}/280</p>
           </div>
+
+          {/* Announcement bar */}
+          <div className="border-t border-gray-100 pt-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium text-gray-700">Barra de anuncio</label>
+              <button type="button" onClick={() => setWs({ ...ws, anuncio_activo: !(ws as Record<string, unknown>).anuncio_activo } as WorkshopSettings)}
+                className="relative w-9 h-5 rounded-full transition-colors" style={{ background: (ws as Record<string, unknown>).anuncio_activo ? '#6C5CE7' : '#D1D5DB' }}>
+                <span className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform" style={{ transform: (ws as Record<string, unknown>).anuncio_activo ? 'translateX(16px)' : 'translateX(0)' }} />
+              </button>
+            </div>
+            {!!(ws as Record<string, unknown>).anuncio_activo && (<>
+              <input className="input-base text-sm" placeholder="Ej: Envío gratis en pedidos +$50.000" value={(ws as Record<string, unknown>).anuncio_texto as string || ''}
+                onChange={e => setWs({ ...ws, anuncio_texto: e.target.value } as WorkshopSettings)} />
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className="block text-[10px] text-gray-500 mb-1">Color fondo</label>
+                  <input type="color" className="w-8 h-8 rounded border border-gray-200 cursor-pointer" value={(ws as Record<string, unknown>).anuncio_color_fondo as string || '#6C5CE7'}
+                    onChange={e => setWs({ ...ws, anuncio_color_fondo: e.target.value } as WorkshopSettings)} /></div>
+                <div><label className="block text-[10px] text-gray-500 mb-1">Color texto</label>
+                  <input type="color" className="w-8 h-8 rounded border border-gray-200 cursor-pointer" value={(ws as Record<string, unknown>).anuncio_color_texto as string || '#FFFFFF'}
+                    onChange={e => setWs({ ...ws, anuncio_color_texto: e.target.value } as WorkshopSettings)} /></div>
+              </div>
+            </>)}
+          </div>
+
           <button onClick={saveWs} className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white" style={{ background: '#6C5CE7' }}>
             <Save size={14} /> Guardar catálogo web
           </button>
