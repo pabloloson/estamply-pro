@@ -223,12 +223,28 @@ export default function SettingsPage() {
                 onChange={e => setWs({ ...ws, catalog_slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') } as WorkshopSettings)} />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Color de marca</label>
-              <input type="color" className="w-10 h-10 rounded-lg border border-gray-200 cursor-pointer" value={(ws as Record<string, unknown>).brand_color as string || '#6C5CE7'}
-                onChange={e => setWs({ ...ws, brand_color: e.target.value } as WorkshopSettings)} />
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Imagen de portada</label>
+            {(ws as Record<string, unknown>).banner_url ? (
+              <div className="relative rounded-lg overflow-hidden h-24 mb-2">
+                <img src={(ws as Record<string, unknown>).banner_url as string} alt="" className="w-full h-full object-cover" />
+                <button onClick={() => setWs({ ...ws, banner_url: '' } as WorkshopSettings)} className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/50 flex items-center justify-center text-white hover:bg-black/70"><X size={12} /></button>
+              </div>
+            ) : null}
+            <input type="file" accept="image/*" className="text-sm" onChange={async e => {
+              const file = e.target.files?.[0]; if (!file) return
+              const { data: { user } } = await createClient().auth.getUser()
+              const path = `${user?.id}/banner-${Date.now()}.${file.name.split('.').pop()}`
+              await createClient().storage.from('product-photos').upload(path, file)
+              const { data: { publicUrl } } = createClient().storage.from('product-photos').getPublicUrl(path)
+              setWs({ ...ws, banner_url: publicUrl } as WorkshopSettings)
+            }} />
+            <p className="text-[10px] text-gray-400 mt-1">Recomendado: 1200×400px</p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Color de marca</label>
+            <input type="color" className="w-10 h-10 rounded-lg border border-gray-200 cursor-pointer" value={(ws as Record<string, unknown>).brand_color as string || '#6C5CE7'}
+              onChange={e => setWs({ ...ws, brand_color: e.target.value } as WorkshopSettings)} />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Descripción corta</label>

@@ -12,7 +12,7 @@ interface CatalogProduct {
   category_id: string | null; visible_in_catalog: boolean
 }
 interface Category { id: string; name: string }
-interface ShopInfo { nombre: string; logo: string | null; color: string; description: string; whatsapp: string; instagram: string; user_id: string }
+interface ShopInfo { nombre: string; logo: string | null; color: string; description: string; whatsapp: string; instagram: string; user_id: string; banner: string | null; direccion: string }
 interface CartItem { productId: string; name: string; price: number; quantity: number; photo: string }
 
 // ── Cart Context ──
@@ -74,6 +74,8 @@ export default function PublicCatalogPage() {
         whatsapp: (s.whatsapp as string) || '',
         instagram: (s.instagram as string) || '',
         user_id: userId,
+        banner: (s.banner_url as string) || null,
+        direccion: (s.direccion as string) || '',
       })
       const [{ data: prods }, { data: cats }] = await Promise.all([
         supabase.from('catalog_products').select('id,name,description,photos,selling_price,manage_stock,current_stock,category_id,visible_in_catalog').eq('user_id', userId).eq('visible_in_catalog', true).gt('selling_price', 0),
@@ -101,7 +103,7 @@ function CatalogContent({ shop, products, categories }: { shop: ShopInfo; produc
   const [selectedCat, setSelectedCat] = useState<string | null>(null)
   const [detail, setDetail] = useState<CatalogProduct | null>(null)
   const [showCart, setShowCart] = useState(false)
-  const { items, add } = useContext(CartCtx)
+  const { items } = useContext(CartCtx)
   const color = shop.color
   const filtered = selectedCat ? products.filter(p => p.category_id === selectedCat) : products
   const usedCats = categories.filter(c => products.some(p => p.category_id === c.id))
@@ -115,7 +117,12 @@ function CatalogContent({ shop, products, categories }: { shop: ShopInfo; produc
   return (
     <div className="min-h-screen pb-20">
       {/* Header */}
-      <div style={{ background: color }} className="px-4 py-6 text-white">
+      <div className="relative text-white" style={shop.banner ? {} : { background: color }}>
+        {shop.banner && (<>
+          <img src={shop.banner} alt="" className="absolute inset-0 w-full h-full object-cover" />
+          <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.5), rgba(0,0,0,0.7))' }} />
+        </>)}
+        <div className="relative px-4 py-6">
         <div className="max-w-5xl mx-auto">
           <div className="flex items-center gap-3">
             {shop.logo && <img src={shop.logo} alt="" className="w-12 h-12 rounded-xl object-cover bg-white/20" />}
@@ -124,10 +131,12 @@ function CatalogContent({ shop, products, categories }: { shop: ShopInfo; produc
               {shop.description && <p className="text-sm opacity-80 mt-0.5">{shop.description}</p>}
             </div>
           </div>
-          <div className="flex gap-3 mt-3">
+          <div className="flex gap-3 mt-3 flex-wrap">
             {shop.whatsapp && <a href={`https://wa.me/${shop.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener" className="text-sm opacity-80 hover:opacity-100 flex items-center gap-1"><MessageCircle size={14} /> WhatsApp</a>}
             {shop.instagram && <a href={`https://instagram.com/${shop.instagram.replace('@', '')}`} target="_blank" rel="noopener" className="text-sm opacity-80 hover:opacity-100">@{shop.instagram.replace('@', '')}</a>}
+            {shop.direccion && <a href={`https://maps.google.com/?q=${encodeURIComponent(shop.direccion)}`} target="_blank" rel="noopener" className="text-sm opacity-80 hover:opacity-100 flex items-center gap-1">📍 {shop.direccion}</a>}
           </div>
+        </div>
         </div>
       </div>
 
@@ -159,13 +168,6 @@ function CatalogContent({ shop, products, categories }: { shop: ShopInfo; produc
                 <div className="relative aspect-square bg-gray-100">
                   {photo ? <img src={photo} alt={p.name} className="w-full h-full object-cover" loading="lazy" /> : <div className="w-full h-full flex items-center justify-center text-gray-300 text-3xl">📷</div>}
                   {status === 'soldout' && <div className="absolute inset-0 bg-black/40 flex items-center justify-center"><span className="text-white font-bold text-sm bg-black/60 px-3 py-1 rounded-full">SIN STOCK</span></div>}
-                  {status === 'instock' && (
-                    <button onClick={e => { e.stopPropagation(); add(p, 1) }}
-                      className="absolute bottom-2 right-2 w-9 h-9 rounded-full flex items-center justify-center text-white shadow-lg active:scale-95 transition-transform"
-                      style={{ background: color }}>
-                      <Plus size={18} />
-                    </button>
-                  )}
                 </div>
                 <div className="p-3">
                   <p className="font-semibold text-gray-800 text-sm leading-tight" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{p.name}</p>
@@ -209,7 +211,7 @@ function ProductDetail({ product, shop, onClose }: { product: CatalogProduct; sh
   const { add } = useContext(CartCtx)
   const [qty, setQty] = useState(1)
   const [photoIdx, setPhotoIdx] = useState(0)
-  const photos = product.photos || []
+  const photos = (product.photos || []).slice(0, 3)
   const status = !product.manage_stock ? 'ondemand' : product.current_stock > 0 ? 'instock' : 'soldout'
   const canAdd = status === 'instock'
 

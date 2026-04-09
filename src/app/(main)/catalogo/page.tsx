@@ -56,8 +56,8 @@ export default function CatalogoPage() {
     const files = e.target.files
     if (!files || !catModal) return
     const currentPhotos = catModal.photos || []
-    if (currentPhotos.length >= 5) return
-    for (const file of Array.from(files).slice(0, 5 - currentPhotos.length)) {
+    if (currentPhotos.length >= 3) return
+    for (const file of Array.from(files).slice(0, 3 - currentPhotos.length)) {
       const url = await uploadPhoto(file)
       if (url) setCatModal(prev => prev ? { ...prev, photos: [...(prev.photos || []), url] } : prev)
     }
@@ -223,7 +223,7 @@ export default function CatalogoPage() {
                       {i === 0 && <span className="absolute bottom-0 left-0 right-0 text-[8px] text-center bg-purple-600 text-white">Principal</span>}
                     </div>
                   ))}
-                  {(catModal.photos || []).length < 5 && (
+                  {(catModal.photos || []).length < 3 && (
                     <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading}
                       className="w-16 h-16 rounded-lg border-2 border-dashed border-gray-200 flex items-center justify-center hover:border-purple-300 transition-colors">
                       {uploading ? <div className="w-4 h-4 border-2 border-purple-300 border-t-purple-600 rounded-full animate-spin" /> : <Upload size={16} className="text-gray-300" />}
