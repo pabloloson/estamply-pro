@@ -10,15 +10,17 @@ interface CatalogProduct {
   id: string; name: string; description: string | null; photos: string[]
   selling_price: number; manage_stock: boolean; current_stock: number
   category_id: string | null; visible_in_catalog: boolean
+  sizes: string[] | null; colors: Array<{ name: string; hex: string }> | null
+  estimated_delivery: string | null
 }
 interface Category { id: string; name: string }
-interface ShopInfo { nombre: string; logo: string | null; color: string; description: string; whatsapp: string; instagram: string; user_id: string; banner: string | null; direccion: string }
-interface CartItem { productId: string; name: string; price: number; quantity: number; photo: string }
+interface ShopInfo { nombre: string; logo: string | null; color: string; description: string; whatsapp: string; instagram: string; user_id: string; banner: string | null; direccion: string; discountTiers: Array<{ desde: number; hasta: number; porcentaje: number }> }
+interface CartItem { productId: string; name: string; price: number; quantity: number; photo: string; variant: string }
 
 // ── Cart Context ──
 const CartCtx = createContext<{
-  items: CartItem[]; add: (p: CatalogProduct, qty: number) => void
-  update: (id: string, qty: number) => void; remove: (id: string) => void; total: number
+  items: CartItem[]; add: (p: CatalogProduct, qty: number, variant: string) => void
+  update: (key: string, qty: number) => void; remove: (key: string) => void; total: number
 }>({ items: [], add: () => {}, update: () => {}, remove: () => {}, total: 0 })
 
 function CartProvider({ children, slug }: { children: React.ReactNode; slug: string }) {
@@ -27,18 +29,20 @@ function CartProvider({ children, slug }: { children: React.ReactNode; slug: str
     try { return JSON.parse(localStorage.getItem(`cart-${slug}`) || '[]') } catch { return [] }
   })
   useEffect(() => { localStorage.setItem(`cart-${slug}`, JSON.stringify(items)) }, [items, slug])
-  const add = useCallback((p: CatalogProduct, qty: number) => {
+  const add = useCallback((p: CatalogProduct, qty: number, variant: string) => {
+    const key = variant ? `${p.id}::${variant}` : p.id
     setItems(prev => {
-      const existing = prev.find(i => i.productId === p.id)
-      if (existing) return prev.map(i => i.productId === p.id ? { ...i, quantity: i.quantity + qty } : i)
-      return [...prev, { productId: p.id, name: p.name, price: p.selling_price, quantity: qty, photo: (p.photos || [])[0] || '' }]
+      const existing = prev.find(i => (i.variant ? `${i.productId}::${i.variant}` : i.productId) === key)
+      if (existing) return prev.map(i => (i.variant ? `${i.productId}::${i.variant}` : i.productId) === key ? { ...i, quantity: i.quantity + qty } : i)
+      return [...prev, { productId: p.id, name: p.name, price: p.selling_price, quantity: qty, photo: (p.photos || [])[0] || '', variant }]
     })
   }, [])
-  const update = useCallback((id: string, qty: number) => {
-    if (qty <= 0) setItems(prev => prev.filter(i => i.productId !== id))
-    else setItems(prev => prev.map(i => i.productId === id ? { ...i, quantity: qty } : i))
+  const itemKey = (i: CartItem) => i.variant ? `${i.productId}::${i.variant}` : i.productId
+  const update = useCallback((key: string, qty: number) => {
+    if (qty <= 0) setItems(prev => prev.filter(i => itemKey(i) !== key))
+    else setItems(prev => prev.map(i => itemKey(i) === key ? { ...i, quantity: qty } : i))
   }, [])
-  const remove = useCallback((id: string) => setItems(prev => prev.filter(i => i.productId !== id)), [])
+  const remove = useCallback((key: string) => setItems(prev => prev.filter(i => itemKey(i) !== key)), [])
   const total = items.reduce((s, i) => s + i.price * i.quantity, 0)
   return <CartCtx.Provider value={{ items, add, update, remove, total }}>{children}</CartCtx.Provider>
 }
@@ -76,9 +80,10 @@ export default function PublicCatalogPage() {
         user_id: userId,
         banner: (s.banner_url as string) || null,
         direccion: (s.direccion as string) || '',
+        discountTiers: (s.descuento_global_enabled && Array.isArray(s.descuentos_global)) ? s.descuentos_global as ShopInfo['discountTiers'] : [],
       })
       const [{ data: prods }, { data: cats }] = await Promise.all([
-        supabase.from('catalog_products').select('id,name,description,photos,selling_price,manage_stock,current_stock,category_id,visible_in_catalog').eq('user_id', userId).eq('visible_in_catalog', true).gt('selling_price', 0),
+        supabase.from('catalog_products').select('id,name,description,photos,selling_price,manage_stock,current_stock,category_id,visible_in_catalog,sizes,colors,estimated_delivery').eq('user_id', userId).eq('visible_in_catalog', true).gt('selling_price', 0),
         supabase.from('categories').select('id,name').eq('user_id', userId),
       ])
       setProducts((prods || []) as CatalogProduct[])
@@ -174,6 +179,7 @@ function CatalogContent({ shop, products, categories }: { shop: ShopInfo; produc
                   <p className="font-bold text-gray-900 mt-1">{status === 'ondemand' && <span className="text-xs font-normal text-gray-400">desde </span>}{fmt(p.selling_price)}</p>
                   <p className={`text-xs mt-0.5 ${status === 'instock' ? 'text-green-600' : status === 'soldout' ? 'text-red-500' : 'text-gray-400'}`}>
                     {status === 'instock' ? '✓ En stock' : status === 'soldout' ? '✗ Agotado' : '⏱ A pedido'}
+                    {p.estimated_delivery && status === 'ondemand' && <span className="text-gray-400"> · {p.estimated_delivery}</span>}
                   </p>
                 </div>
               </div>
@@ -211,9 +217,29 @@ function ProductDetail({ product, shop, onClose }: { product: CatalogProduct; sh
   const { add } = useContext(CartCtx)
   const [qty, setQty] = useState(1)
   const [photoIdx, setPhotoIdx] = useState(0)
+  const [selSize, setSelSize] = useState<string | null>(null)
+  const [selColor, setSelColor] = useState<string | null>(null)
+  const [sizeError, setSizeError] = useState(false)
   const photos = (product.photos || []).slice(0, 3)
+  const sizes = product.sizes || []
+  const colors = product.colors || []
   const status = !product.manage_stock ? 'ondemand' : product.current_stock > 0 ? 'instock' : 'soldout'
   const canAdd = status === 'instock'
+  const tiers = shop.discountTiers || []
+
+  // Volume pricing
+  function getUnitPrice(q: number) {
+    for (const t of tiers) { if (q >= t.desde && q <= t.hasta) return Math.round(product.selling_price * (1 - t.porcentaje)) }
+    return product.selling_price
+  }
+  const unitPrice = getUnitPrice(qty)
+
+  function handleAdd() {
+    if (sizes.length && !selSize) { setSizeError(true); return }
+    const parts = [selSize, selColor].filter(Boolean)
+    add(product, qty, parts.join(', '))
+    onClose()
+  }
 
   function handleConsult() {
     const msg = encodeURIComponent(`Hola! 👋 Me interesa este producto de tu catálogo:\n\n📦 ${product.name}\n💰 ${status === 'ondemand' ? 'desde ' : ''}${fmt(product.selling_price)}\n\n¿Podrías darme más info?`)
@@ -223,12 +249,10 @@ function ProductDetail({ product, shop, onClose }: { product: CatalogProduct; sh
   return (
     <div className="fixed inset-0 z-40 bg-white overflow-y-auto">
       <div className="max-w-lg mx-auto">
-        {/* Back */}
         <button onClick={onClose} className="flex items-center gap-1 px-4 py-3 text-sm text-gray-600 hover:text-gray-900">
           <ArrowLeft size={16} /> Volver
         </button>
 
-        {/* Photos */}
         <div className="relative aspect-square bg-gray-100">
           {photos.length > 0 ? (
             <img src={photos[photoIdx]} alt={product.name} className="w-full h-full object-cover" />
@@ -244,18 +268,66 @@ function ProductDetail({ product, shop, onClose }: { product: CatalogProduct; sh
           </>)}
         </div>
 
-        {/* Info */}
         <div className="p-5">
           <h2 className="text-xl font-bold text-gray-900">{product.name}</h2>
           <p className="text-2xl font-black text-gray-900 mt-1">{status === 'ondemand' && <span className="text-sm font-normal text-gray-400">desde </span>}{fmt(product.selling_price)}</p>
           <p className={`text-sm mt-1 ${status === 'instock' ? 'text-green-600' : status === 'soldout' ? 'text-red-500' : 'text-gray-400'}`}>
             {status === 'instock' ? '✓ En stock' : status === 'soldout' ? '✗ Agotado' : '⏱ A pedido'}
+            {product.estimated_delivery && <span className="text-gray-400"> · {product.estimated_delivery}</span>}
           </p>
           {product.description && <p className="text-sm text-gray-600 mt-4 leading-relaxed">{product.description}</p>}
 
+          {/* Volume pricing table */}
+          {tiers.length > 0 && canAdd && (
+            <div className="mt-4 p-3 rounded-lg bg-gray-50">
+              <p className="text-xs font-semibold text-gray-500 mb-2">Precios por cantidad:</p>
+              <div className="space-y-1">
+                {tiers.map((t, i) => (
+                  <div key={i} className="flex justify-between text-xs">
+                    <span className="text-gray-600">{t.desde}{t.hasta >= 9999 ? '+' : `-${t.hasta}`} u.</span>
+                    <span className="font-semibold text-gray-800">{fmt(Math.round(product.selling_price * (1 - t.porcentaje)))} c/u <span className="text-gray-400">(-{Math.round(t.porcentaje * 100)}%)</span></span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {canAdd ? (
-            <div className="mt-6">
-              <div className="flex items-center gap-4 mb-4">
+            <div className="mt-6 space-y-4">
+              {/* Size selector */}
+              {sizes.length > 0 && (
+                <div>
+                  <p className="text-sm font-semibold text-gray-700 mb-2">Talle:</p>
+                  <div className="flex gap-2 flex-wrap">
+                    {sizes.map(s => (
+                      <button key={s} onClick={() => { setSelSize(s); setSizeError(false) }}
+                        className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all min-w-[44px] ${selSize === s ? 'text-white' : 'bg-gray-100 text-gray-700'}`}
+                        style={selSize === s ? { background: shop.color } : {}}>{s}</button>
+                    ))}
+                  </div>
+                  {sizeError && <p className="text-xs text-red-500 mt-1">Seleccioná un talle</p>}
+                </div>
+              )}
+
+              {/* Color selector */}
+              {colors.length > 0 && (
+                <div>
+                  <p className="text-sm font-semibold text-gray-700 mb-2">Color:</p>
+                  <div className="flex gap-2 flex-wrap">
+                    {colors.map(c => (
+                      <button key={c.name} onClick={() => setSelColor(c.name)}
+                        className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${selColor === c.name ? 'ring-2 ring-offset-1' : 'bg-gray-100'}`}
+                        style={selColor === c.name ? { '--tw-ring-color': shop.color } as React.CSSProperties : {}}>
+                        <span className="w-4 h-4 rounded-full border border-gray-200 flex-shrink-0" style={{ background: c.hex }} />
+                        {c.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Quantity */}
+              <div className="flex items-center gap-4">
                 <span className="text-sm text-gray-500">Cantidad:</span>
                 <div className="flex items-center gap-0 border border-gray-200 rounded-lg overflow-hidden">
                   <button onClick={() => setQty(q => Math.max(1, q - 1))} className="w-10 h-10 flex items-center justify-center hover:bg-gray-50"><Minus size={14} /></button>
@@ -263,10 +335,11 @@ function ProductDetail({ product, shop, onClose }: { product: CatalogProduct; sh
                   <button onClick={() => setQty(q => q + 1)} className="w-10 h-10 flex items-center justify-center hover:bg-gray-50"><Plus size={14} /></button>
                 </div>
               </div>
-              <button onClick={() => { add(product, qty); onClose() }}
+
+              <button onClick={handleAdd}
                 className="w-full py-3.5 rounded-xl font-bold text-white text-sm flex items-center justify-center gap-2"
                 style={{ background: shop.color }}>
-                <ShoppingCart size={16} /> Agregar al pedido — {fmt(product.selling_price * qty)}
+                <ShoppingCart size={16} /> Agregar al pedido — {fmt(unitPrice * qty)}
               </button>
             </div>
           ) : (
@@ -288,8 +361,9 @@ function CartScreen({ shop, onClose }: { shop: ShopInfo; onClose: () => void }) 
   const [nombre, setNombre] = useState('')
   const [comentarios, setComentarios] = useState('')
 
+  const itemKey = (i: CartItem) => i.variant ? `${i.productId}::${i.variant}` : i.productId
   function sendWhatsApp() {
-    const lines = items.map(i => `• ${i.quantity}× ${i.name} — ${fmt(i.price * i.quantity)}`).join('\n')
+    const lines = items.map(i => `• ${i.quantity}× ${i.name}${i.variant ? ` (${i.variant})` : ''} — ${fmt(i.price * i.quantity)}`).join('\n')
     const msg = `Hola! 👋 Quiero hacer un pedido:\n\n${lines}\n\nTotal: ${fmt(total)}\n\nNombre: ${nombre}${comentarios ? `\nComentarios: ${comentarios}` : ''}\n\nPedido desde tu catálogo web`
     window.open(`https://wa.me/${shop.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank')
   }
@@ -308,21 +382,23 @@ function CartScreen({ shop, onClose }: { shop: ShopInfo; onClose: () => void }) 
           </div>
         ) : (<>
           <div className="px-4 space-y-3">
-            {items.map(item => (
-              <div key={item.productId} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+            {items.map(item => {
+              const key = itemKey(item)
+              return (
+              <div key={key} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
                 {item.photo ? <img src={item.photo} alt="" className="w-14 h-14 rounded-lg object-cover flex-shrink-0" /> : <div className="w-14 h-14 rounded-lg bg-gray-200 flex-shrink-0" />}
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-gray-800 text-sm truncate">{item.name}</p>
+                  <p className="font-semibold text-gray-800 text-sm truncate">{item.name}{item.variant && <span className="font-normal text-gray-500"> ({item.variant})</span>}</p>
                   <p className="text-xs text-gray-500">{fmt(item.price)} × {item.quantity} = <span className="font-bold text-gray-800">{fmt(item.price * item.quantity)}</span></p>
                   <div className="flex items-center gap-0 mt-1 border border-gray-200 rounded-lg overflow-hidden w-fit">
-                    <button onClick={() => update(item.productId, item.quantity - 1)} className="w-7 h-7 flex items-center justify-center hover:bg-gray-100"><Minus size={12} /></button>
+                    <button onClick={() => update(key, item.quantity - 1)} className="w-7 h-7 flex items-center justify-center hover:bg-gray-100"><Minus size={12} /></button>
                     <span className="w-7 h-7 flex items-center justify-center text-xs font-bold border-x border-gray-200">{item.quantity}</span>
-                    <button onClick={() => update(item.productId, item.quantity + 1)} className="w-7 h-7 flex items-center justify-center hover:bg-gray-100"><Plus size={12} /></button>
+                    <button onClick={() => update(key, item.quantity + 1)} className="w-7 h-7 flex items-center justify-center hover:bg-gray-100"><Plus size={12} /></button>
                   </div>
                 </div>
-                <button onClick={() => remove(item.productId)} className="p-2 hover:bg-red-50 rounded-lg"><Trash2 size={14} className="text-red-400" /></button>
+                <button onClick={() => remove(key)} className="p-2 hover:bg-red-50 rounded-lg"><Trash2 size={14} className="text-red-400" /></button>
               </div>
-            ))}
+            )})}
           </div>
 
           <div className="px-4 mt-4 pt-4 border-t border-gray-200">

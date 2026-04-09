@@ -12,6 +12,7 @@ interface CatalogProduct {
   cost_mode: 'calculated' | 'manual'; unit_cost: number; selling_price: number
   base_product_id: string | null; technique: string | null; zone_config: unknown; production_config: unknown; cost_breakdown: unknown
   manage_stock: boolean; current_stock: number; min_stock: number; visible_in_catalog: boolean
+  sizes: string[] | null; colors: Array<{ name: string; hex: string }> | null; estimated_delivery: string | null
 }
 interface StockMovement { id: string; product_id: string; type: string; quantity: number; note: string | null; created_at: string }
 
@@ -81,6 +82,9 @@ export default function CatalogoPage() {
       selling_price: catModal.selling_price || 0,
       manage_stock: catModal.manage_stock ?? false, current_stock: catModal.current_stock || 0,
       min_stock: catModal.min_stock || 0, visible_in_catalog: catModal.visible_in_catalog ?? true,
+      sizes: (catModal.sizes?.length) ? catModal.sizes : null,
+      colors: (catModal.colors?.length) ? catModal.colors : null,
+      estimated_delivery: catModal.estimated_delivery || null,
     }
     if (catModal.id) await supabase.from('catalog_products').update(payload).eq('id', catModal.id)
     else await supabase.from('catalog_products').insert(payload)
@@ -251,6 +255,49 @@ export default function CatalogoPage() {
                     <NumericInput className="input-base" value={catModal.selling_price || 0} onChange={v => setCatModal({ ...catModal, selling_price: v })} /></div>
                 </div>
                 {catMargin > 0 && <p className={`text-xs font-medium mt-1.5 ${marginColor(catMargin)}`}>Margen: {catMargin}%</p>}
+              </div>
+
+              {/* Variants */}
+              <div className="border-t border-gray-100 pt-4 space-y-3">
+                <p className="text-sm font-semibold text-gray-700">Variantes <span className="font-normal text-gray-400">(opcional)</span></p>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1.5">Talles</label>
+                  <div className="flex gap-1.5 flex-wrap">
+                    {['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'].map(s => {
+                      const active = (catModal.sizes || []).includes(s)
+                      return <button key={s} type="button" onClick={() => setCatModal({ ...catModal, sizes: active ? (catModal.sizes || []).filter(x => x !== s) : [...(catModal.sizes || []), s] })}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${active ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-500'}`}>{s}</button>
+                    })}
+                    <button type="button" onClick={() => { const t = prompt('Talle personalizado:'); if (t?.trim()) setCatModal({ ...catModal, sizes: [...(catModal.sizes || []), t.trim()] }) }}
+                      className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-gray-50 text-gray-400 hover:bg-gray-100">+ Otro</button>
+                  </div>
+                  {(catModal.sizes || []).filter(s => !['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'].includes(s)).map((s, i) => (
+                    <span key={i} className="inline-flex items-center gap-1 mt-1 mr-1 px-2 py-0.5 rounded bg-purple-50 text-purple-700 text-xs">{s}
+                      <button onClick={() => setCatModal({ ...catModal, sizes: (catModal.sizes || []).filter(x => x !== s) })} className="text-purple-400 hover:text-purple-600"><X size={10} /></button></span>
+                  ))}
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1.5">Colores</label>
+                  <div className="space-y-1.5">
+                    {(catModal.colors || []).map((c, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <input type="color" className="w-7 h-7 rounded border border-gray-200 cursor-pointer" value={c.hex}
+                          onChange={e => { const arr = [...(catModal.colors || [])]; arr[i] = { ...arr[i], hex: e.target.value }; setCatModal({ ...catModal, colors: arr }) }} />
+                        <input className="input-base text-sm flex-1" value={c.name} placeholder="Nombre del color"
+                          onChange={e => { const arr = [...(catModal.colors || [])]; arr[i] = { ...arr[i], name: e.target.value }; setCatModal({ ...catModal, colors: arr }) }} />
+                        <button onClick={() => setCatModal({ ...catModal, colors: (catModal.colors || []).filter((_, j) => j !== i) })} className="p-1 hover:bg-red-50 rounded"><Trash2 size={12} className="text-red-400" /></button>
+                      </div>
+                    ))}
+                    <button type="button" onClick={() => setCatModal({ ...catModal, colors: [...(catModal.colors || []), { name: '', hex: '#000000' }] })}
+                      className="text-xs font-semibold text-purple-600 hover:text-purple-700 flex items-center gap-1"><Plus size={12} /> Agregar color</button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Delivery time */}
+              <div className="border-t border-gray-100 pt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Tiempo de entrega <span className="font-normal text-gray-400">(opcional)</span></label>
+                <input className="input-base text-sm" placeholder="Ej: 3-5 días hábiles" value={catModal.estimated_delivery || ''} onChange={e => setCatModal({ ...catModal, estimated_delivery: e.target.value })} />
               </div>
 
               {/* Stock */}
