@@ -277,12 +277,11 @@ function ProductDetail({ product, shop, onClose }: { product: CatalogProduct; sh
 function CartScreen({ shop, onClose }: { shop: ShopInfo; onClose: () => void }) {
   const { items, update, remove, total } = useContext(CartCtx)
   const [nombre, setNombre] = useState('')
-  const [telefono, setTelefono] = useState('')
   const [comentarios, setComentarios] = useState('')
 
   function sendWhatsApp() {
     const lines = items.map(i => `• ${i.quantity}× ${i.name} — ${fmt(i.price * i.quantity)}`).join('\n')
-    const msg = `Hola! 👋 Quiero hacer un pedido:\n\n${lines}\n\nTotal: ${fmt(total)}\n\nNombre: ${nombre}\nTel: ${telefono}${comentarios ? `\nComentarios: ${comentarios}` : ''}\n\n(Pedido desde estamply.app)`
+    const msg = `Hola! 👋 Quiero hacer un pedido:\n\n${lines}\n\nTotal: ${fmt(total)}\n\nNombre: ${nombre}${comentarios ? `\nComentarios: ${comentarios}` : ''}\n\n(Pedido desde estamply.app)`
     window.open(`https://wa.me/${shop.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank')
   }
 
@@ -326,11 +325,10 @@ function CartScreen({ shop, onClose }: { shop: ShopInfo; onClose: () => void }) 
             <div className="space-y-3 mb-4">
               <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Tus datos</p>
               <input className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm" placeholder="Nombre *" value={nombre} onChange={e => setNombre(e.target.value)} />
-              <input className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm" placeholder="Teléfono *" value={telefono} onChange={e => setTelefono(e.target.value)} />
               <textarea className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm" rows={2} placeholder="Comentarios (opcional)" value={comentarios} onChange={e => setComentarios(e.target.value)} />
             </div>
 
-            <button onClick={sendWhatsApp} disabled={!nombre.trim() || !telefono.trim()}
+            <button onClick={sendWhatsApp} disabled={!nombre.trim()}
               className="w-full py-3.5 rounded-xl font-bold text-white text-sm flex items-center justify-center gap-2 disabled:opacity-40 mb-6"
               style={{ background: shop.color }}>
               <MessageCircle size={16} /> Enviar pedido por WhatsApp
