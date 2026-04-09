@@ -78,10 +78,10 @@ export default function PublicCatalogPage() {
       const { data: prof } = await supabase.from('profiles').select('business_name,business_phone,business_instagram,business_logo_url,business_address').eq('id', userId).single()
       const p = (prof || {}) as Record<string, string>
       setShop({
-        nombre: (s.nombre_taller as string) || (p.business_name as string) || 'Mi Taller',
+        nombre: (s.nombre_tienda as string) || (s.nombre_taller as string) || (p.business_name as string) || 'Mi Taller',
         logo: (s.logo_url as string) || (p.business_logo_url as string) || null,
         color: (s.brand_color as string) || '#6C5CE7',
-        description: (s.brand_description as string) || '',
+        description: (s.descripcion_tienda as string) || (s.brand_description as string) || '',
         whatsapp: (p.business_phone as string) || '',
         instagram: (p.business_instagram as string) || '',
         user_id: userId,

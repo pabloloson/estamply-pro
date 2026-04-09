@@ -30,7 +30,15 @@ export async function POST(req: Request) {
     const codigo = `WEB-${Date.now().toString(36).toUpperCase()}`
 
     // Fetch business profile for the presupuesto header
-    const { data: profile } = await supabase.from('profiles').select('business_name,business_cuit,business_address,business_phone,business_email,business_instagram,business_logo_url').eq('id', userId).single()
+    const [{ data: profile }, { data: wsRow }] = await Promise.all([
+      supabase.from('profiles').select('business_name,business_cuit,business_address,business_phone,business_email,business_instagram,business_logo_url').eq('id', userId).single(),
+      supabase.from('workshop_settings').select('settings').eq('user_id', userId).single(),
+    ])
+    const wsSettings = (wsRow?.settings || {}) as Record<string, unknown>
+    const bizProfile = {
+      ...profile,
+      business_name: (wsSettings.nombre_tienda as string) || profile?.business_name || 'Mi Taller',
+    }
 
     // Create presupuesto
     const { error } = await supabase.from('presupuestos').insert({
@@ -42,7 +50,7 @@ export async function POST(req: Request) {
       })),
       total, origen: 'catalogo_web',
       notas: comentarios || null,
-      business_profile: profile || {},
+      business_profile: bizProfile || {},
     })
 
     if (error) {

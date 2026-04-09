@@ -224,6 +224,17 @@ export default function SettingsPage() {
             </div>
           </div>
           <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Nombre de la tienda</label>
+            <input className="input-base" value={(ws as Record<string, unknown>).nombre_tienda as string || ''} placeholder="Ej: Sublishop, Mi Taller..."
+              onChange={e => setWs({ ...ws, nombre_tienda: e.target.value } as WorkshopSettings)} />
+            <p className="text-[10px] text-gray-400 mt-0.5">Aparece en el catálogo web y presupuestos. Si está vacío, usa el nombre del perfil.</p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Subtítulo / Descripción de la tienda</label>
+            <input className="input-base" value={(ws as Record<string, unknown>).descripcion_tienda as string || ''} placeholder="Ej: Productos personalizados al mejor precio"
+              onChange={e => setWs({ ...ws, descripcion_tienda: e.target.value } as WorkshopSettings)} />
+          </div>
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Imagen de portada</label>
             {(ws as Record<string, unknown>).banner_url ? (
               <div className="relative rounded-lg overflow-hidden h-24 mb-2">
