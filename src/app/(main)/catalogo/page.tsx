@@ -4,11 +4,9 @@ import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Plus, Pencil, Trash2, X, Eye, EyeOff, AlertTriangle, Upload, Image as ImageIcon, FolderOpen } from 'lucide-react'
 import type { Category } from '@/features/taller/types'
-import { ALL_TECNICA_SLUGS, TECNICA_LABELS } from '@/features/taller/types'
 import CategoryModal from '@/features/taller/components/CategoryModal'
 import NumericInput from '@/shared/components/NumericInput'
 
-interface Product { id: string; name: string; base_cost: number }
 interface CatalogProduct {
   id: string; name: string; description: string | null; category_id: string | null; photos: string[]
   cost_mode: 'calculated' | 'manual'; unit_cost: number; selling_price: number
@@ -22,7 +20,6 @@ function marginColor(m: number) { return m >= 40 ? 'text-green-600' : m >= 20 ? 
 
 export default function CatalogoPage() {
   const supabase = createClient()
-  const [products, setProducts] = useState<Product[]>([])
   const [catalogProducts, setCatalogProducts] = useState<CatalogProduct[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
@@ -36,12 +33,11 @@ export default function CatalogoPage() {
   const fileRef = useRef<HTMLInputElement>(null)
 
   async function load() {
-    const [{ data: p }, { data: cp }, { data: c }] = await Promise.all([
-      supabase.from('products').select('id,name,base_cost').order('name'),
+    const [{ data: cp }, { data: c }] = await Promise.all([
       supabase.from('catalog_products').select('*').order('name'),
       supabase.from('categories').select('*').order('name'),
     ])
-    setProducts(p || []); setCatalogProducts((cp || []) as CatalogProduct[]); setCategories(c || []); setLoading(false)
+    setCatalogProducts((cp || []) as CatalogProduct[]); setCategories(c || []); setLoading(false)
   }
   useEffect(() => { load() }, [])
 
@@ -246,49 +242,14 @@ export default function CatalogoPage() {
                   {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select></div>
 
-              {/* Cost */}
+              {/* Cost & Price */}
               <div className="border-t border-gray-100 pt-4">
-                <p className="text-sm font-semibold text-gray-700 mb-3">Costos</p>
-                <div className="flex gap-3 mb-3">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" name="costMode" checked={catModal.cost_mode !== 'calculated'} onChange={() => setCatModal({ ...catModal, cost_mode: 'manual' })} className="text-purple-600" />
-                    <span className="text-sm text-gray-700">Costo manual</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" name="costMode" checked={catModal.cost_mode === 'calculated'} onChange={() => setCatModal({ ...catModal, cost_mode: 'calculated' })} className="text-purple-600" />
-                    <span className="text-sm text-gray-700">Calcular con cotizador</span>
-                  </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div><label className="block text-sm font-medium text-gray-700 mb-1">Costo unitario ($)</label>
+                    <NumericInput className="input-base" value={catModal.unit_cost || 0} onChange={v => setCatModal({ ...catModal, unit_cost: v })} /></div>
+                  <div><label className="block text-sm font-medium text-gray-700 mb-1">Precio de venta ($) *</label>
+                    <NumericInput className="input-base" value={catModal.selling_price || 0} onChange={v => setCatModal({ ...catModal, selling_price: v })} /></div>
                 </div>
-                {catModal.cost_mode !== 'calculated' ? (
-                  <div className="grid grid-cols-2 gap-3">
-                    <div><label className="block text-xs font-medium text-gray-600 mb-1">Costo unitario ($)</label>
-                      <NumericInput className="input-base" value={catModal.unit_cost || 0} onChange={v => setCatModal({ ...catModal, unit_cost: v })} /></div>
-                    <div><label className="block text-xs font-medium text-gray-600 mb-1">Precio de venta ($) *</label>
-                      <NumericInput className="input-base" value={catModal.selling_price || 0} onChange={v => setCatModal({ ...catModal, selling_price: v })} /></div>
-                  </div>
-                ) : (
-                  <div className="space-y-3 p-3 rounded-xl bg-purple-50/50 border border-purple-100">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div><label className="block text-xs font-medium text-gray-600 mb-1">Producto base</label>
-                        <select className="input-base text-sm" value={catModal.base_product_id || ''} onChange={e => setCatModal({ ...catModal, base_product_id: e.target.value || null })}>
-                          <option value="">Seleccionar...</option>
-                          {products.map(p => <option key={p.id} value={p.id}>{p.name} ({fmt(p.base_cost)})</option>)}
-                        </select></div>
-                      <div><label className="block text-xs font-medium text-gray-600 mb-1">Técnica</label>
-                        <select className="input-base text-sm" value={catModal.technique || ''} onChange={e => setCatModal({ ...catModal, technique: e.target.value || null })}>
-                          <option value="">Seleccionar...</option>
-                          {ALL_TECNICA_SLUGS.map(s => <option key={s} value={s}>{TECNICA_LABELS[s]}</option>)}
-                        </select></div>
-                    </div>
-                    <p className="text-[10px] text-purple-600">Usá el botón "Guardar producto" del cotizador para vincular automáticamente el desglose de costos.</p>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div><label className="block text-xs font-medium text-gray-600 mb-1">Costo calculado ($)</label>
-                        <NumericInput className="input-base" value={catModal.unit_cost || 0} onChange={v => setCatModal({ ...catModal, unit_cost: v })} /></div>
-                      <div><label className="block text-xs font-medium text-gray-600 mb-1">Precio de venta ($) *</label>
-                        <NumericInput className="input-base" value={catModal.selling_price || 0} onChange={v => setCatModal({ ...catModal, selling_price: v })} /></div>
-                    </div>
-                  </div>
-                )}
                 {catMargin > 0 && <p className={`text-xs font-medium mt-1.5 ${marginColor(catMargin)}`}>Margen: {catMargin}%</p>}
               </div>
 

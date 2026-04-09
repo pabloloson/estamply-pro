@@ -568,18 +568,15 @@ export default function CotizadorPage() {
               )}
 
               {/* Action buttons */}
-              <div className="flex gap-2">
-                <button type="button" onClick={handleAddToCart} disabled={!result || !!result?.pedidoMinimoWarning}
-                  className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-white text-sm transition-all disabled:opacity-40"
-                  style={{ backgroundColor: activeColor, boxShadow: `0 4px 20px ${activeColor}40` }}>
-                  <ShoppingCart size={16} /> Al Presupuesto
-                </button>
-                <button type="button" onClick={handleSaveAsProduct} disabled={!result || !!result?.pedidoMinimoWarning}
-                  className="px-4 py-3.5 rounded-xl font-bold text-sm transition-all disabled:opacity-40 border-2 hover:bg-gray-50"
-                  style={{ borderColor: activeColor, color: activeColor }}>
-                  Guardar producto
-                </button>
-              </div>
+              <button type="button" onClick={handleAddToCart} disabled={!result || !!result?.pedidoMinimoWarning}
+                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-white text-sm transition-all disabled:opacity-40"
+                style={{ backgroundColor: activeColor, boxShadow: `0 4px 20px ${activeColor}40` }}>
+                <ShoppingCart size={16} /> Agregar al Presupuesto
+              </button>
+              <button type="button" onClick={handleSaveAsProduct} disabled={!result || !!result?.pedidoMinimoWarning}
+                className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold text-gray-400 hover:text-gray-600 transition-all disabled:opacity-30">
+                Guardar como producto en catálogo
+              </button>
             </>)}
           </div>
 
