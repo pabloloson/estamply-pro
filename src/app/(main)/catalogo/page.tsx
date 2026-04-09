@@ -151,8 +151,8 @@ export default function CatalogoPage() {
       </div>
 
       {/* Product table */}
-      <div className="card">
-        <div className="overflow-x-auto">
+      <div className="card" style={{ overflow: 'visible' }}>
+        <div>
           <table className="w-full"><thead><tr className="border-b border-gray-100">
             {['', 'Nombre', 'Costo', 'Precio', 'Margen', 'Stock', '', ''].map((h, i) =>
               <th key={i} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 py-3">{h}</th>)}
