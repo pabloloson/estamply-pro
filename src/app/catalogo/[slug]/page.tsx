@@ -258,10 +258,7 @@ function ProductDetail({ product, shop, onClose }: { product: CatalogProduct; sh
     onClose()
   }
 
-  function handleConsult() {
-    const msg = encodeURIComponent(`Hola! 👋 Me interesa este producto de tu catálogo:\n\n📦 ${product.name}\n💰 ${status === 'ondemand' ? 'desde ' : ''}${fmt(product.selling_price)}\n\n¿Podrías darme más info?`)
-    window.open(`https://wa.me/${shop.whatsapp.replace(/\D/g, '')}?text=${msg}`, '_blank')
-  }
+  const consultUrl = `https://wa.me/${shop.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(`Hola! 👋 Me interesa este producto de tu catálogo:\n\n📦 ${product.name}\n💰 ${status === 'ondemand' ? 'desde ' : ''}${fmt(product.selling_price)}\n\n¿Podrías darme más info?`)}`
 
   return (
     <div className="fixed inset-0 z-40 bg-white overflow-y-auto">
@@ -350,11 +347,11 @@ function ProductDetail({ product, shop, onClose }: { product: CatalogProduct; sh
               </button>
             </div>
           ) : (
-            <button onClick={handleConsult}
+            <a href={consultUrl} target="_blank" rel="noopener noreferrer"
               className="w-full mt-6 py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 border-2"
               style={{ borderColor: shop.color, color: shop.color }}>
               <MessageCircle size={16} /> Consultar por WhatsApp
-            </button>
+            </a>
           )}
         </div>
       </div>
@@ -365,50 +362,78 @@ function ProductDetail({ product, shop, onClose }: { product: CatalogProduct; sh
 // ── Cart Screen ──
 function CartScreen({ shop, onClose }: { shop: ShopInfo; onClose: () => void }) {
   const { items, update, remove, total } = useContext(CartCtx)
-  const supabase = createClient()
   const [nombre, setNombre] = useState('')
   const [whatsapp, setWhatsapp] = useState('')
   const [comentarios, setComentarios] = useState('')
   const [sending, setSending] = useState(false)
-  const [sent, setSent] = useState(false)
+  const [orderResult, setOrderResult] = useState<{ codigo: string; waUrl: string } | null>(null)
 
   const itemKey = (i: CartItem) => i.variant ? `${i.productId}::${i.variant}` : i.productId
 
   async function sendOrder() {
     if (!nombre.trim() || !whatsapp.trim()) return
     setSending(true)
-    // Create presupuesto in Estamply
+    let codigo = ''
     try {
-      // Find or create client
-      const { data: existing } = await supabase.from('clients').select('id').eq('user_id', shop.user_id).eq('whatsapp', whatsapp).single()
-      let clientId = existing?.id
-      if (!clientId) {
-        const { data: newClient } = await supabase.from('clients').insert({ user_id: shop.user_id, name: nombre, whatsapp }).select('id').single()
-        clientId = newClient?.id
-      }
-      // Create presupuesto
-      const codigo = `WEB-${Date.now().toString(36).toUpperCase()}`
-      await supabase.from('presupuestos').insert({
-        user_id: shop.user_id, client_id: clientId || null, codigo,
-        items: items.map(i => ({ nombre: `${i.name}${i.variant ? ` (${i.variant})` : ''}`, cantidad: i.quantity, precioUnit: i.price, subtotal: i.price * i.quantity })),
-        total: total, estado: 'borrador', origen: 'catalogo_web', notas: comentarios || null,
+      const res = await fetch('/api/catalog-order', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: shop.user_id, nombre, whatsapp, comentarios, items: items.map(i => ({ name: i.name, variant: i.variant, quantity: i.quantity, price: i.price })), total }),
       })
-    } catch { /* proceed with WhatsApp even if DB fails */ }
-    // Send WhatsApp
+      const data = await res.json()
+      codigo = data.codigo || ''
+    } catch { /* continue without presupuesto */ }
+    // Build WhatsApp URL (user clicks it directly — no popup blocked)
     const lines = items.map(i => `• ${i.quantity}× ${i.name}${i.variant ? ` (${i.variant})` : ''} — ${fmt(i.price * i.quantity)}`).join('\n')
-    const msg = `Hola! 👋 Quiero hacer un pedido:\n\n${lines}\n\nTotal: ${fmt(total)}\n\nNombre: ${nombre}\nWhatsApp: ${whatsapp}${comentarios ? `\nComentarios: ${comentarios}` : ''}\n\nPedido desde tu catálogo web`
-    window.open(`https://wa.me/${shop.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank')
-    setSending(false); setSent(true)
+    const presLink = codigo ? `\n\n📄 Ver presupuesto: https://www.estamply.app/p/${codigo}` : ''
+    const msg = `Hola! Hice un pedido desde tu catálogo web:\n\n${lines}\n\n💰 Total: ${fmt(total)}${presLink}\n\nNombre: ${nombre}`
+    const waUrl = `https://wa.me/${shop.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`
+    setSending(false)
+    setOrderResult({ codigo, waUrl })
   }
 
   return (
     <div className="fixed inset-0 z-40 bg-white overflow-y-auto">
       <div className="max-w-lg mx-auto">
         <button onClick={onClose} className="flex items-center gap-1 px-4 py-3 text-sm text-gray-600 hover:text-gray-900">
-          <ArrowLeft size={16} /> Tu pedido
+          <ArrowLeft size={16} /> {orderResult ? 'Volver' : 'Tu pedido'}
         </button>
 
-        {items.length === 0 ? (
+        {/* Confirmation screen */}
+        {orderResult ? (
+          <div className="px-4 py-6">
+            <div className="text-center mb-6">
+              <p className="text-4xl mb-3">✅</p>
+              <h3 className="font-bold text-gray-900 text-xl">Pedido enviado</h3>
+              {orderResult.codigo && <p className="text-sm text-gray-500 mt-1">Presupuesto: <span className="font-semibold text-gray-700">#{orderResult.codigo}</span></p>}
+            </div>
+            {/* Order summary */}
+            <div className="rounded-xl bg-gray-50 p-4 mb-4 space-y-2">
+              {items.map(i => (
+                <div key={itemKey(i)} className="flex justify-between text-sm">
+                  <span className="text-gray-600">{i.name}{i.variant && ` (${i.variant})`} × {i.quantity}</span>
+                  <span className="font-semibold text-gray-800">{fmt(i.price * i.quantity)}</span>
+                </div>
+              ))}
+              <div className="flex justify-between pt-2 border-t border-gray-200 font-bold">
+                <span>Total</span><span>{fmt(total)}</span>
+              </div>
+            </div>
+            <p className="text-sm text-gray-500 text-center mb-5">Te contactaremos por WhatsApp para confirmar disponibilidad y coordinar el pago.</p>
+            {/* WhatsApp button — direct <a> link, no popup issues */}
+            <a href={orderResult.waUrl} target="_blank" rel="noopener noreferrer"
+              className="w-full py-3.5 rounded-xl font-bold text-white text-sm flex items-center justify-center gap-2 mb-3"
+              style={{ background: '#25D366' }}>
+              <MessageCircle size={16} /> Enviar por WhatsApp
+            </a>
+            {orderResult.codigo && (
+              <a href={`/p/${orderResult.codigo}`} target="_blank" rel="noopener noreferrer"
+                className="w-full py-2.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-1 text-gray-600 border border-gray-200 mb-3">
+                Ver presupuesto
+              </a>
+            )}
+            <button onClick={onClose} className="w-full py-2 text-sm text-gray-400 hover:text-gray-600">Volver al catálogo</button>
+          </div>
+        ) : items.length === 0 ? (
           <div className="text-center py-16 text-gray-400">
             <ShoppingCart size={40} className="mx-auto mb-3 text-gray-300" />
             <p>Tu pedido está vacío</p>
@@ -439,28 +464,17 @@ function CartScreen({ shop, onClose }: { shop: ShopInfo; onClose: () => void }) 
               <span className="text-sm text-gray-600">Total</span>
               <span className="text-xl font-black text-gray-900">{fmt(total)}</span>
             </div>
-
-            {sent ? (
-              <div className="text-center py-8">
-                <p className="text-3xl mb-3">✅</p>
-                <h3 className="font-bold text-gray-900 text-lg">Pedido enviado</h3>
-                <p className="text-sm text-gray-500 mt-1">Te contactaremos por WhatsApp para confirmar tu pedido.</p>
-              </div>
-            ) : (
-              <div>
-                <div className="space-y-3 mb-4">
-                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Tus datos</p>
-                  <input className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm" placeholder="Nombre *" value={nombre} onChange={e => setNombre(e.target.value)} />
-                  <input className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm" placeholder="WhatsApp *" inputMode="tel" value={whatsapp} onChange={e => setWhatsapp(e.target.value)} />
-                  <textarea className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm" rows={2} placeholder="Comentarios (opcional)" value={comentarios} onChange={e => setComentarios(e.target.value)} />
-                </div>
-                <button onClick={sendOrder} disabled={!nombre.trim() || !whatsapp.trim() || sending}
-                  className="w-full py-3.5 rounded-xl font-bold text-white text-sm flex items-center justify-center gap-2 disabled:opacity-40 mb-6"
-                  style={{ background: shop.color }}>
-                  <MessageCircle size={16} /> {sending ? 'Enviando...' : 'Enviar pedido por WhatsApp'}
-                </button>
-              </div>
-            )}
+            <div className="space-y-3 mb-4">
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Tus datos</p>
+              <input className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm" placeholder="Nombre *" value={nombre} onChange={e => setNombre(e.target.value)} />
+              <input className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm" placeholder="WhatsApp *" inputMode="tel" value={whatsapp} onChange={e => setWhatsapp(e.target.value)} />
+              <textarea className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm" rows={2} placeholder="Comentarios (opcional)" value={comentarios} onChange={e => setComentarios(e.target.value)} />
+            </div>
+            <button onClick={sendOrder} disabled={!nombre.trim() || !whatsapp.trim() || sending}
+              className="w-full py-3.5 rounded-xl font-bold text-white text-sm flex items-center justify-center gap-2 disabled:opacity-40 mb-6"
+              style={{ background: shop.color }}>
+              {sending ? 'Enviando...' : 'Enviar pedido'}
+            </button>
           </div>
         </>)}
       </div>
