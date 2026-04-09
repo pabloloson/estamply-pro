@@ -74,16 +74,19 @@ export default function PublicCatalogPage() {
       if (!match) { setError('Catálogo no encontrado'); setLoading(false); return }
       const s = match.settings as Record<string, unknown>
       const userId = match.user_id as string
+      // Fetch profile for business info (phone, name, logo, instagram, address)
+      const { data: prof } = await supabase.from('profiles').select('business_name,business_phone,business_instagram,business_logo_url,business_address').eq('id', userId).single()
+      const p = (prof || {}) as Record<string, string>
       setShop({
-        nombre: (s.nombre_taller as string) || 'Mi Taller',
-        logo: (s.logo_url as string) || null,
+        nombre: (s.nombre_taller as string) || (p.business_name as string) || 'Mi Taller',
+        logo: (s.logo_url as string) || (p.business_logo_url as string) || null,
         color: (s.brand_color as string) || '#6C5CE7',
         description: (s.brand_description as string) || '',
-        whatsapp: (s.whatsapp as string) || '',
-        instagram: (s.instagram as string) || '',
+        whatsapp: (p.business_phone as string) || '',
+        instagram: (p.business_instagram as string) || '',
         user_id: userId,
         banner: (s.banner_url as string) || null,
-        direccion: (s.direccion as string) || '',
+        direccion: (p.business_address as string) || '',
         anuncio: {
           activo: !!(s.anuncio_activo) && !!(s.anuncio_texto),
           texto: (s.anuncio_texto as string) || '',
