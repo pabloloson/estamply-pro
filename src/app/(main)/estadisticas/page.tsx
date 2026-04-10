@@ -7,8 +7,10 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pi
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
 import * as XLSX from 'xlsx'
+import { useTranslations } from '@/shared/hooks/useTranslations'
+import { useLocale } from '@/shared/context/LocaleContext'
 
-function fmt(n: number) { return `$${Math.round(n).toLocaleString('es-AR')}` }
+// fmt provided by useLocale().fmt
 function fmtK(n: number) { return n >= 1000000 ? `$${(n / 1000000).toFixed(1)}M` : n >= 1000 ? `$${Math.round(n / 1000)}k` : `$${n}` }
 function pct(cur: number, prev: number) { return prev === 0 ? (cur > 0 ? 100 : 0) : Math.round(((cur - prev) / prev) * 100) }
 
@@ -22,6 +24,8 @@ type Order = Record<string, unknown>
 type Pres = Record<string, unknown>
 
 export default function EstadisticasPage() {
+  const t = useTranslations('statistics')
+  const { fmt } = useLocale()
   const supabase = createClient()
   const [loading, setLoading] = useState(true)
   const [orders, setOrders] = useState<Order[]>([])
@@ -233,7 +237,7 @@ export default function EstadisticasPage() {
     <div className="max-w-5xl mx-auto" id="stats-content">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Estadísticas</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
         <div className="flex items-center gap-2">
           <div className="flex gap-1 bg-gray-100 rounded-lg p-0.5">
             {[['7d', '7d'], ['30d', '30d'], ['3m', '3m'], ['12m', '12m']].map(([k, l]) => (
@@ -253,10 +257,10 @@ export default function EstadisticasPage() {
       {/* Summary cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         {[
-          { label: 'Facturación', value: fmt(facturacion), change: pct(facturacion, facPrev), icon: DollarSign, color: '#6C5CE7' },
-          { label: 'Pedidos', value: String(pedidos), change: pct(pedidos, pedPrev), icon: ShoppingBag, color: '#E17055' },
-          { label: 'Ticket promedio', value: fmt(ticket), change: pct(ticket, ticketPrev), icon: BarChart3, color: '#00B894' },
-          { label: 'Presupuestos', value: String(presCount), change: pct(presCount, presPrev), icon: FileText, color: '#E84393' },
+          { label: t('revenue'), value: fmt(facturacion), change: pct(facturacion, facPrev), icon: DollarSign, color: '#6C5CE7' },
+          { label: t('orders'), value: String(pedidos), change: pct(pedidos, pedPrev), icon: ShoppingBag, color: '#E17055' },
+          { label: t('avgTicket'), value: fmt(ticket), change: pct(ticket, ticketPrev), icon: BarChart3, color: '#00B894' },
+          { label: t('quotesCount'), value: String(presCount), change: pct(presCount, presPrev), icon: FileText, color: '#E84393' },
         ].map(c => (
           <div key={c.label} className="card p-4">
             <div className="flex items-center gap-2 mb-2">
@@ -274,7 +278,7 @@ export default function EstadisticasPage() {
 
       {/* Status bar */}
       <div className="card p-5 mb-6">
-        <h2 className="font-bold text-gray-800 mb-3">Pedidos por estado</h2>
+        <h2 className="font-bold text-gray-800 mb-3">{t('ordersByStatus')}</h2>
         <div className="flex gap-4 mb-3 flex-wrap">
           {Object.entries(SL).map(([k, v]) => <div key={k} className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full" style={{ background: SC[k] }} /><span className="text-sm text-gray-600">{v}: <span className="font-bold">{statusCounts[k] || 0}</span></span></div>)}
         </div>
@@ -284,7 +288,7 @@ export default function EstadisticasPage() {
       {/* Revenue chart */}
       {chartData.length > 0 && (
         <div className="card p-5 mb-6">
-          <h2 className="font-bold text-gray-800 mb-4">Facturación</h2>
+          <h2 className="font-bold text-gray-800 mb-4">{t('revenueChart')}</h2>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={chartData}><XAxis dataKey="name" tick={{ fontSize: 11 }} /><YAxis tickFormatter={fmtK} tick={{ fontSize: 11 }} width={60} /><Tooltip formatter={(v) => fmt(Number(v))} /><Bar dataKey="value" fill="#6C5CE7" radius={[4, 4, 0, 0]} /></BarChart>
           </ResponsiveContainer>
@@ -297,7 +301,7 @@ export default function EstadisticasPage() {
 
       {/* Rentabilidad */}
       <div className="card p-5 mb-6">
-        <h2 className="font-bold text-gray-800 mb-4">Rentabilidad</h2>
+        <h2 className="font-bold text-gray-800 mb-4">{t('profitability')}</h2>
         <div className="grid grid-cols-3 gap-3 mb-4">
           <div className="p-3 rounded-lg bg-gray-50"><p className="text-xs text-gray-500">Facturación</p><p className="text-lg font-black text-gray-900">{fmt(facConCosto)}</p></div>
           <div className="p-3 rounded-lg bg-gray-50"><p className="text-xs text-gray-500">Costos</p><p className="text-lg font-black text-gray-900">{fmt(costos)}</p></div>
@@ -311,26 +315,26 @@ export default function EstadisticasPage() {
       {/* Products */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <div className="card p-5">
-          <h2 className="font-bold text-gray-800 mb-3">Más vendidos</h2>
+          <h2 className="font-bold text-gray-800 mb-3">{t('topSelling')}</h2>
           {topSold.length > 0 ? <div className="space-y-2">{topSold.map(([n, v], i) => <div key={n} className="flex items-center gap-2"><span className="text-xs font-bold text-gray-400 w-5">{i + 1}.</span><div className="flex-1 min-w-0"><p className="text-sm font-medium text-gray-800 truncate">{n}</p><p className="text-xs text-gray-400">{v.units} u. — {fmt(v.revenue)}</p></div></div>)}</div> : <p className="text-sm text-gray-400">Sin datos</p>}
         </div>
         <div className="card p-5">
-          <h2 className="font-bold text-gray-800 mb-3">Más rentables</h2>
-          {topMargin.length > 0 ? <div className="space-y-2">{topMargin.map((p, i) => <div key={p.name} className="flex items-center gap-2"><span className="text-xs font-bold text-gray-400 w-5">{i + 1}.</span><div className="flex-1 min-w-0"><p className="text-sm font-medium text-gray-800 truncate">{p.name}</p><p className="text-xs text-gray-400">margen {p.margin}% — {fmt(p.profit)}</p></div></div>)}</div> : <p className="text-sm text-gray-400">Sin datos de costos</p>}
+          <h2 className="font-bold text-gray-800 mb-3">{t('topProfitable')}</h2>
+          {topMargin.length > 0 ? <div className="space-y-2">{topMargin.map((p, i) => <div key={p.name} className="flex items-center gap-2"><span className="text-xs font-bold text-gray-400 w-5">{i + 1}.</span><div className="flex-1 min-w-0"><p className="text-sm font-medium text-gray-800 truncate">{p.name}</p><p className="text-xs text-gray-400">margen {p.margin}% — {fmt(p.profit)}</p></div></div>)}</div> : <p className="text-sm text-gray-400">{t('noCostData')}</p>}
         </div>
       </div>
 
       {/* By technique + origin */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <div className="card p-5">
-          <h2 className="font-bold text-gray-800 mb-3">Ventas por técnica</h2>
+          <h2 className="font-bold text-gray-800 mb-3">{t('salesByTechnique')}</h2>
           {techData.length > 0 && techTotal > 0 ? (<>
             <ResponsiveContainer width="100%" height={160}><PieChart><Pie data={techData} dataKey="value" cx="50%" cy="50%" innerRadius={40} outerRadius={65}>{techData.map((_, i) => <Cell key={i} fill={DONUT_COLORS[i % DONUT_COLORS.length]} />)}</Pie></PieChart></ResponsiveContainer>
             <div className="space-y-1 mt-2">{techData.map((d, i) => <div key={d.name} className="flex items-center gap-2 text-xs"><span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: DONUT_COLORS[i % DONUT_COLORS.length] }} /><span className="flex-1 text-gray-600">{d.name}</span><span className="font-semibold text-gray-800">{Math.round(d.value / techTotal * 100)}%</span><span className="text-gray-400">{fmt(d.value)}</span></div>)}</div>
           </>) : <p className="text-sm text-gray-400">Sin datos</p>}
         </div>
         <div className="card p-5">
-          <h2 className="font-bold text-gray-800 mb-3">Ventas por origen</h2>
+          <h2 className="font-bold text-gray-800 mb-3">{t('salesByOrigin')}</h2>
           {facturacion > 0 ? (<>
             <ResponsiveContainer width="100%" height={160}><PieChart><Pie data={originData} dataKey="value" cx="50%" cy="50%" innerRadius={40} outerRadius={65}>{originData.map((_, i) => <Cell key={i} fill={DONUT_COLORS[i % DONUT_COLORS.length]} />)}</Pie></PieChart></ResponsiveContainer>
             <div className="space-y-1 mt-2">{originData.map((d, i) => <div key={d.name} className="flex items-center gap-2 text-xs"><span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: DONUT_COLORS[i % DONUT_COLORS.length] }} /><span className="flex-1 text-gray-600">{d.name}</span><span className="font-semibold text-gray-800">{Math.round(d.value / facturacion * 100)}%</span><span className="text-gray-400">{fmt(d.value)}</span></div>)}</div>
@@ -340,7 +344,7 @@ export default function EstadisticasPage() {
 
       {/* Client ranking */}
       <div className="card p-5 mb-6">
-        <h2 className="font-bold text-gray-800 mb-3">Ranking de clientes</h2>
+        <h2 className="font-bold text-gray-800 mb-3">{t('clientRanking')}</h2>
         {clientRanking.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full text-sm"><thead><tr className="border-b border-gray-100">
@@ -369,7 +373,7 @@ export default function EstadisticasPage() {
 
       {/* Conversion */}
       <div className="card p-5 mb-6">
-        <h2 className="font-bold text-gray-800 mb-4">Conversión de presupuestos</h2>
+        <h2 className="font-bold text-gray-800 mb-4">{t('quoteConversion')}</h2>
         <div className="grid grid-cols-3 gap-3 mb-4">
           <div className="p-3 rounded-lg bg-gray-50"><p className="text-xs text-gray-500">Creados</p><p className="text-lg font-black text-gray-900">{curPres.length}</p></div>
           <div className="p-3 rounded-lg bg-gray-50"><p className="text-xs text-gray-500">Convertidos</p><p className="text-lg font-black text-gray-900">{convertedCount}</p></div>
@@ -403,12 +407,12 @@ export default function EstadisticasPage() {
             {evoBest && <span>Mejor: <span className="font-bold text-green-600">{evoBest.name} ({evoBest.margin}%)</span></span>}
             {evoWorst && evoWorst.revenue > 0 && <span>Peor: <span className="font-bold text-red-500">{evoWorst.name} ({evoWorst.margin}%)</span></span>}
           </div>
-        </>) : <p className="text-sm text-gray-400">Sin datos suficientes</p>}
+        </>) : <p className="text-sm text-gray-400">{t('noSufficientData')}</p>}
       </div>
 
       {/* Compare periods */}
       <div className="card p-5 mb-6">
-        <h2 className="font-bold text-gray-800 mb-4">Comparar períodos</h2>
+        <h2 className="font-bold text-gray-800 mb-4">{t('comparePeriods')}</h2>
         <div className="flex flex-col sm:flex-row gap-3 mb-4 items-end">
           <div className="flex-1"><label className="block text-xs text-gray-500 mb-1">Período A</label><input type="date" className="input-base text-sm" value={cmpA} onChange={e => setCmpA(e.target.value)} /></div>
           <span className="text-gray-400 text-sm hidden sm:block pb-2">vs</span>
