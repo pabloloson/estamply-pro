@@ -322,7 +322,7 @@ function ProductDetail({ product, shop, onClose }: { product: CatalogProduct; sh
             {status === 'instock' ? '✓ En stock' : status === 'soldout' ? '✗ Agotado' : '⏱ A pedido'}
             {product.estimated_delivery && <span className="text-gray-400"> · {product.estimated_delivery}</span>}
           </p>
-          {product.description && <p className="text-sm text-gray-600 mt-4 leading-relaxed">{product.description}</p>}
+          {product.description && <p className="text-sm text-gray-600 mt-4 leading-relaxed whitespace-pre-line">{product.description}</p>}
 
           {canAdd ? (
             <div className="mt-6 space-y-4">
