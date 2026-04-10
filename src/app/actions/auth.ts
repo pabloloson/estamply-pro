@@ -21,7 +21,6 @@ export async function signup(formData: FormData) {
   const email = formData.get('email') as string
   const password = formData.get('password') as string
   const fullName = formData.get('full_name') as string
-  const workshopName = formData.get('workshop_name') as string
 
   const { data, error } = await supabase.auth.signUp({ email, password })
   if (error) return { error: error.message }
@@ -31,12 +30,15 @@ export async function signup(formData: FormData) {
       id: data.user.id,
       email,
       full_name: fullName,
-      workshop_name: workshopName,
+      onboarding_completed: false,
+      trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+      plan: 'crecimiento',
+      plan_status: 'trial',
     })
   }
 
   revalidatePath('/', 'layout')
-  redirect('/')
+  redirect('/onboarding')
 }
 
 export async function logout() {

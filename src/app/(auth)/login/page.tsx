@@ -10,6 +10,7 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const t = useTranslations('auth')
+  const to = useTranslations('onboarding')
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -86,7 +87,6 @@ export default function LoginPage() {
                 required
                 placeholder="taller@ejemplo.com"
                 className="input-base"
-                defaultValue="taller@estamply.com"
               />
             </div>
             <div>
@@ -97,7 +97,6 @@ export default function LoginPage() {
                 required
                 placeholder="••••••••"
                 className="input-base"
-                defaultValue="Demo1234!"
               />
             </div>
             <button type="submit" disabled={loading} className="btn-primary mt-2">
@@ -105,10 +104,16 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-gray-500">
-            {t('noAccount')}{' '}
+          <p className="mt-4 text-center">
+            <Link href="/forgot-password" style={{ color: '#6C5CE7' }} className="text-sm font-medium hover:underline">
+              {to('forgotPassword')}
+            </Link>
+          </p>
+
+          <p className="mt-4 text-center text-sm text-gray-500">
+            {to('noAccount')}{' '}
             <Link href="/signup" style={{ color: '#6C5CE7' }} className="font-medium hover:underline">
-              {t('registerFree')}
+              {to('createFreeAccount')}
             </Link>
           </p>
         </div>

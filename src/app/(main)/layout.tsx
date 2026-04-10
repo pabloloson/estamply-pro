@@ -1,5 +1,7 @@
+import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { Sidebar } from '@/shared/components/Sidebar'
+import TrialBanner from '@/shared/components/TrialBanner'
 import { PresupuestoProvider } from '@/features/presupuesto/context/PresupuestoContext'
 import { PermissionsProvider } from '@/shared/context/PermissionsContext'
 import { LocaleProvider } from '@/shared/context/LocaleContext'
@@ -12,9 +14,14 @@ export default async function MainLayout({ children }: { children: React.ReactNo
   if (user) {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('workshop_name')
+      .select('workshop_name, onboarding_completed')
       .eq('id', user.id)
       .single()
+
+    if (profile && !profile.onboarding_completed) {
+      redirect('/onboarding')
+    }
+
     if (profile?.workshop_name) workshopName = profile.workshop_name
   }
 
@@ -24,9 +31,12 @@ export default async function MainLayout({ children }: { children: React.ReactNo
     <PresupuestoProvider>
       <div className="flex min-h-screen" style={{ background: '#F4F5F8' }}>
         <Sidebar workshopName={workshopName} />
-        <main className="flex-1 lg:p-8 pt-16 lg:pt-0 p-4 min-w-0">
-          {children}
-        </main>
+        <div className="flex-1 flex flex-col min-w-0">
+          <TrialBanner />
+          <main className="flex-1 lg:p-8 pt-16 lg:pt-0 p-4">
+            {children}
+          </main>
+        </div>
       </div>
     </PresupuestoProvider>
     </PermissionsProvider>
