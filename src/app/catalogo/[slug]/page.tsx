@@ -4,6 +4,9 @@ import { useState, useEffect, createContext, useContext, useCallback } from 'rea
 import { useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { ShoppingCart, X, Plus, Minus, Trash2, MessageCircle, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react'
+import esMsg from '../../../../messages/es.json'
+import ptMsg from '../../../../messages/pt.json'
+import { formatCurrency, getCountry } from '@/shared/lib/currency'
 
 // ── Types ──
 interface CatalogProduct {
@@ -20,6 +23,7 @@ interface ShopInfo {
   nombre: string; logo: string | null; color: string; description: string
   whatsapp: string; instagram: string; user_id: string; banner: string | null; direccion: string
   mediosPago: Array<{ id: string; nombre: string; tipo_ajuste: string; porcentaje: number }>
+  lang: string; countryCode: string
   anuncio: { activo: boolean; texto: string; bgColor: string; textColor: string }
 }
 interface CartItem { productId: string; name: string; price: number; quantity: number; photo: string; variant: string }
@@ -54,7 +58,11 @@ function CartProvider({ children, slug }: { children: React.ReactNode; slug: str
   return <CartCtx.Provider value={{ items, add, update, remove, total }}>{children}</CartCtx.Provider>
 }
 
-function fmt(n: number) { return `$${Math.round(n).toLocaleString('es-AR')}` }
+// Currency formatting — set when shop loads
+let _countryConfig = getCountry('AR')
+let _msgs = esMsg as unknown as Record<string, Record<string, string>>
+function fmt(n: number) { return formatCurrency(n, _countryConfig) }
+function tc(ns: string, key: string) { return _msgs[ns]?.[key] || (esMsg as unknown as Record<string, Record<string, string>>)[ns]?.[key] || key }
 
 // ── Main Page ──
 export default function PublicCatalogPage() {
@@ -98,7 +106,12 @@ export default function PublicCatalogPage() {
           textColor: (s.anuncio_color_texto as string) || '#FFFFFF',
         },
         mediosPago: [],
+        lang: (s.idioma as string) || 'es',
+        countryCode: (s.pais as string) || 'AR',
       })
+      // Set module-level formatting
+      _countryConfig = getCountry((s.pais as string) || 'AR')
+      _msgs = ((s.idioma as string) === 'pt' ? ptMsg : esMsg) as unknown as Record<string, Record<string, string>>
       const [{ data: prods }, { data: cats }, { data: mp }, { data: sg }] = await Promise.all([
         supabase.from('catalog_products').select('id,name,description,photos,selling_price,manage_stock,current_stock,category_id,visible_in_catalog,sizes,colors,estimated_delivery,precio_anterior,guia_talles_id').eq('user_id', userId).eq('visible_in_catalog', true).gt('selling_price', 0),
         supabase.from('categories').select('id,name').eq('user_id', userId),
@@ -197,16 +210,16 @@ function CatalogContent({ shop, products, categories, sizeGuides }: { shop: Shop
       {/* Search + Sort */}
       <div className="max-w-5xl mx-auto px-4 pt-3 flex gap-2 items-center">
         <div className="flex-1 relative">
-          <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar productos..."
+          <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder={tc('webCatalog', 'searchProducts')}
             className="w-full px-3 py-2 pl-9 rounded-lg border border-gray-200 text-sm bg-white focus:outline-none focus:border-purple-300" />
           <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
           {search && <button onClick={() => setSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><X size={14} /></button>}
         </div>
         <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="px-2 py-2 rounded-lg border border-gray-200 text-xs text-gray-600 bg-white">
-          <option value="default">Destacados</option>
-          <option value="price_asc">Menor precio</option>
-          <option value="price_desc">Mayor precio</option>
-          <option value="newest">Más recientes</option>
+          <option value="default">{tc('webCatalog', 'featured')}</option>
+          <option value="price_asc">{tc('webCatalog', 'priceLow')}</option>
+          <option value="price_desc">{tc('webCatalog', 'priceHigh')}</option>
+          <option value="newest">{tc('webCatalog', 'newest')}</option>
         </select>
       </div>
 
@@ -221,7 +234,7 @@ function CatalogContent({ shop, products, categories, sizeGuides }: { shop: Shop
                 onClick={() => setDetail(p)}>
                 <div className="relative aspect-square bg-gray-100">
                   {photo ? <img src={photo} alt={p.name} className="w-full h-full object-cover" loading="lazy" /> : <div className="w-full h-full flex items-center justify-center text-gray-300 text-3xl">📷</div>}
-                  {status === 'soldout' && <div className="absolute inset-0 bg-black/40 flex items-center justify-center"><span className="text-white font-bold text-sm bg-black/60 px-3 py-1 rounded-full">SIN STOCK</span></div>}
+                  {status === 'soldout' && <div className="absolute inset-0 bg-black/40 flex items-center justify-center"><span className="text-white font-bold text-sm bg-black/60 px-3 py-1 rounded-full">{tc('webCatalog', 'outOfStock')}</span></div>}
                   {(p.precio_anterior || 0) > p.selling_price && (
                     <span className="absolute top-2 left-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md">-{Math.round((1 - p.selling_price / (p.precio_anterior || 1)) * 100)}%</span>
                   )}
@@ -233,7 +246,7 @@ function CatalogContent({ shop, products, categories, sizeGuides }: { shop: Shop
                     <span className="font-bold text-gray-900">{status === 'ondemand' && <span className="text-xs font-normal text-gray-400">desde </span>}{fmt(p.selling_price)}</span>
                   </div>
                   <p className={`text-xs mt-0.5 ${status === 'instock' ? 'text-green-600' : status === 'soldout' ? 'text-red-500' : 'text-gray-400'}`}>
-                    {status === 'instock' ? '✓ En stock' : status === 'soldout' ? '✗ Agotado' : '⏱ A pedido'}
+                    {status === 'instock' ? tc('webCatalog', 'inStock') : status === 'soldout' ? tc('webCatalog', 'soldOut') : tc('webCatalog', 'madeToOrder')}
                     {p.estimated_delivery && status === 'ondemand' && <span className="text-gray-400"> · {p.estimated_delivery}</span>}
                   </p>
                 </div>
@@ -241,7 +254,7 @@ function CatalogContent({ shop, products, categories, sizeGuides }: { shop: Shop
             )
           })}
         </div>
-        {filtered.length === 0 && <p className="text-center text-gray-400 py-12">{search ? `No se encontraron productos para "${search}"` : 'No hay productos disponibles.'}</p>}
+        {filtered.length === 0 && <p className="text-center text-gray-400 py-12">{search ? tc('webCatalog', 'noResults').replace('{query}', search) : tc('webCatalog', 'noProducts')}</p>}
       </div>
 
       {/* Footer */}
@@ -261,7 +274,7 @@ function CatalogContent({ shop, products, categories, sizeGuides }: { shop: Shop
               {shop.whatsapp && <a href={`https://wa.me/${shop.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener" className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-300 transition-colors"><MessageCircle size={16} /></a>}
             </div>
           )}
-          <p className="text-xs text-gray-400">Powered by <a href="https://www.estamply.app" className="font-semibold hover:text-gray-500">Estamply</a></p>
+          <p className="text-xs text-gray-400">{tc('webCatalog', 'poweredBy')} <a href="https://www.estamply.app" className="font-semibold hover:text-gray-500">Estamply</a></p>
         </div>
       </div>
 
@@ -322,7 +335,7 @@ function ProductDetail({ product, shop, sizeGuides, onClose }: { product: Catalo
     <div className="fixed inset-0 z-40 bg-white overflow-y-auto">
       <div className="max-w-lg mx-auto">
         <button onClick={onClose} className="flex items-center gap-1 px-4 py-3 text-sm text-gray-600 hover:text-gray-900">
-          <ArrowLeft size={16} /> Volver
+          <ArrowLeft size={16} /> {tc('common', 'back')}
         </button>
 
         <div className="relative aspect-square bg-gray-100">
@@ -349,7 +362,7 @@ function ProductDetail({ product, shop, sizeGuides, onClose }: { product: Catalo
             </p>
           </div>
           <p className={`text-sm mt-1 ${status === 'instock' ? 'text-green-600' : status === 'soldout' ? 'text-red-500' : 'text-gray-400'}`}>
-            {status === 'instock' ? '✓ En stock' : status === 'soldout' ? '✗ Agotado' : '⏱ A pedido'}
+            {status === 'instock' ? tc('webCatalog', 'inStock') : status === 'soldout' ? tc('webCatalog', 'soldOut') : tc('webCatalog', 'madeToOrder')}
             {product.estimated_delivery && <span className="text-gray-400"> · {product.estimated_delivery}</span>}
           </p>
           {product.description && <p className="text-sm text-gray-600 mt-4 leading-relaxed whitespace-pre-line">{product.description}</p>}
@@ -370,7 +383,7 @@ function ProductDetail({ product, shop, sizeGuides, onClose }: { product: Catalo
                         style={selSize === s ? { background: shop.color } : {}}>{s}</button>
                     ))}
                   </div>
-                  {sizeError && <p className="text-xs text-red-500 mt-1">Seleccioná un talle</p>}
+                  {sizeError && <p className="text-xs text-red-500 mt-1">{tc('webCatalog', 'selectSize')}</p>}
                 </div>
               )}
 
@@ -411,7 +424,7 @@ function ProductDetail({ product, shop, sizeGuides, onClose }: { product: Catalo
             <a href={consultUrl} target="_blank" rel="noopener noreferrer"
               className="w-full mt-6 py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 border-2"
               style={{ borderColor: shop.color, color: shop.color }}>
-              <MessageCircle size={16} /> Consultar por WhatsApp
+              <MessageCircle size={16} /> {tc('webCatalog', 'consultWhatsapp')}
             </a>
           )}
         </div>
@@ -496,7 +509,7 @@ function CartScreen({ shop, onClose }: { shop: ShopInfo; onClose: () => void }) 
     <div className="fixed inset-0 z-40 bg-white overflow-y-auto">
       <div className="max-w-lg mx-auto">
         <button onClick={onClose} className="flex items-center gap-1 px-4 py-3 text-sm text-gray-600 hover:text-gray-900">
-          <ArrowLeft size={16} /> {orderResult ? 'Volver' : 'Tu pedido'}
+          <ArrowLeft size={16} /> {orderResult ? tc('common', 'back') : tc('webCatalog', 'yourOrder')}
         </button>
 
         {/* Confirmation screen */}
@@ -504,7 +517,7 @@ function CartScreen({ shop, onClose }: { shop: ShopInfo; onClose: () => void }) 
           <div className="px-4 py-6">
             <div className="text-center mb-6">
               <p className="text-4xl mb-3">✅</p>
-              <h3 className="font-bold text-gray-900 text-xl">Pedido enviado</h3>
+              <h3 className="font-bold text-gray-900 text-xl">{tc('webCatalog', 'orderSent')}</h3>
               {orderResult.codigo && <p className="text-sm text-gray-500 mt-1">Presupuesto: <span className="font-semibold text-gray-700">#{orderResult.codigo}</span></p>}
             </div>
             {/* Order summary */}
@@ -524,20 +537,20 @@ function CartScreen({ shop, onClose }: { shop: ShopInfo; onClose: () => void }) 
             <a href={orderResult.waUrl} target="_blank" rel="noopener noreferrer"
               className="w-full py-3.5 rounded-xl font-bold text-white text-sm flex items-center justify-center gap-2 mb-3"
               style={{ background: '#25D366' }}>
-              <MessageCircle size={16} /> Enviar por WhatsApp
+              <MessageCircle size={16} /> {tc('webCatalog', 'sendWhatsapp')}
             </a>
             {orderResult.codigo && (
               <a href={`/p/${orderResult.codigo}`} target="_blank" rel="noopener noreferrer"
                 className="w-full py-2.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-1 text-gray-600 border border-gray-200 mb-3">
-                Ver presupuesto
+                {tc('webCatalog', 'viewQuote')}
               </a>
             )}
-            <button onClick={onClose} className="w-full py-2 text-sm text-gray-400 hover:text-gray-600">Volver al catálogo</button>
+            <button onClick={onClose} className="w-full py-2 text-sm text-gray-400 hover:text-gray-600">{tc('common', 'back')} al catálogo</button>
           </div>
         ) : items.length === 0 ? (
           <div className="text-center py-16 text-gray-400">
             <ShoppingCart size={40} className="mx-auto mb-3 text-gray-300" />
-            <p>Tu pedido está vacío</p>
+            <p>{tc('webCatalog', 'emptyCart')}</p>
           </div>
         ) : (<>
           <div className="px-4 space-y-3">
@@ -598,14 +611,14 @@ function CartScreen({ shop, onClose }: { shop: ShopInfo; onClose: () => void }) 
             {/* Contact form */}
             <div className="space-y-3 mb-4">
               <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Tus datos</p>
-              <input className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm" placeholder="Nombre *" value={nombre} onChange={e => setNombre(e.target.value)} />
-              <input className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm" placeholder="WhatsApp *" inputMode="tel" value={whatsapp} onChange={e => setWhatsapp(e.target.value)} />
-              <textarea className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm" rows={2} placeholder="Comentarios (opcional)" value={comentarios} onChange={e => setComentarios(e.target.value)} />
+              <input className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm" placeholder={tc('webCatalog', 'name')} value={nombre} onChange={e => setNombre(e.target.value)} />
+              <input className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm" placeholder={tc('webCatalog', 'whatsapp')} inputMode="tel" value={whatsapp} onChange={e => setWhatsapp(e.target.value)} />
+              <textarea className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm" rows={2} placeholder={tc('webCatalog', 'comments')} value={comentarios} onChange={e => setComentarios(e.target.value)} />
             </div>
             <button onClick={sendOrder} disabled={!nombre.trim() || !whatsapp.trim() || sending}
               className="w-full py-3.5 rounded-xl font-bold text-white text-sm flex items-center justify-center gap-2 disabled:opacity-40 mb-6"
               style={{ background: shop.color }}>
-              {sending ? 'Enviando...' : 'Enviar pedido'}
+              {sending ? tc('common', 'loading') : tc('webCatalog', 'sendOrder')}
             </button>
           </div>
         </>)}

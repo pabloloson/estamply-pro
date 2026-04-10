@@ -1,4 +1,26 @@
 {
+  "auth": {
+    "welcomeBack": "Bienvenido de vuelta",
+    "enterWorkshop": "Ingresá a tu taller",
+    "email": "Email",
+    "password": "Contraseña",
+    "login": "Ingresar",
+    "loggingIn": "Ingresando...",
+    "noAccount": "¿No tenés cuenta?",
+    "registerFree": "Registrate gratis",
+    "createAccount": "Creá tu cuenta",
+    "startFree": "Empezá gratis",
+    "name": "Nombre completo",
+    "workshopName": "Nombre de tu taller",
+    "creating": "Creando cuenta...",
+    "create": "Crear cuenta",
+    "hasAccount": "¿Ya tenés cuenta?",
+    "features": {
+      "calculator": "Calculadora inteligente con costos exactos",
+      "performance": "Rendimiento en $/hora por técnica",
+      "secure": "Tus datos seguros en la nube"
+    }
+  },
   "common": {
     "save": "Guardar",
     "cancel": "Cancelar",

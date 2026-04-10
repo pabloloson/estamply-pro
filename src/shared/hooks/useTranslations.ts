@@ -4,7 +4,7 @@ import { useLocale } from '@/shared/context/LocaleContext'
 import esMessages from '../../../messages/es.json'
 import ptMessages from '../../../messages/pt.json'
 
-const messages: Record<string, Record<string, Record<string, string>>> = { es: esMessages, pt: ptMessages }
+const messages: Record<string, Record<string, Record<string, string>>> = { es: esMessages as unknown as Record<string, Record<string, string>>, pt: ptMessages as unknown as Record<string, Record<string, string>> }
 
 export function useTranslations(namespace: string) {
   const { locale } = useLocale()
