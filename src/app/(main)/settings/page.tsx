@@ -42,7 +42,7 @@ export default function SettingsPage() {
   const [guiasTalles, setGuiasTalles] = useState<Array<{ id: string; nombre: string; columnas: string[]; filas: Array<Record<string, string>> }>>([])
   const [editingGuia, setEditingGuia] = useState<{ id?: string; nombre: string; columnas: string[]; filas: Array<Record<string, string>>; imagen_referencia?: string | null } | null>(null)
   const [teamMembers, setTeamMembers] = useState<Array<{ id: string; nombre: string; email: string; rol: string; estado: string }>>([])
-  const [inviteModal, setInviteModal] = useState<{ nombre: string; email: string; password: string; rol: string } | null>(null)
+  const [inviteModal, setInviteModal] = useState<{ id?: string; nombre: string; email: string; password: string; permisos: Record<string, Record<string, boolean>> } | null>(null)
   const [inviting, setInviting] = useState(false)
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const [ws, setWs] = useState<WorkshopSettings>(DEFAULT_SETTINGS)
@@ -372,59 +372,96 @@ export default function SettingsPage() {
                 <p className="text-sm font-medium text-gray-800">{m.nombre}</p>
                 <p className="text-xs text-gray-400">{m.email}</p>
               </div>
-              <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 font-semibold">{m.rol === 'vendedor' ? '🏷️ Vendedor' : m.rol === 'produccion' ? '🔧 Producción' : '⚙️ Personalizado'}</span>
               <span className={`text-xs ${m.estado === 'activo' ? 'text-green-600' : 'text-gray-400'}`}>● {m.estado === 'activo' ? 'Activo' : 'Invitado'}</span>
+              <button onClick={async () => {
+                const { data } = await supabase.from('team_members').select('permisos').eq('id', m.id).single()
+                setInviteModal({ id: m.id, nombre: m.nombre, email: m.email, password: '', permisos: (data?.permisos || { secciones: {}, datos_sensibles: {}, acciones: {} }) as Record<string, Record<string, boolean>> })
+              }} className="text-xs text-gray-400 hover:text-gray-600">✏️</button>
               <button onClick={async () => { if (confirm('¿Eliminar usuario?')) { await supabase.from('team_members').delete().eq('id', m.id); setTeamMembers(prev => prev.filter(x => x.id !== m.id)) } }} className="text-xs text-red-400 hover:text-red-600">🗑️</button>
             </div>
           ))}
         </div>
-        <button onClick={() => setInviteModal({ nombre: '', email: '', password: '', rol: 'vendedor' })}
+        <button onClick={() => setInviteModal({ nombre: '', email: '', password: '', permisos: { secciones: {}, datos_sensibles: {}, acciones: {} } })}
           className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700"><Plus size={14} /> Invitar usuario</button>
       </div>
 
-      {/* Invite modal */}
-      {inviteModal && (
+      {/* Invite/Edit user modal */}
+      {inviteModal && (() => {
+        const p = inviteModal.permisos
+        const toggle = (group: string, key: string) => setInviteModal({ ...inviteModal, permisos: { ...p, [group]: { ...p[group], [key]: !p[group]?.[key] } } })
+        const isEdit = !!inviteModal.id
+        return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)' }} onClick={() => setInviteModal(null)}>
-          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
-            <h3 className="font-bold text-gray-900 mb-4">Invitar usuario</h3>
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <h3 className="font-bold text-gray-900 mb-4">{isEdit ? 'Editar' : 'Invitar'} usuario</h3>
             <div className="space-y-3">
               <div><label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
                 <input className="input-base" value={inviteModal.nombre} onChange={e => setInviteModal({ ...inviteModal, nombre: e.target.value })} /></div>
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
-                <input className="input-base" type="email" value={inviteModal.email} onChange={e => setInviteModal({ ...inviteModal, email: e.target.value })} /></div>
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">Contraseña temporal *</label>
-                <input className="input-base" type="text" value={inviteModal.password} onChange={e => setInviteModal({ ...inviteModal, password: e.target.value })} /></div>
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">Rol</label>
-                <select className="input-base" value={inviteModal.rol} onChange={e => setInviteModal({ ...inviteModal, rol: e.target.value })}>
-                  <option value="vendedor">🏷️ Vendedor — Ventas, clientes y catálogo</option>
-                  <option value="produccion">🔧 Producción — Pedidos y producción</option>
-                </select></div>
+              {!isEdit && (<>
+                <div><label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                  <input className="input-base" type="email" value={inviteModal.email} onChange={e => setInviteModal({ ...inviteModal, email: e.target.value })} /></div>
+                <div><label className="block text-sm font-medium text-gray-700 mb-1">Contraseña temporal *</label>
+                  <input className="input-base" type="text" value={inviteModal.password} onChange={e => setInviteModal({ ...inviteModal, password: e.target.value })} /></div>
+              </>)}
+
+              <div className="border-t border-gray-100 pt-3">
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Secciones</p>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {[['inicio', 'Inicio'], ['cotizador', 'Cotizador'], ['presupuestos', 'Presupuestos'], ['pedidos', 'Pedidos'], ['clientes', 'Clientes'], ['catalogo', 'Catálogo'], ['estadisticas', 'Estadísticas'], ['materiales', 'Materiales'], ['equipamiento', 'Equipamiento'], ['produccion', 'Producción']].map(([k, l]) => (
+                    <label key={k} className="flex items-center gap-2 cursor-pointer py-0.5">
+                      <input type="checkbox" checked={!!p.secciones?.[k]} onChange={() => toggle('secciones', k)} className="rounded border-gray-300 text-purple-600" />
+                      <span className="text-sm text-gray-700">{l}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="border-t border-gray-100 pt-3">
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Datos sensibles</p>
+                <div className="space-y-1.5">
+                  {[['ver_costos', 'Ver costos de producción'], ['ver_margen', 'Ver margen / rentabilidad'], ['ver_precios_venta', 'Ver precios de venta']].map(([k, l]) => (
+                    <label key={k} className="flex items-center gap-2 cursor-pointer py-0.5">
+                      <input type="checkbox" checked={!!p.datos_sensibles?.[k]} onChange={() => toggle('datos_sensibles', k)} className="rounded border-gray-300 text-purple-600" />
+                      <span className="text-sm text-gray-700">{l}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="border-t border-gray-100 pt-3">
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Acciones</p>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {[['crear_presupuestos', 'Crear presupuestos'], ['editar_presupuestos', 'Editar presupuestos'], ['confirmar_pedidos', 'Confirmar pedidos'], ['eliminar_pedidos', 'Eliminar pedidos'], ['crear_clientes', 'Crear clientes'], ['editar_clientes', 'Editar clientes'], ['exportar_datos', 'Exportar datos'], ['acceder_configuracion', 'Configuración']].map(([k, l]) => (
+                    <label key={k} className="flex items-center gap-2 cursor-pointer py-0.5">
+                      <input type="checkbox" checked={!!p.acciones?.[k]} onChange={() => toggle('acciones', k)} className="rounded border-gray-300 text-purple-600" />
+                      <span className="text-sm text-gray-700">{l}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
             </div>
             <div className="flex gap-3 mt-5">
               <button onClick={() => setInviteModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">Cancelar</button>
-              <button disabled={!inviteModal.nombre || !inviteModal.email || !inviteModal.password || inviting}
+              <button disabled={!inviteModal.nombre || (!isEdit && (!inviteModal.email || !inviteModal.password)) || inviting}
                 onClick={async () => {
                   setInviting(true)
-                  const permisos = inviteModal.rol === 'produccion' ? {
-                    secciones: { inicio: true, cotizador: false, presupuestos: false, pedidos: true, clientes: false, catalogo: false, estadisticas: false, materiales: true, equipamiento: true, produccion: true },
-                    datos_sensibles: { ver_costos: false, ver_margen: false, ver_precios_venta: false },
-                    acciones: { crear_presupuestos: false, editar_presupuestos: false, confirmar_pedidos: true, eliminar_pedidos: false, crear_clientes: false, editar_clientes: false, exportar_datos: false, acceder_configuracion: false },
-                  } : {
-                    secciones: { inicio: true, cotizador: true, presupuestos: true, pedidos: true, clientes: true, catalogo: true, estadisticas: false, materiales: false, equipamiento: false, produccion: false },
-                    datos_sensibles: { ver_costos: false, ver_margen: false, ver_precios_venta: true },
-                    acciones: { crear_presupuestos: true, editar_presupuestos: true, confirmar_pedidos: true, eliminar_pedidos: false, crear_clientes: true, editar_clientes: true, exportar_datos: false, acceder_configuracion: false },
+                  if (isEdit) {
+                    await supabase.from('team_members').update({ nombre: inviteModal.nombre, permisos: inviteModal.permisos }).eq('id', inviteModal.id!)
+                    setTeamMembers(prev => prev.map(m => m.id === inviteModal.id ? { ...m, nombre: inviteModal.nombre } : m))
+                    setInviteModal(null)
+                  } else {
+                    const res = await fetch('/api/team', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nombre: inviteModal.nombre, email: inviteModal.email, password: inviteModal.password, permisos: inviteModal.permisos }) })
+                    const data = await res.json()
+                    if (data.error) alert(`Error: ${data.error}`)
+                    else { setTeamMembers(prev => [...prev, { id: data.userId || '', nombre: inviteModal.nombre, email: inviteModal.email, rol: 'personalizado', estado: 'activo' }]); setInviteModal(null) }
                   }
-                  const res = await fetch('/api/team', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...inviteModal, permisos }) })
-                  const data = await res.json()
-                  if (data.error) alert(`Error: ${data.error}`)
-                  else { setTeamMembers(prev => [...prev, { id: data.userId || '', nombre: inviteModal.nombre, email: inviteModal.email, rol: inviteModal.rol, estado: 'activo' }]); setInviteModal(null) }
                   setInviting(false)
                 }}
-                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#6C5CE7' }}>{inviting ? 'Invitando...' : 'Invitar'}</button>
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#6C5CE7' }}>{inviting ? (isEdit ? 'Guardando...' : 'Invitando...') : (isEdit ? 'Guardar' : 'Invitar')}</button>
             </div>
           </div>
         </div>
-      )}
+      )})()}
 
       {/* Guía de talles modal */}
       {editingGuia && (
