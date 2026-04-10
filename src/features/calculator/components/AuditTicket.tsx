@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { Clock, TrendingUp, Tag, Plus, X } from 'lucide-react'
+import { usePermissions } from '@/shared/context/PermissionsContext'
 
 interface CostLine { label: string; value: number }
 interface ExtraCost { name: string; amount: number; modo: 'total' | 'unidad' }
@@ -95,6 +96,7 @@ function AddCostForm({ onConfirm, onCancel, suggestions = [] }: { onConfirm: (na
 }
 
 export default function AuditTicket(props: AuditTicketProps) {
+  const { showCosts, showPrices } = usePermissions()
   const {
     technique, costLines, costoTotal, margin, precioSugerido, descPorcentaje, precioConDesc,
     quantity, subtotal, ganancia, timeMinutes, profitPerHour, addDisabled,
@@ -183,8 +185,8 @@ export default function AuditTicket(props: AuditTicketProps) {
         <div className="h-1" style={{ background: `linear-gradient(90deg, ${color}, ${color}88)` }} />
         <div className="p-5">
 
-          {/* 1. Desglose */}
-          <div className="pb-4">
+          {/* 1. Desglose (hidden for non-cost users) */}
+          {showCosts && <div className="pb-4">
             <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">1 &middot; Desglose de costos</p>
             <div className="space-y-0">
               {costLines.map((line, i) => {
@@ -272,10 +274,10 @@ export default function AuditTicket(props: AuditTicketProps) {
             {(hasOverrides || extraCosts.length > 0 || anyLineOverrides) && onResetOverrides && (
               <button onClick={() => { onResetOverrides(); setLineOverrides({}) }} className="mt-1 text-[10px] text-purple-600 hover:text-purple-700 font-medium">↺ Restaurar predeterminados</button>
             )}
-          </div>
+          </div>}
 
           {/* 2. Precio Sugerido */}
-          <div className="pb-4 pt-3 border-t border-dashed border-gray-200">
+          {showCosts && <div className="pb-4 pt-3 border-t border-dashed border-gray-200">
             <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">2 &middot; Precio sugerido</p>
             <div className={`flex justify-between items-center py-1.5 px-2 -mx-2 rounded-md cursor-pointer transition-colors ${editingMargin ? 'bg-purple-50' : 'hover:bg-gray-50'}`}
               onClick={() => { if (!editingMargin) { setTempVal(String(margin)); setEditingMargin(true) } }}>
@@ -295,10 +297,10 @@ export default function AuditTicket(props: AuditTicketProps) {
               <span className="text-sm font-semibold text-gray-700">Precio Base</span>
               <span className="text-sm font-bold text-gray-800">{fmt(precioSugerido)}</span>
             </div>
-          </div>
+          </div>}
 
           {/* 3. Descuento — editable */}
-          {hasDiscount && (
+          {showCosts && hasDiscount && (
             <div className="pb-4 pt-3 border-t border-dashed border-gray-200">
               <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">3 &middot; Descuento por volumen</p>
               <div className={`flex justify-between items-center px-3 py-2 rounded-lg cursor-pointer transition-colors ${editingDiscount ? '' : 'hover:opacity-80'}`}
@@ -331,7 +333,7 @@ export default function AuditTicket(props: AuditTicketProps) {
           </div>
 
           {/* Rentabilidad */}
-          <div className="mt-6 pt-1">
+          {showCosts && <div className="mt-6 pt-1">
             <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">{stepNum.metrics} &middot; Rentabilidad</p>
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-xl p-3.5" style={{ background: ganancia > 0 ? 'rgba(0,184,148,0.06)' : 'rgba(255,71,87,0.06)', border: `1px solid ${ganancia > 0 ? 'rgba(0,184,148,0.12)' : 'rgba(255,71,87,0.12)'}` }}>
@@ -345,7 +347,7 @@ export default function AuditTicket(props: AuditTicketProps) {
                 <p className="text-xs font-semibold text-gray-400 mt-0.5">{fmt(profitPerHour)}/h</p>
               </div>
             </div>
-          </div>
+          </div>}
         </div>
       </div>
     </>

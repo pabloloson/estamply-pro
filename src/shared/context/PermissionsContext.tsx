@@ -3,37 +3,26 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
-interface Permisos {
-  secciones: Record<string, boolean>
-  datos_sensibles: Record<string, boolean>
-  acciones: Record<string, boolean>
-}
+type VisibilityLevel = 'completa' | 'solo_precios' | 'solo_produccion'
 
 interface PermCtx {
   isOwner: boolean
-  rol: string
-  permisos: Permisos
+  nivel: VisibilityLevel
   loading: boolean
   canAccess: (section: string) => boolean
-  canSee: (data: string) => boolean
-  canDo: (action: string) => boolean
-}
-
-const DEFAULT_PERMISOS: Permisos = {
-  secciones: { inicio: true, cotizador: true, presupuestos: true, pedidos: true, clientes: true, catalogo: true, estadisticas: true, materiales: true, equipamiento: true, produccion: true },
-  datos_sensibles: { ver_costos: true, ver_margen: true, ver_precios_venta: true },
-  acciones: { crear_presupuestos: true, editar_presupuestos: true, confirmar_pedidos: true, eliminar_pedidos: true, crear_clientes: true, editar_clientes: true, exportar_datos: true, acceder_configuracion: true },
+  showCosts: boolean    // Can see production costs and margins
+  showPrices: boolean   // Can see selling prices and monetary amounts
 }
 
 const Ctx = createContext<PermCtx>({
-  isOwner: true, rol: 'dueño', permisos: DEFAULT_PERMISOS, loading: true,
-  canAccess: () => true, canSee: () => true, canDo: () => true,
+  isOwner: true, nivel: 'completa', loading: true,
+  canAccess: () => true, showCosts: true, showPrices: true,
 })
 
 export function PermissionsProvider({ children }: { children: ReactNode }) {
   const [isOwner, setIsOwner] = useState(true)
-  const [rol, setRol] = useState('dueño')
-  const [permisos, setPermisos] = useState<Permisos>(DEFAULT_PERMISOS)
+  const [nivel, setNivel] = useState<VisibilityLevel>('completa')
+  const [secciones, setSecciones] = useState<Record<string, boolean>>({})
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -42,23 +31,23 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { setLoading(false); return }
 
-      // Check if this user is a team member (not owner)
-      const { data: member } = await supabase.from('team_members').select('rol,permisos').eq('user_id', user.id).single()
+      const { data: member } = await supabase.from('team_members').select('permisos').eq('user_id', user.id).single()
       if (member) {
+        const p = member.permisos as Record<string, unknown>
         setIsOwner(false)
-        setRol(member.rol)
-        setPermisos(member.permisos as Permisos)
+        setNivel((p.nivel_visibilidad as VisibilityLevel) || 'solo_precios')
+        setSecciones((p.secciones as Record<string, boolean>) || {})
       }
       setLoading(false)
     }
     load()
   }, [])
 
-  const canAccess = (section: string) => isOwner || (permisos.secciones[section] ?? false)
-  const canSee = (data: string) => isOwner || (permisos.datos_sensibles[data] ?? false)
-  const canDo = (action: string) => isOwner || (permisos.acciones[action] ?? false)
+  const canAccess = (section: string) => isOwner || (secciones[section] ?? false)
+  const showCosts = isOwner || nivel === 'completa'
+  const showPrices = isOwner || nivel !== 'solo_produccion'
 
-  return <Ctx.Provider value={{ isOwner, rol, permisos, loading, canAccess, canSee, canDo }}>{children}</Ctx.Provider>
+  return <Ctx.Provider value={{ isOwner, nivel, loading, canAccess, showCosts, showPrices }}>{children}</Ctx.Provider>
 }
 
 export function usePermissions() { return useContext(Ctx) }
