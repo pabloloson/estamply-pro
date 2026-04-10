@@ -237,11 +237,11 @@ function CatalogContent({ shop, products, categories }: { shop: ShopInfo; produc
         </div>
       </div>
 
-      {/* WhatsApp floating button */}
-      {shop.whatsapp && (
+      {/* WhatsApp floating button — z-50 to stay above detail/cart overlays (z-40) */}
+      {shop.whatsapp && !showCart && (
         <a href={`https://wa.me/${shop.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer"
-          className="fixed right-5 z-30 w-14 h-14 rounded-full flex items-center justify-center text-white shadow-lg hover:shadow-xl transition-shadow"
-          style={{ background: '#25D366', bottom: itemCount > 0 ? '88px' : '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
+          className="fixed right-5 z-50 w-14 h-14 rounded-full flex items-center justify-center text-white shadow-lg hover:shadow-xl transition-all"
+          style={{ background: '#25D366', bottom: (itemCount > 0 && !detail) ? '88px' : '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
           <MessageCircle size={24} />
         </a>
       )}
