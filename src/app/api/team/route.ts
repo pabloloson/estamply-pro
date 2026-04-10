@@ -17,6 +17,10 @@ export async function POST(req: Request) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
 
+    // Verify inviter is an owner (not a team member)
+    const { data: isMember } = await supabaseAdmin.from('team_members').select('id').eq('user_id', user.id).maybeSingle()
+    if (isMember) return NextResponse.json({ error: 'Solo el dueño del taller puede invitar usuarios' }, { status: 403 })
+
     const { nombre, email, password, permisos } = await req.json()
     if (!nombre || !email || !password) return NextResponse.json({ error: 'Faltan datos obligatorios' }, { status: 400 })
 
