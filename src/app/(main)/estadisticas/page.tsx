@@ -2,8 +2,10 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { TrendingUp, TrendingDown, ShoppingBag, FileText, DollarSign, BarChart3, Download } from 'lucide-react'
+import { TrendingUp, TrendingDown, ShoppingBag, FileText, DollarSign, BarChart3, Download, FileDown } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts'
+import html2canvas from 'html2canvas'
+import { jsPDF } from 'jspdf'
 import * as XLSX from 'xlsx'
 
 function fmt(n: number) { return `$${Math.round(n).toLocaleString('es-AR')}` }
@@ -25,7 +27,11 @@ export default function EstadisticasPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [payments, setPayments] = useState<Record<string, unknown>[]>([])
   const [presupuestos, setPresupuestos] = useState<Pres[]>([])
+  const now = new Date()
   const [period, setPeriod] = useState('30d')
+  const [cmpA, setCmpA] = useState('')
+  const [cmpB, setCmpB] = useState('')
+  const [showCmp, setShowCmp] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -41,7 +47,6 @@ export default function EstadisticasPage() {
 
   // Period calculation
   const { start, end, prevStart, prevEnd, label } = useMemo(() => {
-    const now = new Date()
     const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
     let days = 30
     if (period === '7d') days = 7
@@ -140,6 +145,74 @@ export default function EstadisticasPage() {
   })
   const clientRanking = [...clientMap.entries()].sort((a, b) => b[1].revenue - a[1].revenue).slice(0, 10)
 
+  // Conversion — count orders created from presupuestos in the period
+  const convertedCount = curOrders.length // simplified: every order = a converted presupuesto
+  const convRate = curPres.length > 0 ? Math.round((convertedCount / curPres.length) * 100) : 0
+  const prevConvRate = prevPres.length > 0 ? Math.round((prevOrders.length / prevPres.length) * 100) : 0
+
+  // Evolution — last 6 months margin
+  const evolutionData = useMemo(() => {
+    const data: Array<{ name: string; margin: number; revenue: number; cost: number }> = []
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+      const monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 1)
+      const mo = orders.filter(o => { const dt = new Date(o.created_at as string); return dt >= d && dt < monthEnd && (o.total_cost as number) > 0 })
+      const rev = mo.reduce((s, o) => s + (o.total_price as number || 0), 0)
+      const cost = mo.reduce((s, o) => s + (o.total_cost as number || 0), 0)
+      const mg = rev > 0 ? Math.round(((rev - cost) / rev) * 100) : 0
+      data.push({ name: d.toLocaleDateString('es-AR', { month: 'short' }), margin: mg, revenue: rev, cost })
+    }
+    return data
+  }, [orders])
+  const evoAvg = evolutionData.length > 0 ? Math.round(evolutionData.reduce((s, d) => s + d.margin, 0) / evolutionData.length) : 0
+  const evoBest = evolutionData.length > 0 ? evolutionData.reduce((best, d) => d.margin > best.margin ? d : best) : null
+  const evoWorst = evolutionData.length > 0 ? evolutionData.reduce((worst, d) => d.margin < worst.margin && d.revenue > 0 ? d : worst) : null
+
+  // Comparison helper
+  function calcPeriodMetrics(s: Date, e: Date) {
+    const po = orders.filter(o => inRange(o.created_at as string, s, e))
+    const pp = presupuestos.filter(p => inRange(p.created_at as string, s, e))
+    const fac = po.reduce((sum, o) => sum + (o.total_price as number || 0), 0)
+    const withCost = po.filter(o => (o.total_cost as number) > 0)
+    const costsT = withCost.reduce((sum, o) => sum + (o.total_cost as number || 0), 0)
+    const facC = withCost.reduce((sum, o) => sum + (o.total_price as number || 0), 0)
+    return {
+      facturacion: fac, pedidos: po.length,
+      ticket: po.length > 0 ? Math.round(fac / po.length) : 0,
+      margen: facC > 0 ? Math.round(((facC - costsT) / facC) * 100) : 0,
+      conversion: pp.length > 0 ? Math.round((po.length / pp.length) * 100) : 0,
+      presupuestos: pp.length,
+    }
+  }
+
+  // PDF export
+  async function exportPDF() {
+    const el = document.getElementById('stats-content')
+    if (!el) return
+    const canvas = await html2canvas(el, { scale: 1.5, useCORS: true })
+    const pdf = new jsPDF('p', 'mm', 'a4')
+    const imgW = 190, imgH = (canvas.height * imgW) / canvas.width
+    let y = 10
+    const pageH = 277
+    // Split into pages if needed
+    if (imgH <= pageH) {
+      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 10, y, imgW, imgH)
+    } else {
+      let srcY = 0
+      while (srcY < canvas.height) {
+        const sliceH = Math.min(canvas.height - srcY, (pageH / imgH) * canvas.height)
+        const sliceCanvas = document.createElement('canvas')
+        sliceCanvas.width = canvas.width; sliceCanvas.height = sliceH
+        sliceCanvas.getContext('2d')?.drawImage(canvas, 0, srcY, canvas.width, sliceH, 0, 0, canvas.width, sliceH)
+        const h = (sliceH * imgW) / canvas.width
+        pdf.addImage(sliceCanvas.toDataURL('image/png'), 'PNG', 10, 10, imgW, h)
+        srcY += sliceH
+        if (srcY < canvas.height) pdf.addPage()
+      }
+    }
+    pdf.save(`Estamply_Reporte_${label.replace(/\s/g, '')}.pdf`)
+  }
+
   // Export
   function exportExcel() {
     const wb = XLSX.utils.book_new()
@@ -156,7 +229,7 @@ export default function EstadisticasPage() {
   if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>
 
   return (
-    <div className="max-w-5xl mx-auto">
+    <div className="max-w-5xl mx-auto" id="stats-content">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Estadísticas</h1>
@@ -169,6 +242,9 @@ export default function EstadisticasPage() {
           </div>
           <button onClick={exportExcel} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50">
             <Download size={12} /> Excel
+          </button>
+          <button onClick={exportPDF} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50">
+            <FileDown size={12} /> PDF
           </button>
         </div>
       </div>
@@ -288,6 +364,84 @@ export default function EstadisticasPage() {
             </tbody></table>
           </div>
         ) : <p className="text-sm text-gray-400">Sin datos</p>}
+      </div>
+
+      {/* Conversion */}
+      <div className="card p-5 mb-6">
+        <h2 className="font-bold text-gray-800 mb-4">Conversión de presupuestos</h2>
+        <div className="grid grid-cols-3 gap-3 mb-4">
+          <div className="p-3 rounded-lg bg-gray-50"><p className="text-xs text-gray-500">Creados</p><p className="text-lg font-black text-gray-900">{curPres.length}</p></div>
+          <div className="p-3 rounded-lg bg-gray-50"><p className="text-xs text-gray-500">Convertidos</p><p className="text-lg font-black text-gray-900">{convertedCount}</p></div>
+          <div className="p-3 rounded-lg bg-gray-50"><p className="text-xs text-gray-500">Tasa</p><p className="text-lg font-black" style={{ color: '#6C5CE7' }}>{convRate}%</p>
+            {prevConvRate > 0 && <p className={`text-xs ${convRate >= prevConvRate ? 'text-green-600' : 'text-red-500'}`}>{convRate >= prevConvRate ? '↑' : '↓'} {Math.abs(convRate - prevConvRate)}pp</p>}
+          </div>
+        </div>
+        {curPres.length > 0 && (
+          <div className="flex h-4 rounded-full overflow-hidden bg-gray-100">
+            <div style={{ width: `${Math.min(convRate, 100)}%`, background: '#6C5CE7' }} />
+            <div style={{ width: `${100 - Math.min(convRate, 100)}%`, background: '#E0DCF8' }} />
+          </div>
+        )}
+        <div className="flex gap-4 text-xs text-gray-500 mt-2"><span>■ Convertidos {convRate}%</span><span className="text-gray-300">□ No convertidos {100 - Math.min(convRate, 100)}%</span></div>
+      </div>
+
+      {/* Evolution */}
+      <div className="card p-5 mb-6">
+        <h2 className="font-bold text-gray-800 mb-4">Evolución de rentabilidad (últimos 6 meses)</h2>
+        {evolutionData.some(d => d.revenue > 0) ? (<>
+          <ResponsiveContainer width="100%" height={200}>
+            <LineChart data={evolutionData}>
+              <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+              <YAxis tickFormatter={v => `${v}%`} tick={{ fontSize: 11 }} width={40} domain={[0, 100]} />
+              <Tooltip formatter={(v) => `${v}%`} />
+              <Line type="monotone" dataKey="margin" stroke="#6C5CE7" strokeWidth={2.5} dot={{ fill: '#6C5CE7', r: 4 }} />
+            </LineChart>
+          </ResponsiveContainer>
+          <div className="flex gap-6 mt-3 text-sm text-gray-500 flex-wrap">
+            <span>Promedio: <span className="font-bold text-gray-800">{evoAvg}%</span></span>
+            {evoBest && <span>Mejor: <span className="font-bold text-green-600">{evoBest.name} ({evoBest.margin}%)</span></span>}
+            {evoWorst && evoWorst.revenue > 0 && <span>Peor: <span className="font-bold text-red-500">{evoWorst.name} ({evoWorst.margin}%)</span></span>}
+          </div>
+        </>) : <p className="text-sm text-gray-400">Sin datos suficientes</p>}
+      </div>
+
+      {/* Compare periods */}
+      <div className="card p-5 mb-6">
+        <h2 className="font-bold text-gray-800 mb-4">Comparar períodos</h2>
+        <div className="flex flex-col sm:flex-row gap-3 mb-4 items-end">
+          <div className="flex-1"><label className="block text-xs text-gray-500 mb-1">Período A</label><input type="date" className="input-base text-sm" value={cmpA} onChange={e => setCmpA(e.target.value)} /></div>
+          <span className="text-gray-400 text-sm hidden sm:block pb-2">vs</span>
+          <div className="flex-1"><label className="block text-xs text-gray-500 mb-1">Período B</label><input type="date" className="input-base text-sm" value={cmpB} onChange={e => setCmpB(e.target.value)} /></div>
+          <button onClick={() => setShowCmp(true)} disabled={!cmpA || !cmpB} className="px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#6C5CE7' }}>Comparar</button>
+        </div>
+        {showCmp && cmpA && cmpB && (() => {
+          const a = calcPeriodMetrics(new Date(cmpA), new Date(new Date(cmpA).getTime() + 30 * 86400000))
+          const b = calcPeriodMetrics(new Date(cmpB), new Date(new Date(cmpB).getTime() + 30 * 86400000))
+          const rows = [
+            { label: 'Facturación', va: fmt(a.facturacion), vb: fmt(b.facturacion), change: pct(b.facturacion, a.facturacion), unit: '%' },
+            { label: 'Pedidos', va: String(a.pedidos), vb: String(b.pedidos), change: pct(b.pedidos, a.pedidos), unit: '%' },
+            { label: 'Ticket promedio', va: fmt(a.ticket), vb: fmt(b.ticket), change: pct(b.ticket, a.ticket), unit: '%' },
+            { label: 'Margen bruto', va: `${a.margen}%`, vb: `${b.margen}%`, change: b.margen - a.margen, unit: 'pp' },
+            { label: 'Conversión', va: `${a.conversion}%`, vb: `${b.conversion}%`, change: b.conversion - a.conversion, unit: 'pp' },
+          ]
+          return (
+            <table className="w-full text-sm"><thead><tr className="border-b border-gray-100">
+              <th className="text-left px-2 py-2 text-xs text-gray-400">Métrica</th>
+              <th className="text-left px-2 py-2 text-xs text-gray-400">Período A</th>
+              <th className="text-left px-2 py-2 text-xs text-gray-400">Período B</th>
+              <th className="text-left px-2 py-2 text-xs text-gray-400">Cambio</th>
+            </tr></thead><tbody>
+              {rows.map(r => (
+                <tr key={r.label} className="border-b border-gray-50">
+                  <td className="px-2 py-2 font-medium text-gray-800">{r.label}</td>
+                  <td className="px-2 py-2 text-gray-600">{r.va}</td>
+                  <td className="px-2 py-2 text-gray-600">{r.vb}</td>
+                  <td className="px-2 py-2"><span className={r.change >= 0 ? 'text-green-600' : 'text-red-500'}>{r.change >= 0 ? '↑' : '↓'} {Math.abs(r.change)}{r.unit}</span></td>
+                </tr>
+              ))}
+            </tbody></table>
+          )
+        })()}
       </div>
     </div>
   )
