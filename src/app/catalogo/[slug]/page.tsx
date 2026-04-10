@@ -17,6 +17,7 @@ interface Category { id: string; name: string }
 interface ShopInfo {
   nombre: string; logo: string | null; color: string; description: string
   whatsapp: string; instagram: string; user_id: string; banner: string | null; direccion: string
+  mediosPago: Array<{ id: string; nombre: string; tipo_ajuste: string; porcentaje: number }>
   anuncio: { activo: boolean; texto: string; bgColor: string; textColor: string }
 }
 interface CartItem { productId: string; name: string; price: number; quantity: number; photo: string; variant: string }
@@ -93,11 +94,14 @@ export default function PublicCatalogPage() {
           bgColor: (s.anuncio_color_fondo as string) || (s.brand_color as string) || '#6C5CE7',
           textColor: (s.anuncio_color_texto as string) || '#FFFFFF',
         },
+        mediosPago: [],
       })
-      const [{ data: prods }, { data: cats }] = await Promise.all([
+      const [{ data: prods }, { data: cats }, { data: mp }] = await Promise.all([
         supabase.from('catalog_products').select('id,name,description,photos,selling_price,manage_stock,current_stock,category_id,visible_in_catalog,sizes,colors,estimated_delivery,precio_anterior').eq('user_id', userId).eq('visible_in_catalog', true).gt('selling_price', 0),
         supabase.from('categories').select('id,name').eq('user_id', userId),
+        supabase.from('medios_pago').select('id,nombre,tipo_ajuste,porcentaje').eq('user_id', userId).eq('activo', true).order('orden'),
       ])
+      if (mp?.length) setShop(prev => prev ? { ...prev, mediosPago: mp as ShopInfo['mediosPago'] } : prev)
       setProducts((prods || []) as CatalogProduct[])
       setCategories((cats || []) as Category[])
       setLoading(false)
@@ -391,6 +395,12 @@ function CartScreen({ shop, onClose }: { shop: ShopInfo; onClose: () => void }) 
   const [comentarios, setComentarios] = useState('')
   const [sending, setSending] = useState(false)
   const [orderResult, setOrderResult] = useState<{ codigo: string; waUrl: string } | null>(null)
+  const [selectedMedioPago, setSelectedMedioPago] = useState(shop.mediosPago[0]?.id || '')
+
+  const medio = shop.mediosPago.find(m => m.id === selectedMedioPago)
+  const ajustePct = medio ? (medio.tipo_ajuste === 'descuento' ? -medio.porcentaje : medio.tipo_ajuste === 'recargo' ? medio.porcentaje : 0) : 0
+  const ajusteMonto = Math.round(total * ajustePct / 100)
+  const totalFinal = total + ajusteMonto
 
   const itemKey = (i: CartItem) => i.variant ? `${i.productId}::${i.variant}` : i.productId
 
@@ -401,7 +411,7 @@ function CartScreen({ shop, onClose }: { shop: ShopInfo; onClose: () => void }) 
     try {
       const res = await fetch('/api/catalog-order', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: shop.user_id, nombre, whatsapp, comentarios, items: items.map(i => ({ name: i.name, variant: i.variant, quantity: i.quantity, price: i.price })), total }),
+        body: JSON.stringify({ userId: shop.user_id, nombre, whatsapp, comentarios, items: items.map(i => ({ name: i.name, variant: i.variant, quantity: i.quantity, price: i.price })), total: totalFinal, medioPago: medio?.nombre || null, ajustePorcentaje: ajustePct, ajusteMonto }),
       })
       const data = await res.json()
       codigo = data.codigo || ''
@@ -409,7 +419,8 @@ function CartScreen({ shop, onClose }: { shop: ShopInfo; onClose: () => void }) 
     // Build WhatsApp URL (user clicks it directly — no popup blocked)
     const lines = items.map(i => `• ${i.quantity}× ${i.name}${i.variant ? ` (${i.variant})` : ''} — ${fmt(i.price * i.quantity)}`).join('\n')
     const presLink = codigo ? `\n\n📄 Ver presupuesto: https://www.estamply.app/p/${codigo}` : ''
-    const msg = `Hola! Hice un pedido desde tu catálogo web:\n\n${lines}\n\n💰 Total: ${fmt(total)}${presLink}\n\nNombre: ${nombre}`
+    const medioLine = medio && ajustePct !== 0 ? `\n💳 Medio de pago: ${medio.nombre} (${ajustePct > 0 ? '+' : ''}${ajustePct}%)` : medio ? `\n💳 Medio de pago: ${medio.nombre}` : ''
+    const msg = `Hola! Hice un pedido desde tu catálogo web:\n\n${lines}${medioLine}\n\n💰 Total: ${fmt(totalFinal)}${presLink}\n\nNombre: ${nombre}`
     const waUrl = `https://wa.me/${shop.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`
     setSending(false)
     setOrderResult({ codigo, waUrl })
@@ -484,10 +495,41 @@ function CartScreen({ shop, onClose }: { shop: ShopInfo; onClose: () => void }) 
           </div>
 
           <div className="px-4 mt-4 pt-4 border-t border-gray-200">
-            <div className="flex justify-between items-center mb-4">
-              <span className="text-sm text-gray-600">Total</span>
-              <span className="text-xl font-black text-gray-900">{fmt(total)}</span>
+            {/* Payment methods */}
+            {shop.mediosPago.length > 0 && (
+              <div className="mb-4">
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Medio de pago</p>
+                <div className="space-y-1.5">
+                  {shop.mediosPago.map(m => {
+                    const pct = m.tipo_ajuste === 'descuento' ? -m.porcentaje : m.tipo_ajuste === 'recargo' ? m.porcentaje : 0
+                    const mTotal = total + Math.round(total * pct / 100)
+                    return (
+                      <label key={m.id} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${selectedMedioPago === m.id ? 'border-purple-300 bg-purple-50' : 'border-gray-100 hover:bg-gray-50'}`}>
+                        <input type="radio" name="medioPago" checked={selectedMedioPago === m.id} onChange={() => setSelectedMedioPago(m.id)} className="text-purple-600" />
+                        <span className="flex-1 text-sm font-medium text-gray-800">{m.nombre}
+                          {pct !== 0 && <span className={`ml-1.5 text-xs ${pct < 0 ? 'text-green-600' : 'text-red-500'}`}>{pct > 0 ? '+' : ''}{pct}%</span>}
+                        </span>
+                        <span className="text-sm font-bold text-gray-800">{fmt(mTotal)}</span>
+                      </label>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Total */}
+            <div className="mb-4 space-y-1">
+              {ajustePct !== 0 && (<>
+                <div className="flex justify-between text-sm text-gray-500"><span>Subtotal</span><span>{fmt(total)}</span></div>
+                <div className="flex justify-between text-sm"><span className={ajustePct < 0 ? 'text-green-600' : 'text-red-500'}>{medio?.nombre} ({ajustePct > 0 ? '+' : ''}{ajustePct}%)</span><span className={ajustePct < 0 ? 'text-green-600' : 'text-red-500'}>{ajusteMonto > 0 ? '+' : ''}{fmt(ajusteMonto)}</span></div>
+              </>)}
+              <div className="flex justify-between items-center pt-1">
+                <span className="text-sm font-semibold text-gray-800">Total</span>
+                <span className="text-xl font-black text-gray-900">{fmt(totalFinal)}</span>
+              </div>
             </div>
+
+            {/* Contact form */}
             <div className="space-y-3 mb-4">
               <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Tus datos</p>
               <input className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm" placeholder="Nombre *" value={nombre} onChange={e => setNombre(e.target.value)} />

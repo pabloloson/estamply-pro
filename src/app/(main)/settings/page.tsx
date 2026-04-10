@@ -37,6 +37,8 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [showQR, setShowQR] = useState(false)
+  const [mediosPago, setMediosPago] = useState<Array<{ id: string; nombre: string; tipo_ajuste: string; porcentaje: number; activo: boolean; orden: number }>>([])
+  const [editingMedio, setEditingMedio] = useState<{ nombre: string; tipo_ajuste: string; porcentaje: number; id?: string } | null>(null)
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const [ws, setWs] = useState<WorkshopSettings>(DEFAULT_SETTINGS)
   const logoInputRef = useRef<HTMLInputElement>(null)
@@ -63,9 +65,13 @@ export default function SettingsPage() {
           business_website: data.business_website || '',
         })
       }
-      // Load workshop settings for discount toggle
-      const { data: wsData } = await supabase.from('workshop_settings').select('settings').single()
+      // Load workshop settings
+      const [{ data: wsData }, { data: mp }] = await Promise.all([
+        supabase.from('workshop_settings').select('settings').single(),
+        supabase.from('medios_pago').select('*').order('orden'),
+      ])
       if (wsData?.settings) setWs({ ...DEFAULT_SETTINGS, ...(wsData.settings as Partial<WorkshopSettings>) })
+      if (mp) setMediosPago(mp)
       setLoading(false)
     }
     load()
@@ -293,6 +299,71 @@ export default function SettingsPage() {
           </button>
         </div>
       </div>
+      {/* Medios de pago */}
+      <div className="card p-6 max-w-2xl mt-6">
+        <h3 className="font-semibold text-gray-800 mb-1">Medios de pago</h3>
+        <p className="text-xs text-gray-400 mb-4">Configurá cómo pagan tus clientes. Aparecen en el catálogo web.</p>
+        <div className="space-y-2 mb-4">
+          {mediosPago.map(m => (
+            <div key={m.id} className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 hover:bg-gray-50">
+              <button type="button" onClick={async () => { await supabase.from('medios_pago').update({ activo: !m.activo }).eq('id', m.id); setMediosPago(prev => prev.map(x => x.id === m.id ? { ...x, activo: !x.activo } : x)) }}
+                className="relative w-9 h-5 rounded-full transition-colors flex-shrink-0" style={{ background: m.activo ? '#6C5CE7' : '#D1D5DB' }}>
+                <span className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform" style={{ transform: m.activo ? 'translateX(16px)' : 'translateX(0)' }} />
+              </button>
+              <span className={`font-medium text-sm flex-1 ${m.activo ? 'text-gray-800' : 'text-gray-400'}`}>{m.nombre}</span>
+              <span className="text-xs text-gray-400">
+                {m.tipo_ajuste === 'descuento' ? `-${m.porcentaje}%` : m.tipo_ajuste === 'recargo' ? `+${m.porcentaje}%` : 'Sin ajuste'}
+              </span>
+              <button onClick={() => setEditingMedio({ nombre: m.nombre, tipo_ajuste: m.tipo_ajuste, porcentaje: m.porcentaje, id: m.id })} className="text-xs text-gray-400 hover:text-gray-600">✎</button>
+              <button onClick={async () => { if (confirm('¿Eliminar?')) { await supabase.from('medios_pago').delete().eq('id', m.id); setMediosPago(prev => prev.filter(x => x.id !== m.id)) } }} className="text-xs text-red-400 hover:text-red-600">✕</button>
+            </div>
+          ))}
+        </div>
+        {mediosPago.length < 6 && (
+          <button onClick={() => setEditingMedio({ nombre: '', tipo_ajuste: 'sin_ajuste', porcentaje: 0 })}
+            className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700"><Plus size={14} /> Agregar medio de pago</button>
+        )}
+      </div>
+
+      {/* Medio de pago modal */}
+      {editingMedio && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)' }} onClick={() => setEditingMedio(null)}>
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
+            <h3 className="font-bold text-gray-900 mb-4">{editingMedio.id ? 'Editar' : 'Nuevo'} medio de pago</h3>
+            <div className="space-y-3">
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+                <input className="input-base" value={editingMedio.nombre} onChange={e => setEditingMedio({ ...editingMedio, nombre: e.target.value })} placeholder="Ej: Transferencia bancaria" /></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Ajuste de precio</label>
+                <div className="flex gap-2">
+                  {[['sin_ajuste', 'Sin ajuste'], ['descuento', 'Descuento'], ['recargo', 'Recargo']].map(([v, l]) => (
+                    <button key={v} type="button" onClick={() => setEditingMedio({ ...editingMedio, tipo_ajuste: v })}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${editingMedio.tipo_ajuste === v ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-500'}`}>{l}</button>
+                  ))}
+                </div></div>
+              {editingMedio.tipo_ajuste !== 'sin_ajuste' && (
+                <div><label className="block text-sm font-medium text-gray-700 mb-1">Porcentaje (%)</label>
+                  <input type="number" className="input-base" min={0} max={100} value={editingMedio.porcentaje}
+                    onFocus={e => e.target.select()} onChange={e => setEditingMedio({ ...editingMedio, porcentaje: parseFloat(e.target.value) || 0 })} /></div>
+              )}
+            </div>
+            <div className="flex gap-3 mt-5">
+              <button onClick={() => setEditingMedio(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">Cancelar</button>
+              <button disabled={!editingMedio.nombre.trim()} onClick={async () => {
+                const payload = { nombre: editingMedio.nombre, tipo_ajuste: editingMedio.tipo_ajuste, porcentaje: editingMedio.tipo_ajuste === 'sin_ajuste' ? 0 : editingMedio.porcentaje, activo: true, orden: mediosPago.length }
+                if (editingMedio.id) {
+                  await supabase.from('medios_pago').update(payload).eq('id', editingMedio.id)
+                  setMediosPago(prev => prev.map(m => m.id === editingMedio.id ? { ...m, ...payload } : m))
+                } else {
+                  const { data } = await supabase.from('medios_pago').insert(payload).select('*').single()
+                  if (data) setMediosPago(prev => [...prev, data])
+                }
+                setEditingMedio(null)
+              }} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#6C5CE7' }}>Guardar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* QR Modal */}
       {showQR && !!(ws as Record<string, unknown>).catalog_slug && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)' }} onClick={() => setShowQR(false)}>

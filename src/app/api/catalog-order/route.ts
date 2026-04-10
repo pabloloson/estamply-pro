@@ -9,7 +9,7 @@ const supabase = createClient(
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const { userId, nombre, whatsapp, comentarios, items, total } = body
+    const { userId, nombre, whatsapp, comentarios, items, total, medioPago, ajustePorcentaje, ajusteMonto } = body
 
     if (!userId || !nombre || !whatsapp || !items?.length) {
       return NextResponse.json({ error: 'Faltan datos obligatorios' }, { status: 400 })
@@ -51,6 +51,10 @@ export async function POST(req: Request) {
       total, origen: 'catalogo_web',
       notas: comentarios || null,
       business_profile: bizProfile || {},
+      medio_pago_nombre: medioPago || null,
+      ajuste_porcentaje: ajustePorcentaje || 0,
+      ajuste_monto: ajusteMonto || 0,
+      total_final: total,
     })
 
     if (error) {
