@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { usePresupuesto } from '@/features/presupuesto/context/PresupuestoContext'
 import { usePermissions } from '@/shared/context/PermissionsContext'
+import { useTranslations } from '@/shared/hooks/useTranslations'
 
 interface SidebarProps {
   workshopName?: string
@@ -21,6 +22,7 @@ export function Sidebar({ workshopName = 'Mi Taller' }: SidebarProps) {
   const [mobileOpen, setMobileOpen] = useState(false)
   const { items } = usePresupuesto()
   const { canAccess, isOwner } = usePermissions()
+  const t = useTranslations('sidebar')
 
   const isActive = (href: string) =>
     href === '/' ? pathname === '/' : pathname.startsWith(href)
@@ -74,13 +76,13 @@ export function Sidebar({ workshopName = 'Mi Taller' }: SidebarProps) {
 
       {/* ── Sección 1: Uso diario ── */}
       <nav className="px-3 pt-4 space-y-0.5">
-        {canAccess('inicio') && <NavLink href="/" icon={LayoutDashboard} label="Inicio" />}
-        {canAccess('cotizador') && <NavLink href="/cotizador" icon={Calculator} label="Cotizador" />}
-        {canAccess('presupuestos') && <NavLink href="/presupuesto" icon={FileText} label="Presupuestos" badge={items.length} />}
-        {canAccess('pedidos') && <NavLink href="/orders" icon={ShoppingBag} label="Pedidos" />}
-        {canAccess('clientes') && <NavLink href="/clients" icon={Users} label="Clientes" />}
-        {canAccess('catalogo') && <NavLink href="/catalogo" icon={Package} label="Catálogo" />}
-        {canAccess('estadisticas') && <NavLink href="/estadisticas" icon={BarChart3} label="Estadísticas" />}
+        {canAccess('inicio') && <NavLink href="/" icon={LayoutDashboard} label={t('home')} />}
+        {canAccess('cotizador') && <NavLink href="/cotizador" icon={Calculator} label={t('quoter')} />}
+        {canAccess('presupuestos') && <NavLink href="/presupuesto" icon={FileText} label={t('quotes')} badge={items.length} />}
+        {canAccess('pedidos') && <NavLink href="/orders" icon={ShoppingBag} label={t('orders')} />}
+        {canAccess('clientes') && <NavLink href="/clients" icon={Users} label={t('clients')} />}
+        {canAccess('catalogo') && <NavLink href="/catalogo" icon={Package} label={t('catalog')} />}
+        {canAccess('estadisticas') && <NavLink href="/estadisticas" icon={BarChart3} label={t('statistics')} />}
       </nav>
 
       {/* ── Separador + Sección 2: Motor del negocio ── */}
@@ -88,11 +90,11 @@ export function Sidebar({ workshopName = 'Mi Taller' }: SidebarProps) {
         <div className="mx-4 mt-4 mb-1 border-t border-gray-100" />
         <div className="px-3 space-y-0.5">
           <p className="px-3 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-            Mi taller
+            {t('myWorkshop')}
           </p>
-          {canAccess('materiales') && <NavLink href="/materiales" icon={Droplets} label="Materiales" />}
-          {canAccess('equipamiento') && <NavLink href="/equipamiento" icon={Cpu} label="Equipamiento" />}
-          {canAccess('produccion') && <NavLink href="/tecnicas" icon={Palette} label="Producción" />}
+          {canAccess('materiales') && <NavLink href="/materiales" icon={Droplets} label={t('materials')} />}
+          {canAccess('equipamiento') && <NavLink href="/equipamiento" icon={Cpu} label={t('equipment')} />}
+          {canAccess('produccion') && <NavLink href="/tecnicas" icon={Palette} label={t('production')} />}
         </div>
       </>)}
 
@@ -101,7 +103,7 @@ export function Sidebar({ workshopName = 'Mi Taller' }: SidebarProps) {
 
       {/* ── Sección 3: Ajustes (anclado al fondo) ── */}
       <div className="px-3 pt-3 border-t border-gray-100 space-y-0.5 pb-1">
-        {(isOwner || canAccess('configuracion')) && <NavLink href="/settings" icon={Settings} label="Configuración" />}
+        {(isOwner || canAccess('configuracion')) && <NavLink href="/settings" icon={Settings} label={t('settings')} />}
       </div>
 
       {/* ── Logout ── */}
@@ -109,7 +111,7 @@ export function Sidebar({ workshopName = 'Mi Taller' }: SidebarProps) {
         <form action={logout}>
           <button type="submit" className="sidebar-link w-full text-left">
             <LogOut size={17} />
-            Cerrar sesión
+            {t('logout')}
           </button>
         </form>
       </div>

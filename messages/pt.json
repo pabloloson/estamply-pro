@@ -24,7 +24,8 @@
     "materials": "Materiais",
     "equipment": "Equipamentos",
     "production": "Produção",
-    "settings": "Configurações"
+    "settings": "Configurações",
+    "logout": "Sair"
   },
   "dashboard": {
     "goodMorning": "Bom dia, {name}",
