@@ -30,12 +30,26 @@ const EMPTY: BusinessProfile = {
   business_website: '',
 }
 
+const TAX_ID_LABELS: Record<string, string> = {
+  AR: 'CUIT / DNI',
+  MX: 'RFC',
+  BR: 'CNPJ / CPF',
+  CL: 'RUT',
+  CO: 'NIT / CC',
+  PE: 'RUC / DNI',
+  EC: 'RUC / CI',
+  UY: 'RUT / CI',
+  PY: 'RUC / CI',
+  BO: 'NIT / CI',
+  VE: 'RIF / CI',
+}
+
 export default function SettingsPage() {
   const supabase = createClient()
   const t = useTranslations('settings')
   const tp = useTranslations('permissions')
   const tc = useTranslations('common')
-  const { fmt: fmtCurrency } = useLocale()
+  const { fmt: fmtCurrency, country } = useLocale()
   const [profile, setProfile] = useState<BusinessProfile>(EMPTY)
   const [userId, setUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -187,7 +201,7 @@ export default function SettingsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {([
             ['business_name', t('businessName'), 'Ej: Estamply Taller'],
-            ['business_cuit', t('taxId'), '20-12345678-9'],
+            ['business_cuit', TAX_ID_LABELS[country.code] || 'Tax ID', '20-12345678-9'],
             ['business_address', t('addressField'), 'Calle 123, Ciudad'],
             ['business_phone', t('phoneWhatsapp'), '+54 11 1234-5678'],
             ['business_email', t('contactEmail'), 'taller@ejemplo.com'],

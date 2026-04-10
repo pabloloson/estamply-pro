@@ -22,6 +22,117 @@ const FLAGS: Record<string, string> = {
 // Main countries to show as cards (the most common)
 const MAIN_COUNTRIES = ['AR', 'MX', 'CO', 'CL', 'BR', 'PE', 'EC', 'UY', 'PY', 'BO', 'VE']
 
+// World countries (ISO 3166) — excludes MAIN_COUNTRIES which are shown as cards
+const WORLD_COUNTRIES: Array<{ code: string; name: string; phoneCode: string }> = [
+  { code: 'AF', name: 'Afganistán', phoneCode: '+93' },
+  { code: 'AL', name: 'Albania', phoneCode: '+355' },
+  { code: 'DE', name: 'Alemania', phoneCode: '+49' },
+  { code: 'AD', name: 'Andorra', phoneCode: '+376' },
+  { code: 'AO', name: 'Angola', phoneCode: '+244' },
+  { code: 'SA', name: 'Arabia Saudita', phoneCode: '+966' },
+  { code: 'DZ', name: 'Argelia', phoneCode: '+213' },
+  { code: 'AU', name: 'Australia', phoneCode: '+61' },
+  { code: 'AT', name: 'Austria', phoneCode: '+43' },
+  { code: 'BE', name: 'Bélgica', phoneCode: '+32' },
+  { code: 'BZ', name: 'Belice', phoneCode: '+501' },
+  { code: 'BJ', name: 'Benín', phoneCode: '+229' },
+  { code: 'BY', name: 'Bielorrusia', phoneCode: '+375' },
+  { code: 'MM', name: 'Birmania', phoneCode: '+95' },
+  { code: 'BW', name: 'Botsuana', phoneCode: '+267' },
+  { code: 'BN', name: 'Brunéi', phoneCode: '+673' },
+  { code: 'BG', name: 'Bulgaria', phoneCode: '+359' },
+  { code: 'BF', name: 'Burkina Faso', phoneCode: '+226' },
+  { code: 'BI', name: 'Burundi', phoneCode: '+257' },
+  { code: 'BT', name: 'Bután', phoneCode: '+975' },
+  { code: 'CV', name: 'Cabo Verde', phoneCode: '+238' },
+  { code: 'KH', name: 'Camboya', phoneCode: '+855' },
+  { code: 'CM', name: 'Camerún', phoneCode: '+237' },
+  { code: 'CA', name: 'Canadá', phoneCode: '+1' },
+  { code: 'TD', name: 'Chad', phoneCode: '+235' },
+  { code: 'CN', name: 'China', phoneCode: '+86' },
+  { code: 'CY', name: 'Chipre', phoneCode: '+357' },
+  { code: 'KR', name: 'Corea del Sur', phoneCode: '+82' },
+  { code: 'CR', name: 'Costa Rica', phoneCode: '+506' },
+  { code: 'CI', name: 'Costa de Marfil', phoneCode: '+225' },
+  { code: 'HR', name: 'Croacia', phoneCode: '+385' },
+  { code: 'CU', name: 'Cuba', phoneCode: '+53' },
+  { code: 'DK', name: 'Dinamarca', phoneCode: '+45' },
+  { code: 'EG', name: 'Egipto', phoneCode: '+20' },
+  { code: 'SV', name: 'El Salvador', phoneCode: '+503' },
+  { code: 'AE', name: 'Emiratos Árabes', phoneCode: '+971' },
+  { code: 'SK', name: 'Eslovaquia', phoneCode: '+421' },
+  { code: 'SI', name: 'Eslovenia', phoneCode: '+386' },
+  { code: 'ES', name: 'España', phoneCode: '+34' },
+  { code: 'US', name: 'Estados Unidos', phoneCode: '+1' },
+  { code: 'EE', name: 'Estonia', phoneCode: '+372' },
+  { code: 'ET', name: 'Etiopía', phoneCode: '+251' },
+  { code: 'PH', name: 'Filipinas', phoneCode: '+63' },
+  { code: 'FI', name: 'Finlandia', phoneCode: '+358' },
+  { code: 'FR', name: 'Francia', phoneCode: '+33' },
+  { code: 'GH', name: 'Ghana', phoneCode: '+233' },
+  { code: 'GR', name: 'Grecia', phoneCode: '+30' },
+  { code: 'GT', name: 'Guatemala', phoneCode: '+502' },
+  { code: 'GY', name: 'Guyana', phoneCode: '+592' },
+  { code: 'HT', name: 'Haití', phoneCode: '+509' },
+  { code: 'HN', name: 'Honduras', phoneCode: '+504' },
+  { code: 'HU', name: 'Hungría', phoneCode: '+36' },
+  { code: 'IN', name: 'India', phoneCode: '+91' },
+  { code: 'ID', name: 'Indonesia', phoneCode: '+62' },
+  { code: 'IQ', name: 'Irak', phoneCode: '+964' },
+  { code: 'IR', name: 'Irán', phoneCode: '+98' },
+  { code: 'IE', name: 'Irlanda', phoneCode: '+353' },
+  { code: 'IL', name: 'Israel', phoneCode: '+972' },
+  { code: 'IT', name: 'Italia', phoneCode: '+39' },
+  { code: 'JM', name: 'Jamaica', phoneCode: '+1' },
+  { code: 'JP', name: 'Japón', phoneCode: '+81' },
+  { code: 'JO', name: 'Jordania', phoneCode: '+962' },
+  { code: 'KE', name: 'Kenia', phoneCode: '+254' },
+  { code: 'KW', name: 'Kuwait', phoneCode: '+965' },
+  { code: 'LB', name: 'Líbano', phoneCode: '+961' },
+  { code: 'LY', name: 'Libia', phoneCode: '+218' },
+  { code: 'LT', name: 'Lituania', phoneCode: '+370' },
+  { code: 'LU', name: 'Luxemburgo', phoneCode: '+352' },
+  { code: 'MY', name: 'Malasia', phoneCode: '+60' },
+  { code: 'MA', name: 'Marruecos', phoneCode: '+212' },
+  { code: 'NI', name: 'Nicaragua', phoneCode: '+505' },
+  { code: 'NG', name: 'Nigeria', phoneCode: '+234' },
+  { code: 'NO', name: 'Noruega', phoneCode: '+47' },
+  { code: 'NZ', name: 'Nueva Zelanda', phoneCode: '+64' },
+  { code: 'NL', name: 'Países Bajos', phoneCode: '+31' },
+  { code: 'PK', name: 'Pakistán', phoneCode: '+92' },
+  { code: 'PA', name: 'Panamá', phoneCode: '+507' },
+  { code: 'PL', name: 'Polonia', phoneCode: '+48' },
+  { code: 'PT', name: 'Portugal', phoneCode: '+351' },
+  { code: 'PR', name: 'Puerto Rico', phoneCode: '+1' },
+  { code: 'GB', name: 'Reino Unido', phoneCode: '+44' },
+  { code: 'CZ', name: 'República Checa', phoneCode: '+420' },
+  { code: 'DO', name: 'Rep. Dominicana', phoneCode: '+1' },
+  { code: 'RO', name: 'Rumania', phoneCode: '+40' },
+  { code: 'RU', name: 'Rusia', phoneCode: '+7' },
+  { code: 'SN', name: 'Senegal', phoneCode: '+221' },
+  { code: 'RS', name: 'Serbia', phoneCode: '+381' },
+  { code: 'SG', name: 'Singapur', phoneCode: '+65' },
+  { code: 'ZA', name: 'Sudáfrica', phoneCode: '+27' },
+  { code: 'SE', name: 'Suecia', phoneCode: '+46' },
+  { code: 'CH', name: 'Suiza', phoneCode: '+41' },
+  { code: 'SR', name: 'Surinam', phoneCode: '+597' },
+  { code: 'TH', name: 'Tailandia', phoneCode: '+66' },
+  { code: 'TW', name: 'Taiwán', phoneCode: '+886' },
+  { code: 'TZ', name: 'Tanzania', phoneCode: '+255' },
+  { code: 'TT', name: 'Trinidad y Tobago', phoneCode: '+1' },
+  { code: 'TN', name: 'Túnez', phoneCode: '+216' },
+  { code: 'TR', name: 'Turquía', phoneCode: '+90' },
+  { code: 'UA', name: 'Ucrania', phoneCode: '+380' },
+  { code: 'UG', name: 'Uganda', phoneCode: '+256' },
+  { code: 'VN', name: 'Vietnam', phoneCode: '+84' },
+]
+
+function getPhoneCode(countryCode: string): string {
+  if (PHONE_CODES[countryCode]) return PHONE_CODES[countryCode]
+  const wc = WORLD_COUNTRIES.find(c => c.code === countryCode)
+  return wc?.phoneCode || '+1'
+}
+
 const TECHNIQUES = [
   { slug: 'subli', label: 'Sublimación', color: '#6C5CE7' },
   { slug: 'dtf', label: 'DTF Textil', color: '#E17055' },
@@ -94,7 +205,7 @@ export default function OnboardingWizard() {
   }, [slug])
 
   const country = COUNTRIES.find(c => c.code === selectedCountry)
-  const phoneCode = PHONE_CODES[selectedCountry] || ''
+  const phoneCode = getPhoneCode(selectedCountry)
 
   function toggleTechnique(tecSlug: string) {
     setSelectedTechniques(prev =>
@@ -116,9 +227,11 @@ export default function OnboardingWizard() {
     }).eq('id', user.id)
 
     // 2. Create/update workshop_settings
+    const countryConfig = COUNTRIES.find(c => c.code === selectedCountry)
     const settings = {
       pais: selectedCountry,
-      idioma: country?.locale || 'es',
+      idioma: countryConfig?.locale || 'es',
+      moneda: countryConfig?.currency || 'USD',
       catalog_slug: slug,
       nombre_tienda: businessName,
     }
@@ -160,24 +273,25 @@ export default function OnboardingWizard() {
       }
     }
 
-    // 4. Create default categories
-    const defaultCats = ['Textil', 'Tazas', 'Otros']
-    for (const name of defaultCats) {
-      try {
-        await supabase.from('categories').upsert({ name, margen_sugerido: 40 }, { onConflict: 'name' }).select()
-      } catch {
-        await supabase.from('categories').insert({ name, margen_sugerido: 40 })
-      }
+    // 4. Create default categories (only if none exist)
+    const { data: existingCats } = await supabase.from('categories').select('id').limit(1)
+    if (!existingCats || existingCats.length === 0) {
+      await supabase.from('categories').insert([
+        { name: 'Textil', margen_sugerido: 40 },
+        { name: 'Tazas', margen_sugerido: 40 },
+        { name: 'Otros', margen_sugerido: 40 },
+      ])
     }
 
-    // 5. Create default payment methods
-    const defaultMedios = [
-      { nombre: 'Efectivo', tipo_ajuste: 'ninguno', porcentaje: 0, activo: true, orden: 1 },
-      { nombre: 'Transferencia', tipo_ajuste: 'ninguno', porcentaje: 0, activo: true, orden: 2 },
-      { nombre: 'MercadoPago', tipo_ajuste: 'ninguno', porcentaje: 0, activo: true, orden: 3 },
-    ]
-    for (const medio of defaultMedios) {
-      await supabase.from('medios_pago').insert(medio)
+    // 5. Create default payment methods (only if none exist)
+    const { data: existingMedios } = await supabase.from('medios_pago').select('id').limit(1)
+    if (!existingMedios || existingMedios.length === 0) {
+      const defaultMedios = [
+        { nombre: 'Efectivo', tipo_ajuste: 'ninguno', porcentaje: 0, activo: true, orden: 1 },
+        { nombre: 'Transferencia', tipo_ajuste: 'ninguno', porcentaje: 0, activo: true, orden: 2 },
+        { nombre: 'MercadoPago', tipo_ajuste: 'ninguno', porcentaje: 0, activo: true, orden: 3 },
+      ]
+      await supabase.from('medios_pago').insert(defaultMedios)
     }
 
     router.push('/')
@@ -228,25 +342,21 @@ export default function OnboardingWizard() {
               })}
             </div>
 
-            {/* Other countries toggle */}
+            {/* Other countries dropdown */}
             <button type="button" onClick={() => setShowOtherCountries(!showOtherCountries)}
               className="mt-3 text-sm text-gray-400 hover:text-gray-600 flex items-center gap-1">
               <ChevronRight size={14} className={`transition-transform ${showOtherCountries ? 'rotate-90' : ''}`} />
               {t('otherCountry')}
             </button>
             {showOtherCountries && (
-              <div className="mt-2 grid grid-cols-2 gap-2">
-                {COUNTRIES.filter(c => !MAIN_COUNTRIES.includes(c.code)).map(c => {
-                  const selected = selectedCountry === c.code
-                  return (
-                    <button key={c.code} type="button" onClick={() => setSelectedCountry(c.code)}
-                      className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 text-left transition-all ${selected ? 'border-purple-500 bg-purple-50' : 'border-gray-100 hover:border-gray-200'}`}>
-                      <span className="text-2xl">{FLAGS[c.code] || '🏳️'}</span>
-                      <span className={`text-sm font-medium ${selected ? 'text-purple-700' : 'text-gray-700'}`}>{c.name}</span>
-                      {selected && <Check size={16} className="text-purple-600 ml-auto" />}
-                    </button>
-                  )
-                })}
+              <div className="mt-2">
+                <select className="input-base w-full" value={selectedCountry}
+                  onChange={e => { setSelectedCountry(e.target.value); setShowOtherCountries(false) }}>
+                  <option value="">— Seleccionar país —</option>
+                  {WORLD_COUNTRIES.map(c => (
+                    <option key={c.code} value={c.code}>{c.name}</option>
+                  ))}
+                </select>
               </div>
             )}
 
