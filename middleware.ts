@@ -26,6 +26,23 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   const { pathname } = request.nextUrl
 
+  // ── Admin routes: require auth + email whitelist ──
+  if (pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) {
+    if (!user) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/login'
+      return NextResponse.redirect(url)
+    }
+    const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean)
+    if (!adminEmails.includes((user.email || '').toLowerCase())) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/login'
+      return NextResponse.redirect(url)
+    }
+    return supabaseResponse
+  }
+
+  // ── Public routes ──
   const publicRoutes = ['/login', '/signup', '/auth/callback', '/onboarding', '/p/', '/catalogo/']
   const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route))
 
