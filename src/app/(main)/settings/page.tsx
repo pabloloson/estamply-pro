@@ -356,6 +356,37 @@ export default function SettingsPage() {
           className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700"><Plus size={14} /> Nueva tabla de talles</button>
       </div>
 
+      {/* País y moneda */}
+      <div className="card p-6 max-w-2xl mt-6">
+        <h3 className="font-semibold text-gray-800 mb-1">País y moneda</h3>
+        <p className="text-xs text-gray-400 mb-4">Define la moneda y formato de números de tu taller.</p>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">País</label>
+            <select className="input-base" value={(ws as Record<string, unknown>).pais as string || 'AR'}
+              onChange={e => {
+                const c = require('@/shared/lib/currency').getCountry(e.target.value)
+                setWs({ ...ws, pais: e.target.value, moneda: c.currency, simbolo_moneda: c.symbol, idioma: c.locale } as WorkshopSettings)
+              }}>
+              {require('@/shared/lib/currency').COUNTRIES.map((c: { code: string; name: string; currency: string; symbol: string }) => (
+                <option key={c.code} value={c.code}>{c.name} — {c.symbol} ({c.currency})</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Idioma de la interfaz</label>
+            <select className="input-base" value={(ws as Record<string, unknown>).idioma as string || 'es'}
+              onChange={e => setWs({ ...ws, idioma: e.target.value } as WorkshopSettings)}>
+              <option value="es">Español</option>
+              <option value="pt">Português</option>
+            </select>
+          </div>
+          <button onClick={saveWs} className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white" style={{ background: '#6C5CE7' }}>
+            <Save size={14} /> Guardar
+          </button>
+        </div>
+      </div>
+
       {/* Usuarios */}
       <div className="card p-6 max-w-2xl mt-6">
         <h3 className="font-semibold text-gray-800 mb-1">Usuarios y permisos</h3>

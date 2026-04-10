@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { Sidebar } from '@/shared/components/Sidebar'
 import { PresupuestoProvider } from '@/features/presupuesto/context/PresupuestoContext'
 import { PermissionsProvider } from '@/shared/context/PermissionsContext'
+import { LocaleProvider } from '@/shared/context/LocaleContext'
 
 export default async function MainLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -18,6 +19,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
   }
 
   return (
+    <LocaleProvider>
     <PermissionsProvider>
     <PresupuestoProvider>
       <div className="flex min-h-screen" style={{ background: '#F4F5F8' }}>
@@ -28,5 +30,6 @@ export default async function MainLayout({ children }: { children: React.ReactNo
       </div>
     </PresupuestoProvider>
     </PermissionsProvider>
+    </LocaleProvider>
   )
 }
