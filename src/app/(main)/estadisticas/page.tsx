@@ -38,7 +38,7 @@ export default function EstadisticasPage() {
       const [{ data: o }, { data: p }, { data: pr }] = await Promise.all([
         supabase.from('orders').select('id,status,total_price,total_cost,created_at,items,clients(name)'),
         supabase.from('payments').select('order_id,monto,fecha'),
-        supabase.from('presupuestos').select('id,codigo,origen,created_at,total'),
+        supabase.from('presupuestos').select('id,codigo,origen,created_at,total,estado'),
       ])
       setOrders((o || []) as Order[]); setPayments((p || []) as Record<string, unknown>[]); setPresupuestos((pr || []) as Pres[]); setLoading(false)
     }
@@ -145,10 +145,11 @@ export default function EstadisticasPage() {
   })
   const clientRanking = [...clientMap.entries()].sort((a, b) => b[1].revenue - a[1].revenue).slice(0, 10)
 
-  // Conversion — count orders created from presupuestos in the period
-  const convertedCount = curOrders.length // simplified: every order = a converted presupuesto
-  const convRate = curPres.length > 0 ? Math.round((convertedCount / curPres.length) * 100) : 0
-  const prevConvRate = prevPres.length > 0 ? Math.round((prevOrders.length / prevPres.length) * 100) : 0
+  // Conversion — count presupuestos that progressed beyond 'borrador'
+  const convertedCount = curPres.filter(p => p.estado && p.estado !== 'borrador').length
+  const convRate = curPres.length > 0 ? Math.min(Math.round((convertedCount / curPres.length) * 100), 100) : 0
+  const prevConverted = prevPres.filter(p => p.estado && p.estado !== 'borrador').length
+  const prevConvRate = prevPres.length > 0 ? Math.min(Math.round((prevConverted / prevPres.length) * 100), 100) : 0
 
   // Evolution — last 6 months margin
   const evolutionData = useMemo(() => {
@@ -180,7 +181,7 @@ export default function EstadisticasPage() {
       facturacion: fac, pedidos: po.length,
       ticket: po.length > 0 ? Math.round(fac / po.length) : 0,
       margen: facC > 0 ? Math.round(((facC - costsT) / facC) * 100) : 0,
-      conversion: pp.length > 0 ? Math.round((po.length / pp.length) * 100) : 0,
+      conversion: pp.length > 0 ? Math.min(Math.round((pp.filter(p => p.estado && p.estado !== 'borrador').length / pp.length) * 100), 100) : 0,
       presupuestos: pp.length,
     }
   }
