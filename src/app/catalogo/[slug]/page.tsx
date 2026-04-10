@@ -130,9 +130,16 @@ function CatalogContent({ shop, products, categories, sizeGuides }: { shop: Shop
   const [detail, setDetail] = useState<CatalogProduct | null>(null)
   const [showCart, setShowCart] = useState(false)
   const [annDismissed, setAnnDismissed] = useState(false)
+  const [search, setSearch] = useState('')
+  const [sortBy, setSortBy] = useState('default')
   const { items } = useContext(CartCtx)
   const color = shop.color
-  const filtered = selectedCat ? products.filter(p => p.category_id === selectedCat) : products
+  const searchLower = search.toLowerCase()
+  let filtered = selectedCat ? products.filter(p => p.category_id === selectedCat) : products
+  if (search) filtered = filtered.filter(p => p.name.toLowerCase().includes(searchLower) || (p.description || '').toLowerCase().includes(searchLower))
+  if (sortBy === 'price_asc') filtered = [...filtered].sort((a, b) => a.selling_price - b.selling_price)
+  else if (sortBy === 'price_desc') filtered = [...filtered].sort((a, b) => b.selling_price - a.selling_price)
+  else if (sortBy === 'newest') filtered = [...filtered].reverse()
   const usedCats = categories.filter(c => products.some(p => p.category_id === c.id))
   const itemCount = items.reduce((s, i) => s + i.quantity, 0)
 
@@ -187,6 +194,22 @@ function CatalogContent({ shop, products, categories, sizeGuides }: { shop: Shop
         </div>
       )}
 
+      {/* Search + Sort */}
+      <div className="max-w-5xl mx-auto px-4 pt-3 flex gap-2 items-center">
+        <div className="flex-1 relative">
+          <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar productos..."
+            className="w-full px-3 py-2 pl-9 rounded-lg border border-gray-200 text-sm bg-white focus:outline-none focus:border-purple-300" />
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          {search && <button onClick={() => setSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><X size={14} /></button>}
+        </div>
+        <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="px-2 py-2 rounded-lg border border-gray-200 text-xs text-gray-600 bg-white">
+          <option value="default">Destacados</option>
+          <option value="price_asc">Menor precio</option>
+          <option value="price_desc">Mayor precio</option>
+          <option value="newest">Más recientes</option>
+        </select>
+      </div>
+
       {/* Product Grid */}
       <div className="max-w-5xl mx-auto px-4 py-4">
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -218,7 +241,7 @@ function CatalogContent({ shop, products, categories, sizeGuides }: { shop: Shop
             )
           })}
         </div>
-        {filtered.length === 0 && <p className="text-center text-gray-400 py-12">No hay productos disponibles.</p>}
+        {filtered.length === 0 && <p className="text-center text-gray-400 py-12">{search ? `No se encontraron productos para "${search}"` : 'No hay productos disponibles.'}</p>}
       </div>
 
       {/* Footer */}

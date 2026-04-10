@@ -30,6 +30,7 @@ function isOD(d: string | null) { return d ? new Date(d) < new Date(new Date().t
 function dTo(d: string | null) { return d ? Math.ceil((new Date(d).getTime() - Date.now()) / 86400000) : Infinity }
 
 function TechBadge({ t }: { t: string }) {
+  if (!t) return null
   return <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: `${TC[t] || '#999'}18`, color: TC[t] || '#999' }}>{TL[t] || t}</span>
 }
 
