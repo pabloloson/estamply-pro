@@ -13,7 +13,7 @@ interface CatalogProduct {
   base_product_id: string | null; technique: string | null; zone_config: unknown; production_config: unknown; cost_breakdown: unknown
   manage_stock: boolean; current_stock: number; min_stock: number; visible_in_catalog: boolean
   sizes: string[] | null; colors: Array<{ name: string; hex: string }> | null; estimated_delivery: string | null
-  precio_anterior: number | null
+  precio_anterior: number | null; guia_talles_id: string | null
 }
 interface StockMovement { id: string; product_id: string; type: string; quantity: number; note: string | null; created_at: string }
 
@@ -24,6 +24,7 @@ export default function CatalogoPage() {
   const supabase = createClient()
   const [catalogProducts, setCatalogProducts] = useState<CatalogProduct[]>([])
   const [categories, setCategories] = useState<Category[]>([])
+  const [guiasTalles, setGuiasTalles] = useState<Array<{ id: string; nombre: string }>>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [catModal, setCatModal] = useState<Partial<CatalogProduct> | null>(null)
@@ -35,11 +36,12 @@ export default function CatalogoPage() {
   const fileRef = useRef<HTMLInputElement>(null)
 
   async function load() {
-    const [{ data: cp }, { data: c }] = await Promise.all([
+    const [{ data: cp }, { data: c }, { data: gt }] = await Promise.all([
       supabase.from('catalog_products').select('*').order('name'),
       supabase.from('categories').select('*').order('name'),
+      supabase.from('guias_talles').select('id,nombre').order('orden'),
     ])
-    setCatalogProducts((cp || []) as CatalogProduct[]); setCategories(c || []); setLoading(false)
+    setCatalogProducts((cp || []) as CatalogProduct[]); setCategories(c || []); if (gt) setGuiasTalles(gt); setLoading(false)
   }
   useEffect(() => { load() }, [])
 
@@ -87,6 +89,7 @@ export default function CatalogoPage() {
       colors: (catModal.colors?.length) ? catModal.colors : null,
       estimated_delivery: catModal.estimated_delivery || null,
       precio_anterior: catModal.precio_anterior || null,
+      guia_talles_id: catModal.guia_talles_id || null,
     }
     if (catModal.id) await supabase.from('catalog_products').update(payload).eq('id', catModal.id)
     else await supabase.from('catalog_products').insert(payload)
@@ -298,6 +301,17 @@ export default function CatalogoPage() {
                   </div>
                 </div>
               </div>
+
+              {/* Size guide */}
+              {(catModal.sizes?.length ?? 0) > 0 && guiasTalles.length > 0 && (
+                <div className="border-t border-gray-100 pt-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Guía de talles</label>
+                  <select className="input-base text-sm" value={catModal.guia_talles_id || ''} onChange={e => setCatModal({ ...catModal, guia_talles_id: e.target.value || null })}>
+                    <option value="">Sin guía</option>
+                    {guiasTalles.map(g => <option key={g.id} value={g.id}>{g.nombre}</option>)}
+                  </select>
+                </div>
+              )}
 
               {/* Delivery time */}
               <div className="border-t border-gray-100 pt-4">

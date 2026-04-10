@@ -12,7 +12,9 @@ interface CatalogProduct {
   category_id: string | null; visible_in_catalog: boolean
   sizes: string[] | null; colors: Array<{ name: string; hex: string }> | null
   estimated_delivery: string | null; precio_anterior: number | null
+  guia_talles_id: string | null
 }
+interface SizeGuide { id: string; nombre: string; columnas: string[]; filas: Array<Record<string, string>> }
 interface Category { id: string; name: string }
 interface ShopInfo {
   nombre: string; logo: string | null; color: string; description: string
@@ -61,6 +63,7 @@ export default function PublicCatalogPage() {
   const [shop, setShop] = useState<ShopInfo | null>(null)
   const [products, setProducts] = useState<CatalogProduct[]>([])
   const [categories, setCategories] = useState<Category[]>([])
+  const [sizeGuides, setSizeGuides] = useState<SizeGuide[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -96,12 +99,14 @@ export default function PublicCatalogPage() {
         },
         mediosPago: [],
       })
-      const [{ data: prods }, { data: cats }, { data: mp }] = await Promise.all([
-        supabase.from('catalog_products').select('id,name,description,photos,selling_price,manage_stock,current_stock,category_id,visible_in_catalog,sizes,colors,estimated_delivery,precio_anterior').eq('user_id', userId).eq('visible_in_catalog', true).gt('selling_price', 0),
+      const [{ data: prods }, { data: cats }, { data: mp }, { data: sg }] = await Promise.all([
+        supabase.from('catalog_products').select('id,name,description,photos,selling_price,manage_stock,current_stock,category_id,visible_in_catalog,sizes,colors,estimated_delivery,precio_anterior,guia_talles_id').eq('user_id', userId).eq('visible_in_catalog', true).gt('selling_price', 0),
         supabase.from('categories').select('id,name').eq('user_id', userId),
         supabase.from('medios_pago').select('id,nombre,tipo_ajuste,porcentaje').eq('user_id', userId).eq('activo', true).order('orden'),
+        supabase.from('guias_talles').select('id,nombre,columnas,filas').eq('user_id', userId),
       ])
       if (mp?.length) setShop(prev => prev ? { ...prev, mediosPago: mp as ShopInfo['mediosPago'] } : prev)
+      if (sg) setSizeGuides(sg as SizeGuide[])
       setProducts((prods || []) as CatalogProduct[])
       setCategories((cats || []) as Category[])
       setLoading(false)
@@ -114,13 +119,13 @@ export default function PublicCatalogPage() {
 
   return (
     <CartProvider slug={slug}>
-      <CatalogContent shop={shop} products={products} categories={categories} />
+      <CatalogContent shop={shop} products={products} categories={categories} sizeGuides={sizeGuides} />
     </CartProvider>
   )
 }
 
 // ── Catalog Content ──
-function CatalogContent({ shop, products, categories }: { shop: ShopInfo; products: CatalogProduct[]; categories: Category[] }) {
+function CatalogContent({ shop, products, categories, sizeGuides }: { shop: ShopInfo; products: CatalogProduct[]; categories: Category[]; sizeGuides: SizeGuide[] }) {
   const [selectedCat, setSelectedCat] = useState<string | null>(null)
   const [detail, setDetail] = useState<CatalogProduct | null>(null)
   const [showCart, setShowCart] = useState(false)
@@ -256,7 +261,7 @@ function CatalogContent({ shop, products, categories }: { shop: ShopInfo; produc
       )}
 
       {/* Product Detail */}
-      {detail && <ProductDetail product={detail} shop={shop} onClose={() => setDetail(null)} />}
+      {detail && <ProductDetail product={detail} shop={shop} sizeGuides={sizeGuides} onClose={() => setDetail(null)} />}
 
       {/* Cart Screen */}
       {showCart && <CartScreen shop={shop} onClose={() => setShowCart(false)} />}
@@ -265,13 +270,15 @@ function CatalogContent({ shop, products, categories }: { shop: ShopInfo; produc
 }
 
 // ── Product Detail ──
-function ProductDetail({ product, shop, onClose }: { product: CatalogProduct; shop: ShopInfo; onClose: () => void }) {
+function ProductDetail({ product, shop, sizeGuides, onClose }: { product: CatalogProduct; shop: ShopInfo; sizeGuides: SizeGuide[]; onClose: () => void }) {
   const { add } = useContext(CartCtx)
   const [qty, setQty] = useState(1)
   const [photoIdx, setPhotoIdx] = useState(0)
   const [selSize, setSelSize] = useState<string | null>(null)
   const [selColor, setSelColor] = useState<string | null>(null)
   const [sizeError, setSizeError] = useState(false)
+  const [showGuide, setShowGuide] = useState(false)
+  const guide = product.guia_talles_id ? sizeGuides.find(g => g.id === product.guia_talles_id) : null
   const photos = (product.photos || []).slice(0, 3)
   const sizes = product.sizes || []
   const colors = product.colors || []
@@ -338,6 +345,7 @@ function ProductDetail({ product, shop, onClose }: { product: CatalogProduct; sh
                     ))}
                   </div>
                   {sizeError && <p className="text-xs text-red-500 mt-1">Seleccioná un talle</p>}
+                  {guide && <button type="button" onClick={() => setShowGuide(true)} className="text-xs text-purple-600 hover:text-purple-700 font-medium mt-1.5">📏 Ver guía de talles</button>}
                 </div>
               )}
 
@@ -383,6 +391,32 @@ function ProductDetail({ product, shop, onClose }: { product: CatalogProduct; sh
           )}
         </div>
       </div>
+
+      {/* Size guide modal */}
+      {showGuide && guide && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" style={{ background: 'rgba(0,0,0,0.4)' }} onClick={() => setShowGuide(false)}>
+          <div className="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl p-5 max-h-[80vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-gray-900">📏 Guía de talles — {guide.nombre}</h3>
+              <button onClick={() => setShowGuide(false)} className="p-1 hover:bg-gray-100 rounded"><X size={16} /></button>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm"><thead><tr className="border-b border-gray-200">
+                <th className="text-left px-2 py-2 font-semibold text-gray-600">Talle</th>
+                {guide.columnas.map((c, i) => <th key={i} className="text-left px-2 py-2 font-semibold text-gray-600">{c}</th>)}
+              </tr></thead><tbody>
+                {guide.filas.map((f, fi) => (
+                  <tr key={fi} className="border-b border-gray-50">
+                    <td className="px-2 py-2 font-medium text-gray-800">{f.talle}</td>
+                    {guide.columnas.map((c, ci) => <td key={ci} className="px-2 py-2 text-gray-600">{f[c] || '—'}</td>)}
+                  </tr>
+                ))}
+              </tbody></table>
+            </div>
+            <p className="text-xs text-gray-400 mt-3">Medidas en centímetros. Las medidas pueden variar ±2cm.</p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

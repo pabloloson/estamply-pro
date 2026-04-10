@@ -39,6 +39,8 @@ export default function SettingsPage() {
   const [showQR, setShowQR] = useState(false)
   const [mediosPago, setMediosPago] = useState<Array<{ id: string; nombre: string; tipo_ajuste: string; porcentaje: number; activo: boolean; orden: number }>>([])
   const [editingMedio, setEditingMedio] = useState<{ nombre: string; tipo_ajuste: string; porcentaje: number; id?: string } | null>(null)
+  const [guiasTalles, setGuiasTalles] = useState<Array<{ id: string; nombre: string; columnas: string[]; filas: Array<Record<string, string>> }>>([])
+  const [editingGuia, setEditingGuia] = useState<{ id?: string; nombre: string; columnas: string[]; filas: Array<Record<string, string>> } | null>(null)
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const [ws, setWs] = useState<WorkshopSettings>(DEFAULT_SETTINGS)
   const logoInputRef = useRef<HTMLInputElement>(null)
@@ -66,12 +68,14 @@ export default function SettingsPage() {
         })
       }
       // Load workshop settings
-      const [{ data: wsData }, { data: mp }] = await Promise.all([
+      const [{ data: wsData }, { data: mp }, { data: gt }] = await Promise.all([
         supabase.from('workshop_settings').select('settings').single(),
         supabase.from('medios_pago').select('*').order('orden'),
+        supabase.from('guias_talles').select('*').order('orden'),
       ])
       if (wsData?.settings) setWs({ ...DEFAULT_SETTINGS, ...(wsData.settings as Partial<WorkshopSettings>) })
       if (mp) setMediosPago(mp)
+      if (gt) setGuiasTalles(gt as typeof guiasTalles)
       setLoading(false)
     }
     load()
@@ -324,6 +328,89 @@ export default function SettingsPage() {
             className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700"><Plus size={14} /> Agregar medio de pago</button>
         )}
       </div>
+
+      {/* Guía de talles */}
+      <div className="card p-6 max-w-2xl mt-6">
+        <h3 className="font-semibold text-gray-800 mb-1">Guía de talles</h3>
+        <p className="text-xs text-gray-400 mb-4">Tablas de medidas para que tus clientes elijan el talle correcto.</p>
+        <div className="space-y-3 mb-4">
+          {guiasTalles.map(g => (
+            <div key={g.id} className="flex items-center justify-between p-3 rounded-lg border border-gray-100 hover:bg-gray-50">
+              <div>
+                <span className="font-medium text-sm text-gray-800">{g.nombre}</span>
+                <p className="text-xs text-gray-400">{g.columnas.length} medidas · {g.filas.length} talles</p>
+              </div>
+              <div className="flex gap-1">
+                <button onClick={() => setEditingGuia({ id: g.id, nombre: g.nombre, columnas: g.columnas, filas: g.filas })} className="text-xs text-gray-400 hover:text-gray-600 p-1">✎</button>
+                <button onClick={async () => { if (confirm('¿Eliminar?')) { await supabase.from('guias_talles').delete().eq('id', g.id); setGuiasTalles(prev => prev.filter(x => x.id !== g.id)) } }} className="text-xs text-red-400 hover:text-red-600 p-1">✕</button>
+              </div>
+            </div>
+          ))}
+        </div>
+        <button onClick={() => setEditingGuia({ nombre: '', columnas: ['Ancho', 'Largo'], filas: [{ talle: 'S', Ancho: '', Largo: '' }, { talle: 'M', Ancho: '', Largo: '' }, { talle: 'L', Ancho: '', Largo: '' }] })}
+          className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700"><Plus size={14} /> Nueva tabla de talles</button>
+      </div>
+
+      {/* Guía de talles modal */}
+      {editingGuia && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)' }} onClick={() => setEditingGuia(null)}>
+          <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <h3 className="font-bold text-gray-900 mb-4">{editingGuia.id ? 'Editar' : 'Nueva'} tabla de talles</h3>
+            <div className="space-y-4">
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+                <input className="input-base" value={editingGuia.nombre} placeholder="Ej: Remeras" onChange={e => setEditingGuia({ ...editingGuia, nombre: e.target.value })} /></div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Medidas (columnas)</label>
+                <div className="flex gap-1.5 flex-wrap mb-2">
+                  {editingGuia.columnas.map((col, ci) => (
+                    <div key={ci} className="flex items-center gap-0.5 bg-gray-100 rounded px-2 py-1">
+                      <input className="bg-transparent outline-none text-xs w-16 font-medium" value={col} onChange={e => { const c = [...editingGuia.columnas]; c[ci] = e.target.value; setEditingGuia({ ...editingGuia, columnas: c }) }} />
+                      {editingGuia.columnas.length > 1 && <button onClick={() => setEditingGuia({ ...editingGuia, columnas: editingGuia.columnas.filter((_, i) => i !== ci) })} className="text-gray-300 hover:text-red-400"><X size={10} /></button>}
+                    </div>
+                  ))}
+                  <button onClick={() => setEditingGuia({ ...editingGuia, columnas: [...editingGuia.columnas, 'Medida'] })} className="text-xs px-2 py-1 rounded bg-purple-50 text-purple-600 font-semibold">+</button>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Talles y valores</label>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs"><thead><tr>
+                    <th className="text-left px-1.5 py-1 text-gray-500 font-semibold">Talle</th>
+                    {editingGuia.columnas.map((c, i) => <th key={i} className="text-left px-1.5 py-1 text-gray-500 font-semibold">{c}</th>)}
+                    <th></th>
+                  </tr></thead><tbody>
+                    {editingGuia.filas.map((fila, fi) => (
+                      <tr key={fi} className="border-t border-gray-50">
+                        <td className="px-1.5 py-1"><input className="input-base text-xs py-0.5 w-14" value={fila.talle || ''} onChange={e => { const f = [...editingGuia.filas]; f[fi] = { ...f[fi], talle: e.target.value }; setEditingGuia({ ...editingGuia, filas: f }) }} /></td>
+                        {editingGuia.columnas.map((c, ci) => (
+                          <td key={ci} className="px-1.5 py-1"><input className="input-base text-xs py-0.5 w-14" value={fila[c] || ''} placeholder="cm" onChange={e => { const f = [...editingGuia.filas]; f[fi] = { ...f[fi], [c]: e.target.value }; setEditingGuia({ ...editingGuia, filas: f }) }} /></td>
+                        ))}
+                        <td className="px-1"><button onClick={() => setEditingGuia({ ...editingGuia, filas: editingGuia.filas.filter((_, i) => i !== fi) })} className="text-red-300 hover:text-red-500"><X size={10} /></button></td>
+                      </tr>
+                    ))}
+                  </tbody></table>
+                </div>
+                <button onClick={() => { const empty: Record<string, string> = { talle: '' }; editingGuia.columnas.forEach(c => empty[c] = ''); setEditingGuia({ ...editingGuia, filas: [...editingGuia.filas, empty] }) }}
+                  className="text-xs font-semibold text-purple-600 mt-2">+ Agregar fila</button>
+              </div>
+            </div>
+            <div className="flex gap-3 mt-5">
+              <button onClick={() => setEditingGuia(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">Cancelar</button>
+              <button disabled={!editingGuia.nombre.trim()} onClick={async () => {
+                const payload = { nombre: editingGuia.nombre, columnas: editingGuia.columnas, filas: editingGuia.filas, orden: guiasTalles.length }
+                if (editingGuia.id) {
+                  await supabase.from('guias_talles').update(payload).eq('id', editingGuia.id)
+                  setGuiasTalles(prev => prev.map(g => g.id === editingGuia.id ? { ...g, ...payload } : g))
+                } else {
+                  const { data } = await supabase.from('guias_talles').insert(payload).select('*').single()
+                  if (data) setGuiasTalles(prev => [...prev, data as typeof guiasTalles[0]])
+                }
+                setEditingGuia(null)
+              }} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#6C5CE7' }}>Guardar</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Medio de pago modal */}
       {editingMedio && (
