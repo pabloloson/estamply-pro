@@ -4,10 +4,12 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { signup } from '@/app/actions/auth'
 import { Layers, Zap, TrendingUp, Shield } from 'lucide-react'
+import { useTranslations } from '@/shared/hooks/useTranslations'
 
 export default function SignupPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const t = useTranslations('auth')
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -56,35 +58,35 @@ export default function SignupPage() {
       </div>
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white">
         <div className="w-full max-w-sm">
-          <h2 className="text-2xl font-bold text-gray-900 mb-1">Crear cuenta</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-1">{t('create')}</h2>
           <p className="text-gray-500 text-sm mb-8">Configurá tu taller en minutos</p>
           {error && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">{error}</div>
           )}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Nombre completo</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('name')}</label>
               <input name="full_name" type="text" required placeholder="Juan García" className="input-base" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Nombre del taller</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('workshopName')}</label>
               <input name="workshop_name" type="text" required placeholder="Estampados García" className="input-base" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('email')}</label>
               <input name="email" type="email" required placeholder="juan@taller.com" className="input-base" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Contraseña</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('password')}</label>
               <input name="password" type="password" required minLength={6} placeholder="Mínimo 6 caracteres" className="input-base" />
             </div>
             <button type="submit" disabled={loading} className="btn-primary mt-2">
-              {loading ? 'Creando cuenta...' : 'Crear cuenta gratis'}
+              {loading ? t('creating') : t('create')}
             </button>
           </form>
           <p className="mt-6 text-center text-sm text-gray-500">
-            ¿Ya tenés cuenta?{' '}
-            <Link href="/login" style={{ color: '#6C5CE7' }} className="font-medium hover:underline">Ingresar</Link>
+            {t('hasAccount')}{' '}
+            <Link href="/login" style={{ color: '#6C5CE7' }} className="font-medium hover:underline">{t('login')}</Link>
           </p>
         </div>
       </div>

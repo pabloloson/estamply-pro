@@ -5,8 +5,8 @@ import { createClient } from '@/lib/supabase/client'
 import { Save, User, Upload, Loader2, X, Plus, Trash2, QrCode } from 'lucide-react'
 import { QRCodeCanvas } from 'qrcode.react'
 import { DEFAULT_SETTINGS, type WorkshopSettings, type DiscountTier, type ManoDeObraModo, type ComisionBase, DEFAULT_MO_CONFIG } from '@/features/presupuesto/types'
-
-function fmt(n: number) { return `$${Math.round(n).toLocaleString('es-AR')}` }
+import { useTranslations } from '@/shared/hooks/useTranslations'
+import { useLocale } from '@/shared/context/LocaleContext'
 
 interface BusinessProfile {
   business_name: string
@@ -32,6 +32,10 @@ const EMPTY: BusinessProfile = {
 
 export default function SettingsPage() {
   const supabase = createClient()
+  const t = useTranslations('settings')
+  const tp = useTranslations('permissions')
+  const tc = useTranslations('common')
+  const { fmt: fmtCurrency } = useLocale()
   const [profile, setProfile] = useState<BusinessProfile>(EMPTY)
   const [userId, setUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -124,19 +128,19 @@ export default function SettingsPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Configuración</h1>
-        <p className="text-gray-500 text-sm mt-1">Datos de tu negocio. Aparecen en todos tus presupuestos.</p>
+        <h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
+        <p className="text-gray-500 text-sm mt-1">{t('subtitle')}</p>
       </div>
 
       <div className="card p-6 max-w-2xl">
         <div className="flex items-center gap-2 mb-6">
           <User size={17} className="text-gray-400" />
-          <span className="font-semibold text-gray-800">Perfil del Negocio</span>
+          <span className="font-semibold text-gray-800">{t('businessProfile')}</span>
         </div>
 
         {/* Logo */}
         <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Logo del negocio</label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">{t('businessLogo')}</label>
           <div className="flex items-center gap-4">
             {profile.business_logo_url ? (
               <div className="relative">
@@ -172,7 +176,7 @@ export default function SettingsPage() {
                 className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold border border-gray-200 text-gray-700 hover:bg-gray-50"
               >
                 {uploadingLogo ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
-                {uploadingLogo ? 'Subiendo...' : 'Subir logo'}
+                {uploadingLogo ? 'Subiendo...' : t('uploadLogo')}
               </button>
               <p className="text-xs text-gray-400 mt-1">PNG, JPG hasta 2MB</p>
             </div>
@@ -182,14 +186,14 @@ export default function SettingsPage() {
         {/* Fields */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {([
-            ['business_name', 'Nombre del negocio', 'Ej: Estamply Taller'],
-            ['business_cuit', 'CUIT / DNI', '20-12345678-9'],
-            ['business_address', 'Dirección', 'Calle 123, Ciudad'],
-            ['business_phone', 'Teléfono / WhatsApp', '+54 11 1234-5678'],
-            ['business_email', 'Email de contacto', 'taller@ejemplo.com'],
-            ['business_instagram', 'Instagram', '@taller'],
-            ['business_website', 'Sitio web', 'www.taller.com.ar'],
-          ] as const).map(([key, label, placeholder]) => (
+            ['business_name', t('businessName'), 'Ej: Estamply Taller'],
+            ['business_cuit', t('taxId'), '20-12345678-9'],
+            ['business_address', t('addressField'), 'Calle 123, Ciudad'],
+            ['business_phone', t('phoneWhatsapp'), '+54 11 1234-5678'],
+            ['business_email', t('contactEmail'), 'taller@ejemplo.com'],
+            ['business_instagram', t('instagram'), '@taller'],
+            ['business_website', t('website'), 'www.taller.com.ar'],
+          ] as [keyof BusinessProfile, string, string][]).map(([key, label, placeholder]) => (
             <div key={key}>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">{label}</label>
               <input
@@ -209,14 +213,14 @@ export default function SettingsPage() {
           style={{ background: '#6C5CE7' }}
         >
           <Save size={15} />
-          {saving ? 'Guardando...' : 'Guardar perfil'}
+          {saving ? 'Guardando...' : t('saveProfile')}
         </button>
       </div>
 
       {/* Catálogo web */}
       <div className="card p-6 max-w-2xl mt-6">
-        <h3 className="font-semibold text-gray-800 mb-1">Catálogo web</h3>
-        <p className="text-xs text-gray-400 mb-4">Tu catálogo público para compartir con clientes.</p>
+        <h3 className="font-semibold text-gray-800 mb-1">{t('webCatalog')}</h3>
+        <p className="text-xs text-gray-400 mb-4">{t('webCatalogSubtitle')}</p>
         <div className="space-y-4">
           {!!(ws as Record<string, unknown>).catalog_slug && (
             <div className="p-3 rounded-xl bg-purple-50 border border-purple-100">
@@ -231,7 +235,7 @@ export default function SettingsPage() {
             </div>
           )}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Slug del catálogo *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('catalogSlug')}</label>
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-400">estamply.app/catalogo/</span>
               <input className="input-base flex-1" value={(ws as Record<string, unknown>).catalog_slug as string || ''} placeholder="mi-taller"
@@ -239,18 +243,18 @@ export default function SettingsPage() {
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nombre de la tienda</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('storeName')}</label>
             <input className="input-base" value={(ws as Record<string, unknown>).nombre_tienda as string || ''} placeholder="Ej: Sublishop, Mi Taller..."
               onChange={e => setWs({ ...ws, nombre_tienda: e.target.value } as WorkshopSettings)} />
             <p className="text-[10px] text-gray-400 mt-0.5">Aparece en el catálogo web y presupuestos. Si está vacío, usa el nombre del perfil.</p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Subtítulo / Descripción de la tienda</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('storeSubtitle')}</label>
             <input className="input-base" value={(ws as Record<string, unknown>).descripcion_tienda as string || ''} placeholder="Ej: Productos personalizados al mejor precio"
               onChange={e => setWs({ ...ws, descripcion_tienda: e.target.value } as WorkshopSettings)} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Imagen de portada</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('coverImage')}</label>
             {(ws as Record<string, unknown>).banner_url ? (
               <div className="relative rounded-lg overflow-hidden h-24 mb-2">
                 <img src={(ws as Record<string, unknown>).banner_url as string} alt="" className="w-full h-full object-cover" />
@@ -268,12 +272,12 @@ export default function SettingsPage() {
             <p className="text-[10px] text-gray-400 mt-1">Recomendado: 1200×400px</p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Color de marca</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('brandColor')}</label>
             <input type="color" className="w-10 h-10 rounded-lg border border-gray-200 cursor-pointer" value={(ws as Record<string, unknown>).brand_color as string || '#6C5CE7'}
               onChange={e => setWs({ ...ws, brand_color: e.target.value } as WorkshopSettings)} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Descripción corta</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('shortDescription')}</label>
             <textarea className="input-base text-sm" rows={2} maxLength={280} placeholder="Ej: Taller de sublimación y serigrafía en Córdoba..."
               value={(ws as Record<string, unknown>).brand_description as string || ''}
               onChange={e => setWs({ ...ws, brand_description: e.target.value } as WorkshopSettings)} />
@@ -283,7 +287,7 @@ export default function SettingsPage() {
           {/* Announcement bar */}
           <div className="border-t border-gray-100 pt-4 space-y-3">
             <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-gray-700">Barra de anuncio</label>
+              <label className="text-sm font-medium text-gray-700">{t('announcementBar')}</label>
               <button type="button" onClick={() => setWs({ ...ws, anuncio_activo: !(ws as Record<string, unknown>).anuncio_activo } as WorkshopSettings)}
                 className="relative w-9 h-5 rounded-full transition-colors" style={{ background: (ws as Record<string, unknown>).anuncio_activo ? '#6C5CE7' : '#D1D5DB' }}>
                 <span className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform" style={{ transform: (ws as Record<string, unknown>).anuncio_activo ? 'translateX(16px)' : 'translateX(0)' }} />
@@ -304,14 +308,14 @@ export default function SettingsPage() {
           </div>
 
           <button onClick={saveWs} className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white" style={{ background: '#6C5CE7' }}>
-            <Save size={14} /> Guardar catálogo web
+            <Save size={14} /> {t('saveCatalog')}
           </button>
         </div>
       </div>
       {/* Medios de pago */}
       <div className="card p-6 max-w-2xl mt-6">
-        <h3 className="font-semibold text-gray-800 mb-1">Medios de pago</h3>
-        <p className="text-xs text-gray-400 mb-4">Configurá cómo pagan tus clientes. Aparecen en el catálogo web.</p>
+        <h3 className="font-semibold text-gray-800 mb-1">{t('paymentMethods')}</h3>
+        <p className="text-xs text-gray-400 mb-4">{t('paymentMethodsSubtitle')}</p>
         <div className="space-y-2 mb-4">
           {mediosPago.map(m => (
             <div key={m.id} className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 hover:bg-gray-50">
@@ -330,14 +334,14 @@ export default function SettingsPage() {
         </div>
         {mediosPago.length < 6 && (
           <button onClick={() => setEditingMedio({ nombre: '', tipo_ajuste: 'sin_ajuste', porcentaje: 0 })}
-            className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700"><Plus size={14} /> Agregar medio de pago</button>
+            className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700"><Plus size={14} /> {t('addPaymentMethod')}</button>
         )}
       </div>
 
       {/* Guía de talles */}
       <div className="card p-6 max-w-2xl mt-6">
-        <h3 className="font-semibold text-gray-800 mb-1">Guía de talles</h3>
-        <p className="text-xs text-gray-400 mb-4">Tablas de medidas para que tus clientes elijan el talle correcto.</p>
+        <h3 className="font-semibold text-gray-800 mb-1">{t('sizeGuides')}</h3>
+        <p className="text-xs text-gray-400 mb-4">{t('sizeGuidesSubtitle')}</p>
         <div className="space-y-3 mb-4">
           {guiasTalles.map(g => (
             <div key={g.id} className="flex items-center justify-between p-3 rounded-lg border border-gray-100 hover:bg-gray-50">
@@ -353,16 +357,16 @@ export default function SettingsPage() {
           ))}
         </div>
         <button onClick={() => setEditingGuia({ nombre: '', columnas: ['Ancho', 'Largo'], filas: [{ talle: 'S', Ancho: '', Largo: '' }, { talle: 'M', Ancho: '', Largo: '' }, { talle: 'L', Ancho: '', Largo: '' }] })}
-          className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700"><Plus size={14} /> Nueva tabla de talles</button>
+          className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700"><Plus size={14} /> {t('newSizeTable')}</button>
       </div>
 
       {/* País y moneda */}
       <div className="card p-6 max-w-2xl mt-6">
-        <h3 className="font-semibold text-gray-800 mb-1">País y moneda</h3>
-        <p className="text-xs text-gray-400 mb-4">Define la moneda y formato de números de tu taller.</p>
+        <h3 className="font-semibold text-gray-800 mb-1">{t('countryAndCurrency')}</h3>
+        <p className="text-xs text-gray-400 mb-4">{t('countrySubtitle')}</p>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">País</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('country')}</label>
             <select className="input-base" value={(ws as Record<string, unknown>).pais as string || 'AR'}
               onChange={e => {
                 const c = require('@/shared/lib/currency').getCountry(e.target.value)
@@ -374,11 +378,11 @@ export default function SettingsPage() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Idioma de la interfaz</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('language')}</label>
             <select className="input-base" value={(ws as Record<string, unknown>).idioma as string || 'es'}
               onChange={e => setWs({ ...ws, idioma: e.target.value } as WorkshopSettings)}>
-              <option value="es">Español</option>
-              <option value="pt">Português</option>
+              <option value="es">{t('spanish')}</option>
+              <option value="pt">{t('portuguese')}</option>
             </select>
           </div>
           <button onClick={saveWs} className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white" style={{ background: '#6C5CE7' }}>
@@ -389,12 +393,12 @@ export default function SettingsPage() {
 
       {/* Usuarios */}
       <div className="card p-6 max-w-2xl mt-6">
-        <h3 className="font-semibold text-gray-800 mb-1">Usuarios y permisos</h3>
-        <p className="text-xs text-gray-400 mb-4">Gestioná quién accede a tu taller.</p>
+        <h3 className="font-semibold text-gray-800 mb-1">{t('usersPermissions')}</h3>
+        <p className="text-xs text-gray-400 mb-4">{t('usersSubtitle')}</p>
         <div className="space-y-2 mb-4">
           <div className="flex items-center gap-3 p-3 rounded-lg bg-purple-50">
-            <span className="font-medium text-sm text-gray-800 flex-1">{profile.business_name || 'Dueño'}</span>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-purple-200 text-purple-700 font-bold">👑 Dueño</span>
+            <span className="font-medium text-sm text-gray-800 flex-1">{profile.business_name || t('owner')}</span>
+            <span className="text-xs px-2 py-0.5 rounded-full bg-purple-200 text-purple-700 font-bold">👑 {t('owner')}</span>
             <span className="text-xs text-green-600">● Activo</span>
           </div>
           {teamMembers.map(m => (
@@ -414,7 +418,7 @@ export default function SettingsPage() {
           ))}
         </div>
         <button onClick={() => setInviteModal({ nombre: '', email: '', password: '', nivel: 'solo_precios', secciones: {} })}
-          className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700"><Plus size={14} /> Invitar usuario</button>
+          className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700"><Plus size={14} /> {t('inviteUser')}</button>
       </div>
 
       {/* Invite/Edit user modal */}
@@ -425,26 +429,26 @@ export default function SettingsPage() {
         return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)' }} onClick={() => setInviteModal(null)}>
           <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <h3 className="font-bold text-gray-900 mb-4">{isEdit ? 'Editar' : 'Invitar'} usuario</h3>
+            <h3 className="font-bold text-gray-900 mb-4">{isEdit ? tp('editUser') : tp('inviteUser')}</h3>
             <div className="space-y-4">
               <div><label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
                 <input className="input-base" value={inviteModal.nombre} onChange={e => setInviteModal({ ...inviteModal, nombre: e.target.value })} /></div>
               {!isEdit && (<>
                 <div><label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
                   <input className="input-base" type="email" value={inviteModal.email} onChange={e => setInviteModal({ ...inviteModal, email: e.target.value })} /></div>
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">Contraseña temporal *</label>
+                <div><label className="block text-sm font-medium text-gray-700 mb-1">{tp('temporaryPassword')}</label>
                   <input className="input-base" type="text" value={inviteModal.password} onChange={e => setInviteModal({ ...inviteModal, password: e.target.value })} /></div>
               </>)}
 
               {/* Visibility level */}
               <div className="border-t border-gray-100 pt-4">
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Nivel de visibilidad</p>
-                <p className="text-xs text-gray-400 mb-3">Qué información financiera puede ver en todas las secciones.</p>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">{tp('visibilityLevel')}</p>
+                <p className="text-xs text-gray-400 mb-3">{tp('visibilityHint')}</p>
                 <div className="space-y-2">
                   {[
-                    ['completa', 'Completa', 'Ve costos, márgenes y precios (como el dueño)'],
-                    ['solo_precios', 'Solo precios', 'Ve precios de venta, no ve costos ni márgenes'],
-                    ['solo_produccion', 'Solo producción', 'No ve ningún dato monetario, solo items y cantidades'],
+                    ['completa', tp('fullAccess').split(' — ')[0], tp('fullAccess').split(' — ')[1] || tp('fullAccess')],
+                    ['solo_precios', tp('pricesOnly').split(' — ')[0], tp('pricesOnly').split(' — ')[1] || tp('pricesOnly')],
+                    ['solo_produccion', tp('productionOnly').split(' — ')[0], tp('productionOnly').split(' — ')[1] || tp('productionOnly')],
                   ].map(([v, l, d]) => (
                     <label key={v} className={`flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-colors ${inviteModal.nivel === v ? 'bg-purple-50 border border-purple-200' : 'border border-gray-100 hover:bg-gray-50'}`}>
                       <input type="radio" name="nivel" checked={inviteModal.nivel === v} onChange={() => setInviteModal({ ...inviteModal, nivel: v })} className="mt-0.5 text-purple-600" />
@@ -456,7 +460,7 @@ export default function SettingsPage() {
 
               {/* Sections */}
               <div className="border-t border-gray-100 pt-4">
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Secciones</p>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">{tp('sections')}</p>
                 <div className="grid grid-cols-2 gap-1.5">
                   {[['inicio', 'Inicio'], ['cotizador', 'Cotizador'], ['presupuestos', 'Presupuestos'], ['pedidos', 'Pedidos'], ['clientes', 'Clientes'], ['catalogo', 'Catálogo'], ['estadisticas', 'Estadísticas'], ['materiales', 'Materiales'], ['equipamiento', 'Equipamiento'], ['produccion', 'Producción'], ['configuracion', 'Configuración']].map(([k, l]) => (
                     <label key={k} className="flex items-center gap-2 cursor-pointer py-1">
@@ -485,7 +489,7 @@ export default function SettingsPage() {
                   }
                   setInviting(false)
                 }}
-                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#6C5CE7' }}>{inviting ? (isEdit ? 'Guardando...' : 'Invitando...') : (isEdit ? 'Guardar' : 'Invitar')}</button>
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#6C5CE7' }}>{inviting ? (isEdit ? 'Guardando...' : 'Invitando...') : (isEdit ? tp('save') : tp('invite'))}</button>
             </div>
           </div>
         </div>

@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Plus, Pencil, Trash2, X, Users, Search, ChevronDown, ChevronUp, MessageCircle, Upload } from 'lucide-react'
+import { useTranslations } from '@/shared/hooks/useTranslations'
+import { useLocale } from '@/shared/context/LocaleContext'
 import * as XLSX from 'xlsx'
 
 interface Client {
@@ -16,6 +18,8 @@ function waLink(num: string) { return `https://wa.me/${num.replace(/[\s\-\(\)]/g
 
 export default function ClientsPage() {
   const supabase = createClient()
+  const t = useTranslations('clients')
+  const tc = useTranslations('common')
   const [clients, setClients] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -69,35 +73,35 @@ export default function ClientsPage() {
   return (
     <div>
       <div className="flex items-start justify-between mb-6">
-        <div><h1 className="text-2xl font-bold text-gray-900">Clientes</h1>
-          <p className="text-gray-500 text-sm mt-1">{clients.length} clientes en total</p></div>
+        <div><h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
+          <p className="text-gray-500 text-sm mt-1">{t('totalClients', { count: clients.length })}</p></div>
         <div className="flex gap-2">
           <button onClick={() => { setImportModal(true); setImportStep(1); setImportData([]); setImportResult(null) }} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50">
-            <Upload size={14} /> Importar
+            <Upload size={14} /> {t('importClients')}
           </button>
           <button onClick={() => { setModal({}); setShowMore(false) }} className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white" style={{ background: '#6C5CE7', boxShadow: '0 4px 14px rgba(108,92,231,0.3)' }}>
-            <Plus size={15} /> Nuevo cliente
+            <Plus size={15} /> {t('newClient')}
           </button>
         </div>
       </div>
 
       <div className="relative mb-4">
         <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-        <input type="text" value={search} onChange={e => setSearch(e.target.value)} className="input-base pl-9" placeholder="Buscar por nombre, WhatsApp, email o teléfono…" />
+        <input type="text" value={search} onChange={e => setSearch(e.target.value)} className="input-base pl-9" placeholder={t('searchPlaceholder')} />
       </div>
 
       <div className="card overflow-hidden">
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3">
             <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center"><Users size={22} className="text-gray-400" /></div>
-            <p className="text-gray-400 text-sm">{search ? 'Sin resultados.' : 'Aún no tenés clientes.'}</p>
-            {!search && <button onClick={() => setModal({})} className="text-sm px-4 py-2 rounded-xl font-semibold text-white" style={{ background: '#6C5CE7' }}>Agregar cliente</button>}
+            <p className="text-gray-400 text-sm">{search ? tc('noData') : tc('noData')}</p>
+            {!search && <button onClick={() => setModal({})} className="text-sm px-4 py-2 rounded-xl font-semibold text-white" style={{ background: '#6C5CE7' }}>{t('newClient')}</button>}
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead><tr className="border-b border-gray-100">
-                {['Nombre', 'WhatsApp', 'Email', 'Teléfono', 'Creado', ''].map(h => (
+                {[t('name'), 'WhatsApp', t('emailField'), t('phone'), '', ''].map(h => (
                   <th key={h} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-5 py-3">{h}</th>
                 ))}
               </tr></thead>
@@ -144,13 +148,13 @@ export default function ClientsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)' }}>
           <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
-              <h3 className="font-bold text-gray-900">{modal.id ? 'Editar Cliente' : 'Nuevo Cliente'}</h3>
+              <h3 className="font-bold text-gray-900">{modal.id ? tc('edit') : t('newClient')}</h3>
               <button onClick={() => { setModal(null); setShowMore(false) }} className="p-2 rounded-lg hover:bg-gray-100"><X size={16} /></button>
             </div>
             <div className="space-y-4">
               {/* Main fields */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('name')} *</label>
                 <input autoFocus value={modal.name || ''} onChange={e => setModal({ ...modal, name: e.target.value })}
                   onKeyDown={e => e.key === 'Enter' && save()} className="input-base" placeholder="Nombre del cliente o empresa" />
               </div>
@@ -162,12 +166,12 @@ export default function ClientsPage() {
                   className="input-base" placeholder="Ej: +54 351 555 1234" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('emailField')}</label>
                 <input type="email" value={modal.email || ''} onChange={e => setModal({ ...modal, email: e.target.value })}
                   className="input-base" placeholder="email@ejemplo.com" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('phone')}</label>
                 <input value={modal.phone || ''} onChange={e => setModal({ ...modal, phone: e.target.value })}
                   className="input-base" placeholder="+54 11 1234-5678" />
                 <p className="text-[10px] text-gray-400 mt-0.5">Solo si es distinto al WhatsApp</p>
@@ -225,7 +229,7 @@ export default function ClientsPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Notas</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('notes')}</label>
                     <textarea value={modal.notas || ''} onChange={e => setModal({ ...modal, notas: e.target.value })}
                       className="input-base resize-none" rows={3} placeholder="Notas internas sobre este cliente..." />
                     <p className="text-[10px] text-gray-400 mt-0.5">Solo visible para vos, no aparece en presupuestos.</p>
@@ -234,9 +238,9 @@ export default function ClientsPage() {
               )}
             </div>
             <div className="flex gap-3 mt-6">
-              <button onClick={() => { setModal(null); setShowMore(false) }} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">Cancelar</button>
+              <button onClick={() => { setModal(null); setShowMore(false) }} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">{tc('cancel')}</button>
               <button onClick={save} disabled={saving || !modal.name?.trim()} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#6C5CE7' }}>
-                {saving ? 'Guardando...' : 'Guardar'}
+                {saving ? tc('saving') : tc('save')}
               </button>
             </div>
           </div>
@@ -317,7 +321,7 @@ export default function ClientsPage() {
                   ))}
                 </div>
                 <div className="flex gap-3">
-                  <button onClick={() => setImportStep(1)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">Atrás</button>
+                  <button onClick={() => setImportStep(1)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">{tc('back')}</button>
                   <button disabled={importMap.nombre < 0 || importMap.whatsapp < 0} onClick={async () => {
                     if (importData.length > 500) { alert('Máximo 500 clientes por importación'); return }
                     setImporting(true)

@@ -6,6 +6,8 @@ import { Save, Plus, Trash2, Settings, Lock } from 'lucide-react'
 import { DEFAULT_SETTINGS, type WorkshopSettings, type DiscountTier } from '@/features/presupuesto/types'
 import { TECHNIQUE_DEFAULTS, TECNICA_LABELS, ALL_TECNICA_SLUGS, type Tecnica, type TecnicaConfig, type TecnicaSlug, type DTFConfig, type SerigrafiaConfig } from '@/features/taller/types'
 import NumericInput from '@/shared/components/NumericInput'
+import { useTranslations } from '@/shared/hooks/useTranslations'
+import { useLocale } from '@/shared/context/LocaleContext'
 
 interface Operator {
   id: string; name: string; hourly_rate: number; techniques: string[]
@@ -14,11 +16,10 @@ interface Operator {
   percentage: number; percentage_base: 'cost' | 'profit'
   fixed_amount: number
 }
-function fmt(n: number) { return `$${Math.round(n).toLocaleString('es-AR')}` }
-function opSummary(op: Operator): string {
-  if (op.calculation_mode === 'salary') return `${fmt(op.hourly_rate)}/h (sueldo)`
+function opSummary(op: Operator, fmtCurrency: (n: number) => string): string {
+  if (op.calculation_mode === 'salary') return `${fmtCurrency(op.hourly_rate)}/h (sueldo)`
   if (op.calculation_mode === 'percentage') return `${op.percentage}% sobre ${op.percentage_base === 'cost' ? 'precio de venta' : 'ganancia'}`
-  return `${fmt(op.fixed_amount)}/unidad`
+  return `${fmtCurrency(op.fixed_amount)}/unidad`
 }
 
 const TEC_LABELS: Record<string, string> = { subli: 'Subli', dtf: 'DTF', dtf_uv: 'DTF UV', vinyl: 'Vinilo', serigrafia: 'Serigrafía' }
@@ -43,6 +44,9 @@ function DiscountTable({ tiers, onChange }: { tiers: DiscountTier[]; onChange: (
 
 export default function ProduccionPage() {
   const supabase = createClient()
+  const t = useTranslations('productionSection')
+  const tc = useTranslations('common')
+  const { fmt: fmtCurrency } = useLocale()
   const [tecnicas, setTecnicas] = useState<Tecnica[]>([])
   const [operators, setOperators] = useState<Operator[]>([])
   const [ws, setWs] = useState<WorkshopSettings>(DEFAULT_SETTINGS)
@@ -126,14 +130,14 @@ export default function ProduccionPage() {
 
   return (
     <div>
-      <div className="mb-6"><h1 className="text-2xl font-bold text-gray-900">Producción</h1>
-        <p className="text-gray-500 text-sm mt-1">Configurá reglas, costos y descuentos de tu taller</p></div>
+      <div className="mb-6"><h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
+        <p className="text-gray-500 text-sm mt-1">{t('subtitle')}</p></div>
 
       {/* Tabs: General + techniques */}
       <div className="flex gap-1 mb-6 flex-wrap">
         <button onClick={() => setActiveTab('general')}
           className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'general' ? 'text-white shadow-md bg-gray-700' : 'bg-gray-100 text-gray-600'}`}>
-          <Settings size={13} className="inline mr-1.5 -mt-0.5" />General
+          <Settings size={13} className="inline mr-1.5 -mt-0.5" />{t('general')}
         </button>
         {sortedTecs.map(tec => (
           <button key={tec.id} onClick={() => setActiveTab(tec.id)}
@@ -149,12 +153,12 @@ export default function ProduccionPage() {
         <div className="card p-5 space-y-6">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-gray-700 text-white font-black text-sm"><Settings size={18} /></div>
-            <h2 className="font-bold text-gray-900 text-lg">General</h2>
+            <h2 className="font-bold text-gray-900 text-lg">{t('general')}</h2>
           </div>
 
           {/* Descuentos por volumen */}
           <div className="space-y-3">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">1 &middot; Descuentos por volumen</p>
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">1 &middot; {t('globalDiscounts')}</p>
             <label className="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" className="rounded border-gray-300 text-purple-600"
                 checked={ws.descuento_global_enabled ?? false}
@@ -174,7 +178,7 @@ export default function ProduccionPage() {
 
           {/* Mano de obra */}
           <div className="space-y-3">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">2 &middot; Mano de obra</p>
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">2 &middot; {t('laborCost')}</p>
             {!includeLabor ? (
               <div className="flex items-center gap-3 p-4 rounded-xl bg-gray-50 border border-gray-200">
                 <Lock size={18} className="text-gray-300 flex-shrink-0" />
@@ -191,7 +195,7 @@ export default function ProduccionPage() {
                     <div key={op.id} className="flex items-center justify-between p-3 hover:bg-gray-50">
                       <div>
                         <p className="text-sm font-medium text-gray-800">{op.name}</p>
-                        <p className="text-xs text-gray-400">{opSummary(op)} &middot; {op.techniques.map(s => TEC_LABELS[s] || s).join(' · ')}</p>
+                        <p className="text-xs text-gray-400">{opSummary(op, fmtCurrency)} &middot; {op.techniques.map(s => TEC_LABELS[s] || s).join(' · ')}</p>
                       </div>
                       <div className="flex gap-1">
                         <button onClick={() => setOpModal(op)} className="p-1.5 rounded hover:bg-gray-100 text-gray-400">✎</button>
@@ -238,7 +242,7 @@ export default function ProduccionPage() {
 
               {/* Section 1: Reglas de producción */}
               <div className="space-y-3">
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">1 &middot; Reglas de producción</p>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">1 &middot; {t('productionRules')}</p>
                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 max-w-lg">
                   {(cfg.tipo === 'subli') && (
                     <div><label className="block text-xs text-gray-500 mb-1">Margen seguridad (cm)</label>
@@ -276,7 +280,7 @@ export default function ProduccionPage() {
 
               {/* Section 2: Descuentos */}
               <div className="space-y-3">
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">2 &middot; Descuentos</p>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">2 &middot; {t('discounts')}</p>
                 <div className="space-y-2">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="radio" name={`disc-${tec.id}`} className="text-purple-600"
@@ -302,7 +306,7 @@ export default function ProduccionPage() {
               {/* Save */}
               <button onClick={() => saveTecnica(tec)} disabled={saving === tec.id || tec.id.startsWith('local-')}
                 className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: color }}>
-                <Save size={14} />{saving === tec.id ? 'Guardando...' : 'Guardar'}
+                <Save size={14} />{saving === tec.id ? tc('saving') : t('saveButton')}
               </button>
             </div>
           </div>
@@ -348,7 +352,7 @@ export default function ProduccionPage() {
                     <NumericInput className="input-base" min={1} value={opModal.monthly_hours || 160} onChange={v => setOpModal({ ...opModal, monthly_hours: v })} /></div>
                 </div>
                 {(opModal.monthly_hours || 160) > 0 && (opModal.monthly_salary || 0) > 0 && (
-                  <p className="text-sm font-medium text-green-600">Costo por hora: {fmt(Math.round((opModal.monthly_salary || 0) / (opModal.monthly_hours || 160)))}/h</p>
+                  <p className="text-sm font-medium text-green-600">Costo por hora: {fmtCurrency(Math.round((opModal.monthly_salary || 0) / (opModal.monthly_hours || 160)))}/h</p>
                 )}
               </div>
             )}
@@ -375,8 +379,8 @@ export default function ProduccionPage() {
             )}
 
             <div className="flex gap-3 mt-4">
-              <button onClick={() => setOpModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">Cancelar</button>
-              <button onClick={saveOperator} disabled={!opModal.name?.trim()} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#6C5CE7' }}>Guardar</button>
+              <button onClick={() => setOpModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">{tc('cancel')}</button>
+              <button onClick={saveOperator} disabled={!opModal.name?.trim()} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#6C5CE7' }}>{t('saveButton')}</button>
             </div>
           </div>
         </div>

@@ -7,6 +7,8 @@ import { Plus, Pencil, Trash2, X, FolderOpen } from 'lucide-react'
 import type { Category, Insumo, InsumoTipo, InsumoConfig } from '@/features/taller/types'
 import CategoryModal from '@/features/taller/components/CategoryModal'
 import NumericInput from '@/shared/components/NumericInput'
+import { useTranslations } from '@/shared/hooks/useTranslations'
+import { useLocale } from '@/shared/context/LocaleContext'
 
 interface Product {
   id: string; name: string; base_cost: number; category_id: string | null
@@ -50,10 +52,11 @@ function emptyConfig(tipo: InsumoTipo): InsumoConfig {
   }
 }
 
-function fmt(n: number) { return `$${Math.round(n).toLocaleString('es-AR')}` }
-
 export default function MaterialesPage() {
   const searchParams = useSearchParams()
+  const t = useTranslations('materials')
+  const tc = useTranslations('common')
+  const { fmt: fmtCurrency } = useLocale()
   const supabase = createClient()
   const [tab, setTab] = useState<'base' | 'insumos'>(searchParams.get('tab') === 'insumos' ? 'insumos' : 'base')
   const [products, setProducts] = useState<Product[]>([])
@@ -154,24 +157,24 @@ export default function MaterialesPage() {
   return (
     <div>
       <div className="flex items-start justify-between mb-4">
-        <div><h1 className="text-2xl font-bold text-gray-900">Materiales</h1>
-          <p className="text-gray-500 text-sm mt-1">Todo lo que comprás para producir</p></div>
+        <div><h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
+          <p className="text-gray-500 text-sm mt-1">{t('subtitle')}</p></div>
         <button onClick={() => setShowCats(true)} className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50">
           <FolderOpen size={14} /> Categorías
         </button>
       </div>
 
       <div className="flex gap-1 mb-6">
-        <button onClick={() => setTab('base')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'base' ? 'bg-gray-800 text-white shadow-md' : 'bg-gray-100 text-gray-600'}`}>Productos base</button>
-        <button onClick={() => setTab('insumos')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'insumos' ? 'text-white shadow-md' : 'bg-gray-100 text-gray-600'}`} style={tab === 'insumos' ? { background: '#00B894' } : {}}>Insumos</button>
+        <button onClick={() => setTab('base')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'base' ? 'bg-gray-800 text-white shadow-md' : 'bg-gray-100 text-gray-600'}`}>{t('baseProducts')}</button>
+        <button onClick={() => setTab('insumos')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'insumos' ? 'text-white shadow-md' : 'bg-gray-100 text-gray-600'}`} style={tab === 'insumos' ? { background: '#00B894' } : {}}>{t('insumos')}</button>
       </div>
 
       {/* ══ PRODUCTOS BASE ══ */}
       {tab === 'base' && (
         <div className="card overflow-hidden">
           <div className="p-5 border-b border-gray-100 flex items-center justify-between">
-            <div><span className="font-semibold text-gray-800">Productos base</span><p className="text-xs text-gray-400 mt-0.5">Prendas, tazas, blanks y soportes</p></div>
-            <button onClick={() => setModal({ time_subli: 0, time_dtf: 0, time_vinyl: 0, base_cost: 0 } as Partial<Product>)} className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={14} /> Agregar</button>
+            <div><span className="font-semibold text-gray-800">{t('baseProducts')}</span><p className="text-xs text-gray-400 mt-0.5">{t('baseSubtitle')}</p></div>
+            <button onClick={() => setModal({ time_subli: 0, time_dtf: 0, time_vinyl: 0, base_cost: 0 } as Partial<Product>)} className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={14} /> {tc('add')}</button>
           </div>
           <table className="w-full"><thead><tr className="border-b border-gray-100">
             {['Nombre', 'Costo', 'Categoría', 'Plancha', ''].map(h => <th key={h} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">{h}</th>)}
@@ -182,7 +185,7 @@ export default function MaterialesPage() {
               return (
                 <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50">
                   <td className="px-4 py-3 font-medium text-gray-800">{p.name}</td>
-                  <td className="px-4 py-3 text-gray-600">{fmt(p.base_cost)}</td>
+                  <td className="px-4 py-3 text-gray-600">{fmtCurrency(p.base_cost)}</td>
                   <td className="px-4 py-3">{cat ? <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-purple-50 text-purple-600">{cat.name}</span> : <span className="text-xs text-gray-300">—</span>}</td>
                   <td className="px-4 py-3 text-sm text-gray-500">{press?.name ?? <span className="text-gray-300">—</span>}</td>
                   <td className="px-4 py-3"><div className="flex gap-1">
@@ -201,13 +204,13 @@ export default function MaterialesPage() {
       {tab === 'insumos' && (<>
         <div className="flex items-center justify-between mb-4">
           <div className="flex gap-1.5 flex-wrap">
-            {TECNICA_FILTER_TABS.map(t => (
-              <button key={t.id} onClick={() => setFilterTecnica(t.id)}
-                className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${filterTecnica === t.id ? 'text-white' : 'bg-gray-100 text-gray-500'}`}
-                style={filterTecnica === t.id ? { background: t.color || '#374151' } : {}}>{t.label}</button>
+            {TECNICA_FILTER_TABS.map(tf => (
+              <button key={tf.id} onClick={() => setFilterTecnica(tf.id)}
+                className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${filterTecnica === tf.id ? 'text-white' : 'bg-gray-100 text-gray-500'}`}
+                style={filterTecnica === tf.id ? { background: tf.color || '#374151' } : {}}>{tf.label}</button>
             ))}
           </div>
-          <button onClick={() => openNewInsumo()} className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#00B894' }}><Plus size={14} /> Agregar</button>
+          <button onClick={() => openNewInsumo()} className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#00B894' }}><Plus size={14} /> {tc('add')}</button>
         </div>
         <div className="card overflow-hidden">
           <table className="w-full"><thead><tr className="border-b border-gray-100">
@@ -217,14 +220,14 @@ export default function MaterialesPage() {
               const c = ins.config as Record<string, unknown>
               const tipo = ins.tipo as InsumoTipo
               let keyData = ''
-              if (tipo === 'papel') keyData = c.formato === 'hojas' ? `${fmt(c.precio_resma as number || 0)} / ${c.hojas_resma} hojas · ${c.ancho}×${c.alto} cm` : `${fmt(c.precio_rollo as number || 0)} / ${c.rollo_ancho}cm × ${c.rollo_largo || '?'}m`
-              else if (tipo === 'tinta') keyData = `${fmt(c.precio as number || 0)} — ${c.rendimiento} ${c.unidad_rendimiento || 'hojas'}`
-              else if (tipo === 'film') keyData = `${fmt(c.precio_rollo as number || 0)} / ${c.ancho || '?'}cm × ${c.largo || '?'}m`
-              else if (tipo === 'polvo') keyData = `${fmt(c.precio_kg as number || 0)}/kg — ${c.rendimiento_m2} m²/kg`
-              else if (tipo === 'vinilo') keyData = `${fmt(c.precio_metro as number || 0)}/m — ${c.ancho}cm`
-              else if (tipo === 'tinta_serigrafica') keyData = `${fmt(c.precio_kg as number || 0)}/kg — ${c.color || '?'}`
-              else if (tipo === 'servicio_impresion') keyData = `${fmt(c.precio_metro as number || 0)}/m — ${c.ancho_material}cm`
-              else keyData = `${fmt(c.precio as number || c.precio_kg as number || 0)}`
+              if (tipo === 'papel') keyData = c.formato === 'hojas' ? `${fmtCurrency(c.precio_resma as number || 0)} / ${c.hojas_resma} hojas · ${c.ancho}×${c.alto} cm` : `${fmtCurrency(c.precio_rollo as number || 0)} / ${c.rollo_ancho}cm × ${c.rollo_largo || '?'}m`
+              else if (tipo === 'tinta') keyData = `${fmtCurrency(c.precio as number || 0)} — ${c.rendimiento} ${c.unidad_rendimiento || 'hojas'}`
+              else if (tipo === 'film') keyData = `${fmtCurrency(c.precio_rollo as number || 0)} / ${c.ancho || '?'}cm × ${c.largo || '?'}m`
+              else if (tipo === 'polvo') keyData = `${fmtCurrency(c.precio_kg as number || 0)}/kg — ${c.rendimiento_m2} m²/kg`
+              else if (tipo === 'vinilo') keyData = `${fmtCurrency(c.precio_metro as number || 0)}/m — ${c.ancho}cm`
+              else if (tipo === 'tinta_serigrafica') keyData = `${fmtCurrency(c.precio_kg as number || 0)}/kg — ${c.color || '?'}`
+              else if (tipo === 'servicio_impresion') keyData = `${fmtCurrency(c.precio_metro as number || 0)}/m — ${c.ancho_material}cm`
+              else keyData = `${fmtCurrency(c.precio as number || c.precio_kg as number || 0)}`
               return (
                 <tr key={ins.id} className="border-b border-gray-50 hover:bg-gray-50">
                   <td className="px-4 py-3 font-medium text-gray-800">{ins.nombre}</td>
@@ -248,7 +251,7 @@ export default function MaterialesPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)' }}>
           <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
-              <h3 className="font-bold text-gray-900">{modal.id ? 'Editar' : 'Nuevo'} Producto base</h3>
+              <h3 className="font-bold text-gray-900">{modal.id ? tc('edit') : ''} {t('baseProducts')}</h3>
               <button onClick={() => setModal(null)} className="p-2 rounded-lg hover:bg-gray-100"><X size={16} /></button>
             </div>
             <div className="space-y-4">
@@ -279,8 +282,8 @@ export default function MaterialesPage() {
                 </div></div>
             </div>
             <div className="flex gap-3 mt-6">
-              <button onClick={() => setModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">Cancelar</button>
-              <button onClick={saveProduct} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: '#6C5CE7' }}>{saving ? 'Guardando...' : 'Guardar'}</button>
+              <button onClick={() => setModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">{tc('cancel')}</button>
+              <button onClick={saveProduct} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: '#6C5CE7' }}>{saving ? tc('saving') : tc('save')}</button>
             </div>
           </div>
         </div>
@@ -415,8 +418,8 @@ export default function MaterialesPage() {
               </div>
             </div>
             <div className="flex gap-3 mt-6">
-              <button onClick={() => setInsModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">Cancelar</button>
-              <button onClick={saveInsumo} disabled={saving || !insModal.nombre?.trim()} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#00B894' }}>{saving ? 'Guardando...' : 'Guardar'}</button>
+              <button onClick={() => setInsModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">{tc('cancel')}</button>
+              <button onClick={saveInsumo} disabled={saving || !insModal.nombre?.trim()} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#00B894' }}>{saving ? tc('saving') : tc('save')}</button>
             </div>
           </div>
         </div>

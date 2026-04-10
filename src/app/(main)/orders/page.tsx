@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { ChevronDown, ChevronUp, MessageCircle, Trash2, Calendar, Plus, LayoutList, LayoutGrid, X, ExternalLink } from 'lucide-react'
+import { useTranslations } from '@/shared/hooks/useTranslations'
+import { useLocale } from '@/shared/context/LocaleContext'
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
 import { useDraggable, useDroppable } from '@dnd-kit/core'
 
@@ -16,7 +18,7 @@ interface Order {
 interface Payment { id: string; order_id: string; monto: number; metodo: string; fecha: string }
 
 const STATES = ['pending', 'production', 'ready', 'delivered'] as const
-const SL: Record<string, string> = { pending: 'Pendiente', production: 'En producción', ready: 'Listo', delivered: 'Entregado' }
+
 const SC: Record<string, { bg: string; text: string }> = {
   pending: { bg: '#FAEEDA', text: '#854F0B' }, production: { bg: '#E6F1FB', text: '#0C447C' },
   ready: { bg: '#EAF3DE', text: '#27500A' }, delivered: { bg: '#F1EFE8', text: '#444441' },
@@ -25,7 +27,7 @@ const TL: Record<string, string> = { subli: 'Subli', dtf: 'DTF', dtf_uv: 'DTF UV
 const TC: Record<string, string> = { subli: '#6C5CE7', dtf: '#E17055', dtf_uv: '#00B894', vinyl: '#E84393', serigrafia: '#FDCB6E' }
 const NEXT: Record<string, string> = { pending: 'production', production: 'ready', ready: 'delivered' }
 
-function fmt(n: number) { return `$${Math.round(n).toLocaleString('es-AR')}` }
+
 function isOD(d: string | null) { return d ? new Date(d) < new Date(new Date().toDateString()) : false }
 function dTo(d: string | null) { return d ? Math.ceil((new Date(d).getTime() - Date.now()) / 86400000) : Infinity }
 
@@ -55,6 +57,10 @@ function DropCol({ id, children }: { id: string; children: React.ReactNode }) {
 
 export default function OrdersPage() {
   const supabase = createClient()
+  const t = useTranslations('orders')
+  const tc = useTranslations('common')
+  const { fmt: fmtCurrency } = useLocale()
+  const SL: Record<string, string> = { pending: t('pending'), production: t('inProduction'), ready: t('ready'), delivered: t('delivered') }
   const [orders, setOrders] = useState<Order[]>([])
   const [payments, setPayments] = useState<Payment[]>([])
   const [loading, setLoading] = useState(true)
@@ -102,12 +108,12 @@ export default function OrdersPage() {
     </style></head><body>
       <h1>Pedido #${order.id.slice(0, 8)}</h1>
       <p class="meta">Fecha: ${new Date(order.created_at).toLocaleDateString('es-AR')} · Estado: ${SL[order.status] || order.status}${order.due_date ? ` · Entrega: ${new Date(order.due_date).toLocaleDateString('es-AR')}` : ''}</p>
-      <div class="section"><strong>Cliente:</strong> ${client?.name || 'Sin cliente'}${client?.whatsapp ? ` · ${client.whatsapp}` : ''}</div>
+      <div class="section"><strong>Cliente:</strong> ${client?.name || tc('noClient')}${client?.whatsapp ? ` · ${client.whatsapp}` : ''}</div>
       <table><thead><tr><th>Descripción</th><th>Cant.</th><th>P. Unit.</th><th>Subtotal</th></tr></thead><tbody>
-      ${items.map(i => `<tr><td>${i.nombre}${i.tecnica ? `<br><small style="color:#888">${TL[i.tecnica] || i.tecnica}</small>` : ''}</td><td>${i.cantidad}</td><td>${fmt(i.precioUnit || 0)}</td><td>${fmt(i.subtotal)}</td></tr>`).join('')}
+      ${items.map(i => `<tr><td>${i.nombre}${i.tecnica ? `<br><small style="color:#888">${TL[i.tecnica] || i.tecnica}</small>` : ''}</td><td>${i.cantidad}</td><td>${fmtCurrency(i.precioUnit || 0)}</td><td>${fmtCurrency(i.subtotal)}</td></tr>`).join('')}
       </tbody></table>
-      <p style="text-align:right" class="total">Total: ${fmt(order.total_price)}</p>
-      ${pd > 0 ? `<div class="section"><strong>Pagos:</strong> ${fmt(pd)} recibido · Saldo: ${fmt(Math.max(order.total_price - pd, 0))}</div>` : ''}
+      <p style="text-align:right" class="total">Total: ${fmtCurrency(order.total_price)}</p>
+      ${pd > 0 ? `<div class="section"><strong>Pagos:</strong> ${fmtCurrency(pd)} recibido · Saldo: ${fmtCurrency(Math.max(order.total_price - pd, 0))}</div>` : ''}
       ${order.notes ? `<div class="section"><strong>Notas:</strong> ${order.notes}</div>` : ''}
       <p style="text-align:center;color:#ccc;margin-top:40px;font-size:11px">Estamply</p>
     </body></html>`)
@@ -153,23 +159,23 @@ export default function OrdersPage() {
       <div className="space-y-4">
         {/* DETALLE DEL PEDIDO */}
         <div className="rounded-lg border border-gray-100 p-4">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-3">Detalle del pedido</p>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-3">{t('orderDetail')}</p>
           {(order.items || []).length > 0 ? (
             <div className="space-y-3">
               {(order.items as OrderItem[]).map((item, i) => (
                 <div key={i}>
                   <div className="flex items-center gap-2 mb-1"><TechBadge t={item.tecnica} /><span className="text-sm font-semibold text-gray-800">{item.nombre}</span></div>
-                  <p className="text-xs text-gray-500">Cantidad: {item.cantidad}{item.precioUnit ? ` · P.unit: ${fmt(item.precioUnit)}` : ''} · Subtotal: <span className="font-medium text-gray-700">{fmt(item.subtotal)}</span></p>
+                  <p className="text-xs text-gray-500">Cantidad: {item.cantidad}{item.precioUnit ? ` · P.unit: ${fmtCurrency(item.precioUnit)}` : ''} · Subtotal: <span className="font-medium text-gray-700">{fmtCurrency(item.subtotal)}</span></p>
                   {item.notas && <p className="text-xs text-gray-500 mt-1 italic bg-gray-50 px-2 py-1 rounded">📝 {item.notas}</p>}
                 </div>
               ))}
             </div>
-          ) : <p className="text-sm text-gray-400 italic">Sin detalle de ítems</p>}
+          ) : <p className="text-sm text-gray-400 italic">{t('noItems')}</p>}
         </div>
 
         {/* ARCHIVOS */}
         <div className="rounded-lg border border-gray-100 p-4">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">Archivos</p>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">{t('files')}</p>
           {editingLink ? (
             <div className="flex gap-2">
               <input className="input-base text-sm flex-1" value={linkVal} onChange={e => setLinkVal(e.target.value)} placeholder="URL de archivos (Google Drive, Dropbox...)" />
@@ -188,11 +194,11 @@ export default function OrdersPage() {
 
         {/* PAGOS — saldo prominente + detalle colapsado */}
         <div className="rounded-lg border border-gray-100 p-4">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-3">Pagos</p>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-3">{t('payments')}</p>
           {/* Prominent saldo */}
           <div className={`rounded-lg p-3 mb-3 text-center ${saldo <= 0 ? 'bg-green-50 border border-green-100' : 'bg-amber-50 border border-amber-100'}`}>
             <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-0.5">{saldo <= 0 ? 'Estado' : 'Saldo a cobrar'}</p>
-            <p className={`text-xl font-black ${saldo <= 0 ? 'text-green-600' : 'text-gray-800'}`}>{saldo <= 0 ? 'Pagado completo ✓' : fmt(saldo)}</p>
+            <p className={`text-xl font-black ${saldo <= 0 ? 'text-green-600' : 'text-gray-800'}`}>{saldo <= 0 ? 'Pagado completo ✓' : fmtCurrency(saldo)}</p>
           </div>
           {/* Collapsible detail */}
           {(() => {
@@ -203,21 +209,21 @@ export default function OrdersPage() {
               </button>
               {showPayDetail && (
                 <div className="mt-3 space-y-1.5 text-sm">
-                  <div className="flex justify-between"><span className="text-gray-500">Total del pedido</span><span className="font-semibold">{fmt(order.total_price)}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">Total del pedido</span><span className="font-semibold">{fmtCurrency(order.total_price)}</span></div>
                   {op.length > 0 && (
                     <div className="border-t border-gray-100 pt-1.5 space-y-1">
                       {op.map(pay => (
                         <div key={pay.id} className="flex justify-between text-xs">
                           <span className="text-gray-500">{new Date(pay.fecha).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })} · Seña recibida{pay.metodo !== 'seña' ? ` (${pay.metodo})` : ''}</span>
-                          <span className="text-green-600 font-medium">{fmt(Number(pay.monto))}</span>
+                          <span className="text-green-600 font-medium">{fmtCurrency(Number(pay.monto))}</span>
                         </div>
                       ))}
                     </div>
                   )}
                   <div className="flex justify-between pt-1.5 border-t border-gray-100">
-                    <span className="text-gray-500">Total pagado</span><span className="text-green-600 font-medium">{fmt(p)}</span>
+                    <span className="text-gray-500">Total pagado</span><span className="text-green-600 font-medium">{fmtCurrency(p)}</span>
                   </div>
-                  {saldo > 0 && <div className="flex justify-between"><span className="text-gray-500">Saldo pendiente</span><span className="font-bold text-gray-800">{fmt(saldo)}</span></div>}
+                  {saldo > 0 && <div className="flex justify-between"><span className="text-gray-500">Saldo pendiente</span><span className="font-bold text-gray-800">{fmtCurrency(saldo)}</span></div>}
                 </div>
               )}
             </>)
@@ -229,7 +235,7 @@ export default function OrdersPage() {
               <button onClick={() => regPay(order.id)} className="px-3 py-1 rounded-lg text-xs font-semibold text-white" style={{ background: '#6C5CE7' }}>OK</button>
               <button onClick={() => setPayingOrder(null)} className="text-xs text-gray-400">✕</button>
             </div>
-          ) : saldo > 0 ? <button onClick={() => { setPayingOrder(order.id); setPayAmount(Math.max(saldo, 0)) }} className="mt-3 flex items-center gap-1 text-xs font-semibold text-purple-600"><Plus size={12} /> Registrar pago</button> : null}
+          ) : saldo > 0 ? <button onClick={() => { setPayingOrder(order.id); setPayAmount(Math.max(saldo, 0)) }} className="mt-3 flex items-center gap-1 text-xs font-semibold text-purple-600"><Plus size={12} /> {t('registerPayment')}</button> : null}
         </div>
 
         {/* FECHA DE ENTREGA */}
@@ -237,7 +243,7 @@ export default function OrdersPage() {
           const [editingDate, setEditingDate] = useState(false)
           return (
             <div className="rounded-lg border border-gray-100 p-4">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">Fecha de entrega</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">{t('deliveryDate')}</p>
               {editingDate ? (
                 <div className="flex items-center gap-2">
                   <input type="date" className="input-base text-sm py-1 w-44" value={order.due_date || ''} onChange={e => { setDueDate(order.id, e.target.value); setEditingDate(false) }} autoFocus />
@@ -260,7 +266,7 @@ export default function OrdersPage() {
 
         {/* ESTADO */}
         <div className="rounded-lg border border-gray-100 p-4">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-3">Estado</p>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-3">{t('status')}</p>
           <div className="flex items-center gap-1 mb-3">
             {STATES.map((s, i) => {
               const si = STATES.indexOf(order.status as typeof STATES[number])
@@ -300,7 +306,7 @@ export default function OrdersPage() {
   function Card({ order }: { order: Order }) {
     const isExp = expanded === order.id
     const sc = SC[order.status] || SC.pending
-    const cn = order.clients?.name || 'Sin cliente'
+    const cn = order.clients?.name || tc('noClient')
     const p = paid(order.id), saldo = order.total_price - p
     const od = isOD(order.due_date) && order.status !== 'delivered'
     const du = dTo(order.due_date)
@@ -311,7 +317,7 @@ export default function OrdersPage() {
           {/* Line 1: client + total */}
           <div className="flex items-center justify-between">
             <span className="font-semibold text-gray-800">{cn}</span>
-            <span className="font-bold text-gray-800">{fmt(order.total_price)}</span>
+            <span className="font-bold text-gray-800">{fmtCurrency(order.total_price)}</span>
           </div>
           {/* Line 2: what to produce */}
           <div className="mt-1"><ItemSummary items={order.items || []} /></div>
@@ -369,8 +375,8 @@ export default function OrdersPage() {
   return (
     <div>
       <div className="flex items-start justify-between mb-6">
-        <div><h1 className="text-2xl font-bold text-gray-900">Pedidos</h1>
-          <p className="text-gray-500 text-sm mt-1">{activos.length} activos · {finalizados.length} finalizados</p></div>
+        <div><h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
+          <p className="text-gray-500 text-sm mt-1">{activos.length} {t('active')} · {finalizados.length} {t('finished')}</p></div>
         <div className="flex gap-1 p-0.5 rounded-lg" style={{ background: '#F1F1F1' }}>
           <button onClick={() => setView('list')} className={`px-3 py-1.5 rounded-md text-xs font-semibold ${view === 'list' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500'}`}><LayoutList size={14} /></button>
           <button onClick={() => setView('kanban')} className={`px-3 py-1.5 rounded-md text-xs font-semibold ${view === 'kanban' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500'}`}><LayoutGrid size={14} /></button>
@@ -407,10 +413,10 @@ export default function OrdersPage() {
                     <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full" style={{ background: sc.text }} /><span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: sc.text }}>{SL[state]}</span></div>
                     <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold bg-white/60" style={{ color: sc.text }}>{so.length}</span>
                   </div>
-                  {so.length > 0 && !isDel && <p className="text-[10px] text-gray-400 px-2 -mt-0.5 mb-2">{fmt(so.reduce((s, o) => s + o.total_price, 0))}</p>}
+                  {so.length > 0 && !isDel && <p className="text-[10px] text-gray-400 px-2 -mt-0.5 mb-2">{fmtCurrency(so.reduce((s, o) => s + o.total_price, 0))}</p>}
                   <div className={`space-y-2 ${isDel ? 'opacity-65' : ''}`}>
                     {shown.map(order => {
-                      const cn = order.clients?.name || 'Sin cliente', pd = paid(order.id), od = isOD(order.due_date) && !isDel
+                      const cn = order.clients?.name || tc('noClient'), pd = paid(order.id), od = isOD(order.due_date) && !isDel
                       const first = (order.items || [])[0]
                       return (
                         <DragCard key={order.id} id={order.id}>
@@ -421,14 +427,14 @@ export default function OrdersPage() {
                               <p className="text-[10px] text-gray-500 mt-0.5 truncate flex items-center gap-1">
                                 <TechBadge t={first.tecnica} />{first.cantidad}× {first.nombre}{(order.items || []).length > 1 && <span className="text-gray-400">+ {(order.items || []).length - 1}</span>}
                               </p>
-                            ) : <p className="text-[10px] text-gray-400 italic mt-0.5">Sin detalle</p>}
-                            <p className="font-bold text-gray-700 text-sm mt-1">{fmt(order.total_price)}</p>
+                            ) : <p className="text-[10px] text-gray-400 italic mt-0.5">{t('noDetail')}</p>}
+                            <p className="font-bold text-gray-700 text-sm mt-1">{fmtCurrency(order.total_price)}</p>
                             {order.due_date && !isDel && <p className={`text-[10px] mt-0.5 flex items-center gap-1 ${od ? 'text-red-500 font-bold' : 'text-gray-400'}`}><Calendar size={9} />{new Date(order.due_date).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}{od && ' vencido'}</p>}
-                            {!isDel && <p className={`text-[10px] mt-0.5 ${pd >= order.total_price ? 'text-green-600' : pd > 0 ? 'text-gray-500' : 'text-amber-500'}`}>{pd >= order.total_price ? 'Pagado ✓' : pd > 0 ? `Seña: ${fmt(pd)}` : 'Sin pagos'}</p>}
+                            {!isDel && <p className={`text-[10px] mt-0.5 ${pd >= order.total_price ? 'text-green-600' : pd > 0 ? 'text-gray-500' : 'text-amber-500'}`}>{pd >= order.total_price ? t('paid') + ' ✓' : pd > 0 ? `${t('deposit')}: ${fmtCurrency(pd)}` : t('noPayments')}</p>}
                             {state === 'ready' && (
                               <button onClick={e => { e.stopPropagation(); setStatus(order.id, 'delivered') }}
                                 className="mt-2 w-full text-[10px] py-1 rounded-md font-semibold text-green-700 bg-green-50 border border-green-100 hover:bg-green-100 transition-colors">
-                                ✓ Marcar entregado
+                                ✓ {t('markDelivered')}
                               </button>
                             )}
                           </div>
@@ -455,11 +461,11 @@ export default function OrdersPage() {
           <div className="relative w-full max-w-md bg-white shadow-2xl h-full overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="sticky top-0 bg-white border-b border-gray-100 px-5 py-4 flex items-center justify-between z-10">
               <div>
-                <h3 className="font-bold text-gray-900">{detailOrder.clients?.name || 'Sin cliente'}</h3>
+                <h3 className="font-bold text-gray-900">{detailOrder.clients?.name || tc('noClient')}</h3>
                 {(() => { const first = (detailOrder.items || [])[0]; return first ? (
                   <p className="text-[10px] text-gray-500 mt-0.5 flex items-center gap-1"><TechBadge t={first.tecnica} />{first.cantidad}× {first.nombre}</p>
                 ) : null })()}
-                <p className="text-xs text-gray-400 mt-0.5">{fmt(detailOrder.total_price)}</p>
+                <p className="text-xs text-gray-400 mt-0.5">{fmtCurrency(detailOrder.total_price)}</p>
               </div>
               <div className="flex gap-1">
                 <button onClick={() => printOrder(detailOrder)} className="p-2 rounded-lg hover:bg-gray-100 text-gray-400" title="Imprimir">🖨️</button>

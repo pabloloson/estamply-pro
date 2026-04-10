@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Plus, Pencil, Trash2, X } from 'lucide-react'
 import NumericInput from '@/shared/components/NumericInput'
+import { useTranslations } from '@/shared/hooks/useTranslations'
+import { useLocale } from '@/shared/context/LocaleContext'
 
 interface Equipment { id: string; name: string; marca: string | null; type: string; clasificacion: string; cost: number; lifespan_uses: number; tecnicas_slugs: string[]; assigned_paper_id: string | null; assigned_ink_id: string | null }
 interface InsumoRef { id: string; nombre: string; tipo: string; config: Record<string, unknown> }
@@ -30,10 +32,11 @@ const TEC_LABELS: Record<string, string> = { subli: 'Subli', dtf: 'DTF', dtf_uv:
 const TEC_COLORS: Record<string, string> = { subli: '#6C5CE7', dtf: '#E17055', dtf_uv: '#00B894', vinyl: '#E84393', serigrafia: '#FDCB6E' }
 const ALL_TECS = ['subli', 'dtf', 'dtf_uv', 'vinyl', 'serigrafia']
 
-function fmt(n: number) { return `$${Math.round(n).toLocaleString('es-AR')}` }
-
 export default function EquipamientoPage() {
   const supabase = createClient()
+  const t = useTranslations('equipment')
+  const tc = useTranslations('common')
+  const { fmt: fmtCurrency } = useLocale()
   const [equipment, setEquipment] = useState<Equipment[]>([])
   const [insumosAll, setInsumosAll] = useState<InsumoRef[]>([])
   const [loading, setLoading] = useState(true)
@@ -74,11 +77,11 @@ export default function EquipamientoPage() {
   return (
     <div>
       <div className="flex items-start justify-between mb-6">
-        <div><h1 className="text-2xl font-bold text-gray-900">Equipamiento</h1>
-          <p className="text-gray-500 text-sm mt-1">Máquinas y amortización</p></div>
+        <div><h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
+          <p className="text-gray-500 text-sm mt-1">{t('subtitle')}</p></div>
         <button onClick={() => setModal({ clasificacion: 'plancha', type: 'press_flat', cost: 0, lifespan_uses: 10000, tecnicas_slugs: [] })}
           className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}>
-          <Plus size={14} /> Agregar equipo
+          <Plus size={14} /> {t('addEquipment')}
         </button>
       </div>
 
@@ -123,9 +126,9 @@ export default function EquipamientoPage() {
                       ))}
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{fmt(e.cost)}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600">{fmtCurrency(e.cost)}</td>
                   <td className="px-4 py-3 text-sm text-gray-500">{e.lifespan_uses.toLocaleString('es-AR')}</td>
-                  <td className="px-4 py-3 text-sm text-green-600 font-semibold">{fmt(amort(e))}/uso</td>
+                  <td className="px-4 py-3 text-sm text-green-600 font-semibold">{fmtCurrency(amort(e))}/uso</td>
                   <td className="px-4 py-3">
                     <div className="flex gap-1">
                       <button onClick={() => setModal(e)} className="p-1.5 rounded-lg hover:bg-gray-100"><Pencil size={14} className="text-gray-400" /></button>
@@ -145,7 +148,7 @@ export default function EquipamientoPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)' }}>
           <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
-              <h3 className="font-bold text-gray-900">{modal.id ? 'Editar' : 'Nuevo'} Equipo</h3>
+              <h3 className="font-bold text-gray-900">{modal.id ? tc('edit') : t('addEquipment')}</h3>
               <button onClick={() => setModal(null)} className="p-2 rounded-lg hover:bg-gray-100"><X size={16} /></button>
             </div>
             <div className="space-y-4">
@@ -218,13 +221,13 @@ export default function EquipamientoPage() {
               {modalAmort > 0 && (
                 <div className="p-3 rounded-lg bg-green-50 border border-green-100 text-center">
                   <p className="text-xs text-gray-500">Amortización</p>
-                  <p className="text-lg font-black text-green-600">{fmt(modalAmort)} <span className="text-sm font-medium">por uso</span></p>
+                  <p className="text-lg font-black text-green-600">{fmtCurrency(modalAmort)} <span className="text-sm font-medium">por uso</span></p>
                 </div>
               )}
             </div>
             <div className="flex gap-3 mt-6">
-              <button onClick={() => setModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">Cancelar</button>
-              <button onClick={saveEquip} disabled={saving || !modal.name?.trim()} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#6C5CE7' }}>{saving ? 'Guardando...' : 'Guardar'}</button>
+              <button onClick={() => setModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">{tc('cancel')}</button>
+              <button onClick={saveEquip} disabled={saving || !modal.name?.trim()} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#6C5CE7' }}>{saving ? tc('saving') : tc('save')}</button>
             </div>
           </div>
         </div>

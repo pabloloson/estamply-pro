@@ -4,10 +4,12 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { login } from '@/app/actions/auth'
 import { Layers, Zap, TrendingUp, Shield } from 'lucide-react'
+import { useTranslations } from '@/shared/hooks/useTranslations'
 
 export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const t = useTranslations('auth')
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -66,8 +68,8 @@ export default function LoginPage() {
             <span className="font-bold text-lg" style={{ color: '#6C5CE7' }}>Estamply</span>
           </div>
 
-          <h2 className="text-2xl font-bold text-gray-900 mb-1">Bienvenido de vuelta</h2>
-          <p className="text-gray-500 text-sm mb-8">Ingresá a tu taller</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-1">{t('welcomeBack')}</h2>
+          <p className="text-gray-500 text-sm mb-8">{t('enterWorkshop')}</p>
 
           {error && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
@@ -77,7 +79,7 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('email')}</label>
               <input
                 name="email"
                 type="email"
@@ -88,7 +90,7 @@ export default function LoginPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Contraseña</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('password')}</label>
               <input
                 name="password"
                 type="password"
@@ -99,14 +101,14 @@ export default function LoginPage() {
               />
             </div>
             <button type="submit" disabled={loading} className="btn-primary mt-2">
-              {loading ? 'Ingresando...' : 'Ingresar'}
+              {loading ? t('loggingIn') : t('login')}
             </button>
           </form>
 
           <p className="mt-6 text-center text-sm text-gray-500">
-            ¿No tenés cuenta?{' '}
+            {t('noAccount')}{' '}
             <Link href="/signup" style={{ color: '#6C5CE7' }} className="font-medium hover:underline">
-              Registrate gratis
+              {t('registerFree')}
             </Link>
           </p>
         </div>

@@ -13,6 +13,8 @@ import type { Tecnica } from '@/features/presupuesto/types'
 import { DEFAULT_SETTINGS, type WorkshopSettings } from '@/features/presupuesto/types'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
+import { useTranslations } from '@/shared/hooks/useTranslations'
+import { useLocale } from '@/shared/context/LocaleContext'
 
 const TECHNIQUE_LABELS: Record<Tecnica, string> = {
   subli: 'Sublimación', dtf: 'DTF Textil', dtf_uv: 'DTF UV', vinyl: 'Vinilo', serigrafia: 'Serigrafía',
@@ -20,8 +22,6 @@ const TECHNIQUE_LABELS: Record<Tecnica, string> = {
 const TECHNIQUE_COLORS: Record<Tecnica, string> = {
   subli: '#6C5CE7', dtf: '#E17055', dtf_uv: '#00B894', vinyl: '#E84393', serigrafia: '#FDCB6E',
 }
-
-function fmt(n: number) { return `$${Math.round(n).toLocaleString('es-AR')}` }
 
 interface DBClient { id: string; name: string; phone: string | null; email: string | null; whatsapp: string | null }
 interface BusinessProfile {
@@ -32,6 +32,9 @@ interface BusinessProfile {
 
 export default function PresupuestoPage() {
   const router = useRouter()
+  const t = useTranslations('quotes')
+  const tc = useTranslations('common')
+  const { fmt: fmtCurrency } = useLocale()
   const supabase = createClient()
   const { items, removeItem, clearItems, loadItems, totalVenta, totalCosto, totalGanancia, loadedPresupuestoId, setLoadedPresupuestoId } = usePresupuesto()
 
@@ -153,9 +156,9 @@ export default function PresupuestoPage() {
 
   function getWhatsAppText() {
     const biz = tallerName || 'Tu Taller'
-    const lines = items.map(i => `• ${i.cantidad}x ${i.nombre} (${TECHNIQUE_LABELS[i.tecnica]}): ${fmt(i.subtotal)}`).join('\n')
+    const lines = items.map(i => `• ${i.cantidad}x ${i.nombre} (${TECHNIQUE_LABELS[i.tecnica]}): ${fmtCurrency(i.subtotal)}`).join('\n')
     const cl = clientDisplayName ? `Cliente: ${clientDisplayName}\n` : ''
-    return encodeURIComponent(`🧾 *PRESUPUESTO - ${biz.toUpperCase()}*\nN°: #${quoteNumber}\nFecha: ${quoteDate}\n\n${cl}${lines}\n\n━━━━━━━━━━━━━\n💰 *TOTAL: ${fmt(totalVenta)}*\n\n_Generado con Estamply_`)
+    return encodeURIComponent(`🧾 *PRESUPUESTO - ${biz.toUpperCase()}*\nN°: #${quoteNumber}\nFecha: ${quoteDate}\n\n${cl}${lines}\n\n━━━━━━━━━━━━━\n💰 *TOTAL: ${fmtCurrency(totalVenta)}*\n\n_Generado con Estamply_`)
   }
 
   async function handleConfirmarPedido() {
@@ -210,21 +213,21 @@ export default function PresupuestoPage() {
         {items.length === 0 && !loadedPresupuestoId ? (<>
           <div className="flex items-center justify-between mb-6 no-print">
             <div>
-              <h1 className="text-2xl font-black text-gray-900">Presupuestos</h1>
+              <h1 className="text-2xl font-black text-gray-900">{t('title')}</h1>
               <p className="text-sm text-gray-400 mt-0.5">{savedPresupuestos.length} presupuesto{savedPresupuestos.length !== 1 ? 's' : ''}</p>
             </div>
             <Link href="/cotizador" className="flex items-center gap-1.5 text-sm px-4 py-2 rounded-xl font-semibold text-white" style={{ background: '#6C5CE7' }}>
-              + Nuevo presupuesto
+              {t('newQuote')}
             </Link>
           </div>
 
           {savedPresupuestos.length > 0 ? (
             <div className="card overflow-hidden">
               <table className="w-full"><thead><tr className="border-b border-gray-100">
-                {['Código', 'Cliente', 'Fecha', 'Total', ''].map(h => <th key={h} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">{h}</th>)}
+                {[t('code'), t('client'), t('date'), t('total'), ''].map(h => <th key={h} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">{h}</th>)}
               </tr></thead><tbody>
                 {savedPresupuestos.map(p => {
-                  const cName = p.client_name || clients.find(c => c.id === p.client_id)?.name || 'Sin cliente'
+                  const cName = p.client_name || clients.find(c => c.id === p.client_id)?.name || tc('noClient')
                   return (
                     <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50 cursor-pointer" onClick={() => loadSavedPresupuesto(p.id)}>
                       <td className="px-4 py-3">
@@ -235,9 +238,9 @@ export default function PresupuestoPage() {
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600">{cName}</td>
                       <td className="px-4 py-3 text-sm text-gray-400">{new Date(p.created_at).toLocaleDateString('es-AR')}</td>
-                      <td className="px-4 py-3 font-bold text-gray-800 text-sm">{fmt(p.total)}</td>
+                      <td className="px-4 py-3 font-bold text-gray-800 text-sm">{fmtCurrency(p.total)}</td>
                       <td className="px-4 py-3">
-                        <a href={`/p/${p.codigo}`} target="_blank" rel="noopener" onClick={e => e.stopPropagation()} className="text-xs text-purple-500 hover:text-purple-700">Ver público</a>
+                        <a href={`/p/${p.codigo}`} target="_blank" rel="noopener" onClick={e => e.stopPropagation()} className="text-xs text-purple-500 hover:text-purple-700">{t('viewPublic')}</a>
                       </td>
                     </tr>
                   )
@@ -248,7 +251,7 @@ export default function PresupuestoPage() {
             <div className="card flex flex-col items-center justify-center py-16 gap-4">
               <div className="w-16 h-16 rounded-full flex items-center justify-center bg-gray-100"><ShoppingCart size={28} className="text-gray-400" /></div>
               <p className="text-gray-500 text-sm text-center max-w-xs">No tenés presupuestos todavía. Creá uno desde el Cotizador.</p>
-              <Link href="/cotizador" className="btn-primary text-sm px-5 py-2 rounded-xl font-semibold">Ir al Cotizador</Link>
+              <Link href="/cotizador" className="btn-primary text-sm px-5 py-2 rounded-xl font-semibold">{t('goToQuoter')}</Link>
             </div>
           )}
         </>) : (<>
@@ -261,7 +264,7 @@ export default function PresupuestoPage() {
             {loadedPresupuestoId && <span className="text-sm text-gray-400">#{savedPresupuestos.find(p => p.id === loadedPresupuestoId)?.codigo || ''}</span>}
             {!loadedPresupuestoId && <span className="text-sm text-gray-400">{items.length} {items.length === 1 ? 'ítem' : 'ítems'}</span>}
             {loadedPresupuestoId && savedPresupuestos.find(p => p.id === loadedPresupuestoId)?.origen === 'catalogo_web' && (
-              <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold bg-green-100 text-green-600">Catálogo Web</span>
+              <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold bg-green-100 text-green-600">{t('webBadge')}</span>
             )}
           </div>
         </div>
@@ -269,8 +272,8 @@ export default function PresupuestoPage() {
         {items.length === 0 ? (
           <div className="card flex flex-col items-center justify-center py-16 gap-4">
             <div className="w-16 h-16 rounded-full flex items-center justify-center bg-gray-100"><ShoppingCart size={28} className="text-gray-400" /></div>
-            <p className="text-gray-500 text-sm text-center max-w-xs">Este presupuesto no tiene ítems. Agregá desde el Cotizador.</p>
-            <Link href="/cotizador" className="btn-primary text-sm px-5 py-2 rounded-xl font-semibold">Ir al Cotizador</Link>
+            <p className="text-gray-500 text-sm text-center max-w-xs">{t('emptyQuote')}</p>
+            <Link href="/cotizador" className="btn-primary text-sm px-5 py-2 rounded-xl font-semibold">{t('goToQuoter')}</Link>
           </div>
         ) : (
           <div className="flex flex-col lg:flex-row gap-6">
@@ -317,17 +320,17 @@ export default function PresupuestoPage() {
                         </div>
                       ) : (
                         <p className="text-xs text-gray-400 cursor-pointer no-print hover:text-gray-600" onClick={() => setEditingValidez(true)}>
-                          Válido por {validezDias} días <Pencil size={8} className="inline ml-0.5" />
+                          {t('validFor', { days: validezDias })} <Pencil size={8} className="inline ml-0.5" />
                         </p>
                       )}
-                      <p className="text-xs text-gray-400 hidden print:block">Válido por {validezDias} días</p>
+                      <p className="text-xs text-gray-400 hidden print:block">{t('validFor', { days: validezDias })}</p>
                     </div>
                   </div>
                 </div>
 
                 {/* Client — in the document body */}
                 <div className="px-8 py-4 border-b border-gray-100" style={{ background: '#FAFAFA' }}>
-                  <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">Cliente</p>
+                  <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">{t('client')}</p>
                   {/* Edit mode (screen only) */}
                   <div className="no-print">
                     {loadingClients ? (
@@ -386,10 +389,10 @@ export default function PresupuestoPage() {
                           <td className="py-3 text-center text-sm text-gray-600 font-medium align-top">{item.cantidad}</td>
                           <td className="py-3 text-right text-sm text-gray-600 align-top">
                             {/* CORRECCIÓN 7: Strikethrough only when there's a discount */}
-                            {item.precioSinDesc > item.precioUnit + 1 && <span className="text-xs text-gray-400 line-through mr-1">{fmt(item.precioSinDesc)}</span>}
-                            {fmt(item.precioUnit)}
+                            {item.precioSinDesc > item.precioUnit + 1 && <span className="text-xs text-gray-400 line-through mr-1">{fmtCurrency(item.precioSinDesc)}</span>}
+                            {fmtCurrency(item.precioUnit)}
                           </td>
-                          <td className="py-3 text-right font-bold text-gray-800 align-top">{fmt(item.subtotal)}</td>
+                          <td className="py-3 text-right font-bold text-gray-800 align-top">{fmtCurrency(item.subtotal)}</td>
                           <td className="py-3 no-print align-top">
                             <button onClick={() => removeItem(item.id)} className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 transition-all"><Trash2 size={13} /></button>
                           </td>
@@ -401,10 +404,10 @@ export default function PresupuestoPage() {
                   {/* Totals */}
                   <div className="mt-4 flex justify-end">
                     <div className="w-60 space-y-1.5">
-                      <div className="flex justify-between text-sm text-gray-500"><span>Subtotal</span><span className="font-medium text-gray-700">{fmt(totalVenta)}</span></div>
+                      <div className="flex justify-between text-sm text-gray-500"><span>Subtotal</span><span className="font-medium text-gray-700">{fmtCurrency(totalVenta)}</span></div>
                       <div className="flex justify-between pt-2" style={{ borderTop: '2px solid #6C5CE7' }}>
                         <span className="font-black text-gray-900">TOTAL</span>
-                        <span className="font-black text-xl" style={{ color: '#6C5CE7' }}>{fmt(totalVenta)}</span>
+                        <span className="font-black text-xl" style={{ color: '#6C5CE7' }}>{fmtCurrency(totalVenta)}</span>
                       </div>
                     </div>
                   </div>
@@ -413,7 +416,7 @@ export default function PresupuestoPage() {
                 {/* CORRECCIÓN 6: Editable condiciones */}
                 <div className="px-8 py-4 border-t border-gray-100">
                   <div className="flex items-center gap-2 mb-2">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Condiciones</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">{t('conditions')}</p>
                     <button onClick={() => setEditingCondiciones(!editingCondiciones)} className="no-print p-0.5 rounded hover:bg-gray-100">
                       <Pencil size={10} className="text-gray-400" />
                     </button>
@@ -438,27 +441,27 @@ export default function PresupuestoPage() {
             <div className="lg:w-72 space-y-4 no-print">
               {/* Share */}
               <div className="card p-5 space-y-3">
-                <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Compartir</p>
-                <button onClick={() => window.print()} className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50"><FileDown size={15} /> Descargar PDF</button>
+                <p className="text-xs font-bold uppercase tracking-wider text-gray-400">{t('share')}</p>
+                <button onClick={() => window.print()} className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50"><FileDown size={15} /> {t('downloadPdf')}</button>
                 <button disabled={savingLink} onClick={async () => {
                   const link = await ensurePublicLink()
                   if (!link) return
                   const waNum = (selectedClient?.whatsapp || selectedClient?.phone || '').replace(/[\s\-\(\)]/g, '')
                   const name = clientDisplayName ? clientDisplayName.split(' ')[0] : ''
-                  const msg = encodeURIComponent(`Hola${name ? ` ${name}` : ''}! 👋\n\nTe envío el presupuesto *#${quoteNumber}* por un total de *${fmt(totalVenta)}*.\n\n📋 Podés verlo y descargarlo acá:\n${link}\n\nCualquier consulta estoy a disposición!`)
+                  const msg = encodeURIComponent(`Hola${name ? ` ${name}` : ''}! 👋\n\nTe envío el presupuesto *#${quoteNumber}* por un total de *${fmtCurrency(totalVenta)}*.\n\n📋 Podés verlo y descargarlo acá:\n${link}\n\nCualquier consulta estoy a disposición!`)
                   window.open(`https://wa.me/${waNum}?text=${msg}`, '_blank')
                 }} className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border text-sm font-semibold disabled:opacity-50" style={{ borderColor: '#25d36620', color: '#25d366', background: '#25d36608' }}>
-                  <MessageCircle size={15} /> {savingLink ? 'Generando link...' : 'WhatsApp'}
+                  <MessageCircle size={15} /> {savingLink ? tc('loading') : t('whatsapp')}
                 </button>
                 <button disabled={savingLink} onClick={async () => {
                   const link = await ensurePublicLink()
                   if (!link) return
                   setEmailTo(selectedClient?.email || '')
                   setEmailSubject(`Presupuesto #${quoteNumber} - ${tallerName || 'Taller'}`)
-                  setEmailBody(`Hola${clientDisplayName ? ` ${clientDisplayName.split(' ')[0]}` : ''}!\n\nTe envío el presupuesto #${quoteNumber} por un total de ${fmt(totalVenta)}.\n\nPodés verlo y descargarlo acá:\n${link}\n\nSaludos!`)
+                  setEmailBody(`Hola${clientDisplayName ? ` ${clientDisplayName.split(' ')[0]}` : ''}!\n\nTe envío el presupuesto #${quoteNumber} por un total de ${fmtCurrency(totalVenta)}.\n\nPodés verlo y descargarlo acá:\n${link}\n\nSaludos!`)
                   setShowEmailModal(true)
                 }} className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border text-sm font-semibold disabled:opacity-50" style={{ borderColor: '#4285f420', color: '#4285f4', background: '#4285f408' }}>
-                  <Mail size={15} /> Email
+                  <Mail size={15} /> {t('email')}
                 </button>
                 {publicLink && (
                   <div className="flex items-center gap-2 p-2 rounded-lg bg-gray-50 border border-gray-100">
@@ -470,13 +473,13 @@ export default function PresupuestoPage() {
 
               {/* Confirm — CORRECCIÓN 2: help text for seña */}
               <div className="card p-5 space-y-4">
-                <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Confirmar como Pedido</p>
+                <p className="text-xs font-bold uppercase tracking-wider text-gray-400">{t('confirmAsOrder')}</p>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Fecha de entrega</label>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">{t('deliveryDate')}</label>
                   <input type="date" className="input-base" value={dueDate} onChange={e => setDueDate(e.target.value)} />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Seña</label>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">{t('deposit')}</label>
                   <div className="flex gap-1 mb-2">
                     {(['percent', 'fixed'] as const).map(m => (
                       <button key={m} type="button" onClick={() => setAdvanceMode(m)}
@@ -489,7 +492,7 @@ export default function PresupuestoPage() {
                     <div className="flex items-center gap-2">
                       <input type="number" className="input-base w-20" min={0} max={100} value={advancePercent} onChange={e => setAdvancePercent(Number(e.target.value))} />
                       <span className="text-xs text-gray-400">%</span>
-                      <span className="text-xs text-gray-500 font-medium">= {fmt(advanceAmount)}</span>
+                      <span className="text-xs text-gray-500 font-medium">= {fmtCurrency(advanceAmount)}</span>
                     </div>
                   ) : (
                     <input type="number" className="input-base" min={0} value={advanceFixed} onChange={e => setAdvanceFixed(Number(e.target.value))} />
@@ -503,7 +506,7 @@ export default function PresupuestoPage() {
                 <button type="button" disabled={submitting || items.length === 0} onClick={handleConfirmarPedido}
                   className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-white text-sm transition-all disabled:opacity-40"
                   style={{ background: '#6C5CE7', boxShadow: submitting ? 'none' : '0 4px 14px rgba(108,92,231,0.35)' }}>
-                  {submitting ? <><Loader2 size={15} className="animate-spin" /> Confirmando…</> : 'Confirmar Pedido'}
+                  {submitting ? <><Loader2 size={15} className="animate-spin" /> {tc('loading')}</> : t('confirmOrder')}
                 </button>
               </div>
 
@@ -511,14 +514,14 @@ export default function PresupuestoPage() {
               <div className="card overflow-hidden">
                 <button type="button" onClick={() => setShowResumen(v => !v)}
                   className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-gray-50 transition-colors">
-                  <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Ver rentabilidad</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-gray-400">{t('viewProfitability')}</span>
                   {showResumen ? <ChevronUp size={14} className="text-gray-400" /> : <ChevronDown size={14} className="text-gray-400" />}
                 </button>
                 {showResumen && (
                   <div className="px-5 pb-5 pt-1 border-t border-gray-100 space-y-2">
-                    <div className="flex justify-between text-sm text-gray-600"><span>Venta</span><span className="font-semibold text-gray-800">{fmt(totalVenta)}</span></div>
-                    <div className="flex justify-between text-sm text-gray-600"><span>Costo</span><span className="font-semibold">{fmt(totalCosto)}</span></div>
-                    <div className="flex justify-between font-bold pt-1 border-t border-gray-100" style={{ color: '#6C5CE7' }}><span>Ganancia</span><span>{fmt(totalGanancia)}</span></div>
+                    <div className="flex justify-between text-sm text-gray-600"><span>Venta</span><span className="font-semibold text-gray-800">{fmtCurrency(totalVenta)}</span></div>
+                    <div className="flex justify-between text-sm text-gray-600"><span>Costo</span><span className="font-semibold">{fmtCurrency(totalCosto)}</span></div>
+                    <div className="flex justify-between font-bold pt-1 border-t border-gray-100" style={{ color: '#6C5CE7' }}><span>Ganancia</span><span>{fmtCurrency(totalGanancia)}</span></div>
                     <div className="flex justify-between text-xs text-gray-400"><span>Margen</span><span className="font-semibold">{margenPct}%</span></div>
                   </div>
                 )}
@@ -546,7 +549,7 @@ export default function PresupuestoPage() {
                 <textarea className="input-base resize-none" rows={6} value={emailBody} onChange={e => setEmailBody(e.target.value)} /></div>
             </div>
             <div className="flex gap-3 mt-6">
-              <button onClick={() => setShowEmailModal(false)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">Cancelar</button>
+              <button onClick={() => setShowEmailModal(false)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">{tc('cancel')}</button>
               <button onClick={() => {
                 navigator.clipboard.writeText(emailBody)
                 const mailto = `mailto:${emailTo}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`

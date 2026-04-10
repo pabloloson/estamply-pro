@@ -17,12 +17,17 @@ import VinylPicker from '@/features/calculator/components/VinylPicker'
 import AuditTicket from '@/features/calculator/components/AuditTicket'
 import NumericInput from '@/shared/components/NumericInput'
 import ProductionConfig from '@/features/calculator/components/ProductionConfig'
+import { useTranslations } from '@/shared/hooks/useTranslations'
+import { useLocale } from '@/shared/context/LocaleContext'
 
 // Cotizador tabs: Sublimación, DTF (unified), Vinilo, Serigrafía
 type CotizadorTab = 'subli' | 'dtf_unified' | 'vinyl' | 'serigrafia'
 
 export default function CotizadorPage() {
   const supabase = createClient()
+  const t = useTranslations('quoter')
+  const tc = useTranslations('common')
+  const { fmt } = useLocale()
   const { addItem, items } = usePresupuesto()
 
   const [products, setProducts] = useState<any[]>([])
@@ -279,7 +284,7 @@ export default function CotizadorPage() {
   return (
     <div className="max-w-6xl mx-auto px-4 py-6">
       <div className="flex items-start justify-between mb-6">
-        <div><h1 className="text-2xl font-black text-gray-900">Cotizador</h1><p className="text-sm text-gray-500 mt-0.5">Nueva cotización</p></div>
+        <div><h1 className="text-2xl font-black text-gray-900">{t('title')}</h1><p className="text-sm text-gray-500 mt-0.5">{t('newQuotation')}</p></div>
         <Link href="/presupuesto" className="relative flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm text-white" style={{ backgroundColor: '#6C5CE7', boxShadow: '0 4px 14px rgba(108,92,231,0.35)' }}>
           <ShoppingCart size={16} /> Presupuesto
           {items.length > 0 && <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center text-xs font-black text-white" style={{ backgroundColor: '#E84393' }}>{items.length}</span>}
@@ -319,16 +324,16 @@ export default function CotizadorPage() {
           {/* LEFT */}
           <div className="lg:w-[400px] flex-shrink-0 space-y-4">
             <div className="card p-5 space-y-5">
-              <div><label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Producto</label>
+              <div><label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">{t('product')}</label>
                 <ProductPicker products={products} value={engine.productId} onChange={engine.setProductId} /></div>
 
               {!product && (
                 <div className="flex flex-col items-center justify-center py-8 gap-2 text-center">
-                  <p className="text-sm text-gray-400">Seleccioná un producto para comenzar</p>
+                  <p className="text-sm text-gray-400">{t('selectProduct')}</p>
                 </div>
               )}
 
-              {product && (<><div><label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Cantidad</label>
+              {product && (<><div><label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">{t('quantity')}</label>
                 <NumericInput className="input-base" min={1} value={engine.quantity} onChange={engine.setQuantity} /></div>
 
               {result?.pedidoMinimoWarning && (
@@ -341,7 +346,7 @@ export default function CotizadorPage() {
               {needsDesignSize && (<>
                 {/* Zones selector */}
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Zonas de estampado</label>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">{t('stampingZones')}</label>
                   <div className="flex gap-2">
                     {[1, 2, 3, 4].map(n => (
                       <button key={n} type="button" onClick={() => engine.setNumZones(n)}
@@ -353,11 +358,11 @@ export default function CotizadorPage() {
 
                 {/* Single zone — no label, just size fields */}
                 {engine.numZones === 1 && (<>
-                  <div><label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Tamaño diseño (cm)</label>
+                  <div><label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">{t('designSize')}</label>
                     <div className="flex items-center gap-2">
-                      <div className="flex-1"><p className="text-[10px] text-gray-400 mb-0.5">Ancho</p><NumericInput className="input-base" value={engine.designWidth} onChange={engine.setDesignWidth} /></div>
+                      <div className="flex-1"><p className="text-[10px] text-gray-400 mb-0.5">{t('width')}</p><NumericInput className="input-base" value={engine.designWidth} onChange={engine.setDesignWidth} /></div>
                       <span className="text-gray-400 font-bold flex-shrink-0 mt-4">&times;</span>
-                      <div className="flex-1"><p className="text-[10px] text-gray-400 mb-0.5">Alto</p><NumericInput className="input-base" value={engine.designHeight} onChange={engine.setDesignHeight} /></div>
+                      <div className="flex-1"><p className="text-[10px] text-gray-400 mb-0.5">{t('height')}</p><NumericInput className="input-base" value={engine.designHeight} onChange={engine.setDesignHeight} /></div>
                     </div></div>
                   {showDistribution && engine.designWidth > 0 && engine.designHeight > 0 && (() => {
                     if (isSubli && !subliIsRollo) {
@@ -367,7 +372,7 @@ export default function CotizadorPage() {
                         <div>
                           <button type="button" onClick={() => setShowSheetNesting(prev => ({ ...prev, 0: !prev[0] }))}
                             className="flex items-center gap-1 text-[10px] font-medium text-gray-400 hover:text-gray-600 transition-colors">
-                            <LayoutGrid size={10} /> {showSheetNesting[0] ? 'Ocultar distribución' : '+ Ver distribución'}
+                            <LayoutGrid size={10} /> {showSheetNesting[0] ? t('hideDistribution') : '+ ' + t('viewDistribution')}
                           </button>
                           {showSheetNesting[0] && (
                             <div className="mt-2 p-3 rounded-lg" style={{ background: `${activeColor}08`, border: `1px solid ${activeColor}12` }}>
@@ -388,7 +393,7 @@ export default function CotizadorPage() {
                       <div>
                         <button type="button" onClick={() => setShowSheetNesting(prev => ({ ...prev, 0: !prev[0] }))}
                           className="flex items-center gap-1 text-[10px] font-medium text-gray-400 hover:text-gray-600 transition-colors">
-                          <LayoutGrid size={10} /> {showSheetNesting[0] ? 'Ocultar distribución' : '+ Ver distribución'}
+                          <LayoutGrid size={10} /> {showSheetNesting[0] ? t('hideDistribution') : '+ ' + t('viewDistribution')}
                         </button>
                         {showSheetNesting[0] && (
                           <div className="mt-2 p-3 rounded-lg" style={{ background: `${activeColor}08`, border: `1px solid ${activeColor}12` }}>
@@ -421,11 +426,11 @@ export default function CotizadorPage() {
                           </select>
                         </div>
                         <div>
-                          <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Tamaño diseño (cm)</label>
+                          <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">{t('designSize')}</label>
                           <div className="flex items-center gap-2">
-                            <div className="flex-1"><p className="text-[9px] text-gray-400 mb-0.5">Ancho</p><NumericInput className="input-base text-sm" value={zone.ancho} onChange={v => engine.updateZone(zi, { ancho: v })} /></div>
+                            <div className="flex-1"><p className="text-[9px] text-gray-400 mb-0.5">{t('width')}</p><NumericInput className="input-base text-sm" value={zone.ancho} onChange={v => engine.updateZone(zi, { ancho: v })} /></div>
                             <span className="text-gray-400 font-bold text-xs mt-3">&times;</span>
-                            <div className="flex-1"><p className="text-[9px] text-gray-400 mb-0.5">Alto</p><NumericInput className="input-base text-sm" value={zone.alto} onChange={v => engine.updateZone(zi, { alto: v })} /></div>
+                            <div className="flex-1"><p className="text-[9px] text-gray-400 mb-0.5">{t('height')}</p><NumericInput className="input-base text-sm" value={zone.alto} onChange={v => engine.updateZone(zi, { alto: v })} /></div>
                           </div>
                         </div>
                         {showDistribution && zone.ancho > 0 && zone.alto > 0 && (() => {
@@ -435,7 +440,7 @@ export default function CotizadorPage() {
                               <div>
                                 <button type="button" onClick={() => setShowSheetNesting(prev => ({ ...prev, [zi]: !prev[zi] }))}
                                   className="flex items-center gap-1 text-[10px] font-medium text-gray-400 hover:text-gray-600 transition-colors">
-                                  <LayoutGrid size={10} /> {showSheetNesting[zi] ? 'Ocultar distribución' : '+ Ver distribución'}
+                                  <LayoutGrid size={10} /> {showSheetNesting[zi] ? t('hideDistribution') : '+ ' + t('viewDistribution')}
                                 </button>
                                 {showSheetNesting[zi] && (
                                   <div className="mt-2 p-3 rounded-lg" style={{ background: `${activeColor}08`, border: `1px solid ${activeColor}12` }}>
@@ -456,7 +461,7 @@ export default function CotizadorPage() {
                             <div>
                               <button type="button" onClick={() => setShowSheetNesting(prev => ({ ...prev, [zi]: !prev[zi] }))}
                                 className="flex items-center gap-1 text-[10px] font-medium text-gray-400 hover:text-gray-600 transition-colors">
-                                <LayoutGrid size={10} /> {showSheetNesting[zi] ? 'Ocultar distribución' : '+ Ver distribución'}
+                                <LayoutGrid size={10} /> {showSheetNesting[zi] ? t('hideDistribution') : '+ ' + t('viewDistribution')}
                               </button>
                               {showSheetNesting[zi] && (
                                 <div className="mt-2 p-3 rounded-lg" style={{ background: `${activeColor}08`, border: `1px solid ${activeColor}12` }}>
@@ -506,9 +511,9 @@ export default function CotizadorPage() {
                     <div>
                       <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Tamaño recorte (cm)</label>
                       <div className="flex items-center gap-2">
-                        <div className="flex-1"><p className="text-[9px] text-gray-400 mb-0.5">Ancho</p><NumericInput className="input-base text-sm" value={sel.ancho} onChange={v => engine.updateVinylSelection(i, { ancho: v })} /></div>
+                        <div className="flex-1"><p className="text-[9px] text-gray-400 mb-0.5">{t('width')}</p><NumericInput className="input-base text-sm" value={sel.ancho} onChange={v => engine.updateVinylSelection(i, { ancho: v })} /></div>
                         <span className="text-gray-400 font-bold text-xs mt-3">&times;</span>
-                        <div className="flex-1"><p className="text-[9px] text-gray-400 mb-0.5">Alto</p><NumericInput className="input-base text-sm" value={sel.alto} onChange={v => engine.updateVinylSelection(i, { alto: v })} /></div>
+                        <div className="flex-1"><p className="text-[9px] text-gray-400 mb-0.5">{t('height')}</p><NumericInput className="input-base text-sm" value={sel.alto} onChange={v => engine.updateVinylSelection(i, { alto: v })} /></div>
                       </div>
                     </div>
                     {tooWide && <p className="text-[10px] text-red-500 font-medium">⚠ El recorte ({sel.ancho}cm) es más ancho que el rollo ({selectedV.anchoRollo}cm)</p>}
@@ -516,7 +521,7 @@ export default function CotizadorPage() {
                       <div>
                         <button type="button" onClick={() => setShowVinylNesting(prev => ({ ...prev, [i]: !prev[i] }))}
                           className="flex items-center gap-1 text-[10px] font-medium text-gray-400 hover:text-gray-600 transition-colors">
-                          <LayoutGrid size={10} /> {showVinylNesting[i] ? 'Ocultar distribución' : '+ Ver distribución'}
+                          <LayoutGrid size={10} /> {showVinylNesting[i] ? t('hideDistribution') : '+ ' + t('viewDistribution')}
                         </button>
                         {showVinylNesting[i] && (
                           <div className="mt-2 p-2 rounded-lg" style={{ background: '#E8439308', border: '1px solid #E8439312' }}>
@@ -559,17 +564,17 @@ export default function CotizadorPage() {
 
               {/* Notas */}
               <div className="card p-5">
-                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Notas del ítem (opcional)</label>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">{t('itemNotes')}</label>
                 <input type="text" className="input-base text-sm" value={itemNotes} onChange={e => setItemNotes(e.target.value)}
-                  placeholder="Instrucciones de producción, detalles del diseño..." />
+                  placeholder={t('itemNotesPlaceholder')} />
               </div>
 
               {/* Serigrafía upsell */}
               {isSerigrafia && result && !result.pedidoMinimoWarning && result.costoSetupTotal && (
                 <div className="card p-4 bg-amber-50 border-amber-100">
                   <p className="text-xs text-amber-700">
-                    El costo de pantallas (${result.costoSetupTotal.toLocaleString('es-AR')}) se divide entre las unidades.
-                    Con {engine.quantity * 2} u. bajaría a ${Math.round(result.costoSetupTotal / (engine.quantity * 2)).toLocaleString('es-AR')}/u.
+                    El costo de pantallas ({fmt(result.costoSetupTotal)}) se divide entre las unidades.
+                    Con {engine.quantity * 2} u. bajaría a {fmt(Math.round(result.costoSetupTotal / (engine.quantity * 2)))}/u.
                   </p>
                 </div>
               )}
@@ -578,11 +583,11 @@ export default function CotizadorPage() {
               <button type="button" onClick={handleAddToCart} disabled={!result || !!result?.pedidoMinimoWarning}
                 className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-white text-sm transition-all disabled:opacity-40"
                 style={{ backgroundColor: activeColor, boxShadow: `0 4px 20px ${activeColor}40` }}>
-                <ShoppingCart size={16} /> Agregar al Presupuesto
+                <ShoppingCart size={16} /> {t('addToQuote')}
               </button>
               <button type="button" onClick={handleSaveAsProduct} disabled={!result || !!result?.pedidoMinimoWarning}
                 className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold text-gray-400 hover:text-gray-600 transition-all disabled:opacity-30">
-                Guardar como producto en catálogo
+                {t('saveAsProduct')}
               </button>
             </>)}
           </div>
@@ -656,7 +661,7 @@ export default function CotizadorPage() {
                 <input className="input-base" value={saveProductModal.name} onChange={e => setSaveProductModal({ ...saveProductModal, name: e.target.value })} /></div>
               <div><label className="block text-sm font-medium text-gray-700 mb-1">Precio de venta ($)</label>
                 <NumericInput className="input-base" value={saveProductModal.price} onChange={v => setSaveProductModal({ ...saveProductModal, price: v })} /></div>
-              <p className="text-xs text-gray-400">Costo: {result ? `$${Math.round(result.costoTotal).toLocaleString('es-AR')}` : '—'} /unidad</p>
+              <p className="text-xs text-gray-400">Costo: {result ? fmt(Math.round(result.costoTotal)) : '—'} /unidad</p>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" className="rounded border-gray-300 text-purple-600" checked={saveProductModal.visible}
                   onChange={() => setSaveProductModal({ ...saveProductModal, visible: !saveProductModal.visible })} />
@@ -664,8 +669,8 @@ export default function CotizadorPage() {
               </label>
             </div>
             <div className="flex gap-3 mt-5">
-              <button onClick={() => setSaveProductModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">Cancelar</button>
-              <button onClick={doSaveProduct} disabled={!saveProductModal.name.trim()} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#6C5CE7' }}>Guardar</button>
+              <button onClick={() => setSaveProductModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">{tc('cancel')}</button>
+              <button onClick={doSaveProduct} disabled={!saveProductModal.name.trim()} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#6C5CE7' }}>{tc('save')}</button>
             </div>
           </div>
         </div>

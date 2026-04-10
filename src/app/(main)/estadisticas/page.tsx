@@ -16,7 +16,7 @@ function pct(cur: number, prev: number) { return prev === 0 ? (cur > 0 ? 100 : 0
 
 const TL: Record<string, string> = { subli: 'Sublimación', dtf: 'DTF Textil', dtf_uv: 'DTF UV', vinyl: 'Vinilo', serigrafia: 'Serigrafía' }
 const TC: Record<string, string> = { subli: '#6C5CE7', dtf: '#E17055', dtf_uv: '#00B894', vinyl: '#E84393', serigrafia: '#FDCB6E' }
-const SL: Record<string, string> = { pending: 'Pendiente', production: 'En producción', ready: 'Listo', delivered: 'Entregado' }
+// SL moved inside component to use translations
 const SC: Record<string, string> = { pending: '#FDCB6E', production: '#6C5CE7', ready: '#00B894', delivered: '#636e72' }
 const DONUT_COLORS = ['#6C5CE7', '#E17055', '#00B894', '#E84393', '#FDCB6E', '#636e72']
 
@@ -25,7 +25,10 @@ type Pres = Record<string, unknown>
 
 export default function EstadisticasPage() {
   const t = useTranslations('statistics')
+  const to = useTranslations('orders')
+  const tc = useTranslations('common')
   const { fmt } = useLocale()
+  const SL: Record<string, string> = { pending: to('pending'), production: to('inProduction'), ready: to('ready'), delivered: to('delivered') }
   const supabase = createClient()
   const [loading, setLoading] = useState(true)
   const [orders, setOrders] = useState<Order[]>([])
@@ -130,7 +133,7 @@ export default function EstadisticasPage() {
   // By origin
   const manualRev = curOrders.filter(o => !o.origen || o.origen === 'manual').reduce((s, o) => s + (o.total_price as number || 0), 0)
   const webRev = curOrders.filter(o => o.origen === 'catalogo_web').reduce((s, o) => s + (o.total_price as number || 0), 0)
-  const originData = [{ name: 'Manual', value: manualRev || facturacion }, ...(webRev > 0 ? [{ name: 'Catálogo Web', value: webRev }] : [])]
+  const originData = [{ name: t('manual'), value: manualRev || facturacion }, ...(webRev > 0 ? [{ name: t('webCatalog'), value: webRev }] : [])]
 
   // Conversion
   // Simplified: count presupuestos that have a matching order (by client or by code)
@@ -222,12 +225,12 @@ export default function EstadisticasPage() {
   function exportExcel() {
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([
-      { Metrica: 'Facturación', Valor: facturacion }, { Metrica: 'Pedidos', Valor: pedidos },
-      { Metrica: 'Ticket promedio', Valor: ticket }, { Metrica: 'Presupuestos', Valor: presCount },
-      { Metrica: 'Margen bruto', Valor: `${margen}%` },
+      { Metrica: t('revenue'), Valor: facturacion }, { Metrica: t('orders'), Valor: pedidos },
+      { Metrica: t('avgTicket'), Valor: ticket }, { Metrica: t('quotesCount'), Valor: presCount },
+      { Metrica: t('grossMargin'), Valor: `${margen}%` },
     ]), 'Resumen')
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(topSold.map(([n, v]) => ({ Producto: n, Unidades: v.units, Facturación: v.revenue }))), 'Productos')
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(clientRanking.map(([n, v]) => ({ Cliente: n, Pedidos: v.pedidos, Facturación: v.revenue }))), 'Clientes')
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(topSold.map(([n, v]) => ({ Producto: n, Unidades: v.units, [t('revenue')]: v.revenue }))), 'Productos')
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(clientRanking.map(([n, v]) => ({ Cliente: n, [t('orders')]: v.pedidos, [t('revenue')]: v.revenue }))), 'Clientes')
     XLSX.writeFile(wb, `Estamply_Estadisticas_${label.replace(/\s/g, '')}.xlsx`)
   }
 
@@ -246,10 +249,10 @@ export default function EstadisticasPage() {
             ))}
           </div>
           <button onClick={exportExcel} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50">
-            <Download size={12} /> Excel
+            <Download size={12} /> {t('exportExcel')}
           </button>
           <button onClick={exportPDF} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50">
-            <FileDown size={12} /> PDF
+            <FileDown size={12} /> {t('exportPdf')}
           </button>
         </div>
       </div>
@@ -293,8 +296,8 @@ export default function EstadisticasPage() {
             <BarChart data={chartData}><XAxis dataKey="name" tick={{ fontSize: 11 }} /><YAxis tickFormatter={fmtK} tick={{ fontSize: 11 }} width={60} /><Tooltip formatter={(v) => fmt(Number(v))} /><Bar dataKey="value" fill="#6C5CE7" radius={[4, 4, 0, 0]} /></BarChart>
           </ResponsiveContainer>
           <div className="flex gap-6 mt-3 text-sm text-gray-500">
-            <span>Total: <span className="font-bold text-gray-800">{fmt(facturacion)}</span></span>
-            <span>Promedio: <span className="font-bold text-gray-800">{fmt(Math.round(facturacion / Math.max(chartData.length, 1)))}</span>/día</span>
+            <span>{t('totalPeriod')}: <span className="font-bold text-gray-800">{fmt(facturacion)}</span></span>
+            <span>{t('dailyAvg')}: <span className="font-bold text-gray-800">{fmt(Math.round(facturacion / Math.max(chartData.length, 1)))}</span>/día</span>
           </div>
         </div>
       )}
@@ -303,20 +306,20 @@ export default function EstadisticasPage() {
       <div className="card p-5 mb-6">
         <h2 className="font-bold text-gray-800 mb-4">{t('profitability')}</h2>
         <div className="grid grid-cols-3 gap-3 mb-4">
-          <div className="p-3 rounded-lg bg-gray-50"><p className="text-xs text-gray-500">Facturación</p><p className="text-lg font-black text-gray-900">{fmt(facConCosto)}</p></div>
-          <div className="p-3 rounded-lg bg-gray-50"><p className="text-xs text-gray-500">Costos</p><p className="text-lg font-black text-gray-900">{fmt(costos)}</p></div>
-          <div className="p-3 rounded-lg bg-gray-50"><p className="text-xs text-gray-500">Margen bruto</p><p className="text-lg font-black" style={{ color: '#6C5CE7' }}>{fmt(facConCosto - costos)}</p><p className="text-xs font-semibold" style={{ color: '#6C5CE7' }}>{margen}%</p></div>
+          <div className="p-3 rounded-lg bg-gray-50"><p className="text-xs text-gray-500">{t('revenue')}</p><p className="text-lg font-black text-gray-900">{fmt(facConCosto)}</p></div>
+          <div className="p-3 rounded-lg bg-gray-50"><p className="text-xs text-gray-500">{t('costs')}</p><p className="text-lg font-black text-gray-900">{fmt(costos)}</p></div>
+          <div className="p-3 rounded-lg bg-gray-50"><p className="text-xs text-gray-500">{t('grossMargin')}</p><p className="text-lg font-black" style={{ color: '#6C5CE7' }}>{fmt(facConCosto - costos)}</p><p className="text-xs font-semibold" style={{ color: '#6C5CE7' }}>{margen}%</p></div>
         </div>
         {facConCosto > 0 && <div className="flex h-4 rounded-full overflow-hidden bg-gray-100 mb-2"><div style={{ width: `${margen}%`, background: '#6C5CE7' }} /><div style={{ width: `${100 - margen}%`, background: '#E0DCF8' }} /></div>}
-        <div className="flex gap-4 text-xs text-gray-500"><span>■ Ganancia {margen}%</span><span className="text-gray-300">□ Costos {100 - margen}%</span></div>
-        {sinCosto > 0 && <p className="text-xs text-amber-600 mt-2">⚠️ {sinCosto} pedidos sin datos de costo</p>}
+        <div className="flex gap-4 text-xs text-gray-500"><span>■ {t('profit')} {margen}%</span><span className="text-gray-300">□ {t('costs')} {100 - margen}%</span></div>
+        {sinCosto > 0 && <p className="text-xs text-amber-600 mt-2">⚠️ {sinCosto} {t('noCostWarning')}</p>}
       </div>
 
       {/* Products */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <div className="card p-5">
           <h2 className="font-bold text-gray-800 mb-3">{t('topSelling')}</h2>
-          {topSold.length > 0 ? <div className="space-y-2">{topSold.map(([n, v], i) => <div key={n} className="flex items-center gap-2"><span className="text-xs font-bold text-gray-400 w-5">{i + 1}.</span><div className="flex-1 min-w-0"><p className="text-sm font-medium text-gray-800 truncate">{n}</p><p className="text-xs text-gray-400">{v.units} u. — {fmt(v.revenue)}</p></div></div>)}</div> : <p className="text-sm text-gray-400">Sin datos</p>}
+          {topSold.length > 0 ? <div className="space-y-2">{topSold.map(([n, v], i) => <div key={n} className="flex items-center gap-2"><span className="text-xs font-bold text-gray-400 w-5">{i + 1}.</span><div className="flex-1 min-w-0"><p className="text-sm font-medium text-gray-800 truncate">{n}</p><p className="text-xs text-gray-400">{v.units} u. — {fmt(v.revenue)}</p></div></div>)}</div> : <p className="text-sm text-gray-400">{tc('noData')}</p>}
         </div>
         <div className="card p-5">
           <h2 className="font-bold text-gray-800 mb-3">{t('topProfitable')}</h2>
@@ -331,14 +334,14 @@ export default function EstadisticasPage() {
           {techData.length > 0 && techTotal > 0 ? (<>
             <ResponsiveContainer width="100%" height={160}><PieChart><Pie data={techData} dataKey="value" cx="50%" cy="50%" innerRadius={40} outerRadius={65}>{techData.map((_, i) => <Cell key={i} fill={DONUT_COLORS[i % DONUT_COLORS.length]} />)}</Pie></PieChart></ResponsiveContainer>
             <div className="space-y-1 mt-2">{techData.map((d, i) => <div key={d.name} className="flex items-center gap-2 text-xs"><span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: DONUT_COLORS[i % DONUT_COLORS.length] }} /><span className="flex-1 text-gray-600">{d.name}</span><span className="font-semibold text-gray-800">{Math.round(d.value / techTotal * 100)}%</span><span className="text-gray-400">{fmt(d.value)}</span></div>)}</div>
-          </>) : <p className="text-sm text-gray-400">Sin datos</p>}
+          </>) : <p className="text-sm text-gray-400">{tc('noData')}</p>}
         </div>
         <div className="card p-5">
           <h2 className="font-bold text-gray-800 mb-3">{t('salesByOrigin')}</h2>
           {facturacion > 0 ? (<>
             <ResponsiveContainer width="100%" height={160}><PieChart><Pie data={originData} dataKey="value" cx="50%" cy="50%" innerRadius={40} outerRadius={65}>{originData.map((_, i) => <Cell key={i} fill={DONUT_COLORS[i % DONUT_COLORS.length]} />)}</Pie></PieChart></ResponsiveContainer>
             <div className="space-y-1 mt-2">{originData.map((d, i) => <div key={d.name} className="flex items-center gap-2 text-xs"><span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: DONUT_COLORS[i % DONUT_COLORS.length] }} /><span className="flex-1 text-gray-600">{d.name}</span><span className="font-semibold text-gray-800">{Math.round(d.value / facturacion * 100)}%</span><span className="text-gray-400">{fmt(d.value)}</span></div>)}</div>
-          </>) : <p className="text-sm text-gray-400">Sin datos</p>}
+          </>) : <p className="text-sm text-gray-400">{tc('noData')}</p>}
         </div>
       </div>
 
@@ -349,10 +352,10 @@ export default function EstadisticasPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm"><thead><tr className="border-b border-gray-100">
               <th className="text-left px-2 py-2 text-xs text-gray-400 font-semibold">#</th>
-              <th className="text-left px-2 py-2 text-xs text-gray-400 font-semibold">Cliente</th>
-              <th className="text-left px-2 py-2 text-xs text-gray-400 font-semibold">Pedidos</th>
-              <th className="text-left px-2 py-2 text-xs text-gray-400 font-semibold">Facturación</th>
-              <th className="text-left px-2 py-2 text-xs text-gray-400 font-semibold">Margen</th>
+              <th className="text-left px-2 py-2 text-xs text-gray-400 font-semibold">{to('client')}</th>
+              <th className="text-left px-2 py-2 text-xs text-gray-400 font-semibold">{t('orders')}</th>
+              <th className="text-left px-2 py-2 text-xs text-gray-400 font-semibold">{t('revenue')}</th>
+              <th className="text-left px-2 py-2 text-xs text-gray-400 font-semibold">{t('grossMargin')}</th>
             </tr></thead><tbody>
               {clientRanking.map(([n, v], i) => {
                 const m = v.cost > 0 ? Math.round(((v.revenue - v.cost) / v.revenue) * 100) : null
@@ -368,16 +371,16 @@ export default function EstadisticasPage() {
               })}
             </tbody></table>
           </div>
-        ) : <p className="text-sm text-gray-400">Sin datos</p>}
+        ) : <p className="text-sm text-gray-400">{tc('noData')}</p>}
       </div>
 
       {/* Conversion */}
       <div className="card p-5 mb-6">
         <h2 className="font-bold text-gray-800 mb-4">{t('quoteConversion')}</h2>
         <div className="grid grid-cols-3 gap-3 mb-4">
-          <div className="p-3 rounded-lg bg-gray-50"><p className="text-xs text-gray-500">Creados</p><p className="text-lg font-black text-gray-900">{curPres.length}</p></div>
-          <div className="p-3 rounded-lg bg-gray-50"><p className="text-xs text-gray-500">Convertidos</p><p className="text-lg font-black text-gray-900">{convertedCount}</p></div>
-          <div className="p-3 rounded-lg bg-gray-50"><p className="text-xs text-gray-500">Tasa</p><p className="text-lg font-black" style={{ color: '#6C5CE7' }}>{convRate}%</p>
+          <div className="p-3 rounded-lg bg-gray-50"><p className="text-xs text-gray-500">{t('created')}</p><p className="text-lg font-black text-gray-900">{curPres.length}</p></div>
+          <div className="p-3 rounded-lg bg-gray-50"><p className="text-xs text-gray-500">{t('converted')}</p><p className="text-lg font-black text-gray-900">{convertedCount}</p></div>
+          <div className="p-3 rounded-lg bg-gray-50"><p className="text-xs text-gray-500">{t('rate')}</p><p className="text-lg font-black" style={{ color: '#6C5CE7' }}>{convRate}%</p>
             {prevConvRate > 0 && <p className={`text-xs ${convRate >= prevConvRate ? 'text-green-600' : 'text-red-500'}`}>{convRate >= prevConvRate ? '↑' : '↓'} {Math.abs(convRate - prevConvRate)}pp</p>}
           </div>
         </div>
@@ -387,12 +390,12 @@ export default function EstadisticasPage() {
             <div style={{ width: `${100 - Math.min(convRate, 100)}%`, background: '#E0DCF8' }} />
           </div>
         )}
-        <div className="flex gap-4 text-xs text-gray-500 mt-2"><span>■ Convertidos {convRate}%</span><span className="text-gray-300">□ No convertidos {100 - Math.min(convRate, 100)}%</span></div>
+        <div className="flex gap-4 text-xs text-gray-500 mt-2"><span>■ {t('converted')} {convRate}%</span><span className="text-gray-300">□ {100 - Math.min(convRate, 100)}%</span></div>
       </div>
 
       {/* Evolution */}
       <div className="card p-5 mb-6">
-        <h2 className="font-bold text-gray-800 mb-4">Evolución de rentabilidad (últimos 6 meses)</h2>
+        <h2 className="font-bold text-gray-800 mb-4">{t('profitEvolution')}</h2>
         {evolutionData.some(d => d.revenue > 0) ? (<>
           <ResponsiveContainer width="100%" height={200}>
             <LineChart data={evolutionData}>
@@ -403,9 +406,9 @@ export default function EstadisticasPage() {
             </LineChart>
           </ResponsiveContainer>
           <div className="flex gap-6 mt-3 text-sm text-gray-500 flex-wrap">
-            <span>Promedio: <span className="font-bold text-gray-800">{evoAvg}%</span></span>
-            {evoBest && <span>Mejor: <span className="font-bold text-green-600">{evoBest.name} ({evoBest.margin}%)</span></span>}
-            {evoWorst && evoWorst.revenue > 0 && <span>Peor: <span className="font-bold text-red-500">{evoWorst.name} ({evoWorst.margin}%)</span></span>}
+            <span>{t('average')}: <span className="font-bold text-gray-800">{evoAvg}%</span></span>
+            {evoBest && <span>{t('bestMonth')}: <span className="font-bold text-green-600">{evoBest.name} ({evoBest.margin}%)</span></span>}
+            {evoWorst && evoWorst.revenue > 0 && <span>{t('worstMonth')}: <span className="font-bold text-red-500">{evoWorst.name} ({evoWorst.margin}%)</span></span>}
           </div>
         </>) : <p className="text-sm text-gray-400">{t('noSufficientData')}</p>}
       </div>
@@ -414,27 +417,27 @@ export default function EstadisticasPage() {
       <div className="card p-5 mb-6">
         <h2 className="font-bold text-gray-800 mb-4">{t('comparePeriods')}</h2>
         <div className="flex flex-col sm:flex-row gap-3 mb-4 items-end">
-          <div className="flex-1"><label className="block text-xs text-gray-500 mb-1">Período A</label><input type="date" className="input-base text-sm" value={cmpA} onChange={e => setCmpA(e.target.value)} /></div>
+          <div className="flex-1"><label className="block text-xs text-gray-500 mb-1">{t('periodA')}</label><input type="date" className="input-base text-sm" value={cmpA} onChange={e => setCmpA(e.target.value)} /></div>
           <span className="text-gray-400 text-sm hidden sm:block pb-2">vs</span>
-          <div className="flex-1"><label className="block text-xs text-gray-500 mb-1">Período B</label><input type="date" className="input-base text-sm" value={cmpB} onChange={e => setCmpB(e.target.value)} /></div>
-          <button onClick={() => setShowCmp(true)} disabled={!cmpA || !cmpB} className="px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#6C5CE7' }}>Comparar</button>
+          <div className="flex-1"><label className="block text-xs text-gray-500 mb-1">{t('periodB')}</label><input type="date" className="input-base text-sm" value={cmpB} onChange={e => setCmpB(e.target.value)} /></div>
+          <button onClick={() => setShowCmp(true)} disabled={!cmpA || !cmpB} className="px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#6C5CE7' }}>{t('compare')}</button>
         </div>
         {showCmp && cmpA && cmpB && (() => {
           const a = calcPeriodMetrics(new Date(cmpA), new Date(new Date(cmpA).getTime() + 30 * 86400000))
           const b = calcPeriodMetrics(new Date(cmpB), new Date(new Date(cmpB).getTime() + 30 * 86400000))
           const rows = [
-            { label: 'Facturación', va: fmt(a.facturacion), vb: fmt(b.facturacion), change: pct(b.facturacion, a.facturacion), unit: '%' },
-            { label: 'Pedidos', va: String(a.pedidos), vb: String(b.pedidos), change: pct(b.pedidos, a.pedidos), unit: '%' },
-            { label: 'Ticket promedio', va: fmt(a.ticket), vb: fmt(b.ticket), change: pct(b.ticket, a.ticket), unit: '%' },
-            { label: 'Margen bruto', va: `${a.margen}%`, vb: `${b.margen}%`, change: b.margen - a.margen, unit: 'pp' },
-            { label: 'Conversión', va: `${a.conversion}%`, vb: `${b.conversion}%`, change: b.conversion - a.conversion, unit: 'pp' },
+            { label: t('revenue'), va: fmt(a.facturacion), vb: fmt(b.facturacion), change: pct(b.facturacion, a.facturacion), unit: '%' },
+            { label: t('orders'), va: String(a.pedidos), vb: String(b.pedidos), change: pct(b.pedidos, a.pedidos), unit: '%' },
+            { label: t('avgTicket'), va: fmt(a.ticket), vb: fmt(b.ticket), change: pct(b.ticket, a.ticket), unit: '%' },
+            { label: t('grossMargin'), va: `${a.margen}%`, vb: `${b.margen}%`, change: b.margen - a.margen, unit: 'pp' },
+            { label: t('quoteConversion'), va: `${a.conversion}%`, vb: `${b.conversion}%`, change: b.conversion - a.conversion, unit: 'pp' },
           ]
           return (
             <table className="w-full text-sm"><thead><tr className="border-b border-gray-100">
-              <th className="text-left px-2 py-2 text-xs text-gray-400">Métrica</th>
-              <th className="text-left px-2 py-2 text-xs text-gray-400">Período A</th>
-              <th className="text-left px-2 py-2 text-xs text-gray-400">Período B</th>
-              <th className="text-left px-2 py-2 text-xs text-gray-400">Cambio</th>
+              <th className="text-left px-2 py-2 text-xs text-gray-400">#</th>
+              <th className="text-left px-2 py-2 text-xs text-gray-400">{t('periodA')}</th>
+              <th className="text-left px-2 py-2 text-xs text-gray-400">{t('periodB')}</th>
+              <th className="text-left px-2 py-2 text-xs text-gray-400">{t('change')}</th>
             </tr></thead><tbody>
               {rows.map(r => (
                 <tr key={r.label} className="border-b border-gray-50">
