@@ -10,6 +10,7 @@ import {
   Settings, LogOut, Menu, X,
 } from 'lucide-react'
 import { usePresupuesto } from '@/features/presupuesto/context/PresupuestoContext'
+import { usePermissions } from '@/shared/context/PermissionsContext'
 
 interface SidebarProps {
   workshopName?: string
@@ -19,6 +20,7 @@ export function Sidebar({ workshopName = 'Mi Taller' }: SidebarProps) {
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
   const { items } = usePresupuesto()
+  const { canAccess, isOwner } = usePermissions()
 
   const isActive = (href: string) =>
     href === '/' ? pathname === '/' : pathname.startsWith(href)
@@ -72,32 +74,34 @@ export function Sidebar({ workshopName = 'Mi Taller' }: SidebarProps) {
 
       {/* ── Sección 1: Uso diario ── */}
       <nav className="px-3 pt-4 space-y-0.5">
-        <NavLink href="/" icon={LayoutDashboard} label="Inicio" />
-        <NavLink href="/cotizador" icon={Calculator} label="Cotizador" />
-        <NavLink href="/presupuesto" icon={FileText} label="Presupuestos" badge={items.length} />
-        <NavLink href="/orders" icon={ShoppingBag} label="Pedidos" />
-        <NavLink href="/clients" icon={Users} label="Clientes" />
-        <NavLink href="/catalogo" icon={Package} label="Catálogo" />
-        <NavLink href="/estadisticas" icon={BarChart3} label="Estadísticas" />
+        {canAccess('inicio') && <NavLink href="/" icon={LayoutDashboard} label="Inicio" />}
+        {canAccess('cotizador') && <NavLink href="/cotizador" icon={Calculator} label="Cotizador" />}
+        {canAccess('presupuestos') && <NavLink href="/presupuesto" icon={FileText} label="Presupuestos" badge={items.length} />}
+        {canAccess('pedidos') && <NavLink href="/orders" icon={ShoppingBag} label="Pedidos" />}
+        {canAccess('clientes') && <NavLink href="/clients" icon={Users} label="Clientes" />}
+        {canAccess('catalogo') && <NavLink href="/catalogo" icon={Package} label="Catálogo" />}
+        {canAccess('estadisticas') && <NavLink href="/estadisticas" icon={BarChart3} label="Estadísticas" />}
       </nav>
 
       {/* ── Separador + Sección 2: Motor del negocio ── */}
-      <div className="mx-4 mt-4 mb-1 border-t border-gray-100" />
-      <div className="px-3 space-y-0.5">
-        <p className="px-3 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-          Mi taller
-        </p>
-        <NavLink href="/materiales" icon={Droplets} label="Materiales" />
-        <NavLink href="/equipamiento" icon={Cpu} label="Equipamiento" />
-        <NavLink href="/tecnicas" icon={Palette} label="Producción" />
-      </div>
+      {(canAccess('materiales') || canAccess('equipamiento') || canAccess('produccion')) && (<>
+        <div className="mx-4 mt-4 mb-1 border-t border-gray-100" />
+        <div className="px-3 space-y-0.5">
+          <p className="px-3 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+            Mi taller
+          </p>
+          {canAccess('materiales') && <NavLink href="/materiales" icon={Droplets} label="Materiales" />}
+          {canAccess('equipamiento') && <NavLink href="/equipamiento" icon={Cpu} label="Equipamiento" />}
+          {canAccess('produccion') && <NavLink href="/tecnicas" icon={Palette} label="Producción" />}
+        </div>
+      </>)}
 
       {/* ── Spacer ── */}
       <div className="flex-1" />
 
       {/* ── Sección 3: Ajustes (anclado al fondo) ── */}
       <div className="px-3 pt-3 border-t border-gray-100 space-y-0.5 pb-1">
-        <NavLink href="/settings" icon={Settings} label="Configuración" />
+        {(isOwner || canAccess('configuracion')) && <NavLink href="/settings" icon={Settings} label="Configuración" />}
       </div>
 
       {/* ── Logout ── */}

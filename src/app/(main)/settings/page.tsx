@@ -41,6 +41,9 @@ export default function SettingsPage() {
   const [editingMedio, setEditingMedio] = useState<{ nombre: string; tipo_ajuste: string; porcentaje: number; id?: string } | null>(null)
   const [guiasTalles, setGuiasTalles] = useState<Array<{ id: string; nombre: string; columnas: string[]; filas: Array<Record<string, string>> }>>([])
   const [editingGuia, setEditingGuia] = useState<{ id?: string; nombre: string; columnas: string[]; filas: Array<Record<string, string>>; imagen_referencia?: string | null } | null>(null)
+  const [teamMembers, setTeamMembers] = useState<Array<{ id: string; nombre: string; email: string; rol: string; estado: string }>>([])
+  const [inviteModal, setInviteModal] = useState<{ nombre: string; email: string; password: string; rol: string } | null>(null)
+  const [inviting, setInviting] = useState(false)
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const [ws, setWs] = useState<WorkshopSettings>(DEFAULT_SETTINGS)
   const logoInputRef = useRef<HTMLInputElement>(null)
@@ -68,14 +71,16 @@ export default function SettingsPage() {
         })
       }
       // Load workshop settings
-      const [{ data: wsData }, { data: mp }, { data: gt }] = await Promise.all([
+      const [{ data: wsData }, { data: mp }, { data: gt }, { data: tm }] = await Promise.all([
         supabase.from('workshop_settings').select('settings').single(),
         supabase.from('medios_pago').select('*').order('orden'),
         supabase.from('guias_talles').select('*').order('orden'),
+        supabase.from('team_members').select('id,nombre,email,rol,estado'),
       ])
       if (wsData?.settings) setWs({ ...DEFAULT_SETTINGS, ...(wsData.settings as Partial<WorkshopSettings>) })
       if (mp) setMediosPago(mp)
       if (gt) setGuiasTalles(gt as typeof guiasTalles)
+      if (tm) setTeamMembers(tm as typeof teamMembers)
       setLoading(false)
     }
     load()
@@ -350,6 +355,76 @@ export default function SettingsPage() {
         <button onClick={() => setEditingGuia({ nombre: '', columnas: ['Ancho', 'Largo'], filas: [{ talle: 'S', Ancho: '', Largo: '' }, { talle: 'M', Ancho: '', Largo: '' }, { talle: 'L', Ancho: '', Largo: '' }] })}
           className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700"><Plus size={14} /> Nueva tabla de talles</button>
       </div>
+
+      {/* Usuarios */}
+      <div className="card p-6 max-w-2xl mt-6">
+        <h3 className="font-semibold text-gray-800 mb-1">Usuarios y permisos</h3>
+        <p className="text-xs text-gray-400 mb-4">Gestioná quién accede a tu taller.</p>
+        <div className="space-y-2 mb-4">
+          <div className="flex items-center gap-3 p-3 rounded-lg bg-purple-50">
+            <span className="font-medium text-sm text-gray-800 flex-1">{profile.business_name || 'Dueño'}</span>
+            <span className="text-xs px-2 py-0.5 rounded-full bg-purple-200 text-purple-700 font-bold">👑 Dueño</span>
+            <span className="text-xs text-green-600">● Activo</span>
+          </div>
+          {teamMembers.map(m => (
+            <div key={m.id} className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 hover:bg-gray-50">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-800">{m.nombre}</p>
+                <p className="text-xs text-gray-400">{m.email}</p>
+              </div>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 font-semibold">{m.rol === 'vendedor' ? '🏷️ Vendedor' : m.rol === 'produccion' ? '🔧 Producción' : '⚙️ Personalizado'}</span>
+              <span className={`text-xs ${m.estado === 'activo' ? 'text-green-600' : 'text-gray-400'}`}>● {m.estado === 'activo' ? 'Activo' : 'Invitado'}</span>
+              <button onClick={async () => { if (confirm('¿Eliminar usuario?')) { await supabase.from('team_members').delete().eq('id', m.id); setTeamMembers(prev => prev.filter(x => x.id !== m.id)) } }} className="text-xs text-red-400 hover:text-red-600">🗑️</button>
+            </div>
+          ))}
+        </div>
+        <button onClick={() => setInviteModal({ nombre: '', email: '', password: '', rol: 'vendedor' })}
+          className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700"><Plus size={14} /> Invitar usuario</button>
+      </div>
+
+      {/* Invite modal */}
+      {inviteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)' }} onClick={() => setInviteModal(null)}>
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
+            <h3 className="font-bold text-gray-900 mb-4">Invitar usuario</h3>
+            <div className="space-y-3">
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+                <input className="input-base" value={inviteModal.nombre} onChange={e => setInviteModal({ ...inviteModal, nombre: e.target.value })} /></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                <input className="input-base" type="email" value={inviteModal.email} onChange={e => setInviteModal({ ...inviteModal, email: e.target.value })} /></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Contraseña temporal *</label>
+                <input className="input-base" type="text" value={inviteModal.password} onChange={e => setInviteModal({ ...inviteModal, password: e.target.value })} /></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Rol</label>
+                <select className="input-base" value={inviteModal.rol} onChange={e => setInviteModal({ ...inviteModal, rol: e.target.value })}>
+                  <option value="vendedor">🏷️ Vendedor — Ventas, clientes y catálogo</option>
+                  <option value="produccion">🔧 Producción — Pedidos y producción</option>
+                </select></div>
+            </div>
+            <div className="flex gap-3 mt-5">
+              <button onClick={() => setInviteModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">Cancelar</button>
+              <button disabled={!inviteModal.nombre || !inviteModal.email || !inviteModal.password || inviting}
+                onClick={async () => {
+                  setInviting(true)
+                  const permisos = inviteModal.rol === 'produccion' ? {
+                    secciones: { inicio: true, cotizador: false, presupuestos: false, pedidos: true, clientes: false, catalogo: false, estadisticas: false, materiales: true, equipamiento: true, produccion: true },
+                    datos_sensibles: { ver_costos: false, ver_margen: false, ver_precios_venta: false },
+                    acciones: { crear_presupuestos: false, editar_presupuestos: false, confirmar_pedidos: true, eliminar_pedidos: false, crear_clientes: false, editar_clientes: false, exportar_datos: false, acceder_configuracion: false },
+                  } : {
+                    secciones: { inicio: true, cotizador: true, presupuestos: true, pedidos: true, clientes: true, catalogo: true, estadisticas: false, materiales: false, equipamiento: false, produccion: false },
+                    datos_sensibles: { ver_costos: false, ver_margen: false, ver_precios_venta: true },
+                    acciones: { crear_presupuestos: true, editar_presupuestos: true, confirmar_pedidos: true, eliminar_pedidos: false, crear_clientes: true, editar_clientes: true, exportar_datos: false, acceder_configuracion: false },
+                  }
+                  const res = await fetch('/api/team', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...inviteModal, permisos }) })
+                  const data = await res.json()
+                  if (data.error) alert(`Error: ${data.error}`)
+                  else { setTeamMembers(prev => [...prev, { id: data.userId || '', nombre: inviteModal.nombre, email: inviteModal.email, rol: inviteModal.rol, estado: 'activo' }]); setInviteModal(null) }
+                  setInviting(false)
+                }}
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#6C5CE7' }}>{inviting ? 'Invitando...' : 'Invitar'}</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Guía de talles modal */}
       {editingGuia && (
