@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Plus, Pencil, Trash2, X, Users, Search, ChevronDown, ChevronUp, MessageCircle } from 'lucide-react'
+import { Plus, Pencil, Trash2, X, Users, Search, ChevronDown, ChevronUp, MessageCircle, Upload } from 'lucide-react'
+import * as XLSX from 'xlsx'
 
 interface Client {
   id: string; name: string; email: string | null; phone: string | null; whatsapp: string | null
@@ -21,6 +22,14 @@ export default function ClientsPage() {
   const [modal, setModal] = useState<Partial<Client> | null>(null)
   const [saving, setSaving] = useState(false)
   const [showMore, setShowMore] = useState(false)
+  const [importModal, setImportModal] = useState(false)
+  const [importStep, setImportStep] = useState(1)
+  const [importData, setImportData] = useState<string[][]>([])
+  const [importHeaders, setImportHeaders] = useState<string[]>([])
+  const [importMap, setImportMap] = useState<Record<string, number>>({ nombre: -1, whatsapp: -1, email: -1 })
+  const [importCountry, setImportCountry] = useState('54')
+  const [importResult, setImportResult] = useState<{ imported: number; skipped: number; errors: number } | null>(null)
+  const [importing, setImporting] = useState(false)
 
   async function load() {
     const { data } = await supabase.from('clients').select('*').order('name')
@@ -62,9 +71,14 @@ export default function ClientsPage() {
       <div className="flex items-start justify-between mb-6">
         <div><h1 className="text-2xl font-bold text-gray-900">Clientes</h1>
           <p className="text-gray-500 text-sm mt-1">{clients.length} clientes en total</p></div>
-        <button onClick={() => { setModal({}); setShowMore(false) }} className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white" style={{ background: '#6C5CE7', boxShadow: '0 4px 14px rgba(108,92,231,0.3)' }}>
-          <Plus size={15} /> Nuevo cliente
-        </button>
+        <div className="flex gap-2">
+          <button onClick={() => { setImportModal(true); setImportStep(1); setImportData([]); setImportResult(null) }} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50">
+            <Upload size={14} /> Importar
+          </button>
+          <button onClick={() => { setModal({}); setShowMore(false) }} className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white" style={{ background: '#6C5CE7', boxShadow: '0 4px 14px rgba(108,92,231,0.3)' }}>
+            <Plus size={15} /> Nuevo cliente
+          </button>
+        </div>
       </div>
 
       <div className="relative mb-4">
@@ -225,6 +239,132 @@ export default function ClientsPage() {
                 {saving ? 'Guardando...' : 'Guardar'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Import modal */}
+      {importModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)' }}>
+          <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-gray-900">Importar clientes</h3>
+              <button onClick={() => setImportModal(false)} className="p-2 rounded-lg hover:bg-gray-100"><X size={16} /></button>
+            </div>
+
+            {/* Step 1: Upload */}
+            {importStep === 1 && (
+              <div className="space-y-4">
+                <p className="text-sm text-gray-500">Subí un archivo .csv o .xlsx con tus clientes.</p>
+                <label className="flex flex-col items-center justify-center py-8 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-purple-300 transition-colors">
+                  <Upload size={24} className="text-gray-300 mb-2" />
+                  <span className="text-sm text-gray-500">Seleccionar archivo</span>
+                  <span className="text-xs text-gray-400 mt-1">.csv, .xlsx, .xls</span>
+                  <input type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={e => {
+                    const file = e.target.files?.[0]; if (!file) return
+                    const reader = new FileReader()
+                    reader.onload = ev => {
+                      const wb = XLSX.read(ev.target?.result, { type: 'binary' })
+                      const ws = wb.Sheets[wb.SheetNames[0]]
+                      const rows = XLSX.utils.sheet_to_json<string[]>(ws, { header: 1 }) as string[][]
+                      if (rows.length < 2) { alert('El archivo está vacío'); return }
+                      setImportHeaders(rows[0].map(String))
+                      setImportData(rows.slice(1).filter(r => r.some(c => c)))
+                      // Auto-map
+                      const map: Record<string, number> = { nombre: -1, whatsapp: -1, email: -1 }
+                      rows[0].forEach((h, i) => {
+                        const hl = String(h).toLowerCase()
+                        if (['nombre', 'name', 'cliente'].includes(hl)) map.nombre = i
+                        if (['whatsapp', 'telefono', 'celular', 'phone', 'tel'].includes(hl)) map.whatsapp = i
+                        if (['email', 'correo', 'mail'].includes(hl)) map.email = i
+                      })
+                      setImportMap(map)
+                      setImportStep(2)
+                    }
+                    reader.readAsBinaryString(file)
+                  }} />
+                </label>
+                {importData.length > 0 && <p className="text-xs text-gray-400">{importData.length} filas detectadas</p>}
+              </div>
+            )}
+
+            {/* Step 2: Map columns + country code */}
+            {importStep === 2 && (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Código de país</label>
+                  <select className="input-base text-sm" value={importCountry} onChange={e => setImportCountry(e.target.value)}>
+                    {[['54','Argentina'],['52','México'],['57','Colombia'],['56','Chile'],['51','Perú'],['593','Ecuador'],['598','Uruguay'],['595','Paraguay'],['591','Bolivia'],['55','Brasil'],['58','Venezuela']].map(([c,n]) => (
+                      <option key={c} value={c}>+{c} {n}</option>
+                    ))}
+                  </select>
+                </div>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Mapear columnas</p>
+                {['nombre', 'whatsapp', 'email'].map(field => (
+                  <div key={field} className="flex items-center gap-3">
+                    <span className="text-sm font-medium text-gray-700 w-24 capitalize">{field === 'whatsapp' ? 'WhatsApp' : field}</span>
+                    <select className="input-base text-sm flex-1" value={importMap[field]} onChange={e => setImportMap({ ...importMap, [field]: parseInt(e.target.value) })}>
+                      <option value={-1}>— No mapear —</option>
+                      {importHeaders.map((h, i) => <option key={i} value={i}>{h}</option>)}
+                    </select>
+                    {field !== 'email' && <span className="text-red-500 text-xs">*</span>}
+                  </div>
+                ))}
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <p className="text-xs font-semibold text-gray-500 mb-2">Preview (primeras 3 filas)</p>
+                  {importData.slice(0, 3).map((row, i) => (
+                    <p key={i} className="text-xs text-gray-600 truncate">{importMap.nombre >= 0 ? row[importMap.nombre] : '?'} · {importMap.whatsapp >= 0 ? row[importMap.whatsapp] : '?'}</p>
+                  ))}
+                </div>
+                <div className="flex gap-3">
+                  <button onClick={() => setImportStep(1)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">Atrás</button>
+                  <button disabled={importMap.nombre < 0 || importMap.whatsapp < 0} onClick={async () => {
+                    if (importData.length > 500) { alert('Máximo 500 clientes por importación'); return }
+                    setImporting(true)
+                    const normalize = (num: string) => {
+                      const clean = String(num || '').replace(/[\s\-\(\)\.]/g, '')
+                      if (clean.startsWith('+')) return clean.slice(1)
+                      if (clean.startsWith('00')) return clean.slice(2)
+                      return importCountry + clean
+                    }
+                    const existing = new Set(clients.map(c => c.whatsapp?.replace(/\D/g, '') || ''))
+                    let imported = 0, skipped = 0, errors = 0
+                    const batch: Array<{ name: string; whatsapp: string; email?: string }> = []
+                    for (const row of importData) {
+                      const name = String(row[importMap.nombre] || '').trim()
+                      const wa = normalize(row[importMap.whatsapp])
+                      if (!name || !wa || wa.length < 5) { errors++; continue }
+                      if (existing.has(wa)) { skipped++; continue }
+                      existing.add(wa)
+                      batch.push({ name, whatsapp: wa, email: importMap.email >= 0 ? String(row[importMap.email] || '').trim() || undefined : undefined })
+                    }
+                    if (batch.length) {
+                      const { error } = await supabase.from('clients').insert(batch)
+                      if (error) errors += batch.length
+                      else imported = batch.length
+                    }
+                    setImportResult({ imported, skipped, errors })
+                    setImporting(false)
+                    setImportStep(3)
+                    load()
+                  }} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#6C5CE7' }}>{importing ? 'Importando...' : `Importar ${importData.length} clientes`}</button>
+                </div>
+              </div>
+            )}
+
+            {/* Step 3: Result */}
+            {importStep === 3 && importResult && (
+              <div className="space-y-4 text-center py-4">
+                <p className="text-3xl">✅</p>
+                <h3 className="font-bold text-gray-900">Importación completa</h3>
+                <div className="space-y-1 text-sm">
+                  {importResult.imported > 0 && <p className="text-green-600">✅ {importResult.imported} clientes importados</p>}
+                  {importResult.skipped > 0 && <p className="text-gray-500">⏭️ {importResult.skipped} duplicados omitidos</p>}
+                  {importResult.errors > 0 && <p className="text-red-500">❌ {importResult.errors} filas con errores</p>}
+                </div>
+                <button onClick={() => setImportModal(false)} className="w-full py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: '#6C5CE7' }}>Ver clientes</button>
+              </div>
+            )}
           </div>
         </div>
       )}

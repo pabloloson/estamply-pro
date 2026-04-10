@@ -86,6 +86,35 @@ export default function OrdersPage() {
   useEffect(() => { load() }, [])
   useEffect(() => { if (typeof window !== 'undefined') localStorage.setItem('ov', view) }, [view])
 
+  function printOrder(order: Order) {
+    const items = (order.items || []) as OrderItem[]
+    const client = order.clients as Record<string, string> | null
+    const pd = payments.filter(p => p.order_id === order.id).reduce((s, p) => s + p.monto, 0)
+    const w = window.open('', '_blank')
+    if (!w) return
+    w.document.write(`<!DOCTYPE html><html><head><title>Pedido</title><style>
+      body{font-family:system-ui,sans-serif;max-width:700px;margin:40px auto;color:#333;font-size:14px}
+      h1{font-size:20px;margin:0} .meta{color:#888;font-size:12px}
+      table{width:100%;border-collapse:collapse;margin:16px 0} th,td{border:1px solid #ddd;padding:8px;text-align:left}
+      th{background:#f5f5f5;font-size:12px;text-transform:uppercase} .total{font-size:18px;font-weight:bold}
+      .section{margin:20px 0;padding:12px 0;border-top:1px solid #eee}
+      @media print{body{margin:10mm}}
+    </style></head><body>
+      <h1>Pedido #${order.id.slice(0, 8)}</h1>
+      <p class="meta">Fecha: ${new Date(order.created_at).toLocaleDateString('es-AR')} · Estado: ${SL[order.status] || order.status}${order.due_date ? ` · Entrega: ${new Date(order.due_date).toLocaleDateString('es-AR')}` : ''}</p>
+      <div class="section"><strong>Cliente:</strong> ${client?.name || 'Sin cliente'}${client?.whatsapp ? ` · ${client.whatsapp}` : ''}</div>
+      <table><thead><tr><th>Descripción</th><th>Cant.</th><th>P. Unit.</th><th>Subtotal</th></tr></thead><tbody>
+      ${items.map(i => `<tr><td>${i.nombre}${i.tecnica ? `<br><small style="color:#888">${TL[i.tecnica] || i.tecnica}</small>` : ''}</td><td>${i.cantidad}</td><td>${fmt(i.precioUnit || 0)}</td><td>${fmt(i.subtotal)}</td></tr>`).join('')}
+      </tbody></table>
+      <p style="text-align:right" class="total">Total: ${fmt(order.total_price)}</p>
+      ${pd > 0 ? `<div class="section"><strong>Pagos:</strong> ${fmt(pd)} recibido · Saldo: ${fmt(Math.max(order.total_price - pd, 0))}</div>` : ''}
+      ${order.notes ? `<div class="section"><strong>Notas:</strong> ${order.notes}</div>` : ''}
+      <p style="text-align:center;color:#ccc;margin-top:40px;font-size:11px">Estamply</p>
+    </body></html>`)
+    w.document.close()
+    setTimeout(() => w.print(), 300)
+  }
+
   async function setStatus(id: string, s: string) { await supabase.from('orders').update({ status: s }).eq('id', id); load() }
   async function setDueDate(id: string, d: string) { await supabase.from('orders').update({ due_date: d || null }).eq('id', id); load() }
   async function setFilesLink(id: string, link: string) { await supabase.from('orders').update({ files_link: link || null }).eq('id', id); load() }
@@ -432,7 +461,10 @@ export default function OrdersPage() {
                 ) : null })()}
                 <p className="text-xs text-gray-400 mt-0.5">{fmt(detailOrder.total_price)}</p>
               </div>
-              <button onClick={() => setDetailPanel(null)} className="p-2 rounded-lg hover:bg-gray-100"><X size={16} /></button>
+              <div className="flex gap-1">
+                <button onClick={() => printOrder(detailOrder)} className="p-2 rounded-lg hover:bg-gray-100 text-gray-400" title="Imprimir">🖨️</button>
+                <button onClick={() => setDetailPanel(null)} className="p-2 rounded-lg hover:bg-gray-100"><X size={16} /></button>
+              </div>
             </div>
             <div className="px-5 py-4"><Detail order={detailOrder} /></div>
           </div>
