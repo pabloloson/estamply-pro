@@ -1,277 +1,190 @@
 'use client'
 
 import Link from 'next/link'
-import { ShoppingBag, TrendingUp, AlertTriangle, Calculator, Users, Calendar, DollarSign, CreditCard, ArrowUpRight, ArrowDownRight, CheckCircle } from 'lucide-react'
+import { Calculator, ShoppingBag, Users, Package } from 'lucide-react'
 
-interface Order {
-  id: string; status: string; total_price: number; total_cost: number; due_date: string | null
-  created_at: string; items: Array<{ tecnica: string; nombre: string; cantidad: number; subtotal: number }>
-  client_id: string | null; clients?: { name: string } | null
+interface Props {
+  shopName: string
+  orders: Record<string, unknown>[]
+  payments: Record<string, unknown>[]
+  presupuestos: Record<string, unknown>[]
 }
 
 function fmt(n: number) { return `$${Math.round(n).toLocaleString('es-AR')}` }
 
-const SL: Record<string, string> = { pending: 'Pendiente', production: 'En producción', ready: 'Listo', delivered: 'Entregado' }
-const SC: Record<string, { bg: string; text: string }> = {
-  pending: { bg: '#FAEEDA', text: '#854F0B' }, production: { bg: '#E6F1FB', text: '#0C447C' },
-  ready: { bg: '#EAF3DE', text: '#27500A' }, delivered: { bg: '#F1EFE8', text: '#444441' },
+function greeting() {
+  const h = new Date().getHours()
+  if (h < 12) return 'Buenos días'
+  if (h < 19) return 'Buenas tardes'
+  return 'Buenas noches'
 }
-const TL: Record<string, string> = { subli: 'Sublimación', dtf: 'DTF Textil', dtf_uv: 'DTF UV', vinyl: 'Vinilo', serigrafia: 'Serigrafía' }
-const MONTHS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
 
-function daysAgo(d: string) { return Math.floor((Date.now() - new Date(d).getTime()) / 86400000) }
-function isOverdue(d: string | null) { return d ? new Date(d) < new Date(new Date().toDateString()) : false }
-function daysUntil(d: string | null) { return d ? Math.ceil((new Date(d).getTime() - Date.now()) / 86400000) : Infinity }
+const SL: Record<string, string> = { pending: 'Pendiente', production: 'En producción', ready: 'Listo' }
+const SC: Record<string, string> = { pending: '#FDCB6E', production: '#6C5CE7', ready: '#00B894' }
 
-export default function DashboardClient({ userName, tallerName, orders, payments, clientCount }: {
-  userName: string; tallerName: string; orders: Order[]; payments: Array<{ order_id: string; monto: number }>; clientCount: number
-}) {
+export default function DashboardClient({ shopName, orders, payments, presupuestos }: Props) {
   const now = new Date()
-  const thisMonth = now.getMonth()
-  const thisYear = now.getFullYear()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const weekFromNow = new Date(today.getTime() + 7 * 86400000)
 
-  // Payment lookup
-  const paidByOrder: Record<string, number> = {}
-  payments.forEach(p => { paidByOrder[p.order_id] = (paidByOrder[p.order_id] || 0) + Number(p.monto) })
+  const paidMap = new Map<string, number>()
+  payments.forEach(p => { const oid = p.order_id as string; paidMap.set(oid, (paidMap.get(oid) || 0) + (p.monto as number || 0)) })
+  const paidFor = (oid: string) => paidMap.get(oid) || 0
 
-  // Active orders
   const active = orders.filter(o => o.status !== 'delivered')
-  const pending = active.filter(o => o.status === 'pending').length
-  const inProd = active.filter(o => o.status === 'production').length
-  const ready = active.filter(o => o.status === 'ready').length
+  const overdue = active.filter(o => o.due_date && new Date(o.due_date as string) < today)
+  const thisWeek = active.filter(o => o.due_date && new Date(o.due_date as string) >= today && new Date(o.due_date as string) <= weekFromNow)
+  const webPres = presupuestos.filter(p => p.origen === 'catalogo_web')
 
-  // Monthly revenue
-  const monthOrders = (m: number, y: number) => orders.filter(o => { const d = new Date(o.created_at); return d.getMonth() === m && d.getFullYear() === y })
-  const thisMonthOrders = monthOrders(thisMonth, thisYear)
-  const lastMonth = thisMonth === 0 ? 11 : thisMonth - 1
-  const lastMonthYear = thisMonth === 0 ? thisYear - 1 : thisYear
-  const lastMonthOrders = monthOrders(lastMonth, lastMonthYear)
+  const pendingColl = orders.filter(o => (o.total_price as number) - paidFor(o.id as string) > 0 && o.status !== 'delivered')
+  const totalPorCobrar = pendingColl.reduce((s, o) => s + ((o.total_price as number) - paidFor(o.id as string)), 0)
 
-  const thisMonthRev = thisMonthOrders.reduce((s, o) => s + Number(o.total_price), 0)
-  const thisMonthCost = thisMonthOrders.reduce((s, o) => s + Number(o.total_cost), 0)
-  const lastMonthRev = lastMonthOrders.reduce((s, o) => s + Number(o.total_price), 0)
-  const monthProfit = thisMonthRev - thisMonthCost
-  const monthMargin = thisMonthRev > 0 ? Math.round((monthProfit / thisMonthRev) * 100) : 0
-  const revChange = lastMonthRev > 0 ? Math.round(((thisMonthRev - lastMonthRev) / lastMonthRev) * 100) : null
+  const countBy = { pending: 0, production: 0, ready: 0 }
+  active.forEach(o => { const s = o.status as keyof typeof countBy; if (s in countBy) countBy[s]++ })
 
-  // Por cobrar
-  const porCobrar = active.reduce((s, o) => s + Math.max(Number(o.total_price) - (paidByOrder[o.id] || 0), 0), 0)
-  const conSaldo = active.filter(o => Number(o.total_price) - (paidByOrder[o.id] || 0) > 0).length
-
-  // Attention required
-  const urgent = active.filter(o => {
-    if (isOverdue(o.due_date)) return true
-    if (o.due_date && daysUntil(o.due_date) <= 1) return true
-    if (o.status === 'ready' && daysAgo(o.created_at) > 2) return true
-    return false
-  }).sort((a, b) => {
-    const oa = isOverdue(a.due_date) ? 0 : daysUntil(a.due_date) <= 1 ? 1 : 2
-    const ob = isOverdue(b.due_date) ? 0 : daysUntil(b.due_date) <= 1 ? 1 : 2
-    return oa - ob
-  }).slice(0, 5)
-
-  // 6 month chart data
-  const chartData: { label: string; value: number; current: boolean }[] = []
-  for (let i = 5; i >= 0; i--) {
-    const m = (thisMonth - i + 12) % 12
-    const y = thisMonth - i < 0 ? thisYear - 1 : thisYear
-    const rev = monthOrders(m, y).reduce((s, o) => s + Number(o.total_price), 0)
-    chartData.push({ label: MONTHS[m], value: rev, current: i === 0 })
-  }
-  const maxChart = Math.max(...chartData.map(d => d.value), 1)
-
-  // Rankings (this month)
-  const productRank: Record<string, number> = {}
-  const tecnicaRank: Record<string, number> = {}
-  const clientRank: Record<string, number> = {}
-  thisMonthOrders.forEach(o => {
-    const cn = o.clients?.name || 'Sin cliente'
-    clientRank[cn] = (clientRank[cn] || 0) + Number(o.total_price)
-    ;(o.items || []).forEach((item: { tecnica: string; nombre: string; cantidad: number; subtotal: number }) => {
-      productRank[item.nombre] = (productRank[item.nombre] || 0) + item.cantidad
-      tecnicaRank[item.tecnica] = (tecnicaRank[item.tecnica] || 0) + item.subtotal
-    })
-  })
-  const topProducts = Object.entries(productRank).sort((a, b) => b[1] - a[1]).slice(0, 3)
-  const topTecnicas = Object.entries(tecnicaRank).sort((a, b) => b[1] - a[1]).slice(0, 3)
-  const topClients = Object.entries(clientRank).sort((a, b) => b[1] - a[1]).slice(0, 3)
-
-  const dateStr = now.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+  const hasAlerts = overdue.length > 0 || webPres.length > 0 || thisWeek.length > 0 || totalPorCobrar > 0
 
   return (
-    <div>
-      {/* Greeting */}
+    <div className="max-w-5xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Hola, {userName} 👋</h1>
-        <p className="text-gray-500 text-sm mt-0.5">{tallerName ? `${tallerName} · ` : ''}{dateStr.charAt(0).toUpperCase() + dateStr.slice(1)}</p>
+        <h1 className="text-2xl font-black text-gray-900">{greeting()}, {shopName} 👋</h1>
       </div>
 
-      {/* BLOCK 1: Metrics */}
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
-        <div className="card p-5">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Pedidos activos</span>
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(108,92,231,0.08)' }}><ShoppingBag size={16} style={{ color: '#6C5CE7' }} /></div>
+      {/* Alerts */}
+      <div className={`rounded-xl p-4 mb-6 ${hasAlerts ? 'bg-amber-50 border border-amber-100' : 'bg-green-50 border border-green-100'}`}>
+        {hasAlerts ? (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {overdue.length > 0 && <Link href="/orders" className="flex items-center gap-2 text-sm"><span className="text-red-500 font-bold">🔴 {overdue.length}</span><span className="text-gray-700">vencidos</span></Link>}
+            {webPres.length > 0 && <Link href="/presupuesto" className="flex items-center gap-2 text-sm"><span className="text-amber-500 font-bold">🟡 {webPres.length}</span><span className="text-gray-700">presupuestos web</span></Link>}
+            {thisWeek.length > 0 && <Link href="/orders" className="flex items-center gap-2 text-sm"><span className="text-blue-500 font-bold">📅 {thisWeek.length}</span><span className="text-gray-700">esta semana</span></Link>}
+            {totalPorCobrar > 0 && <div className="flex items-center gap-2 text-sm"><span className="text-purple-500 font-bold">💰</span><span className="text-gray-700">{fmt(totalPorCobrar)} por cobrar</span></div>}
           </div>
-          <p className="text-3xl font-black text-gray-900">{active.length}</p>
-          <p className="text-[11px] text-gray-400 mt-1">{pending} pendientes · {inProd} en prod. · {ready} listos</p>
-        </div>
-
-        <div className="card p-5">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Ingresos del mes</span>
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(0,184,148,0.08)' }}><TrendingUp size={16} style={{ color: '#00B894' }} /></div>
-          </div>
-          <p className="text-3xl font-black text-gray-900">{fmt(thisMonthRev)}</p>
-          {revChange !== null && (
-            <p className={`text-[11px] mt-1 flex items-center gap-0.5 ${revChange >= 0 ? 'text-green-600' : 'text-red-500'}`}>
-              {revChange >= 0 ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
-              {revChange >= 0 ? '+' : ''}{revChange}% vs mes anterior
-            </p>
-          )}
-        </div>
-
-        <div className="card p-5">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Ganancia del mes</span>
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(225,112,85,0.08)' }}><DollarSign size={16} style={{ color: '#E17055' }} /></div>
-          </div>
-          <p className="text-3xl font-black text-gray-900">{fmt(monthProfit)}</p>
-          <p className="text-[11px] text-gray-400 mt-1">Margen: {monthMargin}%</p>
-        </div>
-
-        <div className="card p-5">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Por cobrar</span>
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(232,67,147,0.08)' }}><CreditCard size={16} style={{ color: '#E84393' }} /></div>
-          </div>
-          <p className="text-3xl font-black text-gray-900">{fmt(porCobrar)}</p>
-          <p className="text-[11px] text-gray-400 mt-1">{conSaldo} pedidos con saldo</p>
-        </div>
+        ) : <p className="text-sm text-green-700 font-medium">✅ Todo al día — no hay pendientes urgentes</p>}
       </div>
 
-      {/* BLOCK 2: Attention + Quick actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 mb-6">
-        {/* Attention required (~60%) */}
-        <div className="lg:col-span-3 card p-5">
-          <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3">Atención requerida</p>
-          {urgent.length > 0 ? (
-            <div className="space-y-2">
-              {urgent.map(o => {
-                const cn = o.clients?.name || 'Sin cliente'
-                const od = isOverdue(o.due_date)
-                const du = daysUntil(o.due_date)
-                const sc = SC[o.status]
-                let urgText = ''
-                if (od) urgText = `vencido hace ${daysAgo(o.due_date!)} días`
-                else if (du === 0) urgText = 'entrega hoy'
-                else if (du === 1) urgText = 'entrega mañana'
-                else if (o.status === 'ready') urgText = `listo hace ${daysAgo(o.created_at)} días`
+      {/* Quick actions */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+        {[
+          { href: '/cotizador', icon: Calculator, label: 'Cotizador', color: '#6C5CE7' },
+          { href: '/orders', icon: ShoppingBag, label: 'Pedidos', color: '#E17055' },
+          { href: '/clients', icon: Users, label: 'Clientes', color: '#00B894' },
+          { href: '/catalogo', icon: Package, label: 'Catálogo', color: '#E84393' },
+        ].map(a => (
+          <Link key={a.href} href={a.href} className="card p-4 flex items-center gap-3 hover:shadow-md transition-shadow">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${a.color}15` }}>
+              <a.icon size={20} style={{ color: a.color }} />
+            </div>
+            <span className="font-semibold text-gray-800 text-sm">{a.label}</span>
+          </Link>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        {/* Active orders */}
+        <div className="card p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-bold text-gray-800">Pedidos activos</h2>
+            <Link href="/orders" className="text-xs text-purple-600 font-semibold">Ver todos</Link>
+          </div>
+          <div className="flex gap-3 mb-3">
+            {(['pending', 'production', 'ready'] as const).map(s => (
+              <div key={s} className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full" style={{ background: SC[s] }} />
+                <span className="text-xs text-gray-500">{SL[s]} ({countBy[s]})</span>
+              </div>
+            ))}
+          </div>
+          {active.length > 0 ? (
+            <div className="space-y-1">
+              {[...active].sort((a, b) => {
+                const da = a.due_date ? new Date(a.due_date as string).getTime() : Infinity
+                const db = b.due_date ? new Date(b.due_date as string).getTime() : Infinity
+                return da - db
+              }).slice(0, 5).map(o => {
+                const isOD = o.due_date && new Date(o.due_date as string) < today
+                const cl = o.clients as Record<string, string> | null
                 return (
-                  <Link key={o.id} href="/orders" className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
-                    <AlertTriangle size={16} className={`flex-shrink-0 mt-0.5 ${od ? 'text-red-500' : 'text-amber-500'}`} />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-semibold text-gray-800 text-sm truncate">{cn}</span>
-                        <span className="text-sm font-bold text-gray-700 flex-shrink-0">{fmt(o.total_price)}</span>
-                      </div>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: sc?.bg, color: sc?.text }}>{SL[o.status]}</span>
-                        {o.due_date && <span className={`text-xs ${od ? 'text-red-500 font-bold' : 'text-amber-600'}`}><Calendar size={10} className="inline mr-0.5" />{urgText}</span>}
-                      </div>
+                  <Link key={o.id as string} href="/orders" className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-800 truncate">{cl?.name || 'Sin cliente'}</p>
+                      <p className="text-xs text-gray-400">{fmt(o.total_price as number)}</p>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {!!o.due_date && <span className="text-xs text-gray-400">📅 {new Date(o.due_date as string).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}</span>}
+                      {!!isOD && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-600 font-bold">VENCIDO</span>}
                     </div>
                   </Link>
                 )
               })}
             </div>
-          ) : (
-            <div className="flex items-center gap-2 py-4 justify-center">
-              <CheckCircle size={16} className="text-green-500" />
-              <span className="text-sm text-green-600 font-medium">Todo al día — no hay pedidos urgentes</span>
-            </div>
-          )}
+          ) : <p className="text-sm text-gray-400 py-4 text-center">No hay pedidos activos</p>}
         </div>
 
-        {/* Quick actions (~40%) */}
-        <div className="lg:col-span-2 space-y-3">
-          <Link href="/cotizador" className="card p-4 flex items-center gap-3 hover:shadow-md transition-shadow group">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(108,92,231,0.1)' }}><Calculator size={18} style={{ color: '#6C5CE7' }} /></div>
-            <span className="font-semibold text-gray-800 group-hover:text-purple-700">Nueva cotización</span>
-          </Link>
-          <Link href="/orders" className="card p-4 flex items-center gap-3 hover:shadow-md transition-shadow group">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(225,112,85,0.1)' }}><ShoppingBag size={18} style={{ color: '#E17055' }} /></div>
-            <span className="font-semibold text-gray-800 group-hover:text-orange-600">Ver pedidos</span>
-          </Link>
-          <Link href="/clients" className="card p-4 flex items-center gap-3 hover:shadow-md transition-shadow group">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(0,184,148,0.1)' }}><Users size={18} style={{ color: '#00B894' }} /></div>
-            <span className="font-semibold text-gray-800 group-hover:text-green-700">Ver clientes</span>
-          </Link>
+        {/* Pending collections */}
+        <div className="card p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-bold text-gray-800">Cobros pendientes</h2>
+            <Link href="/orders" className="text-xs text-purple-600 font-semibold">Ver todos</Link>
+          </div>
+          {pendingColl.length > 0 ? (
+            <div className="space-y-1">
+              {pendingColl.slice(0, 5).map(o => {
+                const cl = o.clients as Record<string, string> | null
+                const p = paidFor(o.id as string), saldo = (o.total_price as number) - p
+                return (
+                  <Link key={o.id as string} href="/orders" className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50">
+                    <div>
+                      <p className="text-sm font-medium text-gray-800">{cl?.name || 'Sin cliente'}</p>
+                      <p className="text-xs text-gray-400">{fmt(o.total_price as number)} total</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-bold text-gray-800">{fmt(saldo)}</p>
+                      <p className={`text-[10px] ${p > 0 ? 'text-amber-500' : 'text-red-500'}`}>{p > 0 ? 'Seña pagada' : 'Sin pagos'}</p>
+                    </div>
+                  </Link>
+                )
+              })}
+              <div className="flex justify-between items-center pt-2 mt-1 border-t border-gray-100">
+                <span className="text-xs text-gray-500">Total por cobrar</span>
+                <span className="font-bold text-gray-800">{fmt(totalPorCobrar)}</span>
+              </div>
+            </div>
+          ) : <p className="text-sm text-gray-400 py-4 text-center">No hay cobros pendientes</p>}
         </div>
       </div>
 
-      {/* BLOCK 3: Monthly summary */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Chart */}
-        <div className="card p-5">
-          <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4">Ingresos mensuales</p>
-          {chartData.some(d => d.value > 0) ? (
-            <div className="flex items-end gap-2 h-40">
-              {chartData.map((d, i) => (
-                <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                  <div className="w-full relative group">
-                    <div className="w-full rounded-t-md transition-all" style={{
-                      height: `${Math.max((d.value / maxChart) * 130, 4)}px`,
-                      background: d.current ? 'linear-gradient(180deg, #6C5CE7, #a29bfe)' : '#E0DCF8',
-                      opacity: d.current ? 1 : 0.7,
-                    }} />
-                    <div className="absolute -top-7 left-1/2 -translate-x-1/2 hidden group-hover:block bg-gray-800 text-white text-[10px] px-2 py-0.5 rounded whitespace-nowrap">{fmt(d.value)}</div>
-                  </div>
-                  <span className={`text-[10px] ${d.current ? 'font-bold text-purple-600' : 'text-gray-400'}`}>{d.label}</span>
+      {/* Recent activity */}
+      <div className="card p-5">
+        <h2 className="font-bold text-gray-800 mb-4">Actividad reciente</h2>
+        <div className="space-y-2">
+          {[
+            ...presupuestos.slice(0, 5).map(p => ({
+              icon: p.origen === 'catalogo_web' ? '🛒' : '📋',
+              text: `${p.origen === 'catalogo_web' ? 'Presupuesto web' : 'Presupuesto'} #${(p.codigo as string || '').slice(0, 12)}`,
+              detail: `${p.client_name || 'Sin cliente'} — ${fmt(p.total as number)}`,
+              date: new Date(p.created_at as string), href: '/presupuesto',
+            })),
+            ...orders.filter(o => o.status === 'delivered').slice(0, 3).map(o => ({
+              icon: '✅', text: 'Pedido entregado',
+              detail: `${(o.clients as Record<string, string>)?.name || ''} — ${fmt(o.total_price as number)}`,
+              date: new Date(o.created_at as string), href: '/orders',
+            })),
+          ].sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 5).map((ev, i) => {
+            const isToday = ev.date.toDateString() === now.toDateString()
+            const isYesterday = ev.date.toDateString() === new Date(now.getTime() - 86400000).toDateString()
+            const ds = isToday ? 'Hoy' : isYesterday ? 'Ayer' : ev.date.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })
+            return (
+              <Link key={i} href={ev.href} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50">
+                <span className="text-lg flex-shrink-0">{ev.icon}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-gray-800">{ev.text}</p>
+                  <p className="text-xs text-gray-400 truncate">{ev.detail}</p>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="flex items-center justify-center h-40 text-sm text-gray-400">Sin datos suficientes</div>
-          )}
-        </div>
-
-        {/* Rankings */}
-        <div className="card p-5">
-          <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4">Más vendidos del mes</p>
-          <div className="space-y-4">
-            {/* By product */}
-            <div>
-              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">Por producto</p>
-              {topProducts.length > 0 ? topProducts.map(([name, qty], i) => (
-                <div key={name} className="flex items-center justify-between py-1">
-                  <span className="text-xs text-gray-600"><span className="text-gray-400 mr-1.5">{i + 1}.</span>{name}</span>
-                  <span className="text-xs font-semibold text-gray-700">{qty} u.</span>
-                </div>
-              )) : <p className="text-xs text-gray-400">Sin datos</p>}
-            </div>
-
-            {/* By technique */}
-            <div>
-              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">Por técnica</p>
-              {topTecnicas.length > 0 ? topTecnicas.map(([tec, amount], i) => (
-                <div key={tec} className="flex items-center justify-between py-1">
-                  <span className="text-xs text-gray-600"><span className="text-gray-400 mr-1.5">{i + 1}.</span>{TL[tec] || tec}</span>
-                  <span className="text-xs font-semibold text-gray-700">{fmt(amount)}</span>
-                </div>
-              )) : <p className="text-xs text-gray-400">Sin datos</p>}
-            </div>
-
-            {/* Top clients */}
-            <div>
-              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">Top clientes</p>
-              {topClients.length > 0 ? topClients.map(([name, amount], i) => (
-                <div key={name} className="flex items-center justify-between py-1">
-                  <span className="text-xs text-gray-600"><span className="text-gray-400 mr-1.5">{i + 1}.</span>{name}</span>
-                  <span className="text-xs font-semibold text-gray-700">{fmt(amount)}</span>
-                </div>
-              )) : <p className="text-xs text-gray-400">Sin datos</p>}
-            </div>
-          </div>
+                <span className="text-xs text-gray-400 flex-shrink-0">{ds}</span>
+              </Link>
+            )
+          })}
+          {presupuestos.length === 0 && orders.length === 0 && <p className="text-sm text-gray-400 text-center py-4">No hay actividad reciente</p>}
         </div>
       </div>
     </div>

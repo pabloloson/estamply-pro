@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation'
 import { logout } from '@/app/actions/auth'
 import {
   Layers, LayoutDashboard, Calculator, FileText, ShoppingBag,
-  Users, Package, Droplets, Cpu, Palette, Tag,
+  Users, Package, Droplets, Cpu, Palette, Tag, BarChart3,
   Settings, LogOut, Menu, X,
 } from 'lucide-react'
 import { usePresupuesto } from '@/features/presupuesto/context/PresupuestoContext'
@@ -78,6 +78,7 @@ export function Sidebar({ workshopName = 'Mi Taller' }: SidebarProps) {
         <NavLink href="/orders" icon={ShoppingBag} label="Pedidos" />
         <NavLink href="/clients" icon={Users} label="Clientes" />
         <NavLink href="/catalogo" icon={Package} label="Catálogo" />
+        <NavLink href="/estadisticas" icon={BarChart3} label="Estadísticas" />
       </nav>
 
       {/* ── Separador + Sección 2: Motor del negocio ── */}
