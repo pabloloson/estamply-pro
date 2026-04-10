@@ -14,7 +14,7 @@ interface CatalogProduct {
   estimated_delivery: string | null; precio_anterior: number | null
   guia_talles_id: string | null
 }
-interface SizeGuide { id: string; nombre: string; columnas: string[]; filas: Array<Record<string, string>> }
+interface SizeGuide { id: string; nombre: string; columnas: string[]; filas: Array<Record<string, string>>; imagen_referencia: string | null }
 interface Category { id: string; name: string }
 interface ShopInfo {
   nombre: string; logo: string | null; color: string; description: string
@@ -103,7 +103,7 @@ export default function PublicCatalogPage() {
         supabase.from('catalog_products').select('id,name,description,photos,selling_price,manage_stock,current_stock,category_id,visible_in_catalog,sizes,colors,estimated_delivery,precio_anterior,guia_talles_id').eq('user_id', userId).eq('visible_in_catalog', true).gt('selling_price', 0),
         supabase.from('categories').select('id,name').eq('user_id', userId),
         supabase.from('medios_pago').select('id,nombre,tipo_ajuste,porcentaje').eq('user_id', userId).eq('activo', true).order('orden'),
-        supabase.from('guias_talles').select('id,nombre,columnas,filas').eq('user_id', userId),
+        supabase.from('guias_talles').select('id,nombre,columnas,filas,imagen_referencia').eq('user_id', userId),
       ])
       if (mp?.length) setShop(prev => prev ? { ...prev, mediosPago: mp as ShopInfo['mediosPago'] } : prev)
       if (sg) setSizeGuides(sg as SizeGuide[])
@@ -336,7 +336,10 @@ function ProductDetail({ product, shop, sizeGuides, onClose }: { product: Catalo
               {/* Size selector */}
               {sizes.length > 0 && (
                 <div>
-                  <p className="text-sm font-semibold text-gray-700 mb-2">Talle:</p>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-semibold text-gray-700">Talle:</p>
+                    {guide && <button type="button" onClick={() => setShowGuide(true)} className="text-xs text-gray-400 hover:text-gray-600">📏 Ver guía</button>}
+                  </div>
                   <div className="flex gap-2 flex-wrap">
                     {sizes.map(s => (
                       <button key={s} onClick={() => { setSelSize(s); setSizeError(false) }}
@@ -345,7 +348,6 @@ function ProductDetail({ product, shop, sizeGuides, onClose }: { product: Catalo
                     ))}
                   </div>
                   {sizeError && <p className="text-xs text-red-500 mt-1">Seleccioná un talle</p>}
-                  {guide && <button type="button" onClick={() => setShowGuide(true)} className="text-xs text-purple-600 hover:text-purple-700 font-medium mt-1.5">📏 Ver guía de talles</button>}
                 </div>
               )}
 
@@ -397,23 +399,30 @@ function ProductDetail({ product, shop, sizeGuides, onClose }: { product: Catalo
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" style={{ background: 'rgba(0,0,0,0.4)' }} onClick={() => setShowGuide(false)}>
           <div className="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl p-5 max-h-[80vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-gray-900">📏 Guía de talles — {guide.nombre}</h3>
+              <h3 className="font-bold text-gray-900">Guía de talles — {guide.nombre}</h3>
               <button onClick={() => setShowGuide(false)} className="p-1 hover:bg-gray-100 rounded"><X size={16} /></button>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm"><thead><tr className="border-b border-gray-200">
-                <th className="text-left px-2 py-2 font-semibold text-gray-600">Talle</th>
-                {guide.columnas.map((c, i) => <th key={i} className="text-left px-2 py-2 font-semibold text-gray-600">{c}</th>)}
-              </tr></thead><tbody>
-                {guide.filas.map((f, fi) => (
-                  <tr key={fi} className="border-b border-gray-50">
-                    <td className="px-2 py-2 font-medium text-gray-800">{f.talle}</td>
-                    {guide.columnas.map((c, ci) => <td key={ci} className="px-2 py-2 text-gray-600">{f[c] || '—'}</td>)}
-                  </tr>
-                ))}
-              </tbody></table>
-            </div>
-            <p className="text-xs text-gray-400 mt-3">Medidas en centímetros. Las medidas pueden variar ±2cm.</p>
+            {guide.imagen_referencia && (
+              <img src={guide.imagen_referencia} alt="Guía de talles" className="w-full rounded-lg mb-4 object-contain max-h-64" />
+            )}
+            {guide.filas.length > 0 && guide.columnas.length > 0 && (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm"><thead><tr className="border-b border-gray-200">
+                  <th className="text-left px-2 py-2 font-semibold text-gray-600">Talle</th>
+                  {guide.columnas.map((c, i) => <th key={i} className="text-left px-2 py-2 font-semibold text-gray-600">{c}</th>)}
+                </tr></thead><tbody>
+                  {guide.filas.map((f, fi) => (
+                    <tr key={fi} className="border-b border-gray-50">
+                      <td className="px-2 py-2 font-medium text-gray-800">{f.talle}</td>
+                      {guide.columnas.map((c, ci) => <td key={ci} className="px-2 py-2 text-gray-600">{f[c] || '—'}</td>)}
+                    </tr>
+                  ))}
+                </tbody></table>
+              </div>
+            )}
+            {!guide.imagen_referencia && (!guide.filas.length || !guide.columnas.length) && (
+              <p className="text-sm text-gray-400 text-center py-4">El taller aún no ha completado la guía de talles.</p>
+            )}
           </div>
         </div>
       )}

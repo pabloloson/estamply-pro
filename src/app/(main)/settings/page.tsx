@@ -40,7 +40,7 @@ export default function SettingsPage() {
   const [mediosPago, setMediosPago] = useState<Array<{ id: string; nombre: string; tipo_ajuste: string; porcentaje: number; activo: boolean; orden: number }>>([])
   const [editingMedio, setEditingMedio] = useState<{ nombre: string; tipo_ajuste: string; porcentaje: number; id?: string } | null>(null)
   const [guiasTalles, setGuiasTalles] = useState<Array<{ id: string; nombre: string; columnas: string[]; filas: Array<Record<string, string>> }>>([])
-  const [editingGuia, setEditingGuia] = useState<{ id?: string; nombre: string; columnas: string[]; filas: Array<Record<string, string>> } | null>(null)
+  const [editingGuia, setEditingGuia] = useState<{ id?: string; nombre: string; columnas: string[]; filas: Array<Record<string, string>>; imagen_referencia?: string | null } | null>(null)
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const [ws, setWs] = useState<WorkshopSettings>(DEFAULT_SETTINGS)
   const logoInputRef = useRef<HTMLInputElement>(null)
@@ -341,7 +341,7 @@ export default function SettingsPage() {
                 <p className="text-xs text-gray-400">{g.columnas.length} medidas · {g.filas.length} talles</p>
               </div>
               <div className="flex gap-1">
-                <button onClick={() => setEditingGuia({ id: g.id, nombre: g.nombre, columnas: g.columnas, filas: g.filas })} className="text-xs text-gray-400 hover:text-gray-600 p-1">✎</button>
+                <button onClick={() => setEditingGuia({ id: g.id, nombre: g.nombre, columnas: g.columnas, filas: g.filas, imagen_referencia: (g as Record<string, unknown>).imagen_referencia as string || null })} className="text-xs text-gray-400 hover:text-gray-600 p-1">✎</button>
                 <button onClick={async () => { if (confirm('¿Eliminar?')) { await supabase.from('guias_talles').delete().eq('id', g.id); setGuiasTalles(prev => prev.filter(x => x.id !== g.id)) } }} className="text-xs text-red-400 hover:text-red-600 p-1">✕</button>
               </div>
             </div>
@@ -355,12 +355,33 @@ export default function SettingsPage() {
       {editingGuia && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)' }} onClick={() => setEditingGuia(null)}>
           <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <h3 className="font-bold text-gray-900 mb-4">{editingGuia.id ? 'Editar' : 'Nueva'} tabla de talles</h3>
+            <h3 className="font-bold text-gray-900 mb-4">{editingGuia.id ? 'Editar' : 'Nueva'} guía de talles</h3>
             <div className="space-y-4">
               <div><label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
-                <input className="input-base" value={editingGuia.nombre} placeholder="Ej: Remeras" onChange={e => setEditingGuia({ ...editingGuia, nombre: e.target.value })} /></div>
+                <input className="input-base" value={editingGuia.nombre} placeholder="Ej: Remeras Hombre/Unisex" onChange={e => setEditingGuia({ ...editingGuia, nombre: e.target.value })} /></div>
+
+              {/* Image upload */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Medidas (columnas)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Imagen de referencia <span className="font-normal text-gray-400">(opcional)</span></label>
+                {editingGuia.imagen_referencia ? (
+                  <div className="relative rounded-lg overflow-hidden mb-2 border border-gray-200">
+                    <img src={editingGuia.imagen_referencia} alt="" className="w-full max-h-48 object-contain bg-gray-50" />
+                    <button onClick={() => setEditingGuia({ ...editingGuia, imagen_referencia: null })} className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/50 flex items-center justify-center text-white hover:bg-black/70"><X size={12} /></button>
+                  </div>
+                ) : null}
+                <input type="file" accept="image/*" className="text-xs" onChange={async e => {
+                  const file = e.target.files?.[0]; if (!file) return
+                  const { data: { user } } = await supabase.auth.getUser()
+                  const path = `${user?.id}/guia-${Date.now()}.${file.name.split('.').pop()}`
+                  await supabase.storage.from('product-photos').upload(path, file)
+                  const { data: { publicUrl } } = supabase.storage.from('product-photos').getPublicUrl(path)
+                  setEditingGuia(prev => prev ? { ...prev, imagen_referencia: publicUrl } : prev)
+                }} />
+                <p className="text-[10px] text-gray-400 mt-1">Diagrama de la prenda con medidas señaladas.</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Tabla de medidas <span className="font-normal text-gray-400">(opcional)</span></label>
                 <div className="flex gap-1.5 flex-wrap mb-2">
                   {editingGuia.columnas.map((col, ci) => (
                     <div key={ci} className="flex items-center gap-0.5 bg-gray-100 rounded px-2 py-1">
@@ -397,7 +418,7 @@ export default function SettingsPage() {
             <div className="flex gap-3 mt-5">
               <button onClick={() => setEditingGuia(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">Cancelar</button>
               <button disabled={!editingGuia.nombre.trim()} onClick={async () => {
-                const payload = { nombre: editingGuia.nombre, columnas: editingGuia.columnas, filas: editingGuia.filas, orden: guiasTalles.length }
+                const payload = { nombre: editingGuia.nombre, columnas: editingGuia.columnas, filas: editingGuia.filas, imagen_referencia: editingGuia.imagen_referencia || null, orden: guiasTalles.length }
                 if (editingGuia.id) {
                   await supabase.from('guias_talles').update(payload).eq('id', editingGuia.id)
                   setGuiasTalles(prev => prev.map(g => g.id === editingGuia.id ? { ...g, ...payload } : g))
