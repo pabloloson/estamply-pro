@@ -3,10 +3,10 @@
 import { Suspense } from 'react'
 import LandingContent from '@/shared/components/LandingContent'
 
-export default function LandingPage() {
+export default function LandingBR() {
   return (
     <Suspense fallback={<div className="min-h-screen bg-white" />}>
-      <LandingContent defaultLang="es" showLanguageBanner={true} />
+      <LandingContent defaultLang="pt" />
     </Suspense>
   )
 }
