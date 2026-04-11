@@ -192,6 +192,10 @@ export default function TallerDetailPage() {
                     className="flex-1 py-2 rounded-lg text-xs font-semibold bg-amber-50 text-amber-700 hover:bg-amber-100 disabled:opacity-50">+30 días trial</button>
                 </div>
               ) : null}
+              <a href={`mailto:${p.email}`} target="_blank" rel="noopener noreferrer"
+                className="w-full py-2 rounded-lg text-xs font-semibold bg-blue-50 text-blue-700 hover:bg-blue-100 text-center block">
+                Enviar email al dueño
+              </a>
               <button onClick={() => doAction('toggle-active', { active: p.plan_status === 'disabled' })} disabled={actionLoading}
                 className={`w-full py-2 rounded-lg text-xs font-semibold disabled:opacity-50 ${p.plan_status === 'disabled' ? 'bg-green-50 text-green-700 hover:bg-green-100' : 'bg-red-50 text-red-600 hover:bg-red-100'}`}>
                 {p.plan_status === 'disabled' ? 'Reactivar taller' : 'Desactivar taller'}

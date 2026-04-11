@@ -36,6 +36,7 @@ interface DashboardData {
     id: string; full_name: string; workshop_name: string; email: string
     plan: string; plan_status: string; created_at: string
   }>
+  registrationsByDay: Record<string, number>
 }
 
 export default function AdminDashboard() {
@@ -118,6 +119,23 @@ export default function AdminDashboard() {
           <p className="text-xs text-gray-400 mt-1">onboarding → pago</p>
         </div>
       </div>
+
+      {/* Registration chart */}
+      {data.registrationsByDay && (
+        <div className="bg-white rounded-2xl p-5 border border-gray-100 mb-6">
+          <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Nuevos registros (últimos 30 días)</h3>
+          <div className="h-48">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={Object.entries(data.registrationsByDay).sort(([a], [b]) => a.localeCompare(b)).map(([date, count]) => ({ date: new Date(date).toLocaleDateString('es', { day: '2-digit', month: 'short' }), count }))}>
+                <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#9CA3AF' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: '#9CA3AF' }} axisLine={false} tickLine={false} allowDecimals={false} />
+                <Tooltip />
+                <Bar dataKey="count" fill="#6C5CE7" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
         {/* Country distribution */}

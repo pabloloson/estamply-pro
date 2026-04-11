@@ -11,7 +11,7 @@ const NAV = [
   { href: '/admin/metricas', label: 'Métricas', icon: TrendingUp },
   { href: '/admin/tracking', label: 'Tracking', icon: Globe },
   { href: '/admin/comunicacion', label: 'Comunicación', icon: Mail },
-  { href: '/admin/config', label: 'Configuración', icon: Settings },
+  { href: '/admin/configuracion', label: 'Configuración', icon: Settings },
 ]
 
 export default function AdminSidebar({ email }: { email: string }) {

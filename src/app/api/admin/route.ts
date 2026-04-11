@@ -69,6 +69,17 @@ export async function GET(req: Request) {
         return ends >= now && ends <= weekFromNow
       }).length
 
+      // Registration by day (last 30 days)
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+      const registrationsByDay: Record<string, number> = {}
+      for (const p of allProfiles || []) {
+        const d = new Date(p.created_at)
+        if (d >= thirtyDaysAgo) {
+          const key = d.toISOString().split('T')[0]
+          registrationsByDay[key] = (registrationsByDay[key] || 0) + 1
+        }
+      }
+
       return NextResponse.json({
         totalTalleres: totalTalleres || 0,
         onboardingCompleted,
@@ -77,6 +88,7 @@ export async function GET(req: Request) {
         trialsExpiringSoon,
         trialCount: (trialProfiles || []).length,
         recentProfiles: recentProfiles || [],
+        registrationsByDay,
       })
     }
 
@@ -154,6 +166,27 @@ export async function GET(req: Request) {
     // Admin actions
     if (action === 'update-taller') {
       return NextResponse.json({ error: 'Use POST' }, { status: 405 })
+    }
+
+    if (action === 'platform-activity') {
+      const [
+        { count: orderCount },
+        { count: presupuestoCount },
+        { count: clientCount },
+        { count: productCount },
+      ] = await Promise.all([
+        admin.from('orders').select('*', { count: 'exact', head: true }),
+        admin.from('presupuestos').select('*', { count: 'exact', head: true }),
+        admin.from('clients').select('*', { count: 'exact', head: true }),
+        admin.from('catalog_products').select('*', { count: 'exact', head: true }),
+      ])
+
+      return NextResponse.json({
+        orders: orderCount || 0,
+        presupuestos: presupuestoCount || 0,
+        clients: clientCount || 0,
+        products: productCount || 0,
+      })
     }
 
     return NextResponse.json({ error: 'Unknown action' }, { status: 400 })

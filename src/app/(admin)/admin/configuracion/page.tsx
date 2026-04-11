@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Save, Check, X, Settings, Globe, Mail, Clock } from 'lucide-react'
+import { Save, Check, X, Settings, Globe, Mail, Clock, Shield } from 'lucide-react'
 
 interface Plan {
   id: string; name: string; price: number; currency: string
@@ -164,6 +164,26 @@ export default function ConfiguracionPage() {
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Super Admin */}
+      <div className="bg-white rounded-2xl p-6 border border-gray-100 mt-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Shield size={18} className="text-gray-400" />
+          <h3 className="font-bold text-gray-900">Super Admin</h3>
+        </div>
+        <div className="p-4 rounded-xl bg-gray-50 space-y-2">
+          <p className="text-sm text-gray-700">Los emails con acceso al panel de admin se configuran en:</p>
+          <code className="block text-xs bg-gray-800 text-green-400 px-3 py-2 rounded-lg">
+            Vercel → Settings → Environment Variables → ADMIN_EMAILS
+          </code>
+          <p className="text-xs text-gray-400 mt-2">
+            Formato: emails separados por coma. Ejemplo: <code className="bg-gray-200 px-1 rounded">pablo@gmail.com,otro@admin.com</code>
+          </p>
+          <p className="text-xs text-gray-400">
+            Después de modificar la variable, hacer un nuevo deploy para que tome efecto.
+          </p>
         </div>
       </div>
     </div>

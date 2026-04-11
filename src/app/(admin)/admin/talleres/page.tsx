@@ -56,6 +56,22 @@ export default function TalleresPage() {
     return days > 0 ? `(${days}d)` : '(exp.)'
   }
 
+  function exportCSV() {
+    if (talleres.length === 0) return
+    const headers = ['Taller', 'Email', 'Nombre', 'País', 'Plan', 'Estado', 'Trial hasta', 'Onboarding', 'Registrado']
+    const rows = talleres.map(t => [
+      t.workshop_name || '', t.email, t.full_name || '', t.pais || '',
+      t.plan, t.plan_status, t.trial_ends_at || '', t.onboarding_completed ? 'Sí' : 'No',
+      new Date(t.created_at).toLocaleDateString('es'),
+    ])
+    const csv = [headers.join(','), ...rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(','))].join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = `estamply-talleres-${new Date().toISOString().split('T')[0]}.csv`
+    link.click()
+  }
+
   const FILTERS = [
     { id: 'all', label: 'Todos' },
     { id: 'trial', label: 'Trial' },
@@ -88,6 +104,10 @@ export default function TalleresPage() {
             className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-purple-300"
             placeholder="Buscar taller, email..." />
         </div>
+        <button onClick={exportCSV} disabled={talleres.length === 0}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50 disabled:opacity-40 flex-shrink-0">
+          <Download size={14} /> Exportar CSV
+        </button>
       </div>
 
       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
