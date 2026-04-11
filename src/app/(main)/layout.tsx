@@ -33,7 +33,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
         <Sidebar workshopName={workshopName} />
         <div className="flex-1 flex flex-col min-w-0">
           <TrialBanner />
-          <main className="flex-1 lg:p-8 pt-16 lg:pt-6 p-4">
+          <main className="flex-1 p-4 pt-16 lg:px-8 lg:pb-8 lg:pt-10">
             {children}
           </main>
         </div>
