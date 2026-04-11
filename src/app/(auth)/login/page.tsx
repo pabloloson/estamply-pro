@@ -2,8 +2,9 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { login } from '@/app/actions/auth'
-import { Layers, Zap, TrendingUp, Shield } from 'lucide-react'
+import { Zap, TrendingUp, Shield } from 'lucide-react'
 import { useTranslations } from '@/shared/hooks/useTranslations'
 
 export default function LoginPage() {
@@ -29,9 +30,7 @@ export default function LoginPage() {
       {/* Left Panel */}
       <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12" style={{ background: 'linear-gradient(135deg, #6C5CE7 0%, #a29bfe 100%)' }}>
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-            <Layers size={20} className="text-white" />
-          </div>
+          <Image src="/logo-icon.png" alt="Estamply" width={40} height={40} className="rounded-xl bg-white/20 p-1" />
           <span className="text-white font-bold text-xl">Estamply</span>
         </div>
 
@@ -65,8 +64,7 @@ export default function LoginPage() {
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white">
         <div className="w-full max-w-sm">
           <div className="lg:hidden flex items-center gap-2 mb-8">
-            <Layers size={20} style={{ color: '#6C5CE7' }} />
-            <span className="font-bold text-lg" style={{ color: '#6C5CE7' }}>Estamply</span>
+            <Image src="/logo-full.png" alt="Estamply" width={140} height={35} style={{ height: 30, width: 'auto' }} />
           </div>
 
           <h2 className="text-2xl font-bold text-gray-900 mb-1">{t('welcomeBack')}</h2>

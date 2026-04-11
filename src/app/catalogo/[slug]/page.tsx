@@ -274,7 +274,7 @@ function CatalogContent({ shop, products, categories, sizeGuides }: { shop: Shop
               {shop.whatsapp && <a href={`https://wa.me/${shop.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener" className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-300 transition-colors"><MessageCircle size={16} /></a>}
             </div>
           )}
-          <p className="text-xs text-gray-400">{tc('webCatalog', 'poweredBy')} <a href="https://www.estamply.app" className="font-semibold hover:text-gray-500">Estamply</a></p>
+          <p className="text-xs text-gray-400 flex items-center justify-center gap-1.5">{tc('webCatalog', 'poweredBy')} <img src="/logo-icon.png" alt="" className="inline-block w-3.5 h-3.5" /><a href="https://www.estamply.app" className="font-semibold hover:text-gray-500">Estamply</a></p>
         </div>
       </div>
 

@@ -33,7 +33,7 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   // ── Public routes ──
-  const publicRoutes = ['/login', '/signup', '/auth/callback', '/onboarding', '/p/', '/catalogo/']
+  const publicRoutes = ['/', '/login', '/signup', '/auth/callback', '/onboarding', '/p/', '/catalogo/']
   const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route))
 
   if (!user && !isPublicRoute) {
@@ -44,7 +44,7 @@ export async function middleware(request: NextRequest) {
 
   if (user && (pathname === '/login' || pathname === '/signup')) {
     const url = request.nextUrl.clone()
-    url.pathname = '/'
+    url.pathname = '/dashboard'
     return NextResponse.redirect(url)
   }
 

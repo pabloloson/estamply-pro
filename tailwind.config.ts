@@ -6,7 +6,14 @@ const config: Config = {
   ],
   theme: {
     extend: {
-      // Personaliza aquí tu tema
+      colors: {
+        brand: {
+          turquoise: '#4ECDC4',
+          'turquoise-light': '#7EDED8',
+          'turquoise-dark': '#3DBDB5',
+          navy: '#2C3347',
+        },
+      },
     },
   },
   plugins: [],

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Layers, ChevronRight, Check, ArrowLeft } from 'lucide-react'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { COUNTRIES } from '@/shared/lib/currency'
 import { useTranslations } from '@/shared/hooks/useTranslations'
@@ -171,7 +172,7 @@ export default function OnboardingWizard() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/login'); return }
       const { data: profile } = await supabase.from('profiles').select('full_name, onboarding_completed').eq('id', user.id).single()
-      if (profile?.onboarding_completed) { router.push('/'); return }
+      if (profile?.onboarding_completed) { router.push('/dashboard'); return }
       if (profile?.full_name) setUserName(profile.full_name.split(' ')[0])
     }
     loadUser()
@@ -294,7 +295,7 @@ export default function OnboardingWizard() {
       await supabase.from('medios_pago').insert(defaultMedios)
     }
 
-    router.push('/')
+    router.push('/dashboard')
   }
 
   const canProceedStep1 = !!selectedCountry
@@ -305,10 +306,7 @@ export default function OnboardingWizard() {
     <div className="min-h-screen flex flex-col items-center justify-center p-4" style={{ background: '#F4F5F8' }}>
       {/* Logo */}
       <div className="flex items-center gap-2 mb-8">
-        <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: '#6C5CE7' }}>
-          <Layers size={18} className="text-white" />
-        </div>
-        <span className="font-bold text-lg text-gray-900">Estamply</span>
+        <Image src="/logo-full.png" alt="Estamply" width={160} height={40} style={{ height: 36, width: 'auto' }} priority />
       </div>
 
       {/* Progress bar */}

@@ -4,6 +4,12 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --brand-purple: #6C5CE7;
+  --brand-turquoise: #4ECDC4;
+  --brand-navy: #2C3347;
+}
+
 * {
   box-sizing: border-box;
 }

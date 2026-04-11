@@ -431,7 +431,10 @@ export default function PresupuestoPage() {
 
                 {/* Footer — CORRECCIÓN 6: branding */}
                 <div className="px-8 py-3 flex items-center justify-center" style={{ borderTop: '1px solid #F3F4F6', background: '#FAFAFA' }}>
-                  <p className="text-[10px] text-gray-300">Generado con Estamply</p>
+                  <p className="flex items-center gap-1.5 text-[10px] text-gray-300">
+                    <img src="/logo-icon.png" alt="" className="w-3 h-3 opacity-40" />
+                    Generado con Estamply
+                  </p>
                 </div>
                 <div className="h-1" style={{ background: 'linear-gradient(90deg, #6C5CE7, #a29bfe)' }} />
               </div>

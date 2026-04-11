@@ -2,10 +2,11 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { logout } from '@/app/actions/auth'
 import {
-  Layers, LayoutDashboard, Calculator, FileText, ShoppingBag,
+  LayoutDashboard, Calculator, FileText, ShoppingBag,
   Users, Package, Droplets, Cpu, Palette, Tag, BarChart3,
   Settings, LogOut, Menu, X,
 } from 'lucide-react'
@@ -25,7 +26,7 @@ export function Sidebar({ workshopName = 'Mi Taller' }: SidebarProps) {
   const t = useTranslations('sidebar')
 
   const isActive = (href: string) =>
-    href === '/' ? pathname === '/' : pathname.startsWith(href)
+    href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(href)
 
   const NavLink = ({
     href,
@@ -60,12 +61,7 @@ export function Sidebar({ workshopName = 'Mi Taller' }: SidebarProps) {
     <div className="flex flex-col h-full">
       {/* ── Logo ── */}
       <div className="flex items-center gap-3 px-4 py-5 border-b border-gray-100">
-        <div
-          className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-          style={{ background: 'linear-gradient(135deg, #6C5CE7, #a29bfe)' }}
-        >
-          <Layers size={18} className="text-white" />
-        </div>
+        <Image src="/logo-icon.png" alt="Estamply" width={36} height={36} className="flex-shrink-0" priority />
         <div className="min-w-0">
           <span className="font-bold text-gray-900 block leading-tight" style={{ fontSize: 15 }}>
             Estamply
@@ -76,7 +72,7 @@ export function Sidebar({ workshopName = 'Mi Taller' }: SidebarProps) {
 
       {/* ── Sección 1: Uso diario ── */}
       <nav className="px-3 pt-4 space-y-0.5">
-        {canAccess('inicio') && <NavLink href="/" icon={LayoutDashboard} label={t('home')} />}
+        {canAccess('inicio') && <NavLink href="/dashboard" icon={LayoutDashboard} label={t('home')} />}
         {canAccess('cotizador') && <NavLink href="/cotizador" icon={Calculator} label={t('quoter')} />}
         {canAccess('presupuestos') && <NavLink href="/presupuesto" icon={FileText} label={t('quotes')} badge={items.length} />}
         {canAccess('pedidos') && <NavLink href="/orders" icon={ShoppingBag} label={t('orders')} />}
@@ -128,9 +124,7 @@ export function Sidebar({ workshopName = 'Mi Taller' }: SidebarProps) {
       {/* Mobile header */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: '#6C5CE7' }}>
-            <Layers size={14} className="text-white" />
-          </div>
+          <Image src="/logo-icon.png" alt="Estamply" width={28} height={28} />
           <span className="font-bold text-gray-900">Estamply</span>
         </div>
         <div className="flex items-center gap-2">

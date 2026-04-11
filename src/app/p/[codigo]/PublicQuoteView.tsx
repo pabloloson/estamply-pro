@@ -145,7 +145,8 @@ export default function PublicQuoteView({ presupuesto }: Props) {
 
             {/* Footer */}
             <div className="px-8 py-3 flex items-center justify-center" style={{ borderTop: '1px solid #F3F4F6', background: '#FAFAFA' }}>
-              <a href="https://estamply.app" target="_blank" rel="noopener noreferrer" className="text-[10px] text-gray-300 hover:text-gray-400 transition-colors">
+              <a href="https://estamply.app" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-[10px] text-gray-300 hover:text-gray-400 transition-colors">
+                <img src="/logo-icon.png" alt="" className="w-3 h-3 opacity-40" />
                 Generado con Estamply
               </a>
             </div>
