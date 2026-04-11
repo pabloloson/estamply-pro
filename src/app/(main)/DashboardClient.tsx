@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Calculator, ShoppingBag, Users, Package } from 'lucide-react'
 import { useTranslations } from '@/shared/hooks/useTranslations'
 import { useLocale } from '@/shared/context/LocaleContext'
+import { usePermissions } from '@/shared/context/PermissionsContext'
 
 interface Props {
   shopName: string
@@ -21,6 +22,7 @@ export default function DashboardClient({ shopName, orders, payments, presupuest
   const t = useTranslations('dashboard')
   const ts = useTranslations('sidebar')
   const { fmt } = useLocale()
+  const { showPrices } = usePermissions()
   const now = new Date()
   const h = now.getHours()
   const greetingKey = h < 12 ? 'goodMorning' : h < 19 ? 'goodAfternoon' : 'goodEvening'
@@ -57,7 +59,7 @@ export default function DashboardClient({ shopName, orders, payments, presupuest
             {overdue.length > 0 && <Link href="/orders" className="flex items-center gap-2 text-sm"><span className="text-red-500 font-bold">🔴 {overdue.length}</span><span className="text-gray-700">{t('overdueOrders')}</span></Link>}
             {webPres.length > 0 && <Link href="/presupuesto" className="flex items-center gap-2 text-sm"><span className="text-amber-500 font-bold">🟡 {webPres.length}</span><span className="text-gray-700">{t('webQuotes')}</span></Link>}
             {thisWeek.length > 0 && <Link href="/orders" className="flex items-center gap-2 text-sm"><span className="text-blue-500 font-bold">📅 {thisWeek.length}</span><span className="text-gray-700">{t('thisWeek')}</span></Link>}
-            {totalPorCobrar > 0 && <div className="flex items-center gap-2 text-sm"><span className="text-purple-500 font-bold">💰</span><span className="text-gray-700">{fmt(totalPorCobrar)} {t('toCollect')}</span></div>}
+            {totalPorCobrar > 0 && showPrices && <div className="flex items-center gap-2 text-sm"><span className="text-purple-500 font-bold">💰</span><span className="text-gray-700">{fmt(totalPorCobrar)} {t('toCollect')}</span></div>}
           </div>
         ) : <p className="text-sm text-green-700 font-medium">✅ {t('allClear')}</p>}
       </div>
@@ -107,7 +109,7 @@ export default function DashboardClient({ shopName, orders, payments, presupuest
                   <Link key={o.id as string} href="/orders" className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50">
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-gray-800 truncate">{cl?.name || 'Sin cliente'}</p>
-                      <p className="text-xs text-gray-400">{fmt(o.total_price as number)}</p>
+                      {showPrices && <p className="text-xs text-gray-400">{fmt(o.total_price as number)}</p>}
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       {!!o.due_date && <span className="text-xs text-gray-400">📅 {new Date(o.due_date as string).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}</span>}
@@ -121,7 +123,7 @@ export default function DashboardClient({ shopName, orders, payments, presupuest
         </div>
 
         {/* Pending collections */}
-        <div className="card p-5">
+        {showPrices && <div className="card p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-bold text-gray-800">{t('pendingPayments')}</h2>
             <Link href="/orders" className="text-xs text-purple-600 font-semibold">{t('viewAll')}</Link>
@@ -150,7 +152,7 @@ export default function DashboardClient({ shopName, orders, payments, presupuest
               </div>
             </div>
           ) : <p className="text-sm text-gray-400 py-4 text-center">No hay cobros pendientes</p>}
-        </div>
+        </div>}
       </div>
 
       {/* Recent activity */}
@@ -161,12 +163,12 @@ export default function DashboardClient({ shopName, orders, payments, presupuest
             ...presupuestos.slice(0, 5).map(p => ({
               icon: p.origen === 'catalogo_web' ? '🛒' : '📋',
               text: `${p.origen === 'catalogo_web' ? 'Presupuesto web' : 'Presupuesto'} #${(p.codigo as string || '').slice(0, 12)}`,
-              detail: `${p.client_name || 'Sin cliente'} — ${fmt(p.total as number)}`,
+              detail: `${p.client_name || 'Sin cliente'}${showPrices ? ` — ${fmt(p.total as number)}` : ''}`,
               date: new Date(p.created_at as string), href: '/presupuesto',
             })),
             ...orders.filter(o => o.status === 'delivered').slice(0, 3).map(o => ({
               icon: '✅', text: 'Pedido entregado',
-              detail: `${(o.clients as Record<string, string>)?.name || ''} — ${fmt(o.total_price as number)}`,
+              detail: `${(o.clients as Record<string, string>)?.name || ''}${showPrices ? ` — ${fmt(o.total_price as number)}` : ''}`,
               date: new Date(o.created_at as string), href: '/orders',
             })),
           ].sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 5).map((ev, i) => {

@@ -15,6 +15,7 @@ import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { useTranslations } from '@/shared/hooks/useTranslations'
 import { useLocale } from '@/shared/context/LocaleContext'
+import { usePermissions } from '@/shared/context/PermissionsContext'
 
 const TECHNIQUE_LABELS: Record<Tecnica, string> = {
   subli: 'Sublimación', dtf: 'DTF Textil', dtf_uv: 'DTF UV', vinyl: 'Vinilo', serigrafia: 'Serigrafía',
@@ -37,6 +38,7 @@ export default function PresupuestoPage() {
   const { fmt: fmtCurrency } = useLocale()
   const supabase = createClient()
   const { items, removeItem, clearItems, loadItems, totalVenta, totalCosto, totalGanancia, loadedPresupuestoId, setLoadedPresupuestoId } = usePresupuesto()
+  const { showCosts } = usePermissions()
 
   const [clients, setClients] = useState<DBClient[]>([])
   const [loadingClients, setLoadingClients] = useState(true)
@@ -185,6 +187,10 @@ export default function PresupuestoPage() {
       // Register initial advance as first payment if > 0
       if (advanceAmount > 0 && order) {
         await supabase.from('payments').insert({ order_id: order.id, monto: advanceAmount, metodo: 'seña', fecha: new Date().toISOString().split('T')[0] })
+      }
+      // Mark presupuesto as accepted if it was loaded from a saved one
+      if (loadedPresupuestoId) {
+        await supabase.from('presupuestos').update({ estado: 'aceptado' }).eq('id', loadedPresupuestoId)
       }
       clearItems(); router.push('/orders')
     } catch (err) { console.error(err); alert('Error al confirmar. Intentá de nuevo.') }
@@ -514,6 +520,7 @@ export default function PresupuestoPage() {
               </div>
 
               {/* CORRECCIÓN 4: Collapsible internal summary */}
+              {showCosts && (
               <div className="card overflow-hidden">
                 <button type="button" onClick={() => setShowResumen(v => !v)}
                   className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-gray-50 transition-colors">
@@ -529,6 +536,7 @@ export default function PresupuestoPage() {
                   </div>
                 )}
               </div>
+              )}
             </div>
           </div>
         )}

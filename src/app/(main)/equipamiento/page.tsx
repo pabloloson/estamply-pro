@@ -43,14 +43,17 @@ export default function EquipamientoPage() {
   const [saving, setSaving] = useState(false)
   const [modal, setModal] = useState<Partial<Equipment> | null>(null)
   const [filter, setFilter] = useState('')
+  const [effectiveUserId, setEffectiveUserId] = useState<string | null>(null)
 
   async function load() {
-    const [{ data: eq }, { data: ins }] = await Promise.all([
+    const [{ data: eq }, { data: ins }, { data: ownerId }] = await Promise.all([
       supabase.from('equipment').select('*').order('name'),
       supabase.from('insumos').select('*').order('nombre'),
+      supabase.rpc('get_team_owner_id'),
     ])
     setEquipment((eq || []) as Equipment[])
     setInsumosAll((ins || []) as InsumoRef[])
+    if (ownerId) setEffectiveUserId(ownerId as string)
     setLoading(false)
   }
   useEffect(() => { load() }, [])
@@ -60,7 +63,7 @@ export default function EquipamientoPage() {
     const payload = { name: modal.name, marca: modal.marca || null, type: modal.type || 'press_flat', clasificacion: modal.clasificacion || 'plancha', cost: modal.cost || 0, lifespan_uses: modal.lifespan_uses || 1000, tecnicas_slugs: modal.tecnicas_slugs || [], assigned_paper_id: modal.assigned_paper_id || null, assigned_ink_id: modal.assigned_ink_id || null }
     const { error } = modal.id
       ? await supabase.from('equipment').update(payload).eq('id', modal.id)
-      : await supabase.from('equipment').insert(payload)
+      : await supabase.from('equipment').insert({ ...payload, ...(effectiveUserId ? { user_id: effectiveUserId } : {}) })
     if (error) { alert(`Error: ${error.message}`); setSaving(false); return }
     setModal(null); setSaving(false); load()
   }

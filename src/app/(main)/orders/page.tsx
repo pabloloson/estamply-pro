@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { ChevronDown, ChevronUp, MessageCircle, Trash2, Calendar, Plus, LayoutList, LayoutGrid, X, ExternalLink } from 'lucide-react'
 import { useTranslations } from '@/shared/hooks/useTranslations'
 import { useLocale } from '@/shared/context/LocaleContext'
+import { usePermissions } from '@/shared/context/PermissionsContext'
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
 import { useDraggable, useDroppable } from '@dnd-kit/core'
 
@@ -60,6 +61,7 @@ export default function OrdersPage() {
   const t = useTranslations('orders')
   const tc = useTranslations('common')
   const { fmt: fmtCurrency } = useLocale()
+  const { showPrices } = usePermissions()
   const SL: Record<string, string> = { pending: t('pending'), production: t('inProduction'), ready: t('ready'), delivered: t('delivered') }
   const [orders, setOrders] = useState<Order[]>([])
   const [payments, setPayments] = useState<Payment[]>([])
@@ -165,7 +167,7 @@ export default function OrdersPage() {
               {(order.items as OrderItem[]).map((item, i) => (
                 <div key={i}>
                   <div className="flex items-center gap-2 mb-1"><TechBadge t={item.tecnica} /><span className="text-sm font-semibold text-gray-800">{item.nombre}</span></div>
-                  <p className="text-xs text-gray-500">Cantidad: {item.cantidad}{item.precioUnit ? ` · P.unit: ${fmtCurrency(item.precioUnit)}` : ''} · Subtotal: <span className="font-medium text-gray-700">{fmtCurrency(item.subtotal)}</span></p>
+                  <p className="text-xs text-gray-500">Cantidad: {item.cantidad}{showPrices && item.precioUnit ? ` · P.unit: ${fmtCurrency(item.precioUnit)}` : ''}{showPrices ? <> · Subtotal: <span className="font-medium text-gray-700">{fmtCurrency(item.subtotal)}</span></> : null}</p>
                   {item.notas && <p className="text-xs text-gray-500 mt-1 italic bg-gray-50 px-2 py-1 rounded">📝 {item.notas}</p>}
                 </div>
               ))}
@@ -193,7 +195,7 @@ export default function OrdersPage() {
         </div>
 
         {/* PAGOS — saldo prominente + detalle colapsado */}
-        <div className="rounded-lg border border-gray-100 p-4">
+        {showPrices && <div className="rounded-lg border border-gray-100 p-4">
           <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-3">{t('payments')}</p>
           {/* Prominent saldo */}
           <div className={`rounded-lg p-3 mb-3 text-center ${saldo <= 0 ? 'bg-green-50 border border-green-100' : 'bg-amber-50 border border-amber-100'}`}>
@@ -236,7 +238,7 @@ export default function OrdersPage() {
               <button onClick={() => setPayingOrder(null)} className="text-xs text-gray-400">✕</button>
             </div>
           ) : saldo > 0 ? <button onClick={() => { setPayingOrder(order.id); setPayAmount(Math.max(saldo, 0)) }} className="mt-3 flex items-center gap-1 text-xs font-semibold text-purple-600"><Plus size={12} /> {t('registerPayment')}</button> : null}
-        </div>
+        </div>}
 
         {/* FECHA DE ENTREGA */}
         {(() => {
@@ -317,7 +319,7 @@ export default function OrdersPage() {
           {/* Line 1: client + total */}
           <div className="flex items-center justify-between">
             <span className="font-semibold text-gray-800">{cn}</span>
-            <span className="font-bold text-gray-800">{fmtCurrency(order.total_price)}</span>
+            {showPrices && <span className="font-bold text-gray-800">{fmtCurrency(order.total_price)}</span>}
           </div>
           {/* Line 2: what to produce */}
           <div className="mt-1"><ItemSummary items={order.items || []} /></div>
@@ -413,7 +415,7 @@ export default function OrdersPage() {
                     <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full" style={{ background: sc.text }} /><span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: sc.text }}>{SL[state]}</span></div>
                     <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold bg-white/60" style={{ color: sc.text }}>{so.length}</span>
                   </div>
-                  {so.length > 0 && !isDel && <p className="text-[10px] text-gray-400 px-2 -mt-0.5 mb-2">{fmtCurrency(so.reduce((s, o) => s + o.total_price, 0))}</p>}
+                  {so.length > 0 && !isDel && showPrices && <p className="text-[10px] text-gray-400 px-2 -mt-0.5 mb-2">{fmtCurrency(so.reduce((s, o) => s + o.total_price, 0))}</p>}
                   <div className={`space-y-2 ${isDel ? 'opacity-65' : ''}`}>
                     {shown.map(order => {
                       const cn = order.clients?.name || tc('noClient'), pd = paid(order.id), od = isOD(order.due_date) && !isDel
@@ -428,9 +430,9 @@ export default function OrdersPage() {
                                 <TechBadge t={first.tecnica} />{first.cantidad}× {first.nombre}{(order.items || []).length > 1 && <span className="text-gray-400">+ {(order.items || []).length - 1}</span>}
                               </p>
                             ) : <p className="text-[10px] text-gray-400 italic mt-0.5">{t('noDetail')}</p>}
-                            <p className="font-bold text-gray-700 text-sm mt-1">{fmtCurrency(order.total_price)}</p>
+                            {showPrices && <p className="font-bold text-gray-700 text-sm mt-1">{fmtCurrency(order.total_price)}</p>}
                             {order.due_date && !isDel && <p className={`text-[10px] mt-0.5 flex items-center gap-1 ${od ? 'text-red-500 font-bold' : 'text-gray-400'}`}><Calendar size={9} />{new Date(order.due_date).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}{od && ' vencido'}</p>}
-                            {!isDel && <p className={`text-[10px] mt-0.5 ${pd >= order.total_price ? 'text-green-600' : pd > 0 ? 'text-gray-500' : 'text-amber-500'}`}>{pd >= order.total_price ? t('paid') + ' ✓' : pd > 0 ? `${t('deposit')}: ${fmtCurrency(pd)}` : t('noPayments')}</p>}
+                            {!isDel && showPrices && <p className={`text-[10px] mt-0.5 ${pd >= order.total_price ? 'text-green-600' : pd > 0 ? 'text-gray-500' : 'text-amber-500'}`}>{pd >= order.total_price ? t('paid') + ' ✓' : pd > 0 ? `${t('deposit')}: ${fmtCurrency(pd)}` : t('noPayments')}</p>}
                             {state === 'ready' && (
                               <button onClick={e => { e.stopPropagation(); setStatus(order.id, 'delivered') }}
                                 className="mt-2 w-full text-[10px] py-1 rounded-md font-semibold text-green-700 bg-green-50 border border-green-100 hover:bg-green-100 transition-colors">
@@ -465,7 +467,7 @@ export default function OrdersPage() {
                 {(() => { const first = (detailOrder.items || [])[0]; return first ? (
                   <p className="text-[10px] text-gray-500 mt-0.5 flex items-center gap-1"><TechBadge t={first.tecnica} />{first.cantidad}× {first.nombre}</p>
                 ) : null })()}
-                <p className="text-xs text-gray-400 mt-0.5">{fmtCurrency(detailOrder.total_price)}</p>
+                {showPrices && <p className="text-xs text-gray-400 mt-0.5">{fmtCurrency(detailOrder.total_price)}</p>}
               </div>
               <div className="flex gap-1">
                 <button onClick={() => printOrder(detailOrder)} className="p-2 rounded-lg hover:bg-gray-100 text-gray-400" title="Imprimir">🖨️</button>

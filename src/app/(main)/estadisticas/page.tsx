@@ -9,6 +9,7 @@ import { jsPDF } from 'jspdf'
 import * as XLSX from 'xlsx'
 import { useTranslations } from '@/shared/hooks/useTranslations'
 import { useLocale } from '@/shared/context/LocaleContext'
+import { usePermissions } from '@/shared/context/PermissionsContext'
 
 // fmt provided by useLocale().fmt
 function fmtK(n: number) { return n >= 1000000 ? `$${(n / 1000000).toFixed(1)}M` : n >= 1000 ? `$${Math.round(n / 1000)}k` : `$${n}` }
@@ -28,6 +29,7 @@ export default function EstadisticasPage() {
   const to = useTranslations('orders')
   const tc = useTranslations('common')
   const { fmt } = useLocale()
+  const { showCosts } = usePermissions()
   const SL: Record<string, string> = { pending: to('pending'), production: to('inProduction'), ready: to('ready'), delivered: to('delivered') }
   const supabase = createClient()
   const [loading, setLoading] = useState(true)
@@ -135,11 +137,6 @@ export default function EstadisticasPage() {
   const webRev = curOrders.filter(o => o.origen === 'catalogo_web').reduce((s, o) => s + (o.total_price as number || 0), 0)
   const originData = [{ name: t('manual'), value: manualRev || facturacion }, ...(webRev > 0 ? [{ name: t('webCatalog'), value: webRev }] : [])]
 
-  // Conversion
-  // Simplified: count presupuestos that have a matching order (by client or by code)
-  const convertedPres = 0 // placeholder — proper tracking needs a field on presupuestos
-  const conversionRate = curPres.length > 0 ? Math.round((convertedPres / curPres.length) * 100) : 0
-
   // Client ranking
   const clientMap = new Map<string, { pedidos: number; revenue: number; cost: number }>()
   curOrders.forEach(o => {
@@ -152,10 +149,10 @@ export default function EstadisticasPage() {
   })
   const clientRanking = [...clientMap.entries()].sort((a, b) => b[1].revenue - a[1].revenue).slice(0, 10)
 
-  // Conversion — count presupuestos that progressed beyond 'borrador'
-  const convertedCount = curPres.filter(p => p.estado && p.estado !== 'borrador').length
+  // Conversion — only count presupuestos explicitly marked as 'aceptado' (converted to order)
+  const convertedCount = Math.min(curPres.filter(p => p.estado === 'aceptado').length, curPres.length)
   const convRate = curPres.length > 0 ? Math.min(Math.round((convertedCount / curPres.length) * 100), 100) : 0
-  const prevConverted = prevPres.filter(p => p.estado && p.estado !== 'borrador').length
+  const prevConverted = Math.min(prevPres.filter(p => p.estado === 'aceptado').length, prevPres.length)
   const prevConvRate = prevPres.length > 0 ? Math.min(Math.round((prevConverted / prevPres.length) * 100), 100) : 0
 
   // Evolution — last 6 months margin
@@ -188,7 +185,7 @@ export default function EstadisticasPage() {
       facturacion: fac, pedidos: po.length,
       ticket: po.length > 0 ? Math.round(fac / po.length) : 0,
       margen: facC > 0 ? Math.round(((facC - costsT) / facC) * 100) : 0,
-      conversion: pp.length > 0 ? Math.min(Math.round((pp.filter(p => p.estado && p.estado !== 'borrador').length / pp.length) * 100), 100) : 0,
+      conversion: pp.length > 0 ? Math.min(Math.round((pp.filter(p => p.estado === 'aceptado').length / pp.length) * 100), 100) : 0,
       presupuestos: pp.length,
     }
   }
@@ -303,6 +300,7 @@ export default function EstadisticasPage() {
       )}
 
       {/* Rentabilidad */}
+      {showCosts && (
       <div className="card p-5 mb-6">
         <h2 className="font-bold text-gray-800 mb-4">{t('profitability')}</h2>
         <div className="grid grid-cols-3 gap-3 mb-4">
@@ -314,6 +312,7 @@ export default function EstadisticasPage() {
         <div className="flex gap-4 text-xs text-gray-500"><span>■ {t('profit')} {margen}%</span><span className="text-gray-300">□ {t('costs')} {100 - margen}%</span></div>
         {sinCosto > 0 && <p className="text-xs text-amber-600 mt-2">⚠️ {sinCosto} {t('noCostWarning')}</p>}
       </div>
+      )}
 
       {/* Products */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
@@ -321,10 +320,12 @@ export default function EstadisticasPage() {
           <h2 className="font-bold text-gray-800 mb-3">{t('topSelling')}</h2>
           {topSold.length > 0 ? <div className="space-y-2">{topSold.map(([n, v], i) => <div key={n} className="flex items-center gap-2"><span className="text-xs font-bold text-gray-400 w-5">{i + 1}.</span><div className="flex-1 min-w-0"><p className="text-sm font-medium text-gray-800 truncate">{n}</p><p className="text-xs text-gray-400">{v.units} u. — {fmt(v.revenue)}</p></div></div>)}</div> : <p className="text-sm text-gray-400">{tc('noData')}</p>}
         </div>
+        {showCosts && (
         <div className="card p-5">
           <h2 className="font-bold text-gray-800 mb-3">{t('topProfitable')}</h2>
           {topMargin.length > 0 ? <div className="space-y-2">{topMargin.map((p, i) => <div key={p.name} className="flex items-center gap-2"><span className="text-xs font-bold text-gray-400 w-5">{i + 1}.</span><div className="flex-1 min-w-0"><p className="text-sm font-medium text-gray-800 truncate">{p.name}</p><p className="text-xs text-gray-400">margen {p.margin}% — {fmt(p.profit)}</p></div></div>)}</div> : <p className="text-sm text-gray-400">{t('noCostData')}</p>}
         </div>
+        )}
       </div>
 
       {/* By technique + origin */}
@@ -355,7 +356,7 @@ export default function EstadisticasPage() {
               <th className="text-left px-2 py-2 text-xs text-gray-400 font-semibold">{to('client')}</th>
               <th className="text-left px-2 py-2 text-xs text-gray-400 font-semibold">{t('orders')}</th>
               <th className="text-left px-2 py-2 text-xs text-gray-400 font-semibold">{t('revenue')}</th>
-              <th className="text-left px-2 py-2 text-xs text-gray-400 font-semibold">{t('grossMargin')}</th>
+              {showCosts && <th className="text-left px-2 py-2 text-xs text-gray-400 font-semibold">{t('grossMargin')}</th>}
             </tr></thead><tbody>
               {clientRanking.map(([n, v], i) => {
                 const m = v.cost > 0 ? Math.round(((v.revenue - v.cost) / v.revenue) * 100) : null
@@ -365,7 +366,7 @@ export default function EstadisticasPage() {
                     <td className="px-2 py-2 font-medium text-gray-800">{n}</td>
                     <td className="px-2 py-2 text-gray-600">{v.pedidos}</td>
                     <td className="px-2 py-2 font-semibold text-gray-800">{fmt(v.revenue)}</td>
-                    <td className="px-2 py-2">{m !== null ? <span className={m >= 40 ? 'text-green-600' : m >= 20 ? 'text-amber-600' : 'text-red-500'}>{m}%</span> : <span className="text-gray-300">—</span>}</td>
+                    {showCosts && <td className="px-2 py-2">{m !== null ? <span className={m >= 40 ? 'text-green-600' : m >= 20 ? 'text-amber-600' : 'text-red-500'}>{m}%</span> : <span className="text-gray-300">—</span>}</td>}
                   </tr>
                 )
               })}
@@ -394,7 +395,7 @@ export default function EstadisticasPage() {
       </div>
 
       {/* Evolution */}
-      <div className="card p-5 mb-6">
+      {showCosts && <div className="card p-5 mb-6">
         <h2 className="font-bold text-gray-800 mb-4">{t('profitEvolution')}</h2>
         {evolutionData.some(d => d.revenue > 0) ? (<>
           <ResponsiveContainer width="100%" height={200}>
@@ -411,7 +412,7 @@ export default function EstadisticasPage() {
             {evoWorst && evoWorst.revenue > 0 && <span>{t('worstMonth')}: <span className="font-bold text-red-500">{evoWorst.name} ({evoWorst.margin}%)</span></span>}
           </div>
         </>) : <p className="text-sm text-gray-400">{t('noSufficientData')}</p>}
-      </div>
+      </div>}
 
       {/* Compare periods */}
       <div className="card p-5 mb-6">
@@ -429,7 +430,7 @@ export default function EstadisticasPage() {
             { label: t('revenue'), va: fmt(a.facturacion), vb: fmt(b.facturacion), change: pct(b.facturacion, a.facturacion), unit: '%' },
             { label: t('orders'), va: String(a.pedidos), vb: String(b.pedidos), change: pct(b.pedidos, a.pedidos), unit: '%' },
             { label: t('avgTicket'), va: fmt(a.ticket), vb: fmt(b.ticket), change: pct(b.ticket, a.ticket), unit: '%' },
-            { label: t('grossMargin'), va: `${a.margen}%`, vb: `${b.margen}%`, change: b.margen - a.margen, unit: 'pp' },
+            ...(showCosts ? [{ label: t('grossMargin'), va: `${a.margen}%`, vb: `${b.margen}%`, change: b.margen - a.margen, unit: 'pp' }] : []),
             { label: t('quoteConversion'), va: `${a.conversion}%`, vb: `${b.conversion}%`, change: b.conversion - a.conversion, unit: 'pp' },
           ]
           return (

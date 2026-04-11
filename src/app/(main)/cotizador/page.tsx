@@ -19,6 +19,7 @@ import NumericInput from '@/shared/components/NumericInput'
 import ProductionConfig from '@/features/calculator/components/ProductionConfig'
 import { useTranslations } from '@/shared/hooks/useTranslations'
 import { useLocale } from '@/shared/context/LocaleContext'
+import { usePermissions } from '@/shared/context/PermissionsContext'
 
 // Cotizador tabs: Sublimación, DTF (unified), Vinilo, Serigrafía
 type CotizadorTab = 'subli' | 'dtf_unified' | 'vinyl' | 'serigrafia'
@@ -28,6 +29,7 @@ export default function CotizadorPage() {
   const t = useTranslations('quoter')
   const tc = useTranslations('common')
   const { fmt } = useLocale()
+  const { showCosts } = usePermissions()
   const { addItem, items } = usePresupuesto()
 
   const [products, setProducts] = useState<any[]>([])
@@ -334,7 +336,7 @@ export default function CotizadorPage() {
               )}
 
               {product && (<><div><label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">{t('quantity')}</label>
-                <NumericInput className="input-base" min={1} value={engine.quantity} onChange={engine.setQuantity} /></div>
+                <NumericInput className="input-base" min={1} value={engine.quantity} onChange={engine.setQuantity} errorMessage="La cantidad mínima es 1" /></div>
 
               {result?.pedidoMinimoWarning && (
                 <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200">
@@ -570,7 +572,7 @@ export default function CotizadorPage() {
               </div>
 
               {/* Serigrafía upsell */}
-              {isSerigrafia && result && !result.pedidoMinimoWarning && result.costoSetupTotal && (
+              {showCosts && isSerigrafia && result && !result.pedidoMinimoWarning && result.costoSetupTotal && (
                 <div className="card p-4 bg-amber-50 border-amber-100">
                   <p className="text-xs text-amber-700">
                     El costo de pantallas ({fmt(result.costoSetupTotal)}) se divide entre las unidades.
@@ -660,8 +662,8 @@ export default function CotizadorPage() {
               <div><label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
                 <input className="input-base" value={saveProductModal.name} onChange={e => setSaveProductModal({ ...saveProductModal, name: e.target.value })} /></div>
               <div><label className="block text-sm font-medium text-gray-700 mb-1">Precio de venta ($)</label>
-                <NumericInput className="input-base" value={saveProductModal.price} onChange={v => setSaveProductModal({ ...saveProductModal, price: v })} /></div>
-              <p className="text-xs text-gray-400">Costo: {result ? fmt(Math.round(result.costoTotal)) : '—'} /unidad</p>
+                <NumericInput className="input-base" min={1} value={saveProductModal.price} onChange={v => setSaveProductModal({ ...saveProductModal, price: v })} errorMessage="El precio mínimo es 1" /></div>
+              {showCosts && <p className="text-xs text-gray-400">Costo: {result ? fmt(Math.round(result.costoTotal)) : '—'} /unidad</p>}
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" className="rounded border-gray-300 text-purple-600" checked={saveProductModal.visible}
                   onChange={() => setSaveProductModal({ ...saveProductModal, visible: !saveProductModal.visible })} />

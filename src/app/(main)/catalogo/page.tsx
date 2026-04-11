@@ -8,6 +8,7 @@ import CategoryModal from '@/features/taller/components/CategoryModal'
 import NumericInput from '@/shared/components/NumericInput'
 import { useTranslations } from '@/shared/hooks/useTranslations'
 import { useLocale } from '@/shared/context/LocaleContext'
+import { usePermissions } from '@/shared/context/PermissionsContext'
 
 interface CatalogProduct {
   id: string; name: string; description: string | null; category_id: string | null; photos: string[]
@@ -26,6 +27,7 @@ export default function CatalogoPage() {
   const t = useTranslations('catalog')
   const tc = useTranslations('common')
   const { fmt: fmtCurrency } = useLocale()
+  const { showCosts } = usePermissions()
   const [catalogProducts, setCatalogProducts] = useState<CatalogProduct[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [guiasTalles, setGuiasTalles] = useState<Array<{ id: string; nombre: string }>>([])
@@ -163,7 +165,7 @@ export default function CatalogoPage() {
       <div className="card" style={{ overflow: 'visible' }}>
         <div>
           <table className="w-full"><thead><tr className="border-b border-gray-100">
-            {['', t('productName').replace(' *', ''), t('cost'), t('price'), t('margin'), t('stock'), '', ''].map((h, i) =>
+            {['', t('productName').replace(' *', ''), ...(showCosts ? [t('cost')] : []), t('price'), ...(showCosts ? [t('margin')] : []), t('stock'), '', ''].map((h, i) =>
               <th key={i} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 py-3">{h}</th>)}
           </tr></thead><tbody>
             {filtered.map(p => {
@@ -179,9 +181,9 @@ export default function CatalogoPage() {
                     <p className="font-medium text-gray-800">{p.name}</p>
                     {p.description && <p className="text-xs text-gray-400 truncate max-w-[200px]">{p.description}</p>}
                   </td>
-                  <td className="px-3 py-3 text-gray-600 text-sm">{fmtCurrency(p.unit_cost)}</td>
+                  {showCosts && <td className="px-3 py-3 text-gray-600 text-sm">{fmtCurrency(p.unit_cost)}</td>}
                   <td className="px-3 py-3 font-semibold text-gray-800 text-sm">{fmtCurrency(p.selling_price)}</td>
-                  <td className="px-3 py-3"><span className={`text-sm font-medium ${marginColor(margin)}`}>{margin}%</span></td>
+                  {showCosts && <td className="px-3 py-3"><span className={`text-sm font-medium ${marginColor(margin)}`}>{margin}%</span></td>}
                   <td className="px-3 py-3 text-sm">
                     {p.manage_stock ? (
                       <div className="relative inline-block">
@@ -257,15 +259,15 @@ export default function CatalogoPage() {
 
               {/* Cost & Price */}
               <div className="border-t border-gray-100 pt-4">
-                <div className="grid grid-cols-3 gap-3">
-                  <div><label className="block text-sm font-medium text-gray-700 mb-1">{t('unitCost')}</label>
-                    <NumericInput className="input-base" value={catModal.unit_cost || 0} onChange={v => setCatModal({ ...catModal, unit_cost: v })} /></div>
+                <div className={`grid gap-3 ${showCosts ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                  {showCosts && <div><label className="block text-sm font-medium text-gray-700 mb-1">{t('unitCost')}</label>
+                    <NumericInput className="input-base" value={catModal.unit_cost || 0} onChange={v => setCatModal({ ...catModal, unit_cost: v })} /></div>}
                   <div><label className="block text-sm font-medium text-gray-700 mb-1">{t('salePrice')}</label>
                     <NumericInput className="input-base" value={catModal.selling_price || 0} onChange={v => setCatModal({ ...catModal, selling_price: v })} /></div>
                   <div><label className="block text-sm font-medium text-gray-700 mb-1">{t('previousPrice')}</label>
                     <NumericInput className="input-base" value={catModal.precio_anterior || 0} onChange={v => setCatModal({ ...catModal, precio_anterior: v || null })} /></div>
                 </div>
-                {catMargin > 0 && <p className={`text-xs font-medium mt-1.5 ${marginColor(catMargin)}`}>Margen: {catMargin}%</p>}
+                {showCosts && catMargin > 0 && <p className={`text-xs font-medium mt-1.5 ${marginColor(catMargin)}`}>Margen: {catMargin}%</p>}
                 {(catModal.precio_anterior || 0) > (catModal.selling_price || 0) && <p className="text-xs text-red-500 mt-0.5">-{Math.round((1 - (catModal.selling_price || 0) / (catModal.precio_anterior || 1)) * 100)}% {t('discount')}</p>}
               </div>
 

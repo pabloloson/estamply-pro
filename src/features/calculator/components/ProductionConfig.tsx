@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { Settings2 } from 'lucide-react'
 import type { Insumo, TecnicaSlug } from '@/features/taller/types'
 
@@ -29,20 +30,23 @@ export default function ProductionConfig({
   onPapelChange, onTintaChange, onPrinterChange, onPressChange,
   dtfMode, onDtfModeChange,
 }: ProductionConfigProps) {
-  const [open, setOpen] = useState(false)
-
   const isDTF = slug === 'dtf' || slug === 'dtf_uv'
   const isSubli = slug === 'subli'
   const isVinyl = slug === 'vinyl'
   const isTercerizado = isDTF && dtfMode === 'tercerizado'
 
   const showMode = isDTF
-  const showPapel = (isSubli || (isDTF && !isTercerizado)) && papelInsumos.length > 0
+  const needsPapel = isSubli || (isDTF && !isTercerizado)
+  const showPapel = needsPapel && papelInsumos.length > 0
+  const showPapelEmpty = needsPapel && papelInsumos.length === 0
+
+  // Auto-open when paper is missing so user sees the warning
+  const [open, setOpen] = useState(showPapelEmpty)
   const showTinta = (isSubli || (isDTF && !isTercerizado)) && tintaInsumos.length > 0
   const showPrinter = (isSubli || isVinyl || (isDTF && !isTercerizado)) && printers.length > 0
   const showPress = presses.length > 0 && slug !== 'serigrafia'
 
-  if (!showMode && !showPapel && !showPrinter && !showPress) return null
+  if (!showMode && !showPapel && !showPapelEmpty && !showPrinter && !showPress) return null
 
   const printerLabel = isVinyl ? 'Plotter de corte' : isDTF ? (slug === 'dtf_uv' ? 'Plotter UV' : 'Plotter de impresión') : 'Impresora'
   const papelLabel = isDTF ? 'Film DTF' : 'Papel / Film'
@@ -88,6 +92,15 @@ export default function ProductionConfig({
                   return <option key={ins.id} value={ins.id}>{ins.nombre} — {fmtStr}</option>
                 })}
               </select>
+            </div>
+          )}
+
+          {showPapelEmpty && (
+            <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200">
+              <p className="text-[10px] font-medium text-amber-700">
+                No hay {papelLabel.toLowerCase()} vinculado a esta técnica.{' '}
+                <Link href="/materiales" className="underline font-bold hover:text-amber-900">Configurar en Materiales</Link>
+              </p>
             </div>
           )}
 
