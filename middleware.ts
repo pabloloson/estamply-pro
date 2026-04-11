@@ -2,7 +2,6 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 const APP_HOST = 'app.estamply.app'
-const MAIN_HOSTS = ['estamply.app', 'www.estamply.app']
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
@@ -27,30 +26,28 @@ export async function middleware(request: NextRequest) {
   )
 
   const { pathname } = request.nextUrl
-  const host = request.headers.get('host') || ''
-  const isMainDomain = MAIN_HOSTS.some(h => host === h || host.startsWith(`${h}:`))
+  const host = (request.headers.get('host') || '').toLowerCase()
+  const isAppSubdomain = host.startsWith('app.')
   const isLocalhost = host.startsWith('localhost') || host.startsWith('127.0.0.1')
 
-  // ── MAIN DOMAIN (estamply.app): landing + public routes only ──
-  if (isMainDomain && !isLocalhost) {
-    const landingRoutes = ['/', '/br', '/catalogo/', '/p/', '/terms', '/privacy']
-    const isLandingRoute = landingRoutes.some(r => r === pathname || pathname.startsWith(r))
-
-    if (isLandingRoute) {
-      return supabaseResponse // Serve landing/public content
-    }
-
+  // ── MAIN DOMAIN (estamply.app, www.estamply.app, or any non-app. host): NO AUTH ──
+  if (!isAppSubdomain && !isLocalhost) {
     // Redirect auth/app routes to app subdomain
-    const appUrl = new URL(request.url)
-    appUrl.hostname = APP_HOST
-    appUrl.port = '' // Remove port for production
+    const appRedirectRoutes = ['/login', '/signup', '/register', '/admin', '/dashboard',
+      '/cotizador', '/presupuesto', '/orders', '/clients', '/materiales',
+      '/equipamiento', '/tecnicas', '/settings', '/estadisticas', '/onboarding']
+    const shouldRedirectToApp = appRedirectRoutes.some(r => pathname === r || pathname.startsWith(r + '/'))
 
-    // Map /register to /signup on app subdomain
-    if (pathname === '/register') {
-      appUrl.pathname = '/signup'
+    if (shouldRedirectToApp) {
+      const appUrl = new URL(request.url)
+      appUrl.hostname = APP_HOST
+      appUrl.port = ''
+      if (pathname === '/register') appUrl.pathname = '/signup'
+      return NextResponse.redirect(appUrl, 301)
     }
 
-    return NextResponse.redirect(appUrl, 301)
+    // Everything else on main domain: serve without auth (landing, /br, /catalogo/*, /p/*, etc.)
+    return supabaseResponse
   }
 
   // ── APP SUBDOMAIN (app.estamply.app) or LOCALHOST: normal auth logic ──
