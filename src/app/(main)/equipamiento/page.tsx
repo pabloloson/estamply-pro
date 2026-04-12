@@ -61,9 +61,15 @@ export default function EquipamientoPage() {
   async function saveEquip() {
     if (!modal?.name) return; setSaving(true)
     const payload = { name: modal.name, marca: modal.marca || null, type: modal.type || 'press_flat', clasificacion: modal.clasificacion || 'plancha', cost: modal.cost || 0, lifespan_uses: modal.lifespan_uses || 1000, tecnicas_slugs: modal.tecnicas_slugs || [], assigned_paper_id: modal.assigned_paper_id || null, assigned_ink_id: modal.assigned_ink_id || null }
+    // Always send user_id explicitly — fallback to auth.uid() if effectiveUserId not set
+    let userId = effectiveUserId
+    if (!userId) {
+      const { data: { user } } = await supabase.auth.getUser()
+      userId = user?.id || null
+    }
     const { error } = modal.id
       ? await supabase.from('equipment').update(payload).eq('id', modal.id)
-      : await supabase.from('equipment').insert({ ...payload, ...(effectiveUserId ? { user_id: effectiveUserId } : {}) })
+      : await supabase.from('equipment').insert({ ...payload, user_id: userId })
     if (error) { alert(`Error: ${error.message}`); setSaving(false); return }
     setModal(null); setSaving(false); load()
   }
