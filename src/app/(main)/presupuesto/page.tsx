@@ -691,17 +691,19 @@ export default function PresupuestoPage() {
                       ))}
                     </tbody>
                   </table>
+                </div>
 
-                  {/* Add items buttons */}
-                  <div className="mt-4 no-print flex gap-2">
-                    <Link href="/cotizador" className="flex-1 flex flex-col items-center gap-1 py-3 rounded-xl border border-dashed border-gray-200 hover:border-purple-300 hover:bg-purple-50/30 transition-colors text-center">
-                      <Calculator size={16} className="text-gray-400" /><span className="text-[10px] font-semibold text-gray-500">Desde cotizador</span>
+                {/* Add items buttons — visible on ALL screens */}
+                <div className="px-4 sm:px-8 py-3">
+                  <div className="no-print grid grid-cols-3 gap-2">
+                    <Link href="/cotizador" className="flex flex-col items-center justify-center gap-1 h-12 sm:py-3 rounded-xl border border-dashed border-gray-200 hover:border-purple-300 hover:bg-purple-50/30 transition-colors text-center">
+                      <Calculator size={14} className="text-gray-400" /><span className="text-[10px] font-semibold text-gray-500">Cotizador</span>
                     </Link>
-                    <button type="button" onClick={() => { setShowAddPanel('catalog'); loadCatalog() }} className="flex-1 flex flex-col items-center gap-1 py-3 rounded-xl border border-dashed border-gray-200 hover:border-purple-300 hover:bg-purple-50/30 transition-colors">
-                      <ShoppingCart size={16} className="text-gray-400" /><span className="text-[10px] font-semibold text-gray-500">Desde catálogo</span>
+                    <button type="button" onClick={() => { setShowAddPanel('catalog'); loadCatalog() }} className="flex flex-col items-center justify-center gap-1 h-12 sm:py-3 rounded-xl border border-dashed border-gray-200 hover:border-purple-300 hover:bg-purple-50/30 transition-colors">
+                      <ShoppingCart size={14} className="text-gray-400" /><span className="text-[10px] font-semibold text-gray-500">Catálogo</span>
                     </button>
-                    <button type="button" onClick={() => setShowAddPanel('free')} className="flex-1 flex flex-col items-center gap-1 py-3 rounded-xl border border-dashed border-gray-200 hover:border-purple-300 hover:bg-purple-50/30 transition-colors">
-                      <Plus size={16} className="text-gray-400" /><span className="text-[10px] font-semibold text-gray-500">Item libre</span>
+                    <button type="button" onClick={() => setShowAddPanel('free')} className="flex flex-col items-center justify-center gap-1 h-12 sm:py-3 rounded-xl border border-dashed border-gray-200 hover:border-purple-300 hover:bg-purple-50/30 transition-colors">
+                      <Plus size={14} className="text-gray-400" /><span className="text-[10px] font-semibold text-gray-500">Item libre</span>
                     </button>
                   </div>
                   {showAddPanel === 'free' && (
@@ -751,9 +753,11 @@ export default function PresupuestoPage() {
                       </>)}
                     </div>
                   )}
+                </div>
 
-                  {/* Totals */}
-                  <div className="mt-4 flex justify-end">
+                {/* Totals */}
+                <div className="px-4 sm:px-8 py-3">
+                  <div className="flex justify-end">
                     <div className="w-60 space-y-1.5">
                       <div className="flex justify-between text-sm text-gray-500"><span>Subtotal</span><span className="font-medium text-gray-700">{fmtCurrency(totalVenta)}</span></div>
                       <div className="flex justify-between pt-2" style={{ borderTop: '2px solid #6C5CE7' }}>
