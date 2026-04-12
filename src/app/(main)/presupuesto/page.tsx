@@ -228,6 +228,11 @@ export default function PresupuestoPage() {
     addItem({ tecnica: 'subli', nombre: selectedCatalogProduct.name, costoUnit: 0, precioUnit: selectedCatalogProduct.selling_price, precioSinDesc: selectedCatalogProduct.selling_price, cantidad: qty, subtotal: qty * selectedCatalogProduct.selling_price, ganancia: qty * selectedCatalogProduct.selling_price, origen: 'catalogo' })
     setSelectedCatalogProduct(null); setCatalogQty(1); setCatalogSearch(''); setShowAddPanel(null)
   }
+  async function reloadList() {
+    const { data: saved } = await supabase.from('presupuestos').select('id,codigo,numero,client_name,client_id,total,origen,created_at').order('created_at', { ascending: false }).limit(20)
+    if (saved) setSavedPresupuestos(saved as typeof savedPresupuestos)
+  }
+
   async function loadCatalog() {
     if (catalogProducts.length > 0) return
     const { data } = await supabase.from('catalog_products').select('id, name, selling_price, photos').eq('visible_in_catalog', true).order('name')
@@ -421,7 +426,7 @@ export default function PresupuestoPage() {
         {/* ══ DETAIL VIEW: when items are loaded ══ */}
         <div className="mb-6 no-print">
           <div className="flex items-center gap-2">
-            <button onClick={() => { clearItems(); setPublicLink(''); setCreatingNew(false); setDbPresupuestoId(null) }} className="text-gray-400 hover:text-gray-600"><ArrowLeft size={18} /></button>
+            <button onClick={() => { clearItems(); setPublicLink(''); setCreatingNew(false); setDbPresupuestoId(null); reloadList() }} className="text-gray-400 hover:text-gray-600"><ArrowLeft size={18} /></button>
             <h1 className="text-2xl font-black text-gray-900">Presupuesto</h1>
             {loadedPresupuestoId && savedPresupuestos.find(p => p.id === loadedPresupuestoId)?.origen === 'catalogo_web' && (
               <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold bg-green-100 text-green-600">Catálogo</span>
