@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -82,6 +82,8 @@ export default function PresupuestoPage() {
   const [catalogQty, setCatalogQty] = useState(1)
   const [selectedCatalogProduct, setSelectedCatalogProduct] = useState<{ id: string; name: string; selling_price: number } | null>(null)
   const [creatingNew, setCreatingNew] = useState(false)
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const [dbPresupuestoId, setDbPresupuestoId] = useState<string | null>(null)
 
   const defaultCondiciones = '· Se requiere seña para iniciar el trabajo.\n· El tiempo de entrega se confirma al aprobar el presupuesto.\n· Los precios pueden variar si cambian los costos de materiales.'
   const [condiciones, setCondiciones] = useState(defaultCondiciones)
@@ -133,6 +135,7 @@ export default function PresupuestoPage() {
     }))
     loadItems(mapped)
     setLoadedPresupuestoId(presId)
+    setDbPresupuestoId(presId)
     // Load client
     if (data.client_id) setClientId(data.client_id)
     else if (data.client_name) setNewClientName(data.client_name)
@@ -151,6 +154,57 @@ export default function PresupuestoPage() {
         (c.phone || '').includes(clientSearch)
       ).slice(0, 5)
     : clients.slice(0, 5)
+
+  // ── Autosave: persist presupuesto to DB ──
+  async function ensureDbPresupuesto(): Promise<string | null> {
+    if (dbPresupuestoId) return dbPresupuestoId
+    if (loadedPresupuestoId) { setDbPresupuestoId(loadedPresupuestoId); return loadedPresupuestoId }
+    // Create new presupuesto in DB
+    const codigo = genCodigo()
+    const { data, error } = await supabase.from('presupuestos').insert({
+      codigo, numero: quoteNumber, validez_dias: validezDias,
+      client_id: clientId || null, client_name: clientDisplayName || null,
+      items: [], total: 0, condiciones, business_profile: bizProfile || {},
+    }).select('id').single()
+    if (error || !data) { console.error('Failed to create presupuesto:', error); return null }
+    const id = data.id as string
+    setDbPresupuestoId(id)
+    setLoadedPresupuestoId(id)
+    setPublicLink(`${window.location.origin}/p/${codigo}`)
+    // Reload saved list
+    const { data: saved } = await supabase.from('presupuestos').select('id,codigo,numero,client_name,client_id,total,origen,created_at').order('created_at', { ascending: false }).limit(20)
+    if (saved) setSavedPresupuestos(saved as typeof savedPresupuestos)
+    return id
+  }
+
+  async function autoSave(fields?: Record<string, unknown>) {
+    const pid = await ensureDbPresupuesto()
+    if (!pid) return
+    setSaveStatus('saving')
+    const itemsData = items.map(i => ({ tecnica: i.tecnica, nombre: i.nombre, cantidad: i.cantidad, precioUnit: i.precioUnit, precioSinDesc: i.precioSinDesc, subtotal: i.subtotal, notas: i.notas, origen: i.origen }))
+    const { error } = await supabase.from('presupuestos').update({
+      items: itemsData,
+      total: items.reduce((s, i) => s + i.subtotal, 0),
+      client_id: clientId || null,
+      client_name: clientDisplayName || null,
+      condiciones,
+      validez_dias: validezDias,
+      ...fields,
+    }).eq('id', pid)
+    if (error) { setSaveStatus('error'); console.error('Autosave error:', error) }
+    else { setSaveStatus('saved'); setTimeout(() => setSaveStatus(s => s === 'saved' ? 'idle' : s), 2000) }
+  }
+
+  // Trigger autosave when items, client, or conditions change (debounced)
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => {
+    // Only autosave if we're in detail view (have items or creating new)
+    if (items.length === 0 && !creatingNew && !loadedPresupuestoId) return
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+    saveTimerRef.current = setTimeout(() => { autoSave() }, 800)
+    return () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current) }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, clientId, newClientName, condiciones, validezDias])
 
   function startEdit(item: import('@/features/presupuesto/types').PresupuestoItem) {
     setEditingItemId(item.id)
@@ -367,12 +421,17 @@ export default function PresupuestoPage() {
         {/* ══ DETAIL VIEW: when items are loaded ══ */}
         <div className="mb-6 no-print">
           <div className="flex items-center gap-2">
-            <button onClick={() => { clearItems(); setPublicLink(''); setCreatingNew(false) }} className="text-gray-400 hover:text-gray-600"><ArrowLeft size={18} /></button>
+            <button onClick={() => { clearItems(); setPublicLink(''); setCreatingNew(false); setDbPresupuestoId(null) }} className="text-gray-400 hover:text-gray-600"><ArrowLeft size={18} /></button>
             <h1 className="text-2xl font-black text-gray-900">Presupuesto</h1>
             {loadedPresupuestoId && savedPresupuestos.find(p => p.id === loadedPresupuestoId)?.origen === 'catalogo_web' && (
               <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold bg-green-100 text-green-600">Catálogo</span>
             )}
-            {!loadedPresupuestoId && <span className="text-sm text-gray-400">{items.length} {items.length === 1 ? 'ítem' : 'ítems'}</span>}
+            {!loadedPresupuestoId && !creatingNew && <span className="text-sm text-gray-400">{items.length} {items.length === 1 ? 'ítem' : 'ítems'}</span>}
+            <span className="ml-auto">
+              {saveStatus === 'saving' && <span className="text-xs text-gray-400 animate-pulse">Guardando...</span>}
+              {saveStatus === 'saved' && <span className="text-xs text-green-600">✓ Guardado</span>}
+              {saveStatus === 'error' && <span className="text-xs text-red-500">Error al guardar</span>}
+            </span>
           </div>
           {loadedPresupuestoId && (
             <p className="text-xs text-gray-400 mt-1 ml-7">#{savedPresupuestos.find(p => p.id === loadedPresupuestoId)?.codigo || ''}</p>
