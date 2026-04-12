@@ -139,6 +139,9 @@ export default function PresupuestoPage() {
     // Load client
     if (data.client_id) setClientId(data.client_id)
     else if (data.client_name) setNewClientName(data.client_name)
+    // Load conditions and validez
+    if (data.condiciones) setCondiciones(data.condiciones as string)
+    if (data.validez_dias) setValidezDias(data.validez_dias as number)
     // Load public link
     if (data.codigo) setPublicLink(`/p/${data.codigo}`)
   }
@@ -242,13 +245,15 @@ export default function PresupuestoPage() {
 
     const techniqueLabel = (t: string) => ({ subli: 'Sublimación', dtf: 'DTF Textil', dtf_uv: 'DTF UV', vinyl: 'Vinilo', serigrafia: 'Serigrafía' }[t] || '')
 
+    // Determine if any item has a real technique
+    const showTechCol = items.some(item => item.origen !== 'manual' && item.origen !== 'catalogo' && item.costoUnit > 0)
+
     const itemRows = items.map(item => {
-      // Show technique only for cotizador items with a real technique
       const hasTechnique = item.origen !== 'manual' && item.origen !== 'catalogo' && item.costoUnit > 0
       const techText = hasTechnique ? techniqueLabel(item.tecnica) : ''
       return `
       <tr>
-        <td style="padding:10px 8px;font-size:12px;color:#333">${techText}</td>
+        ${showTechCol ? `<td style="padding:10px 8px;font-size:12px;color:#333">${techText}</td>` : ''}
         <td style="padding:10px 8px"><div style="font-weight:500">${item.nombre}</div>${item.notas ? `<div style="font-size:11px;color:#999">${item.notas}</div>` : ''}</td>
         <td style="padding:10px 8px;text-align:center">${item.cantidad}</td>
         <td style="padding:10px 8px;text-align:right">${fmtCurrency(item.precioUnit)}</td>
@@ -269,6 +274,7 @@ export default function PresupuestoPage() {
 
     const condHtml = condiciones.split('\n').map(l => `<div>${l}</div>`).join('')
 
+    const bizCuit = bizProfile?.business_cuit ? `<div style="font-size:12px;color:#666">${bizProfile.business_cuit}</div>` : ''
     const bizAddr = bizProfile?.business_address ? `<div style="font-size:12px;color:#666">${bizProfile.business_address}</div>` : ''
     const bizPhone = bizProfile?.business_phone ? `<div style="font-size:12px;color:#666">${bizProfile.business_phone}</div>` : ''
     const bizEmail = bizProfile?.business_email ? `<div style="font-size:12px;color:#666">${bizProfile.business_email}</div>` : ''
@@ -281,14 +287,12 @@ export default function PresupuestoPage() {
       thead tr{border-bottom:2px solid #e5e7eb}
       tbody tr{border-bottom:1px solid #f3f4f6}
       th{font-size:11px;text-transform:uppercase;color:#999;font-weight:600;padding:10px 8px;text-align:left}
-      th:nth-child(3){text-align:center}
-      th:nth-child(4),th:nth-child(5){text-align:right}
       @page{size:A4;margin:0}
     </style></head><body>
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #333">
         <div>
           <div style="font-size:22px;font-weight:800">${tallerName || 'Mi Taller'}</div>
-          ${bizAddr}${bizPhone}${bizEmail}
+          ${bizCuit}${bizAddr}${bizPhone}${bizEmail}
         </div>
         <div style="text-align:right">
           <div style="font-size:11px;color:#999;text-transform:uppercase;letter-spacing:2px">Presupuesto</div>
@@ -299,7 +303,7 @@ export default function PresupuestoPage() {
       </div>
       ${clientHtml}
       <table style="margin-bottom:24px">
-        <thead><tr><th>Técnica</th><th>Descripción</th><th>Cant.</th><th>P. Unit.</th><th>Subtotal</th></tr></thead>
+        <thead><tr>${showTechCol ? '<th>Técnica</th>' : ''}<th>Descripción</th><th style="text-align:center">Cant.</th><th style="text-align:right">P. Unit.</th><th style="text-align:right">Subtotal</th></tr></thead>
         <tbody>${itemRows}</tbody>
       </table>
       <div style="display:flex;justify-content:flex-end;margin-bottom:32px">
