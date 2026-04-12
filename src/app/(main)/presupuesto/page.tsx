@@ -6,7 +6,7 @@ import Link from 'next/link'
 import {
   ShoppingCart, Trash2, FileDown, MessageCircle, Mail, X,
   ArrowLeft, Loader2, Phone, MapPin, Globe, AtSign, Pencil,
-  Link as LinkIcon, Check,
+  Link as LinkIcon, Check, Search, Plus, User,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { usePresupuesto } from '@/features/presupuesto/context/PresupuestoContext'
@@ -49,6 +49,12 @@ export default function PresupuestoPage() {
 
   const [clientId, setClientId] = useState('')
   const [newClientName, setNewClientName] = useState('')
+  const [clientSearch, setClientSearch] = useState('')
+  const [clientDropdownOpen, setClientDropdownOpen] = useState(false)
+  const [showNewClientForm, setShowNewClientForm] = useState(false)
+  const [newClientPhone, setNewClientPhone] = useState('')
+  const [newClientEmail, setNewClientEmail] = useState('')
+  const [savingNewClient, setSavingNewClient] = useState(false)
   const [dueDate, setDueDate] = useState('')
   const [advanceMode, setAdvanceMode] = useState<'percent' | 'fixed'>('percent')
   const [advancePercent, setAdvancePercent] = useState(50)
@@ -126,6 +132,36 @@ export default function PresupuestoPage() {
 
   const selectedClient = clients.find(c => c.id === clientId)
   const clientDisplayName = selectedClient?.name || newClientName || ''
+
+  const filteredClients = clientSearch.trim()
+    ? clients.filter(c =>
+        c.name.toLowerCase().includes(clientSearch.toLowerCase()) ||
+        (c.email || '').toLowerCase().includes(clientSearch.toLowerCase()) ||
+        (c.whatsapp || '').includes(clientSearch) ||
+        (c.phone || '').includes(clientSearch)
+      ).slice(0, 5)
+    : clients.slice(0, 5)
+
+  async function createAndAssignClient() {
+    if (!newClientName.trim()) return
+    setSavingNewClient(true)
+    const { data, error } = await supabase.from('clients').insert({
+      name: newClientName.trim(),
+      phone: newClientPhone || null,
+      whatsapp: newClientPhone || null,
+      email: newClientEmail || null,
+    }).select().single()
+    setSavingNewClient(false)
+    if (error || !data) { alert('Error al crear cliente'); return }
+    setClients(prev => [...prev, data as DBClient])
+    setClientId(data.id)
+    setNewClientName('')
+    setNewClientPhone('')
+    setNewClientEmail('')
+    setShowNewClientForm(false)
+    setClientSearch('')
+    setClientDropdownOpen(false)
+  }
 
   useEffect(() => {
     async function loadData() {
@@ -365,25 +401,96 @@ export default function PresupuestoPage() {
                 {/* Client — in the document body */}
                 <div className="px-8 py-4 border-b border-gray-100" style={{ background: '#FAFAFA' }}>
                   <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">{t('client')}</p>
-                  {/* Edit mode (screen only) */}
+                  {/* Edit mode — Combobox (screen only) */}
                   <div className="no-print">
                     {loadingClients ? (
                       <div className="flex items-center gap-2 text-sm text-gray-400"><Loader2 size={14} className="animate-spin" /> Cargando…</div>
-                    ) : (
-                      <div className="flex flex-col sm:flex-row gap-2">
-                        <select className="input-base text-sm w-full sm:flex-1" value={clientId} onChange={e => { setClientId(e.target.value); if (e.target.value) setNewClientName('') }}>
-                          <option value="">Nuevo cliente…</option>
-                          {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                        </select>
-                        {!clientId && <input type="text" className="input-base text-sm w-full sm:flex-1" placeholder="Nombre del cliente" value={newClientName} onChange={e => setNewClientName(e.target.value)} />}
+                    ) : clientId ? (
+                      /* ── Selected client card ── */
+                      <div className="flex items-center justify-between p-3 rounded-xl bg-white border border-gray-200">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#6C5CE715' }}>
+                            <User size={14} style={{ color: '#6C5CE7' }} />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-medium text-sm text-gray-900 truncate">{selectedClient?.name}</p>
+                            <p className="text-[11px] text-gray-400 truncate">
+                              {[selectedClient?.email, selectedClient?.whatsapp || selectedClient?.phone].filter(Boolean).join(' · ') || 'Sin datos de contacto'}
+                            </p>
+                          </div>
+                        </div>
+                        <button onClick={() => { setClientId(''); setClientSearch(''); setNewClientName('') }} className="p-1.5 rounded-lg hover:bg-gray-100 flex-shrink-0">
+                          <X size={14} className="text-gray-400" />
+                        </button>
                       </div>
-                    )}
-                    {clientDisplayName && (
-                      <div className="mt-2">
-                        <p className="font-semibold text-gray-800 text-sm">{clientDisplayName}</p>
-                        <p className="text-[11px] text-gray-500">
-                          {[selectedClient?.email, selectedClient?.whatsapp || selectedClient?.phone].filter(Boolean).join(' · ')}
-                        </p>
+                    ) : (
+                      /* ── Search + create combobox ── */
+                      <div className="relative">
+                        <div className="flex gap-2">
+                          <div className="relative flex-1">
+                            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                            <input type="text" className="input-base !pl-9 text-sm" placeholder="Buscar cliente..."
+                              value={clientSearch} onChange={e => { setClientSearch(e.target.value); setClientDropdownOpen(true) }}
+                              onFocus={() => setClientDropdownOpen(true)} />
+                          </div>
+                          <button type="button" onClick={() => { setShowNewClientForm(true); setClientDropdownOpen(false); setNewClientName(clientSearch) }}
+                            className="flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap" style={{ background: '#6C5CE715', color: '#6C5CE7' }}>
+                            <Plus size={13} /> Nuevo
+                          </button>
+                        </div>
+
+                        {/* Dropdown results */}
+                        {clientDropdownOpen && !showNewClientForm && (
+                          <div className="absolute z-20 top-full mt-1 left-0 right-0 bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden max-h-60 overflow-y-auto">
+                            {filteredClients.length > 0 ? filteredClients.map(c => (
+                              <button key={c.id} type="button" className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-gray-50 text-left transition-colors border-b border-gray-50 last:border-0"
+                                onClick={() => { setClientId(c.id); setClientDropdownOpen(false); setClientSearch(''); setNewClientName('') }}>
+                                <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 text-xs font-bold text-gray-500">
+                                  {c.name[0]?.toUpperCase()}
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-sm font-medium text-gray-800 truncate">{c.name}</p>
+                                  <p className="text-[10px] text-gray-400 truncate">{c.email || c.whatsapp || c.phone || ''}</p>
+                                </div>
+                              </button>
+                            )) : clientSearch.trim() ? (
+                              <button type="button" className="w-full flex items-center gap-2 px-3 py-3 hover:bg-purple-50 text-left transition-colors"
+                                onClick={() => { setShowNewClientForm(true); setClientDropdownOpen(false); setNewClientName(clientSearch) }}>
+                                <Plus size={14} style={{ color: '#6C5CE7' }} />
+                                <span className="text-sm" style={{ color: '#6C5CE7' }}>Crear &ldquo;{clientSearch}&rdquo; como nuevo cliente</span>
+                              </button>
+                            ) : null}
+                          </div>
+                        )}
+
+                        {/* Click outside to close */}
+                        {clientDropdownOpen && <div className="fixed inset-0 z-10" onClick={() => setClientDropdownOpen(false)} />}
+
+                        {/* Inline new client form */}
+                        {showNewClientForm && (
+                          <div className="mt-2 p-3 rounded-xl border border-gray-200 bg-white space-y-2.5">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-500 mb-1">Nombre *</label>
+                              <input type="text" className="input-base text-sm" placeholder="Nombre del cliente" value={newClientName} onChange={e => setNewClientName(e.target.value)} autoFocus />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-500 mb-1">WhatsApp / Teléfono</label>
+                              <input type="tel" className="input-base text-sm" placeholder="+54 11 1234-5678" value={newClientPhone} onChange={e => setNewClientPhone(e.target.value)} />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-500 mb-1">Email</label>
+                              <input type="email" className="input-base text-sm" placeholder="email@ejemplo.com" value={newClientEmail} onChange={e => setNewClientEmail(e.target.value)} />
+                            </div>
+                            <div className="flex gap-2 pt-1">
+                              <button type="button" onClick={() => { setShowNewClientForm(false); setNewClientName(''); setNewClientPhone(''); setNewClientEmail('') }}
+                                className="flex-1 py-2 rounded-lg text-xs font-semibold text-gray-500 hover:bg-gray-50 border border-gray-200">Cancelar</button>
+                              <button type="button" onClick={createAndAssignClient} disabled={!newClientName.trim() || savingNewClient}
+                                className="flex-1 py-2 rounded-lg text-xs font-bold text-white disabled:opacity-40" style={{ background: '#6C5CE7' }}>
+                                {savingNewClient ? 'Creando...' : 'Crear y asignar'}
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
