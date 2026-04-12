@@ -6,6 +6,7 @@ import type { PresupuestoItem } from '../types'
 interface PresupuestoContextType {
   items: PresupuestoItem[]
   addItem: (item: Omit<PresupuestoItem, 'id'>) => void
+  updateItem: (id: string, changes: Partial<PresupuestoItem>) => void
   removeItem: (id: string) => void
   clearItems: () => void
   loadItems: (items: PresupuestoItem[]) => void
@@ -39,6 +40,10 @@ export function PresupuestoProvider({ children }: { children: ReactNode }) {
     setItems(p => [...p, { ...item, id: crypto.randomUUID() }])
   }, [])
 
+  const updateItem = useCallback((id: string, changes: Partial<PresupuestoItem>) => {
+    setItems(p => p.map(i => i.id === id ? { ...i, ...changes } : i))
+  }, [])
+
   const removeItem = useCallback((id: string) => {
     setItems(p => p.filter(i => i.id !== id))
   }, [])
@@ -54,7 +59,7 @@ export function PresupuestoProvider({ children }: { children: ReactNode }) {
   const totalGanancia = items.reduce((s, i) => s + i.ganancia, 0)
 
   return (
-    <PresupuestoContext.Provider value={{ items, addItem, removeItem, clearItems, loadItems, totalVenta, totalCosto, totalGanancia, loadedPresupuestoId, setLoadedPresupuestoId }}>
+    <PresupuestoContext.Provider value={{ items, addItem, updateItem, removeItem, clearItems, loadItems, totalVenta, totalCosto, totalGanancia, loadedPresupuestoId, setLoadedPresupuestoId }}>
       {children}
     </PresupuestoContext.Provider>
   )

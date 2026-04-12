@@ -6,7 +6,7 @@ import Link from 'next/link'
 import {
   ShoppingCart, Trash2, FileDown, MessageCircle, Mail, X,
   ArrowLeft, Loader2, Phone, MapPin, Globe, AtSign, Pencil,
-  Link as LinkIcon, Check, Search, Plus, User,
+  Link as LinkIcon, Check, Search, Plus, User, Calculator,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { usePresupuesto } from '@/features/presupuesto/context/PresupuestoContext'
@@ -38,7 +38,7 @@ export default function PresupuestoPage() {
   const tc = useTranslations('common')
   const { fmt: fmtCurrency } = useLocale()
   const supabase = createClient()
-  const { items, removeItem, clearItems, loadItems, totalVenta, totalCosto, loadedPresupuestoId, setLoadedPresupuestoId } = usePresupuesto()
+  const { items, addItem, updateItem, removeItem, clearItems, loadItems, totalVenta, totalCosto, loadedPresupuestoId, setLoadedPresupuestoId } = usePresupuesto()
   usePermissions()
 
   const [clients, setClients] = useState<DBClient[]>([])
@@ -72,6 +72,15 @@ export default function PresupuestoPage() {
   const [emailSubject, setEmailSubject] = useState('')
   const [emailBody, setEmailBody] = useState('')
   const [linkCopied, setLinkCopied] = useState(false)
+
+  const [editingItemId, setEditingItemId] = useState<string | null>(null)
+  const [editForm, setEditForm] = useState<{ nombre: string; cantidad: number; precioUnit: number }>({ nombre: '', cantidad: 1, precioUnit: 0 })
+  const [showAddPanel, setShowAddPanel] = useState<'catalog' | 'free' | null>(null)
+  const [freeItem, setFreeItem] = useState({ nombre: '', cantidad: 1, precioUnit: 0 })
+  const [catalogProducts, setCatalogProducts] = useState<Array<{ id: string; name: string; selling_price: number; photos: string[]; category_name?: string }>>([])
+  const [catalogSearch, setCatalogSearch] = useState('')
+  const [catalogQty, setCatalogQty] = useState(1)
+  const [selectedCatalogProduct, setSelectedCatalogProduct] = useState<{ id: string; name: string; selling_price: number } | null>(null)
 
   const defaultCondiciones = '· Se requiere seña para iniciar el trabajo.\n· El tiempo de entrega se confirma al aprobar el presupuesto.\n· Los precios pueden variar si cambian los costos de materiales.'
   const [condiciones, setCondiciones] = useState(defaultCondiciones)
@@ -142,6 +151,34 @@ export default function PresupuestoPage() {
       ).slice(0, 5)
     : clients.slice(0, 5)
 
+  function startEdit(item: import('@/features/presupuesto/types').PresupuestoItem) {
+    setEditingItemId(item.id)
+    setEditForm({ nombre: item.nombre, cantidad: item.cantidad, precioUnit: item.precioUnit })
+  }
+  function saveEdit(itemId: string) {
+    const qty = Math.max(1, editForm.cantidad)
+    const price = Math.max(0, editForm.precioUnit)
+    updateItem(itemId, { nombre: editForm.nombre, cantidad: qty, precioUnit: price, precioSinDesc: price, subtotal: qty * price, ganancia: 0 })
+    setEditingItemId(null)
+  }
+  function addFreeItem() {
+    if (!freeItem.nombre.trim() || freeItem.precioUnit <= 0) return
+    const qty = Math.max(1, freeItem.cantidad)
+    addItem({ tecnica: 'subli', nombre: freeItem.nombre, costoUnit: 0, precioUnit: freeItem.precioUnit, precioSinDesc: freeItem.precioUnit, cantidad: qty, subtotal: qty * freeItem.precioUnit, ganancia: qty * freeItem.precioUnit, origen: 'manual' })
+    setFreeItem({ nombre: '', cantidad: 1, precioUnit: 0 }); setShowAddPanel(null)
+  }
+  function addCatalogItem() {
+    if (!selectedCatalogProduct) return
+    const qty = Math.max(1, catalogQty)
+    addItem({ tecnica: 'subli', nombre: selectedCatalogProduct.name, costoUnit: 0, precioUnit: selectedCatalogProduct.selling_price, precioSinDesc: selectedCatalogProduct.selling_price, cantidad: qty, subtotal: qty * selectedCatalogProduct.selling_price, ganancia: qty * selectedCatalogProduct.selling_price, origen: 'catalogo' })
+    setSelectedCatalogProduct(null); setCatalogQty(1); setCatalogSearch(''); setShowAddPanel(null)
+  }
+  async function loadCatalog() {
+    if (catalogProducts.length > 0) return
+    const { data } = await supabase.from('catalog_products').select('id, name, selling_price, photos').eq('visible', true).order('name')
+    if (data) setCatalogProducts(data as typeof catalogProducts)
+  }
+
   async function createAndAssignClient() {
     if (!newClientName.trim()) return
     setSavingNewClient(true)
@@ -175,6 +212,8 @@ export default function PresupuestoPage() {
       if (cls) setClients(cls)
       if (saved) setSavedPresupuestos(saved as typeof savedPresupuestos)
       if (prof) setBizProfile(prof)
+      const { data: catProds } = await supabase.from('catalog_products').select('id, name, selling_price, photos, category_name').eq('visible', true).order('name')
+      if (catProds) setCatalogProducts(catProds as typeof catalogProducts)
       if (wsData?.settings) {
         const s = { ...DEFAULT_SETTINGS, ...(wsData.settings as Partial<WorkshopSettings>) }
         setWs(s)
@@ -508,21 +547,35 @@ export default function PresupuestoPage() {
 
                 {/* Items — mobile cards */}
                 <div className="px-4 py-4 md:hidden space-y-0">
-                  {items.map(item => (
+                  {items.map(item => editingItemId === item.id ? (
+                    <div key={item.id} className="py-3 border-b border-gray-100 last:border-0 space-y-2">
+                      <input type="text" className="input-base text-sm" value={editForm.nombre} onChange={e => setEditForm({ ...editForm, nombre: e.target.value })} />
+                      <div className="flex gap-2">
+                        <div className="flex-1"><label className="block text-[10px] text-gray-400 mb-0.5">Cant.</label>
+                          <input type="number" className="input-base text-sm" min={1} value={editForm.cantidad} onChange={e => setEditForm({ ...editForm, cantidad: Number(e.target.value) })} /></div>
+                        <div className="flex-1"><label className="block text-[10px] text-gray-400 mb-0.5">Precio unit.</label>
+                          <input type="number" className="input-base text-sm" min={0} value={editForm.precioUnit} onChange={e => setEditForm({ ...editForm, precioUnit: Number(e.target.value) })} /></div>
+                        <div className="flex-1 pt-4 text-right"><span className="text-sm font-bold text-gray-800">{fmtCurrency(editForm.cantidad * editForm.precioUnit)}</span></div>
+                      </div>
+                      <div className="flex gap-2 justify-end">
+                        <button onClick={() => setEditingItemId(null)} className="px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-500 border border-gray-200">Cancelar</button>
+                        <button onClick={() => saveEdit(item.id)} className="px-3 py-1.5 rounded-lg text-xs font-bold text-white" style={{ background: '#6C5CE7' }}>Guardar</button>
+                      </div>
+                    </div>
+                  ) : (
                     <div key={item.id} className="py-3 border-b border-gray-100 last:border-0">
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: `${TECHNIQUE_COLORS[item.tecnica]}18`, color: TECHNIQUE_COLORS[item.tecnica] }}>{TECHNIQUE_LABELS[item.tecnica]}</span>
-                        <div className="flex items-center gap-1.5">
+                        {item.origen === 'manual' ? <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">Manual</span>
+                          : item.origen === 'catalogo' ? <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: '#6C5CE715', color: '#6C5CE7' }}>Catálogo</span>
+                          : <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: `${TECHNIQUE_COLORS[item.tecnica]}18`, color: TECHNIQUE_COLORS[item.tecnica] }}>{TECHNIQUE_LABELS[item.tecnica]}</span>}
+                        <div className="flex items-center gap-1">
                           <span className="font-bold text-sm text-gray-800">{fmtCurrency(item.subtotal)}</span>
-                          <button onClick={() => removeItem(item.id)} className="w-6 h-6 rounded flex items-center justify-center text-gray-300 hover:text-red-500 no-print"><Trash2 size={12} /></button>
+                          <button onClick={() => startEdit(item)} className="w-6 h-6 rounded flex items-center justify-center text-gray-300 hover:text-purple-500 no-print"><Pencil size={11} /></button>
+                          <button onClick={() => { if (confirm('¿Eliminar este item?')) removeItem(item.id) }} className="w-6 h-6 rounded flex items-center justify-center text-gray-300 hover:text-red-500 no-print"><Trash2 size={12} /></button>
                         </div>
                       </div>
                       <p className="font-medium text-sm text-gray-800 mt-1">{item.nombre}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">
-                        {item.notas ? `${item.notas} — ` : ''}Cant: {item.cantidad}
-                        {item.precioSinDesc > item.precioUnit + 1 && <span className="ml-1 line-through">{fmtCurrency(item.precioSinDesc)}</span>}
-                        <span className="ml-1">× {fmtCurrency(item.precioUnit)}</span>
-                      </p>
+                      <p className="text-xs text-gray-400 mt-0.5">{item.notas ? `${item.notas} — ` : ''}Cant: {item.cantidad} × {fmtCurrency(item.precioUnit)}</p>
                     </div>
                   ))}
                 </div>
@@ -539,28 +592,108 @@ export default function PresupuestoPage() {
                       <th className="no-print w-10" />
                     </tr></thead>
                     <tbody>
-                      {items.map(item => (
+                      {items.map(item => editingItemId === item.id ? (
                         <tr key={item.id} style={{ borderBottom: '1px solid #F9FAFB' }}>
                           <td className="py-3 pr-3 align-top">
-                            <span className="text-xs font-bold px-2 py-0.5 rounded-full whitespace-nowrap" style={{ background: `${TECHNIQUE_COLORS[item.tecnica]}18`, color: TECHNIQUE_COLORS[item.tecnica] }}>{TECHNIQUE_LABELS[item.tecnica]}</span>
+                            {item.origen === 'manual' ? <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">Manual</span>
+                              : item.origen === 'catalogo' ? <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: '#6C5CE715', color: '#6C5CE7' }}>Catálogo</span>
+                              : <span className="text-xs font-bold px-2 py-0.5 rounded-full whitespace-nowrap" style={{ background: `${TECHNIQUE_COLORS[item.tecnica]}18`, color: TECHNIQUE_COLORS[item.tecnica] }}>{TECHNIQUE_LABELS[item.tecnica]}</span>}
+                          </td>
+                          <td className="py-3 pr-3 align-top"><input type="text" className="input-base text-sm" value={editForm.nombre} onChange={e => setEditForm({ ...editForm, nombre: e.target.value })} /></td>
+                          <td className="py-3 align-top"><input type="number" className="input-base text-sm w-16 text-center" min={1} value={editForm.cantidad} onChange={e => setEditForm({ ...editForm, cantidad: Number(e.target.value) })} /></td>
+                          <td className="py-3 align-top"><input type="number" className="input-base text-sm w-24 text-right" min={0} value={editForm.precioUnit} onChange={e => setEditForm({ ...editForm, precioUnit: Number(e.target.value) })} /></td>
+                          <td className="py-3 text-right font-bold text-gray-800 align-top">{fmtCurrency(editForm.cantidad * editForm.precioUnit)}</td>
+                          <td className="py-3 no-print align-top">
+                            <div className="flex gap-0.5">
+                              <button onClick={() => saveEdit(item.id)} className="w-7 h-7 rounded-lg flex items-center justify-center text-green-500 hover:bg-green-50"><Check size={13} /></button>
+                              <button onClick={() => setEditingItemId(null)} className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100"><X size={13} /></button>
+                            </div>
+                          </td>
+                        </tr>
+                      ) : (
+                        <tr key={item.id} style={{ borderBottom: '1px solid #F9FAFB' }}>
+                          <td className="py-3 pr-3 align-top">
+                            {item.origen === 'manual' ? <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">Manual</span>
+                              : item.origen === 'catalogo' ? <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: '#6C5CE715', color: '#6C5CE7' }}>Catálogo</span>
+                              : <span className="text-xs font-bold px-2 py-0.5 rounded-full whitespace-nowrap" style={{ background: `${TECHNIQUE_COLORS[item.tecnica]}18`, color: TECHNIQUE_COLORS[item.tecnica] }}>{TECHNIQUE_LABELS[item.tecnica]}</span>}
                           </td>
                           <td className="py-3 pr-3 align-top">
                             <p className="font-semibold text-gray-800 text-sm">{item.nombre}</p>
                             {item.notas && <p className="text-[11px] text-gray-400 mt-0.5">{item.notas}</p>}
                           </td>
                           <td className="py-3 text-center text-sm text-gray-600 font-medium align-top">{item.cantidad}</td>
-                          <td className="py-3 text-right text-sm text-gray-600 align-top">
-                            {item.precioSinDesc > item.precioUnit + 1 && <span className="text-xs text-gray-400 line-through mr-1">{fmtCurrency(item.precioSinDesc)}</span>}
-                            {fmtCurrency(item.precioUnit)}
-                          </td>
+                          <td className="py-3 text-right text-sm text-gray-600 align-top">{fmtCurrency(item.precioUnit)}</td>
                           <td className="py-3 text-right font-bold text-gray-800 align-top">{fmtCurrency(item.subtotal)}</td>
                           <td className="py-3 no-print align-top">
-                            <button onClick={() => removeItem(item.id)} className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 transition-all"><Trash2 size={13} /></button>
+                            <div className="flex gap-0.5">
+                              <button onClick={() => startEdit(item)} className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-300 hover:text-purple-500 hover:bg-purple-50"><Pencil size={12} /></button>
+                              <button onClick={() => { if (confirm('¿Eliminar este item?')) removeItem(item.id) }} className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50"><Trash2 size={13} /></button>
+                            </div>
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
+
+                  {/* Add items buttons */}
+                  <div className="mt-4 no-print flex gap-2">
+                    <Link href="/cotizador" className="flex-1 flex flex-col items-center gap-1 py-3 rounded-xl border border-dashed border-gray-200 hover:border-purple-300 hover:bg-purple-50/30 transition-colors text-center">
+                      <Calculator size={16} className="text-gray-400" /><span className="text-[10px] font-semibold text-gray-500">Desde cotizador</span>
+                    </Link>
+                    <button type="button" onClick={() => { setShowAddPanel('catalog'); loadCatalog() }} className="flex-1 flex flex-col items-center gap-1 py-3 rounded-xl border border-dashed border-gray-200 hover:border-purple-300 hover:bg-purple-50/30 transition-colors">
+                      <ShoppingCart size={16} className="text-gray-400" /><span className="text-[10px] font-semibold text-gray-500">Desde catálogo</span>
+                    </button>
+                    <button type="button" onClick={() => setShowAddPanel('free')} className="flex-1 flex flex-col items-center gap-1 py-3 rounded-xl border border-dashed border-gray-200 hover:border-purple-300 hover:bg-purple-50/30 transition-colors">
+                      <Plus size={16} className="text-gray-400" /><span className="text-[10px] font-semibold text-gray-500">Item libre</span>
+                    </button>
+                  </div>
+                  {showAddPanel === 'free' && (
+                    <div className="mt-3 p-4 rounded-xl border border-gray-200 bg-white space-y-3 no-print">
+                      <div><label className="block text-xs font-medium text-gray-500 mb-1">Descripción *</label>
+                        <input type="text" className="input-base text-sm" placeholder="Ej: Diseño personalizado" value={freeItem.nombre} onChange={e => setFreeItem({ ...freeItem, nombre: e.target.value })} autoFocus /></div>
+                      <div className="flex gap-2">
+                        <div className="w-24"><label className="block text-xs font-medium text-gray-500 mb-1">Cant.</label>
+                          <input type="number" className="input-base text-sm" min={1} value={freeItem.cantidad} onChange={e => setFreeItem({ ...freeItem, cantidad: Number(e.target.value) || 1 })} /></div>
+                        <div className="flex-1"><label className="block text-xs font-medium text-gray-500 mb-1">Precio unitario *</label>
+                          <input type="number" className="input-base text-sm" min={0} value={freeItem.precioUnit || ''} onChange={e => setFreeItem({ ...freeItem, precioUnit: Number(e.target.value) })} /></div>
+                        {freeItem.precioUnit > 0 && freeItem.cantidad > 0 && <div className="pt-5 text-right whitespace-nowrap"><span className="text-sm font-bold" style={{ color: '#6C5CE7' }}>{fmtCurrency(freeItem.cantidad * freeItem.precioUnit)}</span></div>}
+                      </div>
+                      <div className="flex gap-2 justify-end">
+                        <button onClick={() => { setShowAddPanel(null); setFreeItem({ nombre: '', cantidad: 1, precioUnit: 0 }) }} className="px-3 py-2 rounded-lg text-xs font-semibold text-gray-500 border border-gray-200">Cancelar</button>
+                        <button onClick={addFreeItem} disabled={!freeItem.nombre.trim() || freeItem.precioUnit <= 0} className="px-4 py-2 rounded-lg text-xs font-bold text-white disabled:opacity-40" style={{ background: '#6C5CE7' }}>Agregar</button>
+                      </div>
+                    </div>
+                  )}
+                  {showAddPanel === 'catalog' && (
+                    <div className="mt-3 p-4 rounded-xl border border-gray-200 bg-white space-y-3 no-print">
+                      {!selectedCatalogProduct ? (<>
+                        <input type="text" className="input-base text-sm" placeholder="Buscar producto del catálogo..." value={catalogSearch} onChange={e => setCatalogSearch(e.target.value)} autoFocus />
+                        <div className="max-h-48 overflow-y-auto space-y-1">
+                          {catalogProducts.filter(p => !catalogSearch || p.name.toLowerCase().includes(catalogSearch.toLowerCase())).slice(0, 8).map(p => (
+                            <button key={p.id} type="button" onClick={() => setSelectedCatalogProduct(p)} className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-gray-50 text-left transition-colors">
+                              <span className="text-sm font-medium text-gray-800 truncate">{p.name}</span>
+                              <span className="text-sm font-semibold text-gray-600 flex-shrink-0 ml-2">{fmtCurrency(p.selling_price)}</span>
+                            </button>
+                          ))}
+                          {catalogProducts.filter(p => !catalogSearch || p.name.toLowerCase().includes(catalogSearch.toLowerCase())).length === 0 && <p className="text-xs text-gray-400 text-center py-3">No hay productos</p>}
+                        </div>
+                        <button onClick={() => { setShowAddPanel(null); setCatalogSearch('') }} className="text-xs text-gray-400 hover:text-gray-600">Cancelar</button>
+                      </>) : (<>
+                        <div className="flex items-center justify-between">
+                          <div><p className="font-medium text-sm text-gray-900">{selectedCatalogProduct.name}</p><p className="text-xs text-gray-400">{fmtCurrency(selectedCatalogProduct.selling_price)} c/u</p></div>
+                          <button onClick={() => setSelectedCatalogProduct(null)} className="text-xs text-purple-500">Cambiar</button>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="w-20"><label className="block text-xs text-gray-500 mb-1">Cantidad</label><input type="number" className="input-base text-sm" min={1} value={catalogQty} onChange={e => setCatalogQty(Number(e.target.value) || 1)} /></div>
+                          <div className="pt-4"><span className="text-sm font-bold" style={{ color: '#6C5CE7' }}>= {fmtCurrency(catalogQty * selectedCatalogProduct.selling_price)}</span></div>
+                        </div>
+                        <div className="flex gap-2 justify-end">
+                          <button onClick={() => { setShowAddPanel(null); setSelectedCatalogProduct(null); setCatalogQty(1) }} className="px-3 py-2 rounded-lg text-xs font-semibold text-gray-500 border border-gray-200">Cancelar</button>
+                          <button onClick={addCatalogItem} className="px-4 py-2 rounded-lg text-xs font-bold text-white" style={{ background: '#6C5CE7' }}>Agregar</button>
+                        </div>
+                      </>)}
+                    </div>
+                  )}
 
                   {/* Totals */}
                   <div className="mt-4 flex justify-end">

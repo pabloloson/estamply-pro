@@ -11,6 +11,7 @@ export interface PresupuestoItem {
   subtotal: number
   ganancia: number
   notas?: string
+  origen?: 'cotizador' | 'catalogo' | 'catalogo_web' | 'manual'
 }
 
 export interface DiscountTier {
