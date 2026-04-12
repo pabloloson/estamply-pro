@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
   ShoppingCart, Trash2, FileDown, MessageCircle, Mail, X,
-  ArrowLeft, Loader2, Phone, MapPin, Globe, AtSign, Pencil, ChevronDown, ChevronUp,
+  ArrowLeft, Loader2, Phone, MapPin, Globe, AtSign, Pencil,
   Link as LinkIcon, Check,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -38,8 +38,8 @@ export default function PresupuestoPage() {
   const tc = useTranslations('common')
   const { fmt: fmtCurrency } = useLocale()
   const supabase = createClient()
-  const { items, removeItem, clearItems, loadItems, totalVenta, totalCosto, totalGanancia, loadedPresupuestoId, setLoadedPresupuestoId } = usePresupuesto()
-  const { showCosts } = usePermissions()
+  const { items, removeItem, clearItems, loadItems, totalVenta, totalCosto, loadedPresupuestoId, setLoadedPresupuestoId } = usePresupuesto()
+  usePermissions()
 
   const [clients, setClients] = useState<DBClient[]>([])
   const [loadingClients, setLoadingClients] = useState(true)
@@ -57,7 +57,6 @@ export default function PresupuestoPage() {
   const [validezDias, setValidezDias] = useState(15)
   const [editingValidez, setEditingValidez] = useState(false)
   const [editingCondiciones, setEditingCondiciones] = useState(false)
-  const [showResumen, setShowResumen] = useState(false)
   const [publicLink, setPublicLink] = useState('')
   const [savingLink, setSavingLink] = useState(false)
   const [showEmailModal, setShowEmailModal] = useState(false)
@@ -199,7 +198,6 @@ export default function PresupuestoPage() {
     finally { setSubmitting(false) }
   }
 
-  const margenPct = totalVenta > 0 ? Math.round((totalGanancia / totalVenta) * 100) : 0
 
   return (
     <>
@@ -587,24 +585,6 @@ export default function PresupuestoPage() {
                 </button>
               </div>
 
-              {/* CORRECCIÓN 4: Collapsible internal summary */}
-              {showCosts && (
-              <div className="card overflow-hidden">
-                <button type="button" onClick={() => setShowResumen(v => !v)}
-                  className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-gray-50 transition-colors">
-                  <span className="text-xs font-bold uppercase tracking-wider text-gray-400">{t('viewProfitability')}</span>
-                  {showResumen ? <ChevronUp size={14} className="text-gray-400" /> : <ChevronDown size={14} className="text-gray-400" />}
-                </button>
-                {showResumen && (
-                  <div className="px-5 pb-5 pt-1 border-t border-gray-100 space-y-2">
-                    <div className="flex justify-between text-sm text-gray-600"><span>Venta</span><span className="font-semibold text-gray-800">{fmtCurrency(totalVenta)}</span></div>
-                    <div className="flex justify-between text-sm text-gray-600"><span>Costo</span><span className="font-semibold">{fmtCurrency(totalCosto)}</span></div>
-                    <div className="flex justify-between font-bold pt-1 border-t border-gray-100" style={{ color: '#6C5CE7' }}><span>Ganancia</span><span>{fmtCurrency(totalGanancia)}</span></div>
-                    <div className="flex justify-between text-xs text-gray-400"><span>Margen</span><span className="font-semibold">{margenPct}%</span></div>
-                  </div>
-                )}
-              </div>
-              )}
             </div>
           </div>
         )}
