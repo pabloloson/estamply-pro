@@ -242,21 +242,29 @@ export default function PresupuestoPage() {
 
     const techniqueLabel = (t: string) => ({ subli: 'Sublimación', dtf: 'DTF Textil', dtf_uv: 'DTF UV', vinyl: 'Vinilo', serigrafia: 'Serigrafía' }[t] || '')
 
-    const itemRows = items.map(item => `
+    const itemRows = items.map(item => {
+      // Show technique only for cotizador items with a real technique
+      const hasTechnique = item.origen !== 'manual' && item.origen !== 'catalogo' && item.costoUnit > 0
+      const techText = hasTechnique ? techniqueLabel(item.tecnica) : ''
+      return `
       <tr>
-        <td style="padding:10px 8px;font-size:12px;color:#6C5CE7;font-weight:600">${item.origen === 'manual' || item.origen === 'catalogo' ? (item.origen === 'catalogo' ? 'Catálogo' : '') : techniqueLabel(item.tecnica)}</td>
+        <td style="padding:10px 8px;font-size:12px;color:#333">${techText}</td>
         <td style="padding:10px 8px"><div style="font-weight:500">${item.nombre}</div>${item.notas ? `<div style="font-size:11px;color:#999">${item.notas}</div>` : ''}</td>
         <td style="padding:10px 8px;text-align:center">${item.cantidad}</td>
         <td style="padding:10px 8px;text-align:right">${fmtCurrency(item.precioUnit)}</td>
         <td style="padding:10px 8px;text-align:right;font-weight:600">${fmtCurrency(item.subtotal)}</td>
-      </tr>
-    `).join('')
+      </tr>`
+    }).join('')
 
-    const clientHtml = clientDisplayName ? `
+    // Resolve client name from loaded presupuesto or current selection
+    const printClientName = clientDisplayName || (loadedPresupuestoId ? savedPresupuestos.find(p => p.id === loadedPresupuestoId)?.client_name : '') || ''
+    const printClientContact = [selectedClient?.email, selectedClient?.whatsapp || selectedClient?.phone].filter(Boolean).join(' · ')
+
+    const clientHtml = printClientName ? `
       <div style="margin-bottom:24px;padding:12px 16px;background:#f9fafb;border-radius:6px">
         <div style="font-size:11px;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Cliente</div>
-        <div style="font-size:15px;font-weight:600">${clientDisplayName}</div>
-        <div style="font-size:13px;color:#666">${[selectedClient?.email, selectedClient?.whatsapp || selectedClient?.phone].filter(Boolean).join(' · ')}</div>
+        <div style="font-size:15px;font-weight:600">${printClientName}</div>
+        ${printClientContact ? `<div style="font-size:13px;color:#666">${printClientContact}</div>` : ''}
       </div>` : ''
 
     const condHtml = condiciones.split('\n').map(l => `<div>${l}</div>`).join('')
@@ -277,14 +285,14 @@ export default function PresupuestoPage() {
       th:nth-child(4),th:nth-child(5){text-align:right}
       @page{size:A4;margin:0}
     </style></head><body>
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;padding-bottom:16px;border-bottom:3px solid #6C5CE7">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #333">
         <div>
           <div style="font-size:22px;font-weight:800">${tallerName || 'Mi Taller'}</div>
           ${bizAddr}${bizPhone}${bizEmail}
         </div>
         <div style="text-align:right">
           <div style="font-size:11px;color:#999;text-transform:uppercase;letter-spacing:2px">Presupuesto</div>
-          <div style="font-size:24px;font-weight:800;color:#6C5CE7">#${quoteNumber}</div>
+          <div style="font-size:24px;font-weight:800;color:#000">#${quoteNumber}</div>
           <div style="font-size:13px;color:#666;margin-top:4px">${quoteDate}</div>
           <div style="font-size:12px;color:#999">Válido por ${validezDias} días</div>
         </div>
@@ -297,7 +305,7 @@ export default function PresupuestoPage() {
       <div style="display:flex;justify-content:flex-end;margin-bottom:32px">
         <div style="width:240px">
           <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:14px;color:#666"><span>Subtotal</span><span>${fmtCurrency(totalVenta)}</span></div>
-          <div style="display:flex;justify-content:space-between;padding:10px 0;font-size:20px;font-weight:800;border-top:2px solid #000"><span>TOTAL</span><span style="color:#6C5CE7">${fmtCurrency(totalVenta)}</span></div>
+          <div style="display:flex;justify-content:space-between;padding:10px 0;font-size:20px;font-weight:800;border-top:2px solid #000"><span>TOTAL</span><span>${fmtCurrency(totalVenta)}</span></div>
         </div>
       </div>
       <div style="padding:16px;background:#f9fafb;border-radius:6px;font-size:12px;color:#666;margin-bottom:32px">
