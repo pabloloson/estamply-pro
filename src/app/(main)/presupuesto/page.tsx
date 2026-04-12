@@ -707,14 +707,19 @@ export default function PresupuestoPage() {
                 {/* Add items buttons — visible on ALL screens */}
                 <div className="px-4 sm:px-8 py-3">
                   <div className="no-print grid grid-cols-3 gap-2">
-                    <Link href="/cotizador" className="flex flex-col items-center justify-center gap-1 h-12 sm:py-3 rounded-xl border border-dashed border-gray-200 hover:border-purple-300 hover:bg-purple-50/30 transition-colors text-center">
-                      <Calculator size={14} className="text-gray-400" /><span className="text-[10px] font-semibold text-gray-500">Cotizador</span>
+                    <Link href="/cotizador" className="flex flex-col items-center justify-center gap-1.5 min-h-[70px] py-3 rounded-xl border border-dashed border-gray-200 hover:border-purple-300 hover:bg-purple-50/30 transition-colors text-center">
+                      <Calculator size={22} className="text-gray-400" />
+                      <span className="text-[10px] font-semibold text-gray-500 leading-tight">Desde cotizador</span>
                     </Link>
-                    <button type="button" onClick={() => { setShowAddPanel('catalog'); loadCatalog() }} className="flex flex-col items-center justify-center gap-1 h-12 sm:py-3 rounded-xl border border-dashed border-gray-200 hover:border-purple-300 hover:bg-purple-50/30 transition-colors">
-                      <ShoppingCart size={14} className="text-gray-400" /><span className="text-[10px] font-semibold text-gray-500">Catálogo</span>
+                    <button type="button" onClick={() => { setShowAddPanel('catalog'); loadCatalog() }} className="flex flex-col items-center justify-center gap-1.5 min-h-[70px] py-3 rounded-xl border border-dashed border-gray-200 hover:border-purple-300 hover:bg-purple-50/30 transition-colors">
+                      <ShoppingCart size={22} className="text-gray-400" />
+                      <span className="text-[10px] font-semibold text-gray-500 leading-tight">Desde catálogo</span>
                     </button>
-                    <button type="button" onClick={() => setShowAddPanel('free')} className="flex flex-col items-center justify-center gap-1 h-12 sm:py-3 rounded-xl border border-dashed border-gray-200 hover:border-purple-300 hover:bg-purple-50/30 transition-colors">
-                      <Plus size={14} className="text-gray-400" /><span className="text-[10px] font-semibold text-gray-500">Item libre</span>
+                    <button type="button" onClick={() => setShowAddPanel('free')} className="flex flex-col items-center justify-center gap-1.5 min-h-[70px] py-3 rounded-xl border border-gray-200 hover:border-purple-400 transition-colors" style={{ background: '#6C5CE708' }}>
+                      <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: '#6C5CE715' }}>
+                        <Plus size={16} style={{ color: '#6C5CE7' }} />
+                      </div>
+                      <span className="text-[10px] font-semibold leading-tight" style={{ color: '#6C5CE7' }}>+ Item libre</span>
                     </button>
                   </div>
                   {showAddPanel === 'free' && (
