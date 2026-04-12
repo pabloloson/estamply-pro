@@ -290,9 +290,12 @@ export default function PresupuestoPage() {
       @page{size:A4;margin:0}
     </style></head><body>
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #333">
-        <div>
-          <div style="font-size:22px;font-weight:800">${tallerName || 'Mi Taller'}</div>
-          ${bizCuit}${bizAddr}${bizPhone}${bizEmail}
+        <div style="display:flex;align-items:flex-start;gap:12px">
+          ${bizProfile?.business_logo_url ? `<img src="${bizProfile.business_logo_url}" alt="" style="width:56px;height:56px;object-fit:contain;border-radius:8px" />` : ''}
+          <div>
+            <div style="font-size:22px;font-weight:800">${tallerName || 'Mi Taller'}</div>
+            ${bizCuit}${bizAddr}${bizPhone}${bizEmail}
+          </div>
         </div>
         <div style="text-align:right">
           <div style="font-size:11px;color:#999;text-transform:uppercase;letter-spacing:2px">Presupuesto</div>
@@ -315,6 +318,16 @@ export default function PresupuestoPage() {
       <div style="padding:16px;background:#f9fafb;border-radius:6px;font-size:12px;color:#666;margin-bottom:32px">
         <div style="font-weight:600;margin-bottom:8px;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#999">Condiciones</div>
         ${condHtml}
+      </div>
+      <div style="display:flex;justify-content:space-between;margin:48px 32px 32px;gap:48px">
+        <div style="flex:1;text-align:center">
+          <div style="border-bottom:1px solid #333;margin-bottom:8px;height:40px"></div>
+          <div style="font-size:12px;color:#666">Firma del taller</div>
+        </div>
+        <div style="flex:1;text-align:center">
+          <div style="border-bottom:1px solid #333;margin-bottom:8px;height:40px"></div>
+          <div style="font-size:12px;color:#666">Firma del cliente</div>
+        </div>
       </div>
       <div style="text-align:center;font-size:11px;color:#ccc;padding-top:16px;border-top:1px solid #eee">Generado con Estamply · estamply.app</div>
     </body></html>`)
