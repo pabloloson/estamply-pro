@@ -6,6 +6,7 @@ import Link from 'next/link'
 import {
   ShoppingCart, Trash2, FileDown, MessageCircle, Mail, X,
   ArrowLeft, Loader2, Phone, MapPin, Globe, AtSign, Pencil, ChevronDown, ChevronUp,
+  Calendar, Link as LinkIcon, Check,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { usePresupuesto } from '@/features/presupuesto/context/PresupuestoContext'
@@ -65,6 +66,7 @@ export default function PresupuestoPage() {
   const [emailTo, setEmailTo] = useState('')
   const [emailSubject, setEmailSubject] = useState('')
   const [emailBody, setEmailBody] = useState('')
+  const [linkCopied, setLinkCopied] = useState(false)
 
   const defaultCondiciones = '· Se requiere seña para iniciar el trabajo.\n· El tiempo de entrega se confirma al aprobar el presupuesto.\n· Los precios pueden variar si cambian los costos de materiales.'
   const [condiciones, setCondiciones] = useState(defaultCondiciones)
@@ -286,16 +288,18 @@ export default function PresupuestoPage() {
         </>) : (<>
 
         {/* ══ DETAIL VIEW: when items are loaded ══ */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 no-print">
+        <div className="mb-6 no-print">
           <div className="flex items-center gap-2">
             <button onClick={() => { clearItems(); setPublicLink('') }} className="text-gray-400 hover:text-gray-600"><ArrowLeft size={18} /></button>
             <h1 className="text-2xl font-black text-gray-900">Presupuesto</h1>
-            {loadedPresupuestoId && <span className="text-sm text-gray-400">#{savedPresupuestos.find(p => p.id === loadedPresupuestoId)?.codigo || ''}</span>}
-            {!loadedPresupuestoId && <span className="text-sm text-gray-400">{items.length} {items.length === 1 ? 'ítem' : 'ítems'}</span>}
             {loadedPresupuestoId && savedPresupuestos.find(p => p.id === loadedPresupuestoId)?.origen === 'catalogo_web' && (
-              <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold bg-green-100 text-green-600">{t('webBadge')}</span>
+              <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold bg-green-100 text-green-600">Catálogo</span>
             )}
+            {!loadedPresupuestoId && <span className="text-sm text-gray-400">{items.length} {items.length === 1 ? 'ítem' : 'ítems'}</span>}
           </div>
+          {loadedPresupuestoId && (
+            <p className="text-xs text-gray-400 mt-1 ml-7">#{savedPresupuestos.find(p => p.id === loadedPresupuestoId)?.codigo || ''}</p>
+          )}
         </div>
 
         {items.length === 0 ? (
@@ -311,48 +315,51 @@ export default function PresupuestoPage() {
               <div className="print-page bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden" id="quote-document">
                 <div className="h-2" style={{ background: 'linear-gradient(90deg, #6C5CE7, #a29bfe)' }} />
 
-                {/* CORRECCIÓN 1: Header shows TALLER data, not user */}
-                <div className="px-8 pt-7 pb-5 flex items-start justify-between gap-6 border-b border-gray-100">
-                  <div className="flex items-start gap-4">
-                    {bizProfile?.business_logo_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={bizProfile.business_logo_url} alt="Logo" className="w-16 h-16 object-contain rounded-xl flex-shrink-0" />
-                    ) : tallerName ? (
-                      <div className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(135deg, #6C5CE7, #a29bfe)' }}>
-                        <span className="text-white font-black text-xl">{tallerName[0].toUpperCase()}</span>
-                      </div>
-                    ) : null}
-                    <div>
-                      <h2 className="font-black text-gray-900 text-lg leading-tight">{tallerName || 'Mi Taller'}</h2>
-                      {bizProfile?.business_cuit && <p className="text-xs text-gray-500 mt-0.5">CUIT: {bizProfile.business_cuit}</p>}
-                      <div className="mt-2 space-y-0.5">
-                        {bizProfile?.business_address && <p className="text-xs text-gray-500 flex items-center gap-1.5"><MapPin size={10} />{bizProfile.business_address}</p>}
-                        {bizProfile?.business_phone && <p className="text-xs text-gray-500 flex items-center gap-1.5"><Phone size={10} />{bizProfile.business_phone}</p>}
-                        {bizProfile?.business_email && <p className="text-xs text-gray-500 flex items-center gap-1.5"><Mail size={10} />{bizProfile.business_email}</p>}
-                        {bizProfile?.business_instagram && <p className="text-xs text-gray-500 flex items-center gap-1.5"><AtSign size={10} />{bizProfile.business_instagram}</p>}
-                        {bizProfile?.business_website && <p className="text-xs text-gray-500 flex items-center gap-1.5"><Globe size={10} />{bizProfile.business_website}</p>}
+                {/* Header — responsive: stacked on mobile, side-by-side on desktop */}
+                <div className="px-4 sm:px-8 pt-6 pb-5 border-b border-gray-100">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                    {/* Business info */}
+                    <div className="flex items-start gap-3">
+                      {bizProfile?.business_logo_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={bizProfile.business_logo_url} alt="Logo" className="w-12 h-12 sm:w-16 sm:h-16 object-contain rounded-xl flex-shrink-0" />
+                      ) : tallerName ? (
+                        <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(135deg, #6C5CE7, #a29bfe)' }}>
+                          <span className="text-white font-black text-lg sm:text-xl">{tallerName[0].toUpperCase()}</span>
+                        </div>
+                      ) : null}
+                      <div>
+                        <h2 className="font-black text-gray-900 text-base sm:text-lg leading-tight">{tallerName || 'Mi Taller'}</h2>
+                        {bizProfile?.business_cuit && <p className="text-[11px] text-gray-500 mt-0.5">CUIT: {bizProfile.business_cuit}</p>}
+                        <div className="mt-1.5 space-y-0.5 hidden sm:block">
+                          {bizProfile?.business_address && <p className="text-xs text-gray-500 flex items-center gap-1.5"><MapPin size={10} />{bizProfile.business_address}</p>}
+                          {bizProfile?.business_phone && <p className="text-xs text-gray-500 flex items-center gap-1.5"><Phone size={10} />{bizProfile.business_phone}</p>}
+                          {bizProfile?.business_email && <p className="text-xs text-gray-500 flex items-center gap-1.5"><Mail size={10} />{bizProfile.business_email}</p>}
+                          {bizProfile?.business_instagram && <p className="text-xs text-gray-500 flex items-center gap-1.5"><AtSign size={10} />{bizProfile.business_instagram}</p>}
+                          {bizProfile?.business_website && <p className="text-xs text-gray-500 flex items-center gap-1.5"><Globe size={10} />{bizProfile.business_website}</p>}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-0.5">Presupuesto</p>
-                    <p className="text-2xl font-black" style={{ color: '#6C5CE7' }}>#{quoteNumber}</p>
-                    <p className="text-xs text-gray-500 mt-2">{quoteDate}</p>
-                    {/* CORRECCIÓN 5: Editable validez */}
-                    <div className="mt-0.5">
-                      {editingValidez ? (
-                        <div className="flex items-center gap-1 justify-end no-print">
-                          <span className="text-xs text-gray-400">Válido por</span>
-                          <input type="number" className="w-12 text-xs text-center border rounded px-1 py-0.5" min={1} value={validezDias}
-                            onChange={e => setValidezDias(Number(e.target.value))} onBlur={() => setEditingValidez(false)} autoFocus />
-                          <span className="text-xs text-gray-400">días</span>
-                        </div>
-                      ) : (
-                        <p className="text-xs text-gray-400 cursor-pointer no-print hover:text-gray-600" onClick={() => setEditingValidez(true)}>
-                          {t('validFor', { days: validezDias })} <Pencil size={8} className="inline ml-0.5" />
-                        </p>
-                      )}
-                      <p className="text-xs text-gray-400 hidden print:block">{t('validFor', { days: validezDias })}</p>
+                    {/* Quote number */}
+                    <div className="text-left sm:text-right flex-shrink-0">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-0.5">Presupuesto</p>
+                      <p className="text-xl sm:text-2xl font-black" style={{ color: '#6C5CE7' }}>#{quoteNumber}</p>
+                      <p className="text-xs text-gray-500 mt-1">{quoteDate}</p>
+                      <div className="mt-0.5">
+                        {editingValidez ? (
+                          <div className="flex items-center gap-1 sm:justify-end no-print">
+                            <span className="text-xs text-gray-400">Válido por</span>
+                            <input type="number" className="w-12 text-xs text-center border rounded px-1 py-0.5" min={1} value={validezDias}
+                              onChange={e => setValidezDias(Number(e.target.value))} onBlur={() => setEditingValidez(false)} autoFocus />
+                            <span className="text-xs text-gray-400">días</span>
+                          </div>
+                        ) : (
+                          <p className="text-xs text-gray-400 cursor-pointer no-print hover:text-gray-600" onClick={() => setEditingValidez(true)}>
+                            {t('validFor', { days: validezDias })} <Pencil size={8} className="inline ml-0.5" />
+                          </p>
+                        )}
+                        <p className="text-xs text-gray-400 hidden print:block">{t('validFor', { days: validezDias })}</p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -394,8 +401,29 @@ export default function PresupuestoPage() {
                   </div>
                 </div>
 
-                {/* Items table */}
-                <div className="px-8 py-5">
+                {/* Items — mobile cards */}
+                <div className="px-4 py-4 md:hidden space-y-0">
+                  {items.map(item => (
+                    <div key={item.id} className="py-3 border-b border-gray-100 last:border-0">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: `${TECHNIQUE_COLORS[item.tecnica]}18`, color: TECHNIQUE_COLORS[item.tecnica] }}>{TECHNIQUE_LABELS[item.tecnica]}</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-bold text-sm text-gray-800">{fmtCurrency(item.subtotal)}</span>
+                          <button onClick={() => removeItem(item.id)} className="w-6 h-6 rounded flex items-center justify-center text-gray-300 hover:text-red-500 no-print"><Trash2 size={12} /></button>
+                        </div>
+                      </div>
+                      <p className="font-medium text-sm text-gray-800 mt-1">{item.nombre}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        {item.notas ? `${item.notas} — ` : ''}Cant: {item.cantidad}
+                        {item.precioSinDesc > item.precioUnit + 1 && <span className="ml-1 line-through">{fmtCurrency(item.precioSinDesc)}</span>}
+                        <span className="ml-1">× {fmtCurrency(item.precioUnit)}</span>
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Items — desktop table */}
+                <div className="px-8 py-5 hidden md:block">
                   <table className="w-full">
                     <thead><tr style={{ borderBottom: '2px solid #F3F4F6' }}>
                       <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-400 pb-3">Técnica</th>
@@ -417,7 +445,6 @@ export default function PresupuestoPage() {
                           </td>
                           <td className="py-3 text-center text-sm text-gray-600 font-medium align-top">{item.cantidad}</td>
                           <td className="py-3 text-right text-sm text-gray-600 align-top">
-                            {/* CORRECCIÓN 7: Strikethrough only when there's a discount */}
                             {item.precioSinDesc > item.precioUnit + 1 && <span className="text-xs text-gray-400 line-through mr-1">{fmtCurrency(item.precioSinDesc)}</span>}
                             {fmtCurrency(item.precioUnit)}
                           </td>
@@ -474,7 +501,7 @@ export default function PresupuestoPage() {
               {/* Share */}
               <div className="card p-5 space-y-3">
                 <p className="text-xs font-bold uppercase tracking-wider text-gray-400">{t('share')}</p>
-                <button onClick={() => window.print()} className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50"><FileDown size={15} /> {t('downloadPdf')}</button>
+                {/* WhatsApp — primary */}
                 <button disabled={savingLink} onClick={async () => {
                   const link = await ensurePublicLink()
                   if (!link) return
@@ -482,23 +509,36 @@ export default function PresupuestoPage() {
                   const name = clientDisplayName ? clientDisplayName.split(' ')[0] : ''
                   const msg = encodeURIComponent(`Hola${name ? ` ${name}` : ''}! 👋\n\nTe envío el presupuesto *#${quoteNumber}* por un total de *${fmtCurrency(totalVenta)}*.\n\n📋 Podés verlo y descargarlo acá:\n${link}\n\nCualquier consulta estoy a disposición!`)
                   window.open(`https://wa.me/${waNum}?text=${msg}`, '_blank')
-                }} className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border text-sm font-semibold disabled:opacity-50" style={{ borderColor: '#25d36620', color: '#25d366', background: '#25d36608' }}>
-                  <MessageCircle size={15} /> {savingLink ? tc('loading') : t('whatsapp')}
+                }} className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-white disabled:opacity-50 transition-colors" style={{ background: '#25d366' }}>
+                  <MessageCircle size={16} /> {savingLink ? tc('loading') : 'Enviar por WhatsApp'}
                 </button>
-                <button disabled={savingLink} onClick={async () => {
-                  const link = await ensurePublicLink()
-                  if (!link) return
-                  setEmailTo(selectedClient?.email || '')
-                  setEmailSubject(`Presupuesto #${quoteNumber} - ${tallerName || 'Taller'}`)
-                  setEmailBody(`Hola${clientDisplayName ? ` ${clientDisplayName.split(' ')[0]}` : ''}!\n\nTe envío el presupuesto #${quoteNumber} por un total de ${fmtCurrency(totalVenta)}.\n\nPodés verlo y descargarlo acá:\n${link}\n\nSaludos!`)
-                  setShowEmailModal(true)
-                }} className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border text-sm font-semibold disabled:opacity-50" style={{ borderColor: '#4285f420', color: '#4285f4', background: '#4285f408' }}>
-                  <Mail size={15} /> {t('email')}
-                </button>
+                {/* PDF + Email — secondary row */}
+                <div className="grid grid-cols-2 gap-2">
+                  <button onClick={() => window.print()} className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50"><FileDown size={14} /> PDF</button>
+                  <button disabled={savingLink} onClick={async () => {
+                    const link = await ensurePublicLink()
+                    if (!link) return
+                    setEmailTo(selectedClient?.email || '')
+                    setEmailSubject(`Presupuesto #${quoteNumber} - ${tallerName || 'Taller'}`)
+                    setEmailBody(`Hola${clientDisplayName ? ` ${clientDisplayName.split(' ')[0]}` : ''}!\n\nTe envío el presupuesto #${quoteNumber} por un total de ${fmtCurrency(totalVenta)}.\n\nPodés verlo y descargarlo acá:\n${link}\n\nSaludos!`)
+                    setShowEmailModal(true)
+                  }} className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50">
+                    <Mail size={14} /> Email
+                  </button>
+                </div>
+                {/* Copy link */}
                 {publicLink && (
-                  <div className="flex items-center gap-2 p-2 rounded-lg bg-gray-50 border border-gray-100">
-                    <input type="text" readOnly value={publicLink} className="flex-1 text-xs text-gray-500 bg-transparent outline-none truncate" />
-                    <button onClick={() => { navigator.clipboard.writeText(publicLink); alert('Link copiado!') }} className="text-xs font-semibold text-purple-600 hover:text-purple-700 flex-shrink-0">Copiar</button>
+                  <div className="flex items-center gap-2 p-2.5 rounded-lg bg-gray-50 border border-gray-100">
+                    <LinkIcon size={13} className="text-gray-400 flex-shrink-0" />
+                    <span className="flex-1 text-xs text-gray-500 truncate">{publicLink.replace(/^https?:\/\//, '')}</span>
+                    <button onClick={() => {
+                      const fullUrl = publicLink.startsWith('http') ? publicLink : `${window.location.origin}${publicLink}`
+                      navigator.clipboard.writeText(fullUrl)
+                      setLinkCopied(true)
+                      setTimeout(() => setLinkCopied(false), 2000)
+                    }} className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold flex-shrink-0 transition-colors ${linkCopied ? 'bg-green-50 text-green-600' : 'bg-blue-50 text-blue-600 hover:bg-blue-100'}`}>
+                      {linkCopied ? <><Check size={12} /> Copiado!</> : 'Copiar link'}
+                    </button>
                   </div>
                 )}
               </div>
@@ -508,7 +548,10 @@ export default function PresupuestoPage() {
                 <p className="text-xs font-bold uppercase tracking-wider text-gray-400">{t('confirmAsOrder')}</p>
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">{t('deliveryDate')}</label>
-                  <input type="date" className="input-base" value={dueDate} onChange={e => setDueDate(e.target.value)} />
+                  <div className="relative">
+                    <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                    <input type="date" className="input-base !pl-9" value={dueDate} onChange={e => setDueDate(e.target.value)} placeholder="Seleccionar fecha..." />
+                  </div>
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">{t('deposit')}</label>
@@ -522,9 +565,12 @@ export default function PresupuestoPage() {
                   </div>
                   {advanceMode === 'percent' ? (
                     <div className="flex items-center gap-2">
-                      <input type="number" className="input-base w-20" min={0} max={100} value={advancePercent} onChange={e => setAdvancePercent(Number(e.target.value))} />
-                      <span className="text-xs text-gray-400">%</span>
-                      <span className="text-xs text-gray-500 font-medium">= {fmtCurrency(advanceAmount)}</span>
+                      <div className="relative w-24">
+                        <input type="number" className="input-base !pr-7" min={0} max={100} value={advancePercent} onChange={e => setAdvancePercent(Number(e.target.value))} />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">%</span>
+                      </div>
+                      <span className="text-sm text-gray-400">=</span>
+                      <span className="text-base font-semibold text-green-600">{fmtCurrency(advanceAmount)}</span>
                     </div>
                   ) : (
                     <input type="number" className="input-base" min={0} value={advanceFixed} onChange={e => setAdvanceFixed(Number(e.target.value))} />
