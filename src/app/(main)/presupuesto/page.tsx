@@ -372,12 +372,12 @@ export default function PresupuestoPage() {
                     {loadingClients ? (
                       <div className="flex items-center gap-2 text-sm text-gray-400"><Loader2 size={14} className="animate-spin" /> Cargando…</div>
                     ) : (
-                      <div className="flex gap-2 items-start">
-                        <select className="input-base text-sm flex-1" value={clientId} onChange={e => { setClientId(e.target.value); if (e.target.value) setNewClientName('') }}>
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <select className="input-base text-sm w-full sm:flex-1" value={clientId} onChange={e => { setClientId(e.target.value); if (e.target.value) setNewClientName('') }}>
                           <option value="">Nuevo cliente…</option>
                           {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                         </select>
-                        {!clientId && <input type="text" className="input-base text-sm flex-1" placeholder="Nombre del cliente" value={newClientName} onChange={e => setNewClientName(e.target.value)} />}
+                        {!clientId && <input type="text" className="input-base text-sm w-full sm:flex-1" placeholder="Nombre del cliente" value={newClientName} onChange={e => setNewClientName(e.target.value)} />}
                       </div>
                     )}
                     {clientDisplayName && (
@@ -549,8 +549,8 @@ export default function PresupuestoPage() {
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">{t('deliveryDate')}</label>
                   <div className="relative">
-                    <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                    <input type="date" className="input-base !pl-9" value={dueDate} onChange={e => setDueDate(e.target.value)} placeholder="Seleccionar fecha..." />
+                    <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10" />
+                    <input type="date" className="input-base !pl-9 h-11 text-sm" value={dueDate} onChange={e => setDueDate(e.target.value)} />
                   </div>
                 </div>
                 <div>
