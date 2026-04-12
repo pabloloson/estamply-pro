@@ -303,7 +303,7 @@ export default function EstadisticasPage() {
       {showCosts && (
       <div className="card p-5 mb-6">
         <h2 className="font-bold text-gray-800 mb-4">{t('profitability')}</h2>
-        <div className="grid grid-cols-3 gap-3 mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
           <div className="p-3 rounded-lg bg-gray-50"><p className="text-xs text-gray-500">{t('revenue')}</p><p className="text-lg font-black text-gray-900">{fmt(facConCosto)}</p></div>
           <div className="p-3 rounded-lg bg-gray-50"><p className="text-xs text-gray-500">{t('costs')}</p><p className="text-lg font-black text-gray-900">{fmt(costos)}</p></div>
           <div className="p-3 rounded-lg bg-gray-50"><p className="text-xs text-gray-500">{t('grossMargin')}</p><p className="text-lg font-black" style={{ color: '#6C5CE7' }}>{fmt(facConCosto - costos)}</p><p className="text-xs font-semibold" style={{ color: '#6C5CE7' }}>{margen}%</p></div>
@@ -378,7 +378,7 @@ export default function EstadisticasPage() {
       {/* Conversion */}
       <div className="card p-5 mb-6">
         <h2 className="font-bold text-gray-800 mb-4">{t('quoteConversion')}</h2>
-        <div className="grid grid-cols-3 gap-3 mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
           <div className="p-3 rounded-lg bg-gray-50"><p className="text-xs text-gray-500">{t('created')}</p><p className="text-lg font-black text-gray-900">{curPres.length}</p></div>
           <div className="p-3 rounded-lg bg-gray-50"><p className="text-xs text-gray-500">{t('converted')}</p><p className="text-lg font-black text-gray-900">{convertedCount}</p></div>
           <div className="p-3 rounded-lg bg-gray-50"><p className="text-xs text-gray-500">{t('rate')}</p><p className="text-lg font-black" style={{ color: '#6C5CE7' }}>{convRate}%</p>
@@ -434,7 +434,8 @@ export default function EstadisticasPage() {
             { label: t('quoteConversion'), va: `${a.conversion}%`, vb: `${b.conversion}%`, change: b.conversion - a.conversion, unit: 'pp' },
           ]
           return (
-            <table className="w-full text-sm"><thead><tr className="border-b border-gray-100">
+            <div className="overflow-x-auto">
+            <table className="w-full text-sm min-w-[480px]"><thead><tr className="border-b border-gray-100">
               <th className="text-left px-2 py-2 text-xs text-gray-400">#</th>
               <th className="text-left px-2 py-2 text-xs text-gray-400">{t('periodA')}</th>
               <th className="text-left px-2 py-2 text-xs text-gray-400">{t('periodB')}</th>
@@ -449,6 +450,7 @@ export default function EstadisticasPage() {
                 </tr>
               ))}
             </tbody></table>
+            </div>
           )
         })()}
       </div>

@@ -99,7 +99,7 @@ export default function ClientsPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full min-w-[600px]">
               <thead><tr className="border-b border-gray-100">
                 {[t('name'), 'WhatsApp', t('emailField'), t('phone'), '', ''].map(h => (
                   <th key={h} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-5 py-3">{h}</th>
@@ -250,7 +250,7 @@ export default function ClientsPage() {
       {/* Import modal */}
       {importModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)' }}>
-          <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl max-h-[85vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-gray-900">Importar clientes</h3>
               <button onClick={() => setImportModal(false)} className="p-2 rounded-lg hover:bg-gray-100"><X size={16} /></button>

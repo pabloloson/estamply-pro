@@ -229,7 +229,8 @@ export default function PresupuestoPage() {
 
           {savedPresupuestos.length > 0 ? (
             <div className="card overflow-hidden">
-              <table className="w-full"><thead><tr className="border-b border-gray-100">
+              <div className="overflow-x-auto">
+              <table className="w-full min-w-[600px]"><thead><tr className="border-b border-gray-100">
                 {[t('code'), t('client'), t('date'), t('total'), ''].map(h => <th key={h} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">{h}</th>)}
               </tr></thead><tbody>
                 {savedPresupuestos.map(p => {
@@ -252,6 +253,7 @@ export default function PresupuestoPage() {
                   )
                 })}
               </tbody></table>
+              </div>
             </div>
           ) : (
             <div className="card flex flex-col items-center justify-center py-16 gap-4">

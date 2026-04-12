@@ -163,8 +163,8 @@ export default function CatalogoPage() {
 
       {/* Product table */}
       <div className="card" style={{ overflow: 'visible' }}>
-        <div>
-          <table className="w-full"><thead><tr className="border-b border-gray-100">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[600px]"><thead><tr className="border-b border-gray-100">
             {['', t('productName').replace(' *', ''), ...(showCosts ? [t('cost')] : []), t('price'), ...(showCosts ? [t('margin')] : []), t('stock'), '', ''].map((h, i) =>
               <th key={i} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 py-3">{h}</th>)}
           </tr></thead><tbody>
@@ -363,7 +363,7 @@ export default function CatalogoPage() {
       {/* Stock Modal */}
       {stockModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)' }} onClick={() => setStockModal(null)}>
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             {stockModal.type === 'history' ? (<>
               <h3 className="font-bold text-gray-900 mb-4">Historial — {stockModal.product.name}</h3>
               {stockModal.movements.length > 0 ? (

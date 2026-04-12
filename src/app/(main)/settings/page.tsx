@@ -594,7 +594,7 @@ export default function SettingsPage() {
       {/* Medio de pago modal */}
       {editingMedio && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)' }} onClick={() => setEditingMedio(null)}>
-          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <h3 className="font-bold text-gray-900 mb-4">{editingMedio.id ? 'Editar' : 'Nuevo'} medio de pago</h3>
             <div className="space-y-3">
               <div><label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
@@ -633,7 +633,7 @@ export default function SettingsPage() {
       {/* QR Modal */}
       {showQR && !!(ws as Record<string, unknown>).catalog_slug && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)' }} onClick={() => setShowQR(false)}>
-          <div className="bg-white rounded-2xl p-6 shadow-2xl text-center" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl max-h-[90vh] overflow-y-auto text-center" onClick={e => e.stopPropagation()}>
             <h3 className="font-bold text-gray-900 mb-4">QR de tu catálogo</h3>
             <QRCodeCanvas id="catalog-qr" value={`https://www.estamply.app/catalogo/${(ws as Record<string, unknown>).catalog_slug}`} size={300} level="M" />
             <p className="text-xs text-gray-400 mt-3">estamply.app/catalogo/{(ws as Record<string, unknown>).catalog_slug as string}</p>

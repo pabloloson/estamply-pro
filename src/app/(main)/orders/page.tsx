@@ -53,7 +53,7 @@ function DragCard({ id, children }: { id: string; children: React.ReactNode }) {
 
 function DropCol({ id, children }: { id: string; children: React.ReactNode }) {
   const { setNodeRef, isOver } = useDroppable({ id })
-  return <div ref={setNodeRef} className={`rounded-xl p-2 min-h-[200px] transition-all ${isOver ? 'ring-2 ring-purple-300' : ''}`} style={{ background: SC[id]?.bg || '#F1F1F1' }}>{children}</div>
+  return <div ref={setNodeRef} className={`rounded-xl p-2 min-h-[200px] transition-all min-w-[70vw] snap-center md:min-w-0 ${isOver ? 'ring-2 ring-purple-300' : ''}`} style={{ background: SC[id]?.bg || '#F1F1F1' }}>{children}</div>
 }
 
 export default function OrdersPage() {
@@ -399,7 +399,7 @@ export default function OrdersPage() {
         </div>
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 min-h-[400px]">
+          <div className="flex gap-3 min-h-[400px] overflow-x-auto pb-2 snap-x snap-mandatory md:grid md:grid-cols-4 md:overflow-x-visible md:snap-none">
             {STATES.map(state => {
               const sc = SC[state]
               const isDel = state === 'delivered'
