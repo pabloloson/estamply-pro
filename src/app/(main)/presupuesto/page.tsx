@@ -233,6 +233,85 @@ export default function PresupuestoPage() {
     if (saved) setSavedPresupuestos(saved as typeof savedPresupuestos)
   }
 
+  function handlePrint() {
+    const iframe = document.createElement('iframe')
+    iframe.style.display = 'none'
+    document.body.appendChild(iframe)
+    const doc = iframe.contentDocument || iframe.contentWindow?.document
+    if (!doc) return
+
+    const techniqueLabel = (t: string) => ({ subli: 'Sublimación', dtf: 'DTF Textil', dtf_uv: 'DTF UV', vinyl: 'Vinilo', serigrafia: 'Serigrafía' }[t] || '')
+
+    const itemRows = items.map(item => `
+      <tr>
+        <td style="padding:10px 8px;font-size:12px;color:#6C5CE7;font-weight:600">${item.origen === 'manual' || item.origen === 'catalogo' ? (item.origen === 'catalogo' ? 'Catálogo' : '') : techniqueLabel(item.tecnica)}</td>
+        <td style="padding:10px 8px"><div style="font-weight:500">${item.nombre}</div>${item.notas ? `<div style="font-size:11px;color:#999">${item.notas}</div>` : ''}</td>
+        <td style="padding:10px 8px;text-align:center">${item.cantidad}</td>
+        <td style="padding:10px 8px;text-align:right">${fmtCurrency(item.precioUnit)}</td>
+        <td style="padding:10px 8px;text-align:right;font-weight:600">${fmtCurrency(item.subtotal)}</td>
+      </tr>
+    `).join('')
+
+    const clientHtml = clientDisplayName ? `
+      <div style="margin-bottom:24px;padding:12px 16px;background:#f9fafb;border-radius:6px">
+        <div style="font-size:11px;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Cliente</div>
+        <div style="font-size:15px;font-weight:600">${clientDisplayName}</div>
+        <div style="font-size:13px;color:#666">${[selectedClient?.email, selectedClient?.whatsapp || selectedClient?.phone].filter(Boolean).join(' · ')}</div>
+      </div>` : ''
+
+    const condHtml = condiciones.split('\n').map(l => `<div>${l}</div>`).join('')
+
+    const bizAddr = bizProfile?.business_address ? `<div style="font-size:12px;color:#666">${bizProfile.business_address}</div>` : ''
+    const bizPhone = bizProfile?.business_phone ? `<div style="font-size:12px;color:#666">${bizProfile.business_phone}</div>` : ''
+    const bizEmail = bizProfile?.business_email ? `<div style="font-size:12px;color:#666">${bizProfile.business_email}</div>` : ''
+
+    doc.open()
+    doc.write(`<!DOCTYPE html><html><head><title>Presupuesto #${quoteNumber}</title>
+    <style>
+      body{font-family:Arial,Helvetica,sans-serif;color:#000;margin:0;padding:20mm}
+      table{width:100%;border-collapse:collapse}
+      thead tr{border-bottom:2px solid #e5e7eb}
+      tbody tr{border-bottom:1px solid #f3f4f6}
+      th{font-size:11px;text-transform:uppercase;color:#999;font-weight:600;padding:10px 8px;text-align:left}
+      th:nth-child(3){text-align:center}
+      th:nth-child(4),th:nth-child(5){text-align:right}
+      @page{size:A4;margin:0}
+    </style></head><body>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;padding-bottom:16px;border-bottom:3px solid #6C5CE7">
+        <div>
+          <div style="font-size:22px;font-weight:800">${tallerName || 'Mi Taller'}</div>
+          ${bizAddr}${bizPhone}${bizEmail}
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:11px;color:#999;text-transform:uppercase;letter-spacing:2px">Presupuesto</div>
+          <div style="font-size:24px;font-weight:800;color:#6C5CE7">#${quoteNumber}</div>
+          <div style="font-size:13px;color:#666;margin-top:4px">${quoteDate}</div>
+          <div style="font-size:12px;color:#999">Válido por ${validezDias} días</div>
+        </div>
+      </div>
+      ${clientHtml}
+      <table style="margin-bottom:24px">
+        <thead><tr><th>Técnica</th><th>Descripción</th><th>Cant.</th><th>P. Unit.</th><th>Subtotal</th></tr></thead>
+        <tbody>${itemRows}</tbody>
+      </table>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:32px">
+        <div style="width:240px">
+          <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:14px;color:#666"><span>Subtotal</span><span>${fmtCurrency(totalVenta)}</span></div>
+          <div style="display:flex;justify-content:space-between;padding:10px 0;font-size:20px;font-weight:800;border-top:2px solid #000"><span>TOTAL</span><span style="color:#6C5CE7">${fmtCurrency(totalVenta)}</span></div>
+        </div>
+      </div>
+      <div style="padding:16px;background:#f9fafb;border-radius:6px;font-size:12px;color:#666;margin-bottom:32px">
+        <div style="font-weight:600;margin-bottom:8px;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#999">Condiciones</div>
+        ${condHtml}
+      </div>
+      <div style="text-align:center;font-size:11px;color:#ccc;padding-top:16px;border-top:1px solid #eee">Generado con Estamply · estamply.app</div>
+    </body></html>`)
+    doc.close()
+    iframe.contentWindow?.focus()
+    iframe.contentWindow?.print()
+    setTimeout(() => document.body.removeChild(iframe), 2000)
+  }
+
   async function loadCatalog() {
     if (catalogProducts.length > 0) return
     const { data } = await supabase.from('catalog_products').select('id, name, selling_price, photos').eq('visible_in_catalog', true).order('name')
@@ -338,44 +417,6 @@ export default function PresupuestoPage() {
 
   return (
     <>
-      {/* CORRECCIÓN 3: Aggressive print CSS — hide sidebar, mobile header, system chrome */}
-      <style>{`
-        @media print {
-          /* Reset page */
-          html, body { background: white !important; margin: 0 !important; padding: 0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; font-size: 11pt; color: #000; }
-          @page { size: A4; margin: 12mm 18mm; }
-
-          /* Hide everything except the presupuesto document */
-          .no-print, aside, nav, header, [class*="sidebar"], [class*="Sidebar"],
-          [class*="mobile"], .md\\:hidden { display: none !important; }
-
-          /* Force single column layout */
-          .flex.min-h-screen { display: block !important; }
-          .flex-col.lg\\:flex-row { display: block !important; }
-          .lg\\:w-72 { display: none !important; }
-          main { padding: 0 !important; margin: 0 !important; max-width: 100% !important; }
-
-          /* Clean the presupuesto card */
-          .print-page { box-shadow: none !important; margin: 0 !important; border-radius: 0 !important; max-width: 100% !important; border: none !important; }
-
-          /* Show desktop table in print (even on mobile) */
-          .hidden.md\\:block { display: block !important; }
-
-          /* Table styling for print */
-          table { width: 100%; border-collapse: collapse; }
-          th { font-size: 9pt; padding: 6px 10px; }
-          td { padding: 6px 10px; font-size: 10pt; }
-
-          /* Page break control */
-          .print-page { page-break-inside: avoid; }
-
-          /* Subtle branding */
-          .print-page img[alt=""] { opacity: 0.4 !important; }
-
-          /* Remove container constraints */
-          .max-w-6xl { max-width: 100% !important; padding: 0 !important; }
-        }
-      `}</style>
 
       <div className="max-w-6xl mx-auto px-4 py-6">
 
@@ -856,7 +897,7 @@ export default function PresupuestoPage() {
                 </button>
                 {/* PDF + Email — secondary row */}
                 <div className="grid grid-cols-2 gap-2">
-                  <button onClick={() => window.print()} className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50"><FileDown size={14} /> PDF</button>
+                  <button onClick={handlePrint} className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50"><FileDown size={14} /> PDF</button>
                   <button disabled={savingLink} onClick={async () => {
                     const link = await ensurePublicLink()
                     if (!link) return
