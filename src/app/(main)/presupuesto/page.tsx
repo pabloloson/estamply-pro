@@ -81,6 +81,7 @@ export default function PresupuestoPage() {
   const [catalogSearch, setCatalogSearch] = useState('')
   const [catalogQty, setCatalogQty] = useState(1)
   const [selectedCatalogProduct, setSelectedCatalogProduct] = useState<{ id: string; name: string; selling_price: number } | null>(null)
+  const [creatingNew, setCreatingNew] = useState(false)
 
   const defaultCondiciones = '· Se requiere seña para iniciar el trabajo.\n· El tiempo de entrega se confirma al aprobar el presupuesto.\n· Los precios pueden variar si cambian los costos de materiales.'
   const [condiciones, setCondiciones] = useState(defaultCondiciones)
@@ -175,18 +176,20 @@ export default function PresupuestoPage() {
   }
   async function loadCatalog() {
     if (catalogProducts.length > 0) return
-    const { data } = await supabase.from('catalog_products').select('id, name, selling_price, photos').eq('visible', true).order('name')
+    const { data } = await supabase.from('catalog_products').select('id, name, selling_price, photos').eq('visible_in_catalog', true).order('name')
     if (data) setCatalogProducts(data as typeof catalogProducts)
   }
 
   async function createAndAssignClient() {
     if (!newClientName.trim()) return
     setSavingNewClient(true)
+    const { data: { user } } = await supabase.auth.getUser()
     const { data, error } = await supabase.from('clients').insert({
       name: newClientName.trim(),
       phone: newClientPhone || null,
       whatsapp: newClientPhone || null,
       email: newClientEmail || null,
+      user_id: user?.id,
     }).select().single()
     setSavingNewClient(false)
     if (error || !data) { alert('Error al crear cliente'); return }
@@ -291,15 +294,16 @@ export default function PresupuestoPage() {
       <div className="max-w-6xl mx-auto px-4 py-6">
 
         {/* ══ LIST VIEW: when no presupuesto is loaded ══ */}
-        {items.length === 0 && !loadedPresupuestoId ? (<>
+        {items.length === 0 && !loadedPresupuestoId && !creatingNew ? (<>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 no-print">
             <div>
               <h1 className="text-2xl font-black text-gray-900">{t('title')}</h1>
               <p className="text-sm text-gray-400 mt-0.5">{savedPresupuestos.length} presupuesto{savedPresupuestos.length !== 1 ? 's' : ''}</p>
             </div>
-            <Link href="/cotizador" className="flex items-center gap-1.5 whitespace-nowrap text-xs sm:text-sm px-4 py-2 rounded-xl font-semibold text-white" style={{ background: '#6C5CE7' }}>
-              {t('newQuote')}
-            </Link>
+            <button onClick={() => { clearItems(); setLoadedPresupuestoId(null); setPublicLink(''); setClientId(''); setNewClientName(''); setCreatingNew(true) }}
+              className="flex items-center gap-1.5 whitespace-nowrap text-xs sm:text-sm px-4 py-2 rounded-xl font-semibold text-white" style={{ background: '#6C5CE7' }}>
+              <Plus size={14} /> {t('newQuote')}
+            </button>
           </div>
 
           {savedPresupuestos.length > 0 ? (<>
@@ -363,7 +367,7 @@ export default function PresupuestoPage() {
         {/* ══ DETAIL VIEW: when items are loaded ══ */}
         <div className="mb-6 no-print">
           <div className="flex items-center gap-2">
-            <button onClick={() => { clearItems(); setPublicLink('') }} className="text-gray-400 hover:text-gray-600"><ArrowLeft size={18} /></button>
+            <button onClick={() => { clearItems(); setPublicLink(''); setCreatingNew(false) }} className="text-gray-400 hover:text-gray-600"><ArrowLeft size={18} /></button>
             <h1 className="text-2xl font-black text-gray-900">Presupuesto</h1>
             {loadedPresupuestoId && savedPresupuestos.find(p => p.id === loadedPresupuestoId)?.origen === 'catalogo_web' && (
               <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold bg-green-100 text-green-600">Catálogo</span>
@@ -376,10 +380,51 @@ export default function PresupuestoPage() {
         </div>
 
         {items.length === 0 ? (
-          <div className="card flex flex-col items-center justify-center py-16 gap-4">
+          <div className="card flex flex-col items-center justify-center py-12 gap-4">
             <div className="w-16 h-16 rounded-full flex items-center justify-center bg-gray-100"><ShoppingCart size={28} className="text-gray-400" /></div>
-            <p className="text-gray-500 text-sm text-center max-w-xs">{t('emptyQuote')}</p>
-            <Link href="/cotizador" className="btn-primary text-sm px-5 py-2 rounded-xl font-semibold">{t('goToQuoter')}</Link>
+            <p className="text-gray-500 text-sm text-center max-w-xs">Agregá items desde el cotizador, catálogo o como item libre.</p>
+            <div className="flex gap-2">
+              <Link href="/cotizador" className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50">
+                <Calculator size={14} /> Cotizador
+              </Link>
+              <button onClick={() => { setShowAddPanel('catalog'); loadCatalog() }} className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50">
+                <ShoppingCart size={14} /> Catálogo
+              </button>
+              <button onClick={() => setShowAddPanel('free')} className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-white" style={{ background: '#6C5CE7' }}>
+                <Plus size={14} /> Item libre
+              </button>
+            </div>
+            {showAddPanel === 'free' && (
+              <div className="w-full max-w-md p-4 rounded-xl border border-gray-200 bg-white space-y-3">
+                <div><label className="block text-xs font-medium text-gray-500 mb-1">Descripción *</label>
+                  <input type="text" className="input-base text-sm" placeholder="Ej: Diseño personalizado" value={freeItem.nombre} onChange={e => setFreeItem({ ...freeItem, nombre: e.target.value })} autoFocus /></div>
+                <div className="flex gap-2">
+                  <div className="w-24"><label className="block text-xs font-medium text-gray-500 mb-1">Cant.</label>
+                    <input type="number" className="input-base text-sm" min={1} value={freeItem.cantidad} onChange={e => setFreeItem({ ...freeItem, cantidad: Number(e.target.value) || 1 })} /></div>
+                  <div className="flex-1"><label className="block text-xs font-medium text-gray-500 mb-1">Precio unit. *</label>
+                    <input type="number" className="input-base text-sm" min={0} value={freeItem.precioUnit || ''} onChange={e => setFreeItem({ ...freeItem, precioUnit: Number(e.target.value) })} /></div>
+                </div>
+                <div className="flex gap-2 justify-end">
+                  <button onClick={() => setShowAddPanel(null)} className="px-3 py-2 rounded-lg text-xs font-semibold text-gray-500 border border-gray-200">Cancelar</button>
+                  <button onClick={addFreeItem} disabled={!freeItem.nombre.trim() || freeItem.precioUnit <= 0} className="px-4 py-2 rounded-lg text-xs font-bold text-white disabled:opacity-40" style={{ background: '#6C5CE7' }}>Agregar</button>
+                </div>
+              </div>
+            )}
+            {showAddPanel === 'catalog' && (
+              <div className="w-full max-w-md p-4 rounded-xl border border-gray-200 bg-white space-y-3">
+                <input type="text" className="input-base text-sm" placeholder="Buscar producto..." value={catalogSearch} onChange={e => setCatalogSearch(e.target.value)} autoFocus />
+                <div className="max-h-48 overflow-y-auto space-y-1">
+                  {catalogProducts.filter(p => !catalogSearch || p.name.toLowerCase().includes(catalogSearch.toLowerCase())).slice(0, 8).map(p => (
+                    <button key={p.id} type="button" onClick={() => { setSelectedCatalogProduct(p); addItem({ tecnica: 'subli', nombre: p.name, costoUnit: 0, precioUnit: p.selling_price, precioSinDesc: p.selling_price, cantidad: 1, subtotal: p.selling_price, ganancia: p.selling_price, origen: 'catalogo' }); setShowAddPanel(null); setCatalogSearch('') }}
+                      className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-gray-50 text-left">
+                      <span className="text-sm font-medium text-gray-800 truncate">{p.name}</span>
+                      <span className="text-sm font-semibold text-gray-600 ml-2">{fmtCurrency(p.selling_price)}</span>
+                    </button>
+                  ))}
+                </div>
+                <button onClick={() => { setShowAddPanel(null); setCatalogSearch('') }} className="text-xs text-gray-400">Cancelar</button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="flex flex-col lg:flex-row gap-6">
@@ -565,7 +610,7 @@ export default function PresupuestoPage() {
                   ) : (
                     <div key={item.id} className="py-3 border-b border-gray-100 last:border-0">
                       <div className="flex items-center justify-between">
-                        {item.origen === 'manual' ? <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">Manual</span>
+                        {item.origen === 'manual' ? null
                           : item.origen === 'catalogo' ? <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: '#6C5CE715', color: '#6C5CE7' }}>Catálogo</span>
                           : <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: `${TECHNIQUE_COLORS[item.tecnica]}18`, color: TECHNIQUE_COLORS[item.tecnica] }}>{TECHNIQUE_LABELS[item.tecnica]}</span>}
                         <div className="flex items-center gap-1">
