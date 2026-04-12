@@ -365,7 +365,13 @@ export default function PresupuestoPage() {
             </button>
           </div>
 
-          {savedPresupuestos.length > 0 ? (<>
+          {loadingClients ? (
+            <div className="space-y-3">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="h-16 bg-white rounded-xl border border-gray-100 animate-pulse" />
+              ))}
+            </div>
+          ) : savedPresupuestos.length > 0 ? (<>
             {/* Mobile cards */}
             <div className="md:hidden space-y-2">
               {savedPresupuestos.map(p => (
