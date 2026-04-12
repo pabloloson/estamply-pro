@@ -253,7 +253,7 @@ export default function MaterialesPage() {
       {/* ── Base Product Modal ── */}
       {modal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)' }}>
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl max-h-[90dvh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
               <h3 className="font-bold text-gray-900">{modal.id ? tc('edit') : ''} {t('baseProducts')}</h3>
               <button onClick={() => setModal(null)} className="p-2 rounded-lg hover:bg-gray-100"><X size={16} /></button>
@@ -296,7 +296,7 @@ export default function MaterialesPage() {
       {/* ── Insumo Modal (full form) ── */}
       {insModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)' }}>
-          <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl max-h-[90dvh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
               <h3 className="font-bold text-gray-900">{insModal.id ? 'Editar' : 'Nuevo'} Insumo</h3>
               <button onClick={() => setInsModal(null)} className="p-2 rounded-lg hover:bg-gray-100"><X size={16} /></button>

@@ -283,7 +283,7 @@ export default function CatalogoPage() {
       {/* Catalog Product Modal */}
       {catModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)' }}>
-          <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl max-h-[90dvh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
               <h3 className="font-bold text-gray-900">{catModal.id ? t('editProduct') : t('newProduct')}</h3>
               <button onClick={() => setCatModal(null)} className="p-2 rounded-lg hover:bg-gray-100"><X size={16} /></button>
@@ -425,7 +425,7 @@ export default function CatalogoPage() {
       {/* Stock Modal */}
       {stockModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)' }} onClick={() => setStockModal(null)}>
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl max-h-[90dvh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             {stockModal.type === 'history' ? (<>
               <h3 className="font-bold text-gray-900 mb-4">Historial — {stockModal.product.name}</h3>
               {stockModal.movements.length > 0 ? (

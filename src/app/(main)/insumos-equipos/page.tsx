@@ -268,7 +268,7 @@ export default function InsumosEquiposPage() {
       {/* Modal Equipo */}
       {modalEquip && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)' }}>
-          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl max-h-[90dvh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
               <h3 className="font-bold text-gray-900">{modalEquip.id ? 'Editar Equipo' : 'Nuevo Equipo'}</h3>
               <button onClick={() => setModalEquip(null)} className="p-2 rounded-lg hover:bg-gray-100"><X size={16} /></button>

@@ -656,7 +656,7 @@ export default function CotizadorPage() {
       {/* Save as product modal */}
       {saveProductModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)' }} onClick={() => setSaveProductModal(null)}>
-          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl max-h-[90dvh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <h3 className="font-bold text-gray-900 mb-4">Guardar como producto</h3>
             <div className="space-y-3">
               <div><label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>

@@ -316,7 +316,7 @@ export default function ProduccionPage() {
       {/* Operator modal */}
       {opModal && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setOpModal(null)}>
-          <div className="bg-white rounded-2xl w-full max-w-sm p-5 space-y-4" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl w-full max-w-sm p-5 space-y-4 max-h-[90dvh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <h3 className="font-bold text-gray-900">{opModal.id ? 'Editar' : 'Nuevo'} operario</h3>
             <div><label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
               <input className="input-base" value={opModal.name || ''} onChange={e => setOpModal({ ...opModal, name: e.target.value })} /></div>
