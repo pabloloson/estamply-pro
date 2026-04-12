@@ -86,8 +86,8 @@ export default function ClientsPage() {
       </div>
 
       <div className="relative mb-4">
-        <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-        <input type="text" value={search} onChange={e => setSearch(e.target.value)} className="input-base pl-12" placeholder={t('searchPlaceholder')} />
+        <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+        <input type="text" value={search} onChange={e => setSearch(e.target.value)} className="input-base !pl-10" placeholder={t('searchPlaceholder')} />
       </div>
 
       <div className="card overflow-hidden">
