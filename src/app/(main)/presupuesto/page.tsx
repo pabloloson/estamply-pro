@@ -227,8 +227,29 @@ export default function PresupuestoPage() {
             </Link>
           </div>
 
-          {savedPresupuestos.length > 0 ? (
-            <div className="card overflow-hidden">
+          {savedPresupuestos.length > 0 ? (<>
+            {/* Mobile cards */}
+            <div className="md:hidden space-y-2">
+              {savedPresupuestos.map(p => (
+                <div key={p.id} className="bg-white rounded-xl border border-gray-100 p-4 cursor-pointer"
+                  onClick={() => loadSavedPresupuesto(p.id)}>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="font-semibold text-sm text-gray-900">#{p.codigo}</p>
+                      <p className="text-xs text-gray-400">{p.client_name || clients.find(c => c.id === p.client_id)?.name || tc('noClient')}</p>
+                    </div>
+                    <p className="font-bold text-sm" style={{ color: '#6C5CE7' }}>{fmtCurrency(p.total)}</p>
+                  </div>
+                  <div className="mt-1.5 flex items-center gap-3 text-xs text-gray-400">
+                    <span>{new Date(p.created_at).toLocaleDateString('es-AR')}</span>
+                    {p.origen && <span className="px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">{p.origen === 'catalogo_web' ? 'Web' : p.origen}</span>}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop table */}
+            <div className="hidden md:block card overflow-hidden">
               <div className="overflow-x-auto">
               <table className="w-full min-w-[600px]"><thead><tr className="border-b border-gray-100">
                 {[t('code'), t('client'), t('date'), t('total'), ''].map(h => <th key={h} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">{h}</th>)}
@@ -255,7 +276,7 @@ export default function PresupuestoPage() {
               </tbody></table>
               </div>
             </div>
-          ) : (
+          </>) : (
             <div className="card flex flex-col items-center justify-center py-16 gap-4">
               <div className="w-16 h-16 rounded-full flex items-center justify-center bg-gray-100"><ShoppingCart size={28} className="text-gray-400" /></div>
               <p className="text-gray-500 text-sm text-center max-w-xs">No tenés presupuestos todavía. Creá uno desde el Cotizador.</p>

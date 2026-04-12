@@ -161,8 +161,70 @@ export default function CatalogoPage() {
         ))}
       </div>
 
+      {/* Mobile cards */}
+      <div className="md:hidden space-y-2">
+        {filtered.map(p => {
+          const margin = p.selling_price > 0 ? Math.round(((p.selling_price - p.unit_cost) / p.selling_price) * 100) : 0
+          const lowStock = p.manage_stock && p.current_stock <= p.min_stock
+          const photo = (p.photos || [])[0]
+          const catName = categories.find(c => c.id === p.category_id)?.name
+          return (
+            <div key={p.id} className="bg-white rounded-xl border border-gray-100 p-4 active:bg-gray-50 transition-colors"
+              onClick={() => setCatModal(p)}>
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3 min-w-0">
+                  {photo
+                    ? <img src={photo} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                    : <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0"><ImageIcon size={14} className="text-gray-300" /></div>}
+                  <div className="min-w-0">
+                    <p className="font-semibold text-sm text-gray-900 truncate">{p.name}</p>
+                    <p className="text-xs text-gray-400">{catName || 'Sin categoría'}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {p.visible_in_catalog
+                    ? <Eye size={14} className="text-green-500" />
+                    : <EyeOff size={14} className="text-gray-300" />}
+                  <button onClick={e => { e.stopPropagation(); deleteCatalogProduct(p.id) }} className="p-1.5 rounded-lg hover:bg-red-50">
+                    <Trash2 size={14} className="text-red-400" />
+                  </button>
+                </div>
+              </div>
+              <div className="mt-2 flex items-center gap-3 text-xs">
+                {showCosts && (
+                  <div>
+                    <span className="text-gray-400">{t('cost')}</span>
+                    <p className="font-semibold text-gray-700">{fmtCurrency(p.unit_cost)}</p>
+                  </div>
+                )}
+                <div>
+                  <span className="text-gray-400">{t('price')}</span>
+                  <p className="font-semibold text-gray-700">{fmtCurrency(p.selling_price)}</p>
+                </div>
+                {showCosts && (
+                  <div>
+                    <span className="text-gray-400">{t('margin')}</span>
+                    <p className={`font-semibold ${marginColor(margin)}`}>{margin}%</p>
+                  </div>
+                )}
+                <div className="ml-auto text-right">
+                  {p.manage_stock ? (
+                    <p className={`font-medium ${lowStock ? 'text-red-500' : 'text-gray-600'}`}>
+                      {lowStock && <AlertTriangle size={10} className="inline mr-0.5" />}{p.current_stock} u.
+                    </p>
+                  ) : (
+                    <span className="text-gray-400">{t('onDemand')}</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          )
+        })}
+        {filtered.length === 0 && <div className="text-center py-12 text-gray-400">No hay productos en esta vista.</div>}
+      </div>
+
       {/* Product table */}
-      <div className="card" style={{ overflow: 'visible' }}>
+      <div className="hidden md:block card" style={{ overflow: 'visible' }}>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[600px]"><thead><tr className="border-b border-gray-100">
             {['', t('productName').replace(' *', ''), ...(showCosts ? [t('cost')] : []), t('price'), ...(showCosts ? [t('margin')] : []), t('stock'), '', ''].map((h, i) =>

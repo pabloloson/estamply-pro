@@ -87,7 +87,7 @@ export default function ClientsPage() {
 
       <div className="relative mb-4">
         <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-        <input type="text" value={search} onChange={e => setSearch(e.target.value)} className="input-base pl-10" placeholder={t('searchPlaceholder')} />
+        <input type="text" value={search} onChange={e => setSearch(e.target.value)} className="input-base pl-12" placeholder={t('searchPlaceholder')} />
       </div>
 
       <div className="card overflow-hidden">
@@ -98,48 +98,86 @@ export default function ClientsPage() {
             {!search && <button onClick={() => setModal({})} className="text-sm px-4 py-2 rounded-xl font-semibold text-white" style={{ background: '#6C5CE7' }}>{t('newClient')}</button>}
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[600px]">
-              <thead><tr className="border-b border-gray-100">
-                {[t('name'), 'WhatsApp', t('emailField'), t('phone'), '', ''].map(h => (
-                  <th key={h} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-5 py-3">{h}</th>
-                ))}
-              </tr></thead>
-              <tbody>
-                {filtered.map(c => (
-                  <tr key={c.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                    <td className="px-5 py-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0" style={{ background: 'linear-gradient(135deg, #6C5CE7, #a29bfe)' }}>
-                          {c.name[0].toUpperCase()}
-                        </div>
-                        <div>
-                          <span className="font-medium text-gray-800">{c.name}</span>
+          <>
+            {/* Mobile cards */}
+            <div className="md:hidden space-y-2 p-3">
+              {filtered.map(c => (
+                <div key={c.id} className="bg-white rounded-xl border border-gray-100 p-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0" style={{ background: 'linear-gradient(135deg, #6C5CE7, #a29bfe)' }}>
+                        {c.name[0]?.toUpperCase() || '?'}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-sm text-gray-900">
+                          {c.name}
                           {c.tipo_cliente === 'empresa' && <span className="ml-1.5 text-[9px] px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-500 font-semibold">Empresa</span>}
+                        </p>
+                        {c.email && <p className="text-xs text-gray-400">{c.email}</p>}
+                      </div>
+                    </div>
+                    <div className="flex gap-1">
+                      <button onClick={() => { setModal(c); setShowMore(false) }} className="p-1.5 rounded-lg hover:bg-gray-100"><Pencil size={14} className="text-gray-400" /></button>
+                      <button onClick={() => remove(c.id)} className="p-1.5 rounded-lg hover:bg-red-50"><Trash2 size={14} className="text-red-400" /></button>
+                    </div>
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
+                    {c.whatsapp && (
+                      <a href={waLink(c.whatsapp)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-green-600 font-medium">
+                        <MessageCircle size={12} /> {c.whatsapp}
+                      </a>
+                    )}
+                    {c.phone && <span>Tel: {c.phone}</span>}
+                    <span>{new Date(c.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: '2-digit' })}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop table */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full min-w-[600px]">
+                <thead><tr className="border-b border-gray-100">
+                  {[t('name'), 'WhatsApp', t('emailField'), t('phone'), '', ''].map(h => (
+                    <th key={h} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-5 py-3">{h}</th>
+                  ))}
+                </tr></thead>
+                <tbody>
+                  {filtered.map(c => (
+                    <tr key={c.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                      <td className="px-5 py-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0" style={{ background: 'linear-gradient(135deg, #6C5CE7, #a29bfe)' }}>
+                            {c.name[0].toUpperCase()}
+                          </div>
+                          <div>
+                            <span className="font-medium text-gray-800">{c.name}</span>
+                            {c.tipo_cliente === 'empresa' && <span className="ml-1.5 text-[9px] px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-500 font-semibold">Empresa</span>}
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3 text-sm">
-                      {c.whatsapp ? (
-                        <a href={waLink(c.whatsapp)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-green-600 hover:text-green-700 font-medium">
-                          <MessageCircle size={13} /> {c.whatsapp}
-                        </a>
-                      ) : <span className="text-gray-300">—</span>}
-                    </td>
-                    <td className="px-5 py-3 text-sm text-gray-500">{c.email || <span className="text-gray-300">—</span>}</td>
-                    <td className="px-5 py-3 text-sm text-gray-500">{c.phone || <span className="text-gray-300">—</span>}</td>
-                    <td className="px-5 py-3 text-xs text-gray-400">{new Date(c.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: '2-digit' })}</td>
-                    <td className="px-5 py-3">
-                      <div className="flex gap-1.5">
-                        <button onClick={() => { setModal(c); setShowMore(false) }} className="p-1.5 rounded-lg hover:bg-gray-100"><Pencil size={14} className="text-gray-400" /></button>
-                        <button onClick={() => remove(c.id)} className="p-1.5 rounded-lg hover:bg-red-50"><Trash2 size={14} className="text-red-400" /></button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                      </td>
+                      <td className="px-5 py-3 text-sm">
+                        {c.whatsapp ? (
+                          <a href={waLink(c.whatsapp)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-green-600 hover:text-green-700 font-medium">
+                            <MessageCircle size={13} /> {c.whatsapp}
+                          </a>
+                        ) : <span className="text-gray-300">---</span>}
+                      </td>
+                      <td className="px-5 py-3 text-sm text-gray-500">{c.email || <span className="text-gray-300">---</span>}</td>
+                      <td className="px-5 py-3 text-sm text-gray-500">{c.phone || <span className="text-gray-300">---</span>}</td>
+                      <td className="px-5 py-3 text-xs text-gray-400">{new Date(c.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: '2-digit' })}</td>
+                      <td className="px-5 py-3">
+                        <div className="flex gap-1.5">
+                          <button onClick={() => { setModal(c); setShowMore(false) }} className="p-1.5 rounded-lg hover:bg-gray-100"><Pencil size={14} className="text-gray-400" /></button>
+                          <button onClick={() => remove(c.id)} className="p-1.5 rounded-lg hover:bg-red-50"><Trash2 size={14} className="text-red-400" /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 
