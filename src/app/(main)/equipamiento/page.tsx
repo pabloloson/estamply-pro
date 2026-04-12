@@ -79,11 +79,11 @@ export default function EquipamientoPage() {
 
   return (
     <div>
-      <div className="flex items-start justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
         <div><h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
           <p className="text-gray-500 text-sm mt-1">{t('subtitle')}</p></div>
         <button onClick={() => setModal({ clasificacion: 'plancha', type: 'press_flat', cost: 0, lifespan_uses: 10000, tecnicas_slugs: [] })}
-          className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}>
+          className="flex items-center gap-1.5 whitespace-nowrap text-xs sm:text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}>
           <Plus size={14} /> {t('addEquipment')}
         </button>
       </div>

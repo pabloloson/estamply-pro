@@ -72,14 +72,14 @@ export default function ClientsPage() {
 
   return (
     <div>
-      <div className="flex items-start justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
         <div><h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
           <p className="text-gray-500 text-sm mt-1">{t('totalClients', { count: clients.length })}</p></div>
         <div className="flex gap-2">
-          <button onClick={() => { setImportModal(true); setImportStep(1); setImportData([]); setImportResult(null) }} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50">
+          <button onClick={() => { setImportModal(true); setImportStep(1); setImportData([]); setImportResult(null) }} className="flex items-center gap-1.5 px-3 py-2 rounded-xl whitespace-nowrap text-xs sm:text-sm font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50">
             <Upload size={14} /> {t('importClients')}
           </button>
-          <button onClick={() => { setModal({}); setShowMore(false) }} className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white" style={{ background: '#6C5CE7', boxShadow: '0 4px 14px rgba(108,92,231,0.3)' }}>
+          <button onClick={() => { setModal({}); setShowMore(false) }} className="flex items-center gap-1.5 px-4 py-2 rounded-xl whitespace-nowrap text-xs sm:text-sm font-semibold text-white" style={{ background: '#6C5CE7', boxShadow: '0 4px 14px rgba(108,92,231,0.3)' }}>
             <Plus size={15} /> {t('newClient')}
           </button>
         </div>
@@ -87,7 +87,7 @@ export default function ClientsPage() {
 
       <div className="relative mb-4">
         <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-        <input type="text" value={search} onChange={e => setSearch(e.target.value)} className="input-base pl-9" placeholder={t('searchPlaceholder')} />
+        <input type="text" value={search} onChange={e => setSearch(e.target.value)} className="input-base pl-10" placeholder={t('searchPlaceholder')} />
       </div>
 
       <div className="card overflow-hidden">

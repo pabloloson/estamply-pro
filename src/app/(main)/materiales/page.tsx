@@ -156,10 +156,10 @@ export default function MaterialesPage() {
 
   return (
     <div>
-      <div className="flex items-start justify-between mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
         <div><h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
           <p className="text-gray-500 text-sm mt-1">{t('subtitle')}</p></div>
-        <button onClick={() => setShowCats(true)} className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50">
+        <button onClick={() => setShowCats(true)} className="flex items-center gap-1.5 whitespace-nowrap text-xs sm:text-sm px-3 py-1.5 rounded-lg font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50">
           <FolderOpen size={14} /> Categorías
         </button>
       </div>

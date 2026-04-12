@@ -236,7 +236,7 @@ export default function EstadisticasPage() {
   return (
     <div className="max-w-5xl mx-auto" id="stats-content">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
         <h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
         <div className="flex items-center gap-2">
           <div className="flex gap-1 bg-gray-100 rounded-lg p-0.5">

@@ -141,15 +141,15 @@ export default function CatalogoPage() {
 
   return (
     <div onClick={() => stockPopover && setStockPopover(null)}>
-      <div className="flex items-start justify-between mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
         <div><h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
           <p className="text-gray-500 text-sm mt-1">{t('subtitle')}</p></div>
         <div className="flex gap-2">
-          <button onClick={() => setShowCats(true)} className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50">
+          <button onClick={() => setShowCats(true)} className="flex items-center gap-1.5 whitespace-nowrap text-xs sm:text-sm px-3 py-1.5 rounded-lg font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50">
             <FolderOpen size={14} /> {t('categories')}
           </button>
           <button onClick={() => setCatModal({ cost_mode: 'manual', unit_cost: 0, selling_price: 0, manage_stock: false, current_stock: 0, min_stock: 0, visible_in_catalog: true, photos: [] })}
-            className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={14} /> {t('addProduct')}</button>
+            className="flex items-center gap-1.5 whitespace-nowrap text-xs sm:text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={14} /> {t('addProduct')}</button>
         </div>
       </div>
 

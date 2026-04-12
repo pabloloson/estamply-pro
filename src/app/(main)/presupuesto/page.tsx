@@ -217,12 +217,12 @@ export default function PresupuestoPage() {
 
         {/* ══ LIST VIEW: when no presupuesto is loaded ══ */}
         {items.length === 0 && !loadedPresupuestoId ? (<>
-          <div className="flex items-center justify-between mb-6 no-print">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 no-print">
             <div>
               <h1 className="text-2xl font-black text-gray-900">{t('title')}</h1>
               <p className="text-sm text-gray-400 mt-0.5">{savedPresupuestos.length} presupuesto{savedPresupuestos.length !== 1 ? 's' : ''}</p>
             </div>
-            <Link href="/cotizador" className="flex items-center gap-1.5 text-sm px-4 py-2 rounded-xl font-semibold text-white" style={{ background: '#6C5CE7' }}>
+            <Link href="/cotizador" className="flex items-center gap-1.5 whitespace-nowrap text-xs sm:text-sm px-4 py-2 rounded-xl font-semibold text-white" style={{ background: '#6C5CE7' }}>
               {t('newQuote')}
             </Link>
           </div>
@@ -265,7 +265,7 @@ export default function PresupuestoPage() {
         </>) : (<>
 
         {/* ══ DETAIL VIEW: when items are loaded ══ */}
-        <div className="flex items-center justify-between mb-6 no-print">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 no-print">
           <div className="flex items-center gap-2">
             <button onClick={() => { clearItems(); setPublicLink('') }} className="text-gray-400 hover:text-gray-600"><ArrowLeft size={18} /></button>
             <h1 className="text-2xl font-black text-gray-900">Presupuesto</h1>
