@@ -106,15 +106,11 @@ export default function SettingsPage() {
   }, [])
 
   async function saveWs() {
+    if (!userId) return
     const { data: existing } = await supabase.from('workshop_settings').select('id').single()
-    let error
-    if (existing) {
-      const res = await supabase.from('workshop_settings').update({ settings: ws }).eq('id', existing.id)
-      error = res.error
-    } else {
-      const res = await supabase.from('workshop_settings').insert({ settings: ws, user_id: userId })
-      error = res.error
-    }
+    const { error } = existing
+      ? await supabase.from('workshop_settings').update({ settings: ws }).eq('id', existing.id)
+      : await supabase.from('workshop_settings').insert({ settings: ws, user_id: userId })
     if (error) { console.error('saveWs error:', error); alert(`Error: ${error.message}`); return }
     alert('Guardado ✓')
   }
@@ -135,7 +131,7 @@ export default function SettingsPage() {
   async function save() {
     if (!userId) return
     setSaving(true)
-    const { error } = await supabase.from('profiles').update(profile).eq('id', userId)
+    const { error } = await supabase.from('profiles').upsert({ id: userId, ...profile })
     setSaving(false)
     if (error) { console.error('save profile error:', error); alert(`Error: ${error.message}`); return }
     alert('Perfil guardado ✓')
