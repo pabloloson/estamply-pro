@@ -341,12 +341,39 @@ export default function PresupuestoPage() {
       {/* CORRECCIÓN 3: Aggressive print CSS — hide sidebar, mobile header, system chrome */}
       <style>{`
         @media print {
-          body { margin: 0; background: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .no-print, aside, nav, header, [class*="sidebar"], [class*="mobile"] { display: none !important; }
-          .print-page { box-shadow: none !important; margin: 0 !important; border-radius: 0 !important; max-width: 100% !important; border: none !important; }
-          main { padding: 0 !important; margin: 0 !important; }
+          /* Reset page */
+          html, body { background: white !important; margin: 0 !important; padding: 0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; font-size: 11pt; color: #000; }
+          @page { size: A4; margin: 12mm 18mm; }
+
+          /* Hide everything except the presupuesto document */
+          .no-print, aside, nav, header, [class*="sidebar"], [class*="Sidebar"],
+          [class*="mobile"], .md\\:hidden { display: none !important; }
+
+          /* Force single column layout */
           .flex.min-h-screen { display: block !important; }
-          @page { margin: 10mm; size: A4; }
+          .flex-col.lg\\:flex-row { display: block !important; }
+          .lg\\:w-72 { display: none !important; }
+          main { padding: 0 !important; margin: 0 !important; max-width: 100% !important; }
+
+          /* Clean the presupuesto card */
+          .print-page { box-shadow: none !important; margin: 0 !important; border-radius: 0 !important; max-width: 100% !important; border: none !important; }
+
+          /* Show desktop table in print (even on mobile) */
+          .hidden.md\\:block { display: block !important; }
+
+          /* Table styling for print */
+          table { width: 100%; border-collapse: collapse; }
+          th { font-size: 9pt; padding: 6px 10px; }
+          td { padding: 6px 10px; font-size: 10pt; }
+
+          /* Page break control */
+          .print-page { page-break-inside: avoid; }
+
+          /* Subtle branding */
+          .print-page img[alt=""] { opacity: 0.4 !important; }
+
+          /* Remove container constraints */
+          .max-w-6xl { max-width: 100% !important; padding: 0 !important; }
         }
       `}</style>
 
@@ -795,8 +822,8 @@ export default function PresupuestoPage() {
                   {editingCondiciones ? (
                     <textarea className="input-base text-xs w-full resize-none no-print" rows={4} value={condiciones} onChange={e => setCondiciones(e.target.value)} />
                   ) : null}
-                  <div className={`text-xs text-gray-500 whitespace-pre-line leading-relaxed ${editingCondiciones ? 'hidden' : ''}`}>{condiciones}</div>
-                  {/* Always show condiciones in print */}
+                  <div className={`text-xs text-gray-500 whitespace-pre-line leading-relaxed print:hidden ${editingCondiciones ? 'hidden' : ''}`}>{condiciones}</div>
+                  {/* Always show condiciones in print (single copy) */}
                   <div className="text-xs text-gray-500 whitespace-pre-line leading-relaxed hidden print:block">{condiciones}</div>
                 </div>
 
