@@ -6,7 +6,7 @@ import Link from 'next/link'
 import {
   ShoppingCart, Trash2, FileDown, MessageCircle, Mail, X,
   ArrowLeft, Loader2, Phone, MapPin, Globe, AtSign, Pencil, ChevronDown, ChevronUp,
-  Calendar, Link as LinkIcon, Check,
+  Link as LinkIcon, Check,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { usePresupuesto } from '@/features/presupuesto/context/PresupuestoContext'
@@ -548,10 +548,9 @@ export default function PresupuestoPage() {
                 <p className="text-xs font-bold uppercase tracking-wider text-gray-400">{t('confirmAsOrder')}</p>
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">{t('deliveryDate')}</label>
-                  <div className="relative">
-                    <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10" />
-                    <input type="date" className="input-base !pl-9 h-11 text-sm" value={dueDate} onChange={e => setDueDate(e.target.value)} />
-                  </div>
+                  <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)}
+                    className="w-full rounded-[10px] border-2 border-transparent bg-[#F3F4F6] px-3 text-sm outline-none focus:border-[#6C5CE7] focus:shadow-[0_0_0_3px_rgba(108,92,231,0.1)] transition-all"
+                    style={{ height: '44px', maxHeight: '44px', WebkitAppearance: 'none', appearance: 'none' }} />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">{t('deposit')}</label>
