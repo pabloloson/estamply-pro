@@ -132,6 +132,7 @@ export default function PresupuestoPage() {
       subtotal: (i.subtotal as number) || 0,
       ganancia: ((i.subtotal as number) || 0) - ((i.costoUnit as number) || 0) * ((i.cantidad as number) || 1),
       notas: (i.notas as string) || undefined,
+      origen: (i.origen as 'cotizador' | 'catalogo' | 'catalogo_web' | 'manual') || undefined,
     }))
     loadItems(mapped)
     setLoadedPresupuestoId(presId)
@@ -200,11 +201,13 @@ export default function PresupuestoPage() {
 
   // Trigger autosave when items, client, or conditions change (debounced)
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const autoSaveRef = useRef(autoSave)
+  autoSaveRef.current = autoSave // always keep latest closure
   useEffect(() => {
-    // Only autosave if we're in detail view (have items or creating new)
-    if (items.length === 0 && !creatingNew && !loadedPresupuestoId) return
+    // Only autosave if we're in detail view
+    if (items.length === 0 && !creatingNew && !loadedPresupuestoId && !dbPresupuestoId) return
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
-    saveTimerRef.current = setTimeout(() => { autoSave() }, 800)
+    saveTimerRef.current = setTimeout(() => { autoSaveRef.current() }, 800)
     return () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current) }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items, clientId, newClientName, condiciones, validezDias])
