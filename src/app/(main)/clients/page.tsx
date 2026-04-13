@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Plus, Pencil, Trash2, X, Users, Search, MessageCircle, Upload, MoreVertical } from 'lucide-react'
+import { Plus, Pencil, Trash2, X, Users, Search, MessageCircle, Upload, Download, MoreVertical } from 'lucide-react'
 import { useTranslations } from '@/shared/hooks/useTranslations'
 import { useLocale } from '@/shared/context/LocaleContext'
 import * as XLSX from 'xlsx'
@@ -34,7 +34,7 @@ export default function ClientsPage() {
   const [importStep, setImportStep] = useState(1)
   const [importData, setImportData] = useState<string[][]>([])
   const [importHeaders, setImportHeaders] = useState<string[]>([])
-  const [importMap, setImportMap] = useState<Record<string, number>>({ nombre: -1, whatsapp: -1, email: -1 })
+  const [importMap, setImportMap] = useState<Record<string, number>>({ nombre: -1, whatsapp: -1, email: -1, tipo: -1, identificacion_fiscal: -1, direccion: -1, ciudad: -1, provincia: -1, notas: -1 })
   const [importCountry, setImportCountry] = useState('54')
   const [importResult, setImportResult] = useState<{ imported: number; skipped: number; errors: number } | null>(null)
   const [importing, setImporting] = useState(false)
@@ -97,6 +97,26 @@ export default function ClientsPage() {
     (c.whatsapp || '').includes(search)
   )
 
+  function handleExportar() {
+    const data = filtered.map(c => ({
+      nombre: c.name,
+      telefono: c.whatsapp || c.phone || '',
+      email: c.email || '',
+      tipo: c.tipo_cliente || '',
+      identificacion_fiscal: c.identificacion_fiscal || '',
+      direccion: c.direccion || '',
+      ciudad: c.ciudad || '',
+      provincia: c.provincia || '',
+      notas: c.notas || '',
+      pedidos: getClientOrders(c.id).length,
+      ultimo_pedido: (() => { const d = getClientLastOrder(c.id); return d ? new Date(d).toLocaleDateString('es-AR') : '' })(),
+    }))
+    const ws = XLSX.utils.json_to_sheet(data)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Clientes')
+    XLSX.writeFile(wb, `clientes_${new Date().toISOString().split('T')[0]}.xlsx`)
+  }
+
   if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>
 
   return (
@@ -105,6 +125,9 @@ export default function ClientsPage() {
         <div><h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
           <p className="text-gray-500 text-sm mt-1">{t('totalClients', { count: clients.length })}</p></div>
         <div className="flex gap-2">
+          <button onClick={handleExportar} className="flex items-center gap-1.5 px-3 py-2 rounded-xl whitespace-nowrap text-xs sm:text-sm font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50">
+            <Download size={14} /> Exportar
+          </button>
           <button onClick={() => { setImportModal(true); setImportStep(1); setImportData([]); setImportResult(null) }} className="flex items-center gap-1.5 px-3 py-2 rounded-xl whitespace-nowrap text-xs sm:text-sm font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50">
             <Upload size={14} /> {t('importClients')}
           </button>
@@ -318,6 +341,19 @@ export default function ClientsPage() {
             {importStep === 1 && (
               <div className="space-y-4">
                 <p className="text-sm text-gray-500">Subí un archivo .csv o .xlsx con tus clientes.</p>
+                <button type="button" onClick={() => {
+                  const headers = ['nombre', 'telefono', 'email', 'tipo', 'identificacion_fiscal', 'direccion', 'ciudad', 'provincia', 'notas']
+                  const ejemplo = [
+                    ['Juan Pérez', '3515551234', 'juan@email.com', 'Persona', '20-12345678-9', 'Calle 123', 'Córdoba', 'Córdoba', 'Cliente frecuente'],
+                    ['Empresa ABC', '1155559999', 'compras@abc.com', 'Empresa', '30-98765432-1', 'Av. Siempre Viva 742', 'Buenos Aires', 'CABA', ''],
+                  ]
+                  const ws = XLSX.utils.aoa_to_sheet([headers, ...ejemplo])
+                  const wb = XLSX.utils.book_new()
+                  XLSX.utils.book_append_sheet(wb, ws, 'Plantilla')
+                  XLSX.writeFile(wb, 'plantilla_clientes.xlsx')
+                }} className="flex items-center gap-2 text-sm text-purple-600 hover:text-purple-700 font-medium">
+                  <Download size={14} /> Descargar plantilla de ejemplo (.xlsx)
+                </button>
                 <label className="flex flex-col items-center justify-center py-8 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-purple-300 transition-colors">
                   <Upload size={24} className="text-gray-300 mb-2" />
                   <span className="text-sm text-gray-500">Seleccionar archivo</span>
@@ -333,12 +369,18 @@ export default function ClientsPage() {
                       setImportHeaders(rows[0].map(String))
                       setImportData(rows.slice(1).filter(r => r.some(c => c)))
                       // Auto-map
-                      const map: Record<string, number> = { nombre: -1, whatsapp: -1, email: -1 }
+                      const map: Record<string, number> = { nombre: -1, whatsapp: -1, email: -1, tipo: -1, identificacion_fiscal: -1, direccion: -1, ciudad: -1, provincia: -1, notas: -1 }
                       rows[0].forEach((h, i) => {
                         const hl = String(h).toLowerCase()
                         if (['nombre', 'name', 'cliente'].includes(hl)) map.nombre = i
                         if (['whatsapp', 'telefono', 'celular', 'phone', 'tel'].includes(hl)) map.whatsapp = i
                         if (['email', 'correo', 'mail'].includes(hl)) map.email = i
+                        if (['tipo', 'type', 'tipo_cliente'].includes(hl)) map.tipo = i
+                        if (['identificacion', 'cuit', 'rut', 'rfc', 'fiscal', 'identificacion_fiscal', 'dni'].includes(hl)) map.identificacion_fiscal = i
+                        if (['direccion', 'domicilio', 'address'].includes(hl)) map.direccion = i
+                        if (['ciudad', 'city', 'localidad'].includes(hl)) map.ciudad = i
+                        if (['provincia', 'state', 'estado', 'departamento'].includes(hl)) map.provincia = i
+                        if (['notas', 'notes', 'observaciones', 'comentarios'].includes(hl)) map.notas = i
                       })
                       setImportMap(map)
                       setImportStep(2)
@@ -373,10 +415,22 @@ export default function ClientsPage() {
                   </div>
                 ))}
                 <div className="bg-gray-50 rounded-lg p-3">
-                  <p className="text-xs font-semibold text-gray-500 mb-2">Preview (primeras 3 filas)</p>
-                  {importData.slice(0, 3).map((row, i) => (
-                    <p key={i} className="text-xs text-gray-600 truncate">{importMap.nombre >= 0 ? row[importMap.nombre] : '?'} · {importMap.whatsapp >= 0 ? row[importMap.whatsapp] : '?'}</p>
-                  ))}
+                  <p className="text-xs font-semibold text-gray-500 mb-2">Vista previa — {importData.length} {importData.length === 1 ? 'cliente' : 'clientes'} encontrados</p>
+                  <div className="space-y-1 max-h-32 overflow-y-auto">
+                    {importData.slice(0, 8).map((row, i) => {
+                      const name = importMap.nombre >= 0 ? String(row[importMap.nombre] || '').trim() : ''
+                      const wa = importMap.whatsapp >= 0 ? String(row[importMap.whatsapp] || '').trim() : ''
+                      const email = importMap.email >= 0 ? String(row[importMap.email] || '').trim() : ''
+                      const valid = name.length > 0
+                      return (
+                        <p key={i} className="text-xs text-gray-600 truncate flex items-center gap-1">
+                          <span className={valid ? 'text-green-500' : 'text-amber-500'}>{valid ? '\u2705' : '\u26a0\ufe0f'}</span>
+                          {valid ? <><span className="font-medium">{name}</span>{wa && <span className="text-gray-400"> — {wa}</span>}{email && <span className="text-gray-400"> — {email}</span>}</> : <span className="text-amber-600 italic">Fila {i + 2}: sin nombre — se saltea</span>}
+                        </p>
+                      )
+                    })}
+                    {importData.length > 8 && <p className="text-[10px] text-gray-400">...y {importData.length - 8} más</p>}
+                  </div>
                 </div>
                 <div className="flex gap-3">
                   <button onClick={() => setImportStep(1)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">{tc('back')}</button>
@@ -391,14 +445,23 @@ export default function ClientsPage() {
                     }
                     const existing = new Set(clients.map(c => c.whatsapp?.replace(/\D/g, '') || ''))
                     let imported = 0, skipped = 0, errors = 0
-                    const batch: Array<{ name: string; whatsapp: string; email?: string }> = []
+                    const batch: Array<Record<string, string | undefined>> = []
                     for (const row of importData) {
                       const name = String(row[importMap.nombre] || '').trim()
                       const wa = normalize(row[importMap.whatsapp])
                       if (!name || !wa || wa.length < 5) { errors++; continue }
                       if (existing.has(wa)) { skipped++; continue }
                       existing.add(wa)
-                      batch.push({ name, whatsapp: wa, email: importMap.email >= 0 ? String(row[importMap.email] || '').trim() || undefined : undefined })
+                      batch.push({
+                        name, whatsapp: wa,
+                        email: importMap.email >= 0 ? String(row[importMap.email] || '').trim() || undefined : undefined,
+                        tipo_cliente: importMap.tipo >= 0 ? String(row[importMap.tipo] || '').trim() || undefined : undefined,
+                        identificacion_fiscal: importMap.identificacion_fiscal >= 0 ? String(row[importMap.identificacion_fiscal] || '').trim() || undefined : undefined,
+                        direccion: importMap.direccion >= 0 ? String(row[importMap.direccion] || '').trim() || undefined : undefined,
+                        ciudad: importMap.ciudad >= 0 ? String(row[importMap.ciudad] || '').trim() || undefined : undefined,
+                        provincia: importMap.provincia >= 0 ? String(row[importMap.provincia] || '').trim() || undefined : undefined,
+                        notas: importMap.notas >= 0 ? String(row[importMap.notas] || '').trim() || undefined : undefined,
+                      })
                     }
                     if (batch.length) {
                       const { error } = await supabase.from('clients').insert(batch)
