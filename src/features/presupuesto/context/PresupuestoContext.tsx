@@ -20,15 +20,24 @@ interface PresupuestoContextType {
 const PresupuestoContext = createContext<PresupuestoContextType | null>(null)
 
 const LS_KEY = 'estamply-presupuesto'
+const LS_PID_KEY = 'estamply-presupuesto-id'
 
 export function PresupuestoProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<PresupuestoItem[]>([])
-  const [loadedPresupuestoId, setLoadedPresupuestoId] = useState<string | null>(null)
+  const [loadedPresupuestoId, setLoadedPresupuestoIdState] = useState<string | null>(null)
+
+  const setLoadedPresupuestoId = useCallback((id: string | null) => {
+    setLoadedPresupuestoIdState(id)
+    if (id) localStorage.setItem(LS_PID_KEY, id)
+    else localStorage.removeItem(LS_PID_KEY)
+  }, [])
 
   useEffect(() => {
     try {
       const saved = localStorage.getItem(LS_KEY)
       if (saved) setItems(JSON.parse(saved))
+      const savedPid = localStorage.getItem(LS_PID_KEY)
+      if (savedPid) setLoadedPresupuestoIdState(savedPid)
     } catch {}
   }, [])
 
