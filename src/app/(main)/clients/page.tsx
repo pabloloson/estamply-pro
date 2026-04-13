@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Plus, Pencil, Trash2, X, Users, Search, MessageCircle, Upload, MoreVertical } from 'lucide-react'
 import { useTranslations } from '@/shared/hooks/useTranslations'
@@ -17,6 +18,7 @@ interface Client {
 function waLink(num: string) { return `https://wa.me/${num.replace(/[\s\-\(\)]/g, '')}` }
 
 export default function ClientsPage() {
+  const router = useRouter()
   const supabase = createClient()
   const t = useTranslations('clients')
   const tc = useTranslations('common')
@@ -129,7 +131,7 @@ export default function ClientsPage() {
             {/* Mobile cards */}
             <div className="md:hidden space-y-2 p-3">
               {filtered.map(c => (
-                <div key={c.id} className="bg-white rounded-xl border border-gray-100 p-4" onClick={() => setModal(c)}>
+                <div key={c.id} className="bg-white rounded-xl border border-gray-100 p-4" onClick={() => router.push(`/clients/${c.id}`)}>
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0" style={{ background: 'linear-gradient(135deg, #6C5CE7, #a29bfe)' }}>
@@ -155,7 +157,7 @@ export default function ClientsPage() {
                       </a>
                     )}
                     {getClientOrders(c.id).length > 0 && (
-                      <span className="text-gray-500">{getClientOrders(c.id).length} pedidos · {fmtCurrency(getClientTotal(c.id))}</span>
+                      <span className="text-gray-500">{getClientOrders(c.id).length} pedidos</span>
                     )}
                   </div>
                 </div>
@@ -170,13 +172,12 @@ export default function ClientsPage() {
                   <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">Teléfono</th>
                   <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">{t('emailField')}</th>
                   <th className="text-center text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">Pedidos</th>
-                  <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">Total</th>
                   <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">Último</th>
                   <th className="px-4 py-3"></th>
                 </tr></thead>
                 <tbody>
                   {filtered.map(c => (
-                    <tr key={c.id} className="border-b border-gray-50 hover:bg-gray-50 cursor-pointer" onClick={() => setModal(c)}>
+                    <tr key={c.id} className="border-b border-gray-50 hover:bg-gray-50 cursor-pointer" onClick={() => router.push(`/clients/${c.id}`)}>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2.5">
                           <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-bold text-sm flex-shrink-0">
@@ -192,13 +193,12 @@ export default function ClientsPage() {
                         {(c.whatsapp || c.phone) ? (
                           <span className="flex items-center gap-1.5">
                             {c.whatsapp || c.phone}
-                            <a href={waLink(c.whatsapp || c.phone || '')} target="_blank" rel="noopener" onClick={e => e.stopPropagation()} className="text-green-500 hover:text-green-600"><MessageCircle size={14} /></a>
+                            <a href={waLink(c.whatsapp || c.phone || '')} target="_blank" rel="noopener" onClick={e => e.stopPropagation()} className="text-green-600 hover:text-green-700" title="Abrir WhatsApp"><MessageCircle size={14} /></a>
                           </span>
                         ) : null}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-500">{c.email || ''}</td>
                       <td className="px-4 py-3 text-sm text-gray-600 text-center">{getClientOrders(c.id).length}</td>
-                      <td className="px-4 py-3 text-sm font-medium text-gray-700">{fmtCurrency(getClientTotal(c.id))}</td>
                       <td className="px-4 py-3 text-xs text-gray-400">{(() => { const d = getClientLastOrder(c.id); return d ? new Date(d).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' }) : '-' })()}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-0.5">
@@ -206,9 +206,12 @@ export default function ClientsPage() {
                           <div className="relative">
                             <button onClick={e => { e.stopPropagation(); setMenuOpen(menuOpen === c.id ? null : c.id) }} className="p-1.5 rounded hover:bg-gray-100"><MoreVertical size={13} className="text-gray-400" /></button>
                             {menuOpen === c.id && (
-                              <div className="absolute right-0 top-full mt-1 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-20 w-40">
+                              <div className="absolute right-0 top-full mt-1 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-20 w-48">
                                 <button onClick={e => { e.stopPropagation(); setModal(c); setMenuOpen(null) }} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">Editar</button>
-                                <button onClick={e => { e.stopPropagation(); remove(c.id); setMenuOpen(null) }} className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50">Eliminar</button>
+                                <button onClick={e => { e.stopPropagation(); router.push('/presupuesto'); setMenuOpen(null) }} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">Nuevo presupuesto</button>
+                                {(c.whatsapp || c.phone) && <button onClick={e => { e.stopPropagation(); window.open(waLink(c.whatsapp || c.phone || ''), '_blank'); setMenuOpen(null) }} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">WhatsApp</button>}
+                                <div className="border-t border-gray-100 my-1" />
+                                <button onClick={e => { e.stopPropagation(); if (confirm(`¿Eliminar a ${c.name}? Los presupuestos y pedidos asociados NO se eliminan.`)) { supabase.from('clients').delete().eq('id', c.id).then(() => load()) }; setMenuOpen(null) }} className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50">Eliminar</button>
                               </div>
                             )}
                           </div>
