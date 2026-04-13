@@ -168,13 +168,15 @@ export default function PresupuestoPage() {
 
   // Direct save for client — no debounce, immediate persistence
   async function saveClientToDb(cId: string | null, cName: string | null) {
-    const pid = dbIdRef.current
-    if (!pid) return
-    const { error } = await supabase.from('presupuestos').update({
+    // Ensure we have a DB row first
+    const pid = dbIdRef.current || await ensureDbPresupuesto()
+    if (!pid) { console.error('saveClientToDb: no presupuesto ID'); return }
+    const { data, error } = await supabase.from('presupuestos').update({
       client_id: cId || null,
       client_name: cName || null,
-    }).eq('id', pid)
-    if (error) console.error('Error saving client:', error)
+    }).eq('id', pid).select('id, client_id, client_name')
+    if (error) console.error('saveClientToDb error:', error)
+    else console.log('saveClientToDb OK:', data)
   }
 
   async function ensureDbPresupuesto(): Promise<string | null> {
