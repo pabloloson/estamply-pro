@@ -166,6 +166,17 @@ export default function PresupuestoPage() {
     setDbPresupuestoId(id)
   }
 
+  // Direct save for client — no debounce, immediate persistence
+  async function saveClientToDb(cId: string | null, cName: string | null) {
+    const pid = dbIdRef.current
+    if (!pid) return
+    const { error } = await supabase.from('presupuestos').update({
+      client_id: cId || null,
+      client_name: cName || null,
+    }).eq('id', pid)
+    if (error) console.error('Error saving client:', error)
+  }
+
   async function ensureDbPresupuesto(): Promise<string | null> {
     // Use ref to get latest value (avoids stale closure)
     if (dbIdRef.current) return dbIdRef.current
@@ -367,6 +378,7 @@ export default function PresupuestoPage() {
     if (error || !data) { alert('Error al crear cliente'); return }
     setClients(prev => [...prev, data as DBClient])
     setClientId(data.id)
+    saveClientToDb(data.id, data.name)
     setNewClientName('')
     setNewClientPhone('')
     setNewClientEmail('')
@@ -628,7 +640,7 @@ export default function PresupuestoPage() {
                             </p>
                           </div>
                         </div>
-                        <button onClick={() => { setClientId(''); setClientSearch(''); setNewClientName('') }} className="p-1.5 rounded-lg hover:bg-gray-100 flex-shrink-0">
+                        <button onClick={() => { setClientId(''); setClientSearch(''); setNewClientName(''); saveClientToDb(null, null) }} className="p-1.5 rounded-lg hover:bg-gray-100 flex-shrink-0">
                           <X size={14} className="text-gray-400" />
                         </button>
                       </div>
@@ -653,7 +665,7 @@ export default function PresupuestoPage() {
                           <div className="absolute z-20 top-full mt-1 left-0 right-0 bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden max-h-60 overflow-y-auto">
                             {filteredClients.length > 0 ? filteredClients.map(c => (
                               <button key={c.id} type="button" className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-gray-50 text-left transition-colors border-b border-gray-50 last:border-0"
-                                onClick={() => { setClientId(c.id); setClientDropdownOpen(false); setClientSearch(''); setNewClientName('') }}>
+                                onClick={() => { setClientId(c.id); setClientDropdownOpen(false); setClientSearch(''); setNewClientName(''); saveClientToDb(c.id, c.name) }}>
                                 <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 text-xs font-bold text-gray-500">
                                   {c.name[0]?.toUpperCase()}
                                 </div>
