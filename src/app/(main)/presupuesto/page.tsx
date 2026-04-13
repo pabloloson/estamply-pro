@@ -86,8 +86,8 @@ export default function PresupuestoPage() {
   const [dbPresupuestoId, setDbPresupuestoId] = useState<string | null>(null)
   const dbIdRef = useRef<string | null>(null) // ref to avoid stale closure in autosave
 
-  const defaultCondiciones = '· Se requiere seña para iniciar el trabajo.\n· El tiempo de entrega se confirma al aprobar el presupuesto.\n· Los precios pueden variar si cambian los costos de materiales.'
-  const [condiciones, setCondiciones] = useState(defaultCondiciones)
+  const defaultCondiciones = ['Se requiere seña para iniciar el trabajo.', 'El tiempo de entrega se confirma al aprobar el presupuesto.', 'Los precios pueden variar si cambian los costos de materiales.']
+  const [condiciones, setCondiciones] = useState<string[]>(defaultCondiciones)
 
   const today = new Date()
   const quoteDate = format(today, "d 'de' MMMM 'de' yyyy", { locale: es })
@@ -138,7 +138,10 @@ export default function PresupuestoPage() {
     if (data.client_id) setClientId(data.client_id)
     else if (data.client_name) setNewClientName(data.client_name)
     // Load conditions and validez
-    if (data.condiciones) setCondiciones(data.condiciones as string)
+    if (data.condiciones) {
+      if (Array.isArray(data.condiciones)) setCondiciones(data.condiciones as string[])
+      else if (typeof data.condiciones === 'string') setCondiciones((data.condiciones as string).split('\n').map((l: string) => l.replace(/^[·\-•]\s*/, '').trim()).filter(Boolean))
+    }
     if (data.validez_dias) setValidezDias(data.validez_dias as number)
     // Load public link
     if (data.codigo) setPublicLink(`/p/${data.codigo}`)
@@ -266,7 +269,7 @@ export default function PresupuestoPage() {
         ${printClientContact ? `<div style="font-size:13px;color:#666">${printClientContact}</div>` : ''}
       </div>` : ''
 
-    const condHtml = condiciones.split('\n').map(l => `<div>${l}</div>`).join('')
+    const condHtml = condiciones.map(c => `<div>· ${c}</div>`).join('')
 
     const bizCuit = bizProfile?.business_cuit ? `<div style="font-size:12px;color:#666">${bizProfile.business_cuit}</div>` : ''
     const bizAddr = bizProfile?.business_address ? `<div style="font-size:12px;color:#666">${bizProfile.business_address}</div>` : ''
@@ -380,7 +383,11 @@ export default function PresupuestoPage() {
         const sx = s as Record<string, unknown>
         setValidezDias((sx.validez_dias as number) || 15)
         setAdvancePercent((sx.sena_predeterminada as number) || 50)
-        if (sx.condiciones_presupuesto) setCondiciones(sx.condiciones_presupuesto as string)
+        if (sx.condiciones_default && Array.isArray(sx.condiciones_default)) {
+          setCondiciones(sx.condiciones_default as string[])
+        } else if (sx.condiciones_presupuesto && typeof sx.condiciones_presupuesto === 'string') {
+          setCondiciones((sx.condiciones_presupuesto as string).split('\n').map((l: string) => l.replace(/^[·\-•]\s*/, '').trim()).filter(Boolean))
+        }
       }
       setLoadingClients(false)
 
@@ -391,7 +398,10 @@ export default function PresupuestoPage() {
         if (pres) {
           if (pres.client_id) setClientId(pres.client_id)
           else if (pres.client_name) setNewClientName(pres.client_name)
-          if (pres.condiciones) setCondiciones(pres.condiciones as string)
+          if (pres.condiciones) {
+            if (Array.isArray(pres.condiciones)) setCondiciones(pres.condiciones as string[])
+            else if (typeof pres.condiciones === 'string') setCondiciones((pres.condiciones as string).split('\n').map((l: string) => l.replace(/^[·\-•]\s*/, '').trim()).filter(Boolean))
+          }
           if (pres.validez_dias) setValidezDias(pres.validez_dias as number)
           if (pres.codigo) setPublicLink(`/p/${pres.codigo}`)
         }
@@ -891,8 +901,8 @@ export default function PresupuestoPage() {
                   </div>
                 </div>
 
-                {/* CORRECCIÓN 6: Editable condiciones */}
-                <div className="px-8 py-4 border-t border-gray-100">
+                {/* Conditions */}
+                <div className="px-4 sm:px-8 py-4 border-t border-gray-100">
                   <div className="flex items-center gap-2 mb-2">
                     <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">{t('conditions')}</p>
                     <button onClick={() => setEditingCondiciones(!editingCondiciones)} className="no-print p-0.5 rounded hover:bg-gray-100">
@@ -900,11 +910,24 @@ export default function PresupuestoPage() {
                     </button>
                   </div>
                   {editingCondiciones ? (
-                    <textarea className="input-base text-xs w-full resize-none no-print" rows={4} value={condiciones} onChange={e => setCondiciones(e.target.value)} />
+                    <div className="space-y-2 no-print">
+                      {condiciones.map((c, i) => (
+                        <div key={i} className="flex items-start gap-2">
+                          <span className="text-gray-400 text-xs mt-2">·</span>
+                          <textarea className="input-base text-xs flex-1 resize-none" rows={2} value={c}
+                            onChange={e => { const arr = [...condiciones]; arr[i] = e.target.value; setCondiciones(arr) }} />
+                          <button onClick={() => setCondiciones(condiciones.filter((_, j) => j !== i))} className="p-1 rounded hover:bg-red-50 text-gray-300 hover:text-red-500 mt-1"><X size={12} /></button>
+                        </div>
+                      ))}
+                      <button onClick={() => setCondiciones([...condiciones, ''])} className="flex items-center gap-1 text-xs text-purple-500 font-semibold"><Plus size={12} /> Agregar condición</button>
+                    </div>
                   ) : null}
-                  <div className={`text-xs text-gray-500 whitespace-pre-line leading-relaxed print:hidden ${editingCondiciones ? 'hidden' : ''}`}>{condiciones}</div>
-                  {/* Always show condiciones in print (single copy) */}
-                  <div className="text-xs text-gray-500 whitespace-pre-line leading-relaxed hidden print:block">{condiciones}</div>
+                  <div className={`text-xs text-gray-500 leading-relaxed print:hidden ${editingCondiciones ? 'hidden' : ''}`}>
+                    {condiciones.map((c, i) => <div key={i}>· {c}</div>)}
+                  </div>
+                  <div className="text-xs text-gray-500 leading-relaxed hidden print:block">
+                    {condiciones.map((c, i) => <div key={i}>· {c}</div>)}
+                  </div>
                 </div>
 
                 {/* Footer — CORRECCIÓN 6: branding */}

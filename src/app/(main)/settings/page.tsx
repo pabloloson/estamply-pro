@@ -64,6 +64,11 @@ export default function SettingsPage() {
   const [inviting, setInviting] = useState(false)
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const [ws, setWs] = useState<WorkshopSettings>(DEFAULT_SETTINGS)
+  const [condicionesDefault, setCondicionesDefault] = useState<string[]>([
+    'Se requiere seña para iniciar el trabajo.',
+    'El tiempo de entrega se confirma al aprobar el presupuesto.',
+    'Los precios pueden variar si cambian los costos de materiales.',
+  ])
   const logoInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -95,7 +100,16 @@ export default function SettingsPage() {
         supabase.from('guias_talles').select('*').order('orden'),
         supabase.from('team_members').select('id,nombre,email,rol,estado'),
       ])
-      if (wsData?.settings) setWs({ ...DEFAULT_SETTINGS, ...(wsData.settings as Partial<WorkshopSettings>) })
+      if (wsData?.settings) {
+        const sx = wsData.settings as Record<string, unknown>
+        setWs({ ...DEFAULT_SETTINGS, ...(sx as Partial<WorkshopSettings>) })
+        if (sx.condiciones_default && Array.isArray(sx.condiciones_default)) {
+          setCondicionesDefault(sx.condiciones_default as string[])
+        } else if (sx.condiciones_presupuesto && typeof sx.condiciones_presupuesto === 'string') {
+          // Migrate from old string format
+          setCondicionesDefault((sx.condiciones_presupuesto as string).split('\n').map((l: string) => l.replace(/^[·\-•]\s*/, '').trim()).filter(Boolean))
+        }
+      }
       if (mp) setMediosPago(mp)
       if (gt) setGuiasTalles(gt as typeof guiasTalles)
       if (tm) setTeamMembers(tm as typeof teamMembers)
@@ -108,9 +122,10 @@ export default function SettingsPage() {
   async function saveWs() {
     if (!userId) return
     const { data: existing } = await supabase.from('workshop_settings').select('id').single()
+    const settingsToSave = { ...ws, condiciones_default: condicionesDefault }
     const { error } = existing
-      ? await supabase.from('workshop_settings').update({ settings: ws }).eq('id', existing.id)
-      : await supabase.from('workshop_settings').insert({ settings: ws, user_id: userId })
+      ? await supabase.from('workshop_settings').update({ settings: settingsToSave }).eq('id', existing.id)
+      : await supabase.from('workshop_settings').insert({ settings: settingsToSave, user_id: userId })
     if (error) { console.error('saveWs error:', error); alert(`Error: ${error.message}`); return }
     alert('Guardado ✓')
   }
@@ -354,6 +369,32 @@ export default function SettingsPage() {
           <button onClick={() => setEditingMedio({ nombre: '', tipo_ajuste: 'sin_ajuste', porcentaje: 0 })}
             className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700"><Plus size={14} /> {t('addPaymentMethod')}</button>
         )}
+      </div>
+
+      {/* Condiciones de presupuesto */}
+      <div className="card p-6 max-w-2xl mt-6">
+        <h3 className="font-semibold text-gray-800 mb-1">Condiciones de presupuesto</h3>
+        <p className="text-xs text-gray-400 mb-4">Se incluyen automáticamente en cada presupuesto nuevo.</p>
+        <div className="space-y-2 mb-4">
+          {condicionesDefault.map((cond, i) => (
+            <div key={i} className="flex items-start gap-2 p-3 rounded-lg border border-gray-100">
+              <span className="text-gray-400 text-sm mt-0.5">·</span>
+              <textarea className="input-base text-sm flex-1 resize-none" rows={2} value={cond}
+                onChange={e => { const arr = [...condicionesDefault]; arr[i] = e.target.value; setCondicionesDefault(arr) }} />
+              <button onClick={() => setCondicionesDefault(condicionesDefault.filter((_, j) => j !== i))}
+                className="p-1 rounded hover:bg-red-50 text-gray-300 hover:text-red-500 flex-shrink-0 mt-0.5">
+                <X size={14} />
+              </button>
+            </div>
+          ))}
+        </div>
+        <button onClick={() => setCondicionesDefault([...condicionesDefault, ''])}
+          className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700 mb-4">
+          <Plus size={14} /> Agregar condición
+        </button>
+        <button onClick={saveWs} className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white" style={{ background: '#6C5CE7' }}>
+          <Save size={14} /> Guardar condiciones
+        </button>
       </div>
 
       {/* Guía de talles */}
