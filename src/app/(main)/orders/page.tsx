@@ -33,7 +33,7 @@ function isOD(d: string | null) { return d ? new Date(d) < new Date(new Date().t
 function dTo(d: string | null) { return d ? Math.ceil((new Date(d).getTime() - Date.now()) / 86400000) : Infinity }
 
 function TechBadge({ t, origen }: { t: string; origen?: string }) {
-  if (!t || origen === 'manual' || origen === 'catalogo') return null
+  if (!t || origen === 'manual' || origen === 'catalogo' || origen === 'catalogo_web') return null
   return <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: `${TC[t] || '#999'}18`, color: TC[t] || '#999' }}>{TL[t] || t}</span>
 }
 
@@ -73,6 +73,7 @@ export default function OrdersPage() {
   const [payMethod, setPayMethod] = useState('efectivo')
   const [detailPanel, setDetailPanel] = useState<string | null>(null)
   const [statusDropdown, setStatusDropdown] = useState<string | null>(null)
+  const [tallerName, setTallerName] = useState('')
   const [search, setSearch] = useState('')
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }))
@@ -86,11 +87,14 @@ export default function OrdersPage() {
   }, [statusDropdown])
 
   async function load() {
-    const [{ data: o }, { data: p }] = await Promise.all([
+    const { data: { user } } = await supabase.auth.getUser()
+    const [{ data: o }, { data: p }, { data: prof }] = await Promise.all([
       supabase.from('orders').select('*, clients(name, whatsapp, phone)').order('created_at', { ascending: false }),
       supabase.from('payments').select('*').order('fecha'),
+      user ? supabase.from('profiles').select('business_name, workshop_name').eq('id', user.id).single() : Promise.resolve({ data: null }),
     ])
     setOrders((o || []) as Order[]); setPayments((p || []) as Payment[]); setLoading(false)
+    if (prof) setTallerName(prof.business_name || prof.workshop_name || '')
   }
   useEffect(() => { load() }, [])
   useEffect(() => { if (typeof window !== 'undefined') localStorage.setItem('ov', view) }, [view])
@@ -128,7 +132,7 @@ export default function OrdersPage() {
       @page{size:A4;margin:0}
     </style></head><body>
       <div class="section" style="display:flex;justify-content:space-between;align-items:flex-start">
-        <div><div style="font-size:20px;font-weight:800">ORDEN DE TRABAJO</div></div>
+        <div><div style="font-size:20px;font-weight:800">ORDEN DE TRABAJO</div>${tallerName ? `<div style="font-size:14px;color:#666;margin-top:2px">${tallerName}</div>` : ''}</div>
         <div style="text-align:right">
           <div style="font-size:18px;font-weight:800">#${order.id.slice(0, 8)}</div>
           <div style="font-size:12px;color:#666">${new Date(order.created_at).toLocaleDateString('es-AR')}</div>
@@ -404,7 +408,7 @@ export default function OrdersPage() {
               {order.due_date && <span className={`text-xs flex items-center gap-1 ${od ? 'text-red-500 font-bold' : du <= 2 ? 'text-orange-500' : 'text-gray-400'}`}><Calendar size={10} />{new Date(order.due_date).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}{od && <span className="text-[9px] font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded">Vencido</span>}</span>}
             </div>
             <div className="flex items-center gap-1">
-              <button onClick={e => { e.stopPropagation(); printOrder(order) }} className="p-1 rounded hover:bg-gray-200/50"><Printer size={13} className="text-gray-400" /></button>
+              <button onClick={e => { e.stopPropagation(); printOrder(order) }} className="p-2.5 -m-1 rounded-lg hover:bg-gray-100 transition-colors" title="Imprimir orden de trabajo"><Printer size={18} className="text-gray-400 hover:text-gray-700" /></button>
               {isExp ? <ChevronUp size={14} className="text-gray-400" /> : <ChevronDown size={14} className="text-gray-400" />}
             </div>
           </div>
@@ -491,7 +495,7 @@ export default function OrdersPage() {
                             className={`p-3 rounded-lg bg-white shadow-sm cursor-pointer hover:shadow-md transition-all ${od ? 'border-l-4 border-l-red-500' : 'border border-transparent'}`}>
                             <div className="flex items-center justify-between">
                               <p className="font-semibold text-gray-800 text-sm truncate">{order.clients?.name || <span className="text-gray-400 italic">Cliente no asignado</span>}</p>
-                              <button onClick={e => { e.stopPropagation(); printOrder(order) }} className="p-1 rounded hover:bg-gray-200/50"><Printer size={13} className="text-gray-400" /></button>
+                              <button onClick={e => { e.stopPropagation(); printOrder(order) }} className="p-2.5 -m-1 rounded-lg hover:bg-gray-100 transition-colors" title="Imprimir orden de trabajo"><Printer size={18} className="text-gray-400 hover:text-gray-700" /></button>
                             </div>
                             {first ? (
                               <p className="text-[10px] text-gray-500 mt-0.5 truncate flex items-center gap-1">
