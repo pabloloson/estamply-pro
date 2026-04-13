@@ -2,14 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { ChevronDown, ChevronUp, MessageCircle, Trash2, Calendar, Plus, LayoutList, LayoutGrid, X, ExternalLink } from 'lucide-react'
+import { ChevronDown, ChevronUp, MessageCircle, Trash2, Calendar, Plus, LayoutList, LayoutGrid, X, ExternalLink, Printer, Search } from 'lucide-react'
 import { useTranslations } from '@/shared/hooks/useTranslations'
 import { useLocale } from '@/shared/context/LocaleContext'
 import { usePermissions } from '@/shared/context/PermissionsContext'
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
 import { useDraggable, useDroppable } from '@dnd-kit/core'
 
-interface OrderItem { tecnica: string; nombre: string; cantidad: number; precioUnit?: number; subtotal: number; notas?: string }
+interface OrderItem { tecnica: string; nombre: string; cantidad: number; precioUnit?: number; subtotal: number; notas?: string; origen?: string }
 interface Order {
   id: string; client_id: string | null; status: string; total_price: number; total_cost: number
   advance_payment: number; due_date: string | null; notes: string | null; created_at: string
@@ -32,17 +32,17 @@ const NEXT: Record<string, string> = { pending: 'production', production: 'ready
 function isOD(d: string | null) { return d ? new Date(d) < new Date(new Date().toDateString()) : false }
 function dTo(d: string | null) { return d ? Math.ceil((new Date(d).getTime() - Date.now()) / 86400000) : Infinity }
 
-function TechBadge({ t }: { t: string }) {
-  if (!t) return null
+function TechBadge({ t, origen }: { t: string; origen?: string }) {
+  if (!t || origen === 'manual' || origen === 'catalogo') return null
   return <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: `${TC[t] || '#999'}18`, color: TC[t] || '#999' }}>{TL[t] || t}</span>
 }
 
 function ItemSummary({ items }: { items: OrderItem[] }) {
   if (!items?.length) return <span className="text-xs text-gray-400 italic">Sin detalle de ítems</span>
   const f = items[0]
-  if (items.length === 1) return <span className="text-xs text-gray-600 flex items-center gap-1"><TechBadge t={f.tecnica} />{f.cantidad}× {f.nombre}</span>
-  if (items.length === 2) return <span className="text-xs text-gray-600 flex items-center gap-1 flex-wrap"><TechBadge t={items[0].tecnica} />{items[0].cantidad}× {items[0].nombre} <span className="text-gray-400">+</span> <TechBadge t={items[1].tecnica} />{items[1].cantidad}× {items[1].nombre}</span>
-  return <span className="text-xs text-gray-600 flex items-center gap-1"><TechBadge t={f.tecnica} />{f.cantidad}× {f.nombre} <span className="text-gray-400">+ {items.length - 1} más</span></span>
+  if (items.length === 1) return <span className="text-xs text-gray-600 flex items-center gap-1"><TechBadge t={f.tecnica} origen={f.origen} />{f.cantidad}× {f.nombre}</span>
+  if (items.length === 2) return <span className="text-xs text-gray-600 flex items-center gap-1 flex-wrap"><TechBadge t={items[0].tecnica} origen={items[0].origen} />{items[0].cantidad}× {items[0].nombre} <span className="text-gray-400">+</span> <TechBadge t={items[1].tecnica} origen={items[1].origen} />{items[1].cantidad}× {items[1].nombre}</span>
+  return <span className="text-xs text-gray-600 flex items-center gap-1"><TechBadge t={f.tecnica} origen={f.origen} />{f.cantidad}× {f.nombre} <span className="text-gray-400">+ {items.length - 1} más</span></span>
 }
 
 function DragCard({ id, children }: { id: string; children: React.ReactNode }) {
@@ -73,6 +73,7 @@ export default function OrdersPage() {
   const [payMethod, setPayMethod] = useState('efectivo')
   const [detailPanel, setDetailPanel] = useState<string | null>(null)
   const [statusDropdown, setStatusDropdown] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }))
 
@@ -96,31 +97,81 @@ export default function OrdersPage() {
 
   function printOrder(order: Order) {
     const items = (order.items || []) as OrderItem[]
-    const client = order.clients as Record<string, string> | null
-    const pd = payments.filter(p => p.order_id === order.id).reduce((s, p) => s + p.monto, 0)
-    const w = window.open('', '_blank')
-    if (!w) return
-    w.document.write(`<!DOCTYPE html><html><head><title>Pedido</title><style>
-      body{font-family:system-ui,sans-serif;max-width:700px;margin:40px auto;color:#333;font-size:14px}
-      h1{font-size:20px;margin:0} .meta{color:#888;font-size:12px}
-      table{width:100%;border-collapse:collapse;margin:16px 0} th,td{border:1px solid #ddd;padding:8px;text-align:left}
-      th{background:#f5f5f5;font-size:12px;text-transform:uppercase} .total{font-size:18px;font-weight:bold}
-      .section{margin:20px 0;padding:12px 0;border-top:1px solid #eee}
-      @media print{body{margin:10mm}}
+    const client = order.clients
+    const pd = paid(order.id)
+    const saldo = Math.max(order.total_price - pd, 0)
+
+    const iframe = document.createElement('iframe')
+    iframe.style.display = 'none'
+    document.body.appendChild(iframe)
+    const doc = iframe.contentDocument || iframe.contentWindow?.document
+    if (!doc) return
+
+    const itemRows = items.map(i => `
+      <tr>
+        <td style="padding:8px">${i.nombre}${i.notas ? `<div style="font-size:11px;color:#999">${i.notas}</div>` : ''}</td>
+        <td style="padding:8px;text-align:center">${i.cantidad}</td>
+        <td style="padding:8px;text-align:right">${fmtCurrency(i.precioUnit || 0)}</td>
+        <td style="padding:8px;text-align:right;font-weight:600">${fmtCurrency(i.subtotal)}</td>
+      </tr>
+    `).join('')
+
+    doc.open()
+    doc.write(`<!DOCTYPE html><html><head><title>Orden de Trabajo</title>
+    <style>
+      body{font-family:Arial,sans-serif;color:#000;margin:0;padding:20mm}
+      table{width:100%;border-collapse:collapse}
+      thead tr{border-bottom:2px solid #e5e7eb}
+      tbody tr{border-bottom:1px solid #f3f4f6}
+      th{font-size:11px;text-transform:uppercase;color:#999;font-weight:600;padding:8px;text-align:left}
+      .section{margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid #ddd}
+      @page{size:A4;margin:0}
     </style></head><body>
-      <h1>Pedido #${order.id.slice(0, 8)}</h1>
-      <p class="meta">Fecha: ${new Date(order.created_at).toLocaleDateString('es-AR')} · Estado: ${SL[order.status] || order.status}${order.due_date ? ` · Entrega: ${new Date(order.due_date).toLocaleDateString('es-AR')}` : ''}</p>
-      <div class="section"><strong>Cliente:</strong> ${client?.name || tc('noClient')}${client?.whatsapp ? ` · ${client.whatsapp}` : ''}</div>
-      <table><thead><tr><th>Descripción</th><th>Cant.</th><th>P. Unit.</th><th>Subtotal</th></tr></thead><tbody>
-      ${items.map(i => `<tr><td>${i.nombre}${i.tecnica ? `<br><small style="color:#888">${TL[i.tecnica] || i.tecnica}</small>` : ''}</td><td>${i.cantidad}</td><td>${fmtCurrency(i.precioUnit || 0)}</td><td>${fmtCurrency(i.subtotal)}</td></tr>`).join('')}
-      </tbody></table>
-      <p style="text-align:right" class="total">Total: ${fmtCurrency(order.total_price)}</p>
-      ${pd > 0 ? `<div class="section"><strong>Pagos:</strong> ${fmtCurrency(pd)} recibido · Saldo: ${fmtCurrency(Math.max(order.total_price - pd, 0))}</div>` : ''}
-      ${order.notes ? `<div class="section"><strong>Notas:</strong> ${order.notes}</div>` : ''}
-      <p style="text-align:center;color:#ccc;margin-top:40px;font-size:11px">Estamply</p>
+      <div class="section" style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div><div style="font-size:20px;font-weight:800">ORDEN DE TRABAJO</div></div>
+        <div style="text-align:right">
+          <div style="font-size:18px;font-weight:800">#${order.id.slice(0, 8)}</div>
+          <div style="font-size:12px;color:#666">${new Date(order.created_at).toLocaleDateString('es-AR')}</div>
+          <div style="font-size:12px;color:#666">Estado: ${SL[order.status] || order.status}</div>
+        </div>
+      </div>
+      <div class="section" style="display:flex;justify-content:space-between">
+        <div>
+          <div style="font-size:11px;color:#999;text-transform:uppercase">Cliente</div>
+          <div style="font-size:16px;font-weight:600">${client?.name || 'Sin cliente'}</div>
+          ${client?.whatsapp || client?.phone ? `<div style="color:#666">${client.whatsapp || client.phone}</div>` : ''}
+        </div>
+        ${order.due_date ? `<div style="text-align:right">
+          <div style="font-size:11px;color:#999;text-transform:uppercase">Fecha de entrega</div>
+          <div style="font-size:16px;font-weight:600">${new Date(order.due_date).toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
+        </div>` : ''}
+      </div>
+      <table style="margin-bottom:20px">
+        <thead><tr><th>Descripción</th><th style="text-align:center">Cant.</th><th style="text-align:right">P. Unit.</th><th style="text-align:right">Subtotal</th></tr></thead>
+        <tbody>${itemRows}</tbody>
+      </table>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:20px">
+        <div style="width:240px">
+          <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:18px;font-weight:800;border-top:2px solid #000">
+            <span>TOTAL</span><span>${fmtCurrency(order.total_price)}</span>
+          </div>
+        </div>
+      </div>
+      ${pd > 0 ? `<div class="section">
+        <div style="font-size:11px;color:#999;text-transform:uppercase;margin-bottom:4px">Pagos</div>
+        <div>Seña recibida: ${fmtCurrency(pd)}</div>
+        <div style="font-weight:600">Saldo a cobrar: ${fmtCurrency(saldo)}</div>
+      </div>` : ''}
+      ${order.notes ? `<div class="section">
+        <div style="font-size:11px;color:#999;text-transform:uppercase;margin-bottom:4px">Notas</div>
+        <div>${order.notes}</div>
+      </div>` : ''}
+      <div style="text-align:center;font-size:11px;color:#ccc;margin-top:32px">Estamply · estamply.app</div>
     </body></html>`)
-    w.document.close()
-    setTimeout(() => w.print(), 300)
+    doc.close()
+    iframe.contentWindow?.focus()
+    iframe.contentWindow?.print()
+    setTimeout(() => document.body.removeChild(iframe), 2000)
   }
 
   async function setStatus(id: string, s: string) { await supabase.from('orders').update({ status: s }).eq('id', id); load() }
@@ -166,7 +217,7 @@ export default function OrdersPage() {
             <div className="space-y-3">
               {(order.items as OrderItem[]).map((item, i) => (
                 <div key={i}>
-                  <div className="flex items-center gap-2 mb-1"><TechBadge t={item.tecnica} /><span className="text-sm font-semibold text-gray-800">{item.nombre}</span></div>
+                  <div className="flex items-center gap-2 mb-1"><TechBadge t={item.tecnica} origen={item.origen} /><span className="text-sm font-semibold text-gray-800">{item.nombre}</span></div>
                   <p className="text-xs text-gray-500">Cantidad: {item.cantidad}{showPrices && item.precioUnit ? ` · P.unit: ${fmtCurrency(item.precioUnit)}` : ''}{showPrices ? <> · Subtotal: <span className="font-medium text-gray-700">{fmtCurrency(item.subtotal)}</span></> : null}</p>
                   {item.notas && <p className="text-xs text-gray-500 mt-1 italic bg-gray-50 px-2 py-1 rounded">📝 {item.notas}</p>}
                 </div>
@@ -308,17 +359,16 @@ export default function OrdersPage() {
   function Card({ order }: { order: Order }) {
     const isExp = expanded === order.id
     const sc = SC[order.status] || SC.pending
-    const cn = order.clients?.name || tc('noClient')
     const p = paid(order.id), saldo = order.total_price - p
     const od = isOD(order.due_date) && order.status !== 'delivered'
     const du = dTo(order.due_date)
 
     return (
       <div className={`card overflow-hidden ${od ? 'border-l-[3px] border-l-red-400' : ''}`}>
-        <button type="button" onClick={() => setExpanded(isExp ? null : order.id)} className="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors">
+        <button type="button" onClick={() => setExpanded(isExp ? null : order.id)} className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors ${od ? 'bg-red-50' : ''}`}>
           {/* Line 1: client + total */}
           <div className="flex items-center justify-between">
-            <span className="font-semibold text-gray-800">{cn}</span>
+            <span className="font-semibold text-gray-800">{order.clients?.name || <span className="text-gray-400 italic">Cliente no asignado</span>}</span>
             {showPrices && <span className="font-bold text-gray-800">{fmtCurrency(order.total_price)}</span>}
           </div>
           {/* Line 2: what to produce */}
@@ -351,9 +401,10 @@ export default function OrdersPage() {
                   </div>
                 )}
               </div>
-              {order.due_date && <span className={`text-xs flex items-center gap-1 ${od ? 'text-red-500 font-bold' : du <= 2 ? 'text-orange-500' : 'text-gray-400'}`}><Calendar size={10} />{new Date(order.due_date).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}{od && ' vencido'}</span>}
+              {order.due_date && <span className={`text-xs flex items-center gap-1 ${od ? 'text-red-500 font-bold' : du <= 2 ? 'text-orange-500' : 'text-gray-400'}`}><Calendar size={10} />{new Date(order.due_date).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}{od && <span className="text-[9px] font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded">Vencido</span>}</span>}
             </div>
-            <div className="flex items-center">
+            <div className="flex items-center gap-1">
+              <button onClick={e => { e.stopPropagation(); printOrder(order) }} className="p-1 rounded hover:bg-gray-200/50"><Printer size={13} className="text-gray-400" /></button>
               {isExp ? <ChevronUp size={14} className="text-gray-400" /> : <ChevronDown size={14} className="text-gray-400" />}
             </div>
           </div>
@@ -363,13 +414,21 @@ export default function OrdersPage() {
     )
   }
 
-  const activos = orders.filter(o => o.status !== 'delivered').sort((a, b) => {
+  const filteredOrders = orders.filter(o => {
+    if (!search) return true
+    const s = search.toLowerCase()
+    return o.clients?.name?.toLowerCase().includes(s) ||
+      o.id.toLowerCase().includes(s) ||
+      (o.items as OrderItem[])?.some((i: OrderItem) => i.nombre.toLowerCase().includes(s))
+  })
+
+  const activos = filteredOrders.filter(o => o.status !== 'delivered').sort((a, b) => {
     const oa = isOD(a.due_date) ? -1 : 0, ob = isOD(b.due_date) ? -1 : 0
     if (oa !== ob) return oa - ob
     if (!a.due_date) return 1; if (!b.due_date) return -1
     return new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
   })
-  const finalizados = orders.filter(o => o.status === 'delivered')
+  const finalizados = filteredOrders.filter(o => o.status === 'delivered')
   const detailOrder = orders.find(o => o.id === detailPanel)
 
   if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>
@@ -379,9 +438,15 @@ export default function OrdersPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
         <div><h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
           <p className="text-gray-500 text-sm mt-1">{activos.length} {t('active')} · {finalizados.length} {t('finished')}</p></div>
-        <div className="flex gap-1 p-0.5 rounded-lg" style={{ background: '#F1F1F1' }}>
-          <button onClick={() => setView('list')} className={`px-3 py-1.5 rounded-md text-xs font-semibold ${view === 'list' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500'}`}><LayoutList size={14} /></button>
-          <button onClick={() => setView('kanban')} className={`px-3 py-1.5 rounded-md text-xs font-semibold ${view === 'kanban' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500'}`}><LayoutGrid size={14} /></button>
+        <div className="flex items-center gap-3">
+          <div className="relative flex-1 max-w-xs">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input type="text" className="input-base !pl-9 text-sm" placeholder="Buscar pedido..." value={search} onChange={e => setSearch(e.target.value)} />
+          </div>
+          <div className="flex gap-1 p-0.5 rounded-lg" style={{ background: '#F1F1F1' }}>
+            <button onClick={() => setView('list')} className={`px-3 py-1.5 rounded-md text-xs font-semibold ${view === 'list' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500'}`}><LayoutList size={14} /></button>
+            <button onClick={() => setView('kanban')} className={`px-3 py-1.5 rounded-md text-xs font-semibold ${view === 'kanban' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500'}`}><LayoutGrid size={14} /></button>
+          </div>
         </div>
       </div>
 
@@ -403,7 +468,7 @@ export default function OrdersPage() {
             {STATES.map(state => {
               const sc = SC[state]
               const isDel = state === 'delivered'
-              const so = orders.filter(o => o.status === state).sort((a, b) => {
+              const so = filteredOrders.filter(o => o.status === state).sort((a, b) => {
                 if (!isDel) { const oa = isOD(a.due_date) ? -1 : 0, ob = isOD(b.due_date) ? -1 : 0; if (oa !== ob) return oa - ob }
                 if (!a.due_date) return 1; if (!b.due_date) return -1
                 return isDel ? new Date(b.created_at).getTime() - new Date(a.created_at).getTime() : new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
@@ -418,20 +483,23 @@ export default function OrdersPage() {
                   {so.length > 0 && !isDel && showPrices && <p className="text-[10px] text-gray-400 px-2 -mt-0.5 mb-2">{fmtCurrency(so.reduce((s, o) => s + o.total_price, 0))}</p>}
                   <div className={`space-y-2 ${isDel ? 'opacity-65' : ''}`}>
                     {shown.map(order => {
-                      const cn = order.clients?.name || tc('noClient'), pd = paid(order.id), od = isOD(order.due_date) && !isDel
+                      const pd = paid(order.id), od = isOD(order.due_date) && !isDel
                       const first = (order.items || [])[0]
                       return (
                         <DragCard key={order.id} id={order.id}>
                           <div onClick={() => setDetailPanel(order.id)}
-                            className={`p-3 rounded-lg bg-white shadow-sm cursor-pointer hover:shadow-md transition-all ${od ? 'border-l-[3px] border-l-red-400' : 'border border-transparent'}`}>
-                            <p className="font-semibold text-gray-800 text-sm truncate">{cn}</p>
+                            className={`p-3 rounded-lg bg-white shadow-sm cursor-pointer hover:shadow-md transition-all ${od ? 'border-l-4 border-l-red-500' : 'border border-transparent'}`}>
+                            <div className="flex items-center justify-between">
+                              <p className="font-semibold text-gray-800 text-sm truncate">{order.clients?.name || <span className="text-gray-400 italic">Cliente no asignado</span>}</p>
+                              <button onClick={e => { e.stopPropagation(); printOrder(order) }} className="p-1 rounded hover:bg-gray-200/50"><Printer size={13} className="text-gray-400" /></button>
+                            </div>
                             {first ? (
                               <p className="text-[10px] text-gray-500 mt-0.5 truncate flex items-center gap-1">
-                                <TechBadge t={first.tecnica} />{first.cantidad}× {first.nombre}{(order.items || []).length > 1 && <span className="text-gray-400">+ {(order.items || []).length - 1}</span>}
+                                <TechBadge t={first.tecnica} origen={first.origen} />{first.cantidad}× {first.nombre}{(order.items || []).length > 1 && <span className="text-gray-400">+ {(order.items || []).length - 1}</span>}
                               </p>
                             ) : <p className="text-[10px] text-gray-400 italic mt-0.5">{t('noDetail')}</p>}
                             {showPrices && <p className="font-bold text-gray-700 text-sm mt-1">{fmtCurrency(order.total_price)}</p>}
-                            {order.due_date && !isDel && <p className={`text-[10px] mt-0.5 flex items-center gap-1 ${od ? 'text-red-500 font-bold' : 'text-gray-400'}`}><Calendar size={9} />{new Date(order.due_date).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}{od && ' vencido'}</p>}
+                            {order.due_date && !isDel && <p className={`text-[10px] mt-0.5 flex items-center gap-1 ${od ? 'text-red-500 font-bold' : 'text-gray-400'}`}><Calendar size={9} />{new Date(order.due_date).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}{od && <span className="text-[9px] font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded">Vencido</span>}</p>}
                             {!isDel && showPrices && <p className={`text-[10px] mt-0.5 ${pd >= order.total_price ? 'text-green-600' : pd > 0 ? 'text-gray-500' : 'text-amber-500'}`}>{pd >= order.total_price ? t('paid') + ' ✓' : pd > 0 ? `${t('deposit')}: ${fmtCurrency(pd)}` : t('noPayments')}</p>}
                             {state === 'ready' && (
                               <button onClick={e => { e.stopPropagation(); setStatus(order.id, 'delivered') }}
@@ -463,14 +531,14 @@ export default function OrdersPage() {
           <div className="relative w-full max-w-md bg-white shadow-2xl h-full overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="sticky top-0 bg-white border-b border-gray-100 px-5 py-4 flex items-center justify-between z-10">
               <div>
-                <h3 className="font-bold text-gray-900">{detailOrder.clients?.name || tc('noClient')}</h3>
+                <h3 className="font-bold text-gray-900">{detailOrder.clients?.name || <span className="text-gray-400 italic">Cliente no asignado</span>}</h3>
                 {(() => { const first = (detailOrder.items || [])[0]; return first ? (
-                  <p className="text-[10px] text-gray-500 mt-0.5 flex items-center gap-1"><TechBadge t={first.tecnica} />{first.cantidad}× {first.nombre}</p>
+                  <p className="text-[10px] text-gray-500 mt-0.5 flex items-center gap-1"><TechBadge t={first.tecnica} origen={first.origen} />{first.cantidad}× {first.nombre}</p>
                 ) : null })()}
                 {showPrices && <p className="text-xs text-gray-400 mt-0.5">{fmtCurrency(detailOrder.total_price)}</p>}
               </div>
               <div className="flex gap-1">
-                <button onClick={() => printOrder(detailOrder)} className="p-2 rounded-lg hover:bg-gray-100 text-gray-400" title="Imprimir">🖨️</button>
+                <button onClick={() => printOrder(detailOrder)} className="p-2 rounded-lg hover:bg-gray-100 text-gray-400" title="Imprimir"><Printer size={16} /></button>
                 <button onClick={() => setDetailPanel(null)} className="p-2 rounded-lg hover:bg-gray-100"><X size={16} /></button>
               </div>
             </div>
