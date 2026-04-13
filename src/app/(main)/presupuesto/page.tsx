@@ -383,8 +383,22 @@ export default function PresupuestoPage() {
         if (sx.condiciones_presupuesto) setCondiciones(sx.condiciones_presupuesto as string)
       }
       setLoadingClients(false)
+
+      // Restore client if presupuesto was loaded (e.g. after page refresh)
+      if (loadedPresupuestoId) {
+        setDbId(loadedPresupuestoId)
+        const { data: pres } = await supabase.from('presupuestos').select('client_id, client_name, condiciones, validez_dias, codigo').eq('id', loadedPresupuestoId).single()
+        if (pres) {
+          if (pres.client_id) setClientId(pres.client_id)
+          else if (pres.client_name) setNewClientName(pres.client_name)
+          if (pres.condiciones) setCondiciones(pres.condiciones as string)
+          if (pres.validez_dias) setValidezDias(pres.validez_dias as number)
+          if (pres.codigo) setPublicLink(`/p/${pres.codigo}`)
+        }
+      }
     }
     loadData()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const advanceAmount = advanceMode === 'percent' ? Math.round(totalVenta * advancePercent / 100) : advanceFixed
@@ -908,12 +922,15 @@ export default function PresupuestoPage() {
             <div className="lg:w-72 space-y-4 no-print">
               {/* Save */}
               <button type="button" onClick={handleGuardar} disabled={saveStatus === 'saving'}
-                className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all ${saveStatus === 'saved' ? 'bg-green-500 text-white' : saveStatus === 'error' ? 'bg-red-500 text-white' : 'text-white'}`}
-                style={saveStatus === 'saved' || saveStatus === 'error' ? {} : { background: '#6C5CE7', boxShadow: '0 4px 14px rgba(108,92,231,0.35)' }}>
-                {saveStatus === 'saving' ? <><Loader2 size={15} className="animate-spin" /> Guardando...</>
-                  : saveStatus === 'saved' ? <><Check size={15} /> Guardado</>
+                className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all border-2 ${
+                  saveStatus === 'saved' ? 'border-green-500 text-green-600 bg-green-50'
+                  : saveStatus === 'error' ? 'border-red-500 text-red-600 bg-red-50'
+                  : 'border-[#6C5CE7] text-[#6C5CE7] hover:bg-[#6C5CE7] hover:text-white'
+                }`}>
+                {saveStatus === 'saving' ? <><Loader2 size={14} className="animate-spin" /> Guardando...</>
+                  : saveStatus === 'saved' ? <><Check size={14} /> Guardado</>
                   : saveStatus === 'error' ? 'Error al guardar'
-                  : <><Save size={15} /> Guardar presupuesto</>}
+                  : <><Save size={14} /> Guardar presupuesto</>}
               </button>
 
               {/* Share */}
