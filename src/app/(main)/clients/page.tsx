@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Plus, Pencil, Trash2, X, Users, Search, ChevronDown, ChevronUp, MessageCircle, Upload } from 'lucide-react'
+import { Plus, Pencil, Trash2, X, Users, Search, MessageCircle, Upload, MoreVertical } from 'lucide-react'
 import { useTranslations } from '@/shared/hooks/useTranslations'
 import { useLocale } from '@/shared/context/LocaleContext'
 import * as XLSX from 'xlsx'
@@ -20,12 +20,14 @@ export default function ClientsPage() {
   const supabase = createClient()
   const t = useTranslations('clients')
   const tc = useTranslations('common')
+  const { fmt: fmtCurrency } = useLocale()
   const [clients, setClients] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [modal, setModal] = useState<Partial<Client> | null>(null)
   const [saving, setSaving] = useState(false)
-  const [showMore, setShowMore] = useState(false)
+  const [ordersByClient, setOrdersByClient] = useState<Map<string, Array<{ total_price: number; created_at: string }>>>(new Map())
+  const [menuOpen, setMenuOpen] = useState<string | null>(null)
   const [importModal, setImportModal] = useState(false)
   const [importStep, setImportStep] = useState(1)
   const [importData, setImportData] = useState<string[][]>([])
@@ -36,10 +38,35 @@ export default function ClientsPage() {
   const [importing, setImporting] = useState(false)
 
   async function load() {
-    const { data } = await supabase.from('clients').select('*').order('name')
-    setClients(data || []); setLoading(false)
+    const [{ data: cls }, { data: ords }] = await Promise.all([
+      supabase.from('clients').select('*').order('name'),
+      supabase.from('orders').select('id, client_id, total_price, status, created_at'),
+    ])
+    setClients(cls || [])
+    setOrdersByClient(new Map())
+    if (ords) {
+      const map = new Map<string, Array<{ total_price: number; created_at: string }>>()
+      for (const o of ords) {
+        if (!o.client_id) continue
+        if (!map.has(o.client_id)) map.set(o.client_id, [])
+        map.get(o.client_id)!.push({ total_price: o.total_price, created_at: o.created_at })
+      }
+      setOrdersByClient(map)
+    }
+    setLoading(false)
   }
   useEffect(() => { load() }, [])
+
+  function getClientOrders(clientId: string) { return ordersByClient.get(clientId) || [] }
+  function getClientTotal(clientId: string) { return getClientOrders(clientId).reduce((s, o) => s + o.total_price, 0) }
+  function getClientLastOrder(clientId: string) { const ords = getClientOrders(clientId); return ords.length > 0 ? ords.sort((a, b) => b.created_at.localeCompare(a.created_at))[0].created_at : null }
+
+  useEffect(() => {
+    if (!menuOpen) return
+    const handler = () => setMenuOpen(null)
+    document.addEventListener('click', handler)
+    return () => document.removeEventListener('click', handler)
+  }, [menuOpen])
 
   async function save() {
     if (!modal?.name?.trim()) return; setSaving(true)
@@ -53,7 +80,7 @@ export default function ClientsPage() {
     }
     if (modal.id) await supabase.from('clients').update(payload).eq('id', modal.id)
     else await supabase.from('clients').insert(payload)
-    setModal(null); setSaving(false); setShowMore(false); load()
+    setModal(null); setSaving(false); load()
   }
 
   async function remove(id: string) {
@@ -79,7 +106,7 @@ export default function ClientsPage() {
           <button onClick={() => { setImportModal(true); setImportStep(1); setImportData([]); setImportResult(null) }} className="flex items-center gap-1.5 px-3 py-2 rounded-xl whitespace-nowrap text-xs sm:text-sm font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50">
             <Upload size={14} /> {t('importClients')}
           </button>
-          <button onClick={() => { setModal({}); setShowMore(false) }} className="flex items-center gap-1.5 px-4 py-2 rounded-xl whitespace-nowrap text-xs sm:text-sm font-semibold text-white" style={{ background: '#6C5CE7', boxShadow: '0 4px 14px rgba(108,92,231,0.3)' }}>
+          <button onClick={() => { setModal({}) }} className="flex items-center gap-1.5 px-4 py-2 rounded-xl whitespace-nowrap text-xs sm:text-sm font-semibold text-white" style={{ background: '#6C5CE7', boxShadow: '0 4px 14px rgba(108,92,231,0.3)' }}>
             <Plus size={15} /> {t('newClient')}
           </button>
         </div>
@@ -102,7 +129,7 @@ export default function ClientsPage() {
             {/* Mobile cards */}
             <div className="md:hidden space-y-2 p-3">
               {filtered.map(c => (
-                <div key={c.id} className="bg-white rounded-xl border border-gray-100 p-4">
+                <div key={c.id} className="bg-white rounded-xl border border-gray-100 p-4" onClick={() => setModal(c)}>
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0" style={{ background: 'linear-gradient(135deg, #6C5CE7, #a29bfe)' }}>
@@ -117,18 +144,19 @@ export default function ClientsPage() {
                       </div>
                     </div>
                     <div className="flex gap-1">
-                      <button onClick={() => { setModal(c); setShowMore(false) }} className="p-1.5 rounded-lg hover:bg-gray-100"><Pencil size={14} className="text-gray-400" /></button>
-                      <button onClick={() => remove(c.id)} className="p-1.5 rounded-lg hover:bg-red-50"><Trash2 size={14} className="text-red-400" /></button>
+                      <button onClick={e => { e.stopPropagation(); setModal(c) }} className="p-1.5 rounded-lg hover:bg-gray-100"><Pencil size={13} className="text-gray-400" /></button>
+                      <button onClick={e => { e.stopPropagation(); remove(c.id) }} className="p-1.5 rounded-lg hover:bg-red-50"><Trash2 size={13} className="text-red-400" /></button>
                     </div>
                   </div>
                   <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
-                    {c.whatsapp && (
-                      <a href={waLink(c.whatsapp)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-green-600 font-medium">
-                        <MessageCircle size={12} /> {c.whatsapp}
+                    {(c.whatsapp || c.phone) && (
+                      <a href={waLink(c.whatsapp || c.phone || '')} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="flex items-center gap-1 text-green-600 font-medium">
+                        <MessageCircle size={12} /> {c.whatsapp || c.phone}
                       </a>
                     )}
-                    {c.phone && <span>Tel: {c.phone}</span>}
-                    <span>{new Date(c.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: '2-digit' })}</span>
+                    {getClientOrders(c.id).length > 0 && (
+                      <span className="text-gray-500">{getClientOrders(c.id).length} pedidos · {fmtCurrency(getClientTotal(c.id))}</span>
+                    )}
                   </div>
                 </div>
               ))}
@@ -136,40 +164,54 @@ export default function ClientsPage() {
 
             {/* Desktop table */}
             <div className="hidden md:block overflow-x-auto">
-              <table className="w-full min-w-[600px]">
+              <table className="w-full min-w-[700px]">
                 <thead><tr className="border-b border-gray-100">
-                  {[t('name'), 'WhatsApp', t('emailField'), t('phone'), '', ''].map(h => (
-                    <th key={h} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-5 py-3">{h}</th>
-                  ))}
+                  <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">{t('name')}</th>
+                  <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">Teléfono</th>
+                  <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">{t('emailField')}</th>
+                  <th className="text-center text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">Pedidos</th>
+                  <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">Total</th>
+                  <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">Último</th>
+                  <th className="px-4 py-3"></th>
                 </tr></thead>
                 <tbody>
                   {filtered.map(c => (
-                    <tr key={c.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                      <td className="px-5 py-3">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0" style={{ background: 'linear-gradient(135deg, #6C5CE7, #a29bfe)' }}>
-                            {c.name[0].toUpperCase()}
+                    <tr key={c.id} className="border-b border-gray-50 hover:bg-gray-50 cursor-pointer" onClick={() => setModal(c)}>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-bold text-sm flex-shrink-0">
+                            {c.name[0]?.toUpperCase()}
                           </div>
                           <div>
-                            <span className="font-medium text-gray-800">{c.name}</span>
-                            {c.tipo_cliente === 'empresa' && <span className="ml-1.5 text-[9px] px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-500 font-semibold">Empresa</span>}
+                            <p className="font-medium text-gray-800 text-sm">{c.name}</p>
+                            {c.razon_social && <p className="text-[10px] text-gray-400">{c.razon_social}</p>}
                           </div>
                         </div>
                       </td>
-                      <td className="px-5 py-3 text-sm">
-                        {c.whatsapp ? (
-                          <a href={waLink(c.whatsapp)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-green-600 hover:text-green-700 font-medium">
-                            <MessageCircle size={13} /> {c.whatsapp}
-                          </a>
-                        ) : <span className="text-gray-300">---</span>}
+                      <td className="px-4 py-3 text-sm text-gray-600">
+                        {(c.whatsapp || c.phone) ? (
+                          <span className="flex items-center gap-1.5">
+                            {c.whatsapp || c.phone}
+                            <a href={waLink(c.whatsapp || c.phone || '')} target="_blank" rel="noopener" onClick={e => e.stopPropagation()} className="text-green-500 hover:text-green-600"><MessageCircle size={14} /></a>
+                          </span>
+                        ) : null}
                       </td>
-                      <td className="px-5 py-3 text-sm text-gray-500">{c.email || <span className="text-gray-300">---</span>}</td>
-                      <td className="px-5 py-3 text-sm text-gray-500">{c.phone || <span className="text-gray-300">---</span>}</td>
-                      <td className="px-5 py-3 text-xs text-gray-400">{new Date(c.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: '2-digit' })}</td>
-                      <td className="px-5 py-3">
-                        <div className="flex gap-1.5">
-                          <button onClick={() => { setModal(c); setShowMore(false) }} className="p-1.5 rounded-lg hover:bg-gray-100"><Pencil size={14} className="text-gray-400" /></button>
-                          <button onClick={() => remove(c.id)} className="p-1.5 rounded-lg hover:bg-red-50"><Trash2 size={14} className="text-red-400" /></button>
+                      <td className="px-4 py-3 text-sm text-gray-500">{c.email || ''}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600 text-center">{getClientOrders(c.id).length}</td>
+                      <td className="px-4 py-3 text-sm font-medium text-gray-700">{fmtCurrency(getClientTotal(c.id))}</td>
+                      <td className="px-4 py-3 text-xs text-gray-400">{(() => { const d = getClientLastOrder(c.id); return d ? new Date(d).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' }) : '-' })()}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-0.5">
+                          <button onClick={e => { e.stopPropagation(); setModal(c) }} className="p-1.5 rounded hover:bg-gray-100"><Pencil size={13} className="text-gray-400" /></button>
+                          <div className="relative">
+                            <button onClick={e => { e.stopPropagation(); setMenuOpen(menuOpen === c.id ? null : c.id) }} className="p-1.5 rounded hover:bg-gray-100"><MoreVertical size={13} className="text-gray-400" /></button>
+                            {menuOpen === c.id && (
+                              <div className="absolute right-0 top-full mt-1 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-20 w-40">
+                                <button onClick={e => { e.stopPropagation(); setModal(c); setMenuOpen(null) }} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">Editar</button>
+                                <button onClick={e => { e.stopPropagation(); remove(c.id); setMenuOpen(null) }} className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50">Eliminar</button>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </td>
                     </tr>
@@ -187,10 +229,9 @@ export default function ClientsPage() {
           <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl max-h-[90dvh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
               <h3 className="font-bold text-gray-900">{modal.id ? tc('edit') : t('newClient')}</h3>
-              <button onClick={() => { setModal(null); setShowMore(false) }} className="p-2 rounded-lg hover:bg-gray-100"><X size={16} /></button>
+              <button onClick={() => setModal(null)} className="p-2 rounded-lg hover:bg-gray-100"><X size={16} /></button>
             </div>
             <div className="space-y-4">
-              {/* Main fields */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">{t('name')} *</label>
                 <input autoFocus value={modal.name || ''} onChange={e => setModal({ ...modal, name: e.target.value })}
@@ -198,7 +239,7 @@ export default function ClientsPage() {
               </div>
               <div>
                 <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1">
-                  <MessageCircle size={14} className="text-green-500" /> WhatsApp
+                  <MessageCircle size={14} className="text-green-500" /> Teléfono / WhatsApp
                 </label>
                 <input value={modal.whatsapp || ''} onChange={e => setModal({ ...modal, whatsapp: e.target.value })}
                   className="input-base" placeholder="Ej: +54 351 555 1234" />
@@ -209,74 +250,50 @@ export default function ClientsPage() {
                   className="input-base" placeholder="email@ejemplo.com" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('phone')}</label>
-                <input value={modal.phone || ''} onChange={e => setModal({ ...modal, phone: e.target.value })}
-                  className="input-base" placeholder="+54 11 1234-5678" />
-                <p className="text-[10px] text-gray-400 mt-0.5">Solo si es distinto al WhatsApp</p>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de cliente</label>
+                <select className="input-base" value={modal.tipo_cliente || 'persona'} onChange={e => setModal({ ...modal, tipo_cliente: e.target.value })}>
+                  <option value="persona">Persona</option>
+                  <option value="empresa">Empresa</option>
+                </select>
               </div>
-
-              {/* Expandable section */}
-              <button type="button" onClick={() => setShowMore(v => !v)}
-                className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide hover:text-gray-700 transition-colors w-full pt-1">
-                {showMore ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-                Más datos
-              </button>
-
-              {showMore && (
-                <div className="space-y-4 pt-1 border-t border-gray-100">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de cliente</label>
-                    <select className="input-base" value={modal.tipo_cliente || 'persona'} onChange={e => setModal({ ...modal, tipo_cliente: e.target.value })}>
-                      <option value="persona">Persona</option>
-                      <option value="empresa">Empresa</option>
-                    </select>
-                  </div>
-
-                  {modal.tipo_cliente === 'empresa' && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Razón social</label>
-                      <input value={modal.razon_social || ''} onChange={e => setModal({ ...modal, razon_social: e.target.value })}
-                        className="input-base" placeholder="Nombre legal de la empresa" />
-                    </div>
-                  )}
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Identificación fiscal</label>
-                    <input value={modal.identificacion_fiscal || ''} onChange={e => setModal({ ...modal, identificacion_fiscal: e.target.value })}
-                      className="input-base" placeholder="Ej: 20-12345678-9" />
-                    <p className="text-[10px] text-gray-400 mt-0.5">DNI, CUIT, RUT, RFC, NIT, CPF según tu país</p>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Dirección</label>
-                    <input value={modal.direccion || ''} onChange={e => setModal({ ...modal, direccion: e.target.value })}
-                      className="input-base" placeholder="Calle y número" />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Ciudad</label>
-                      <input value={modal.ciudad || ''} onChange={e => setModal({ ...modal, ciudad: e.target.value })}
-                        className="input-base" placeholder="Ej: Córdoba Capital" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Provincia</label>
-                      <input value={modal.provincia || ''} onChange={e => setModal({ ...modal, provincia: e.target.value })}
-                        className="input-base" placeholder="Ej: Córdoba" />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('notes')}</label>
-                    <textarea value={modal.notas || ''} onChange={e => setModal({ ...modal, notas: e.target.value })}
-                      className="input-base resize-none" rows={3} placeholder="Notas internas sobre este cliente..." />
-                    <p className="text-[10px] text-gray-400 mt-0.5">Solo visible para vos, no aparece en presupuestos.</p>
-                  </div>
+              {modal.tipo_cliente === 'empresa' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Empresa / Razón Social</label>
+                  <input value={modal.razon_social || ''} onChange={e => setModal({ ...modal, razon_social: e.target.value })}
+                    className="input-base" placeholder="Nombre legal de la empresa" />
                 </div>
               )}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Identificación fiscal</label>
+                <input value={modal.identificacion_fiscal || ''} onChange={e => setModal({ ...modal, identificacion_fiscal: e.target.value })}
+                  className="input-base" placeholder="Ej: 20-12345678-9" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Dirección</label>
+                <input value={modal.direccion || ''} onChange={e => setModal({ ...modal, direccion: e.target.value })}
+                  className="input-base" placeholder="Calle y número" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Ciudad</label>
+                  <input value={modal.ciudad || ''} onChange={e => setModal({ ...modal, ciudad: e.target.value })}
+                    className="input-base" placeholder="Ej: Córdoba Capital" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Provincia</label>
+                  <input value={modal.provincia || ''} onChange={e => setModal({ ...modal, provincia: e.target.value })}
+                    className="input-base" placeholder="Ej: Córdoba" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('notes')}</label>
+                <textarea value={modal.notas || ''} onChange={e => setModal({ ...modal, notas: e.target.value })}
+                  className="input-base resize-none" rows={3} placeholder="Notas internas sobre este cliente..." />
+                <p className="text-[10px] text-gray-400 mt-0.5">Solo visible para vos, no aparece en presupuestos.</p>
+              </div>
             </div>
             <div className="flex gap-3 mt-6">
-              <button onClick={() => { setModal(null); setShowMore(false) }} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">{tc('cancel')}</button>
+              <button onClick={() => setModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">{tc('cancel')}</button>
               <button onClick={save} disabled={saving || !modal.name?.trim()} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#6C5CE7' }}>
                 {saving ? tc('saving') : tc('save')}
               </button>
