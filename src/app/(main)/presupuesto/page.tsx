@@ -6,7 +6,7 @@ import Link from 'next/link'
 import {
   ShoppingCart, Trash2, FileDown, MessageCircle, Mail, X,
   ArrowLeft, Loader2, Phone, MapPin, Globe, AtSign, Pencil,
-  Link as LinkIcon, Check, Search, Plus, User, Calculator,
+  Link as LinkIcon, Check, Search, Plus, User, Calculator, Save,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { usePresupuesto } from '@/features/presupuesto/context/PresupuestoContext'
@@ -102,18 +102,14 @@ export default function PresupuestoPage() {
   // Save presupuesto to DB and get public link
   async function ensurePublicLink() {
     if (publicLink) return publicLink
-    setSavingLink(true)
-    const codigo = genCodigo()
-    const { error } = await supabase.from('presupuestos').insert({
-      codigo, numero: quoteNumber, validez_dias: validezDias,
-      client_id: clientId || null, client_name: clientDisplayName || null,
-      items: items.map(i => ({ tecnica: i.tecnica, nombre: i.nombre, cantidad: i.cantidad, precioUnit: i.precioUnit, precioSinDesc: i.precioSinDesc, subtotal: i.subtotal })),
-      total: totalVenta, condiciones,
-      business_profile: bizProfile || {},
-    })
-    setSavingLink(false)
-    if (error) { console.error(error); return '' }
-    const link = `${window.location.origin}/p/${codigo}`
+    // Save first if not saved yet
+    if (!dbIdRef.current) await handleGuardar()
+    const pid = dbIdRef.current
+    if (!pid) return ''
+    // Get the codigo from the saved presupuesto
+    const { data } = await supabase.from('presupuestos').select('codigo').eq('id', pid).single()
+    if (!data?.codigo) return ''
+    const link = `${window.location.origin}/p/${data.codigo}`
     setPublicLink(link)
     return link
   }
@@ -166,70 +162,46 @@ export default function PresupuestoPage() {
     setDbPresupuestoId(id)
   }
 
-  // Direct save for client — no debounce, immediate persistence
-  async function saveClientToDb(cId: string | null, cName: string | null) {
-    // Ensure we have a DB row first
-    const pid = dbIdRef.current || await ensureDbPresupuesto()
-    if (!pid) { console.error('saveClientToDb: no presupuesto ID'); return }
-    const { data, error } = await supabase.from('presupuestos').update({
-      client_id: cId || null,
-      client_name: cName || null,
-    }).eq('id', pid).select('id, client_id, client_name')
-    if (error) console.error('saveClientToDb error:', error)
-    else console.log('saveClientToDb OK:', data)
-  }
-
-  async function ensureDbPresupuesto(): Promise<string | null> {
-    // Use ref to get latest value (avoids stale closure)
-    if (dbIdRef.current) return dbIdRef.current
-    // Create new presupuesto in DB
-    const codigo = genCodigo()
-    const { data, error } = await supabase.from('presupuestos').insert({
-      codigo, numero: quoteNumber, validez_dias: validezDias,
-      client_id: clientId || null, client_name: clientDisplayName || null,
-      items: [], total: 0, condiciones, business_profile: bizProfile || {},
-    }).select('id').single()
-    if (error || !data) { console.error('Failed to create presupuesto:', error); return null }
-    const id = data.id as string
-    setDbId(id)
-    setLoadedPresupuestoId(id)
-    setPublicLink(`${window.location.origin}/p/${codigo}`)
-    // Reload saved list
-    const { data: saved } = await supabase.from('presupuestos').select('id,codigo,numero,client_name,client_id,total,origen,created_at').order('created_at', { ascending: false }).limit(20)
-    if (saved) setSavedPresupuestos(saved as typeof savedPresupuestos)
-    return id
-  }
-
-  async function autoSave(fields?: Record<string, unknown>) {
-    const pid = await ensureDbPresupuesto()
-    if (!pid) return
+  // ── Explicit save: one button, one UPDATE ──
+  async function handleGuardar() {
+    const pid = dbIdRef.current
+    if (!pid) {
+      // Create new presupuesto first
+      const codigo = genCodigo()
+      const { data, error } = await supabase.from('presupuestos').insert({
+        codigo, numero: quoteNumber, validez_dias: validezDias,
+        client_id: clientId || null, client_name: clientDisplayName || null,
+        items: items.map(i => ({ tecnica: i.tecnica, nombre: i.nombre, cantidad: i.cantidad, precioUnit: i.precioUnit, precioSinDesc: i.precioSinDesc, subtotal: i.subtotal, notas: i.notas, origen: i.origen })),
+        total: totalVenta, condiciones, business_profile: bizProfile || {},
+      }).select('id, codigo').single()
+      if (error || !data) { setSaveStatus('error'); alert('Error al crear: ' + (error?.message || '')); return }
+      setDbId(data.id as string)
+      setLoadedPresupuestoId(data.id as string)
+      setPublicLink(`${window.location.origin}/p/${data.codigo}`)
+      setSaveStatus('saved')
+      setTimeout(() => setSaveStatus(s => s === 'saved' ? 'idle' : s), 2000)
+      reloadList()
+      return
+    }
     setSaveStatus('saving')
     const itemsData = items.map(i => ({ tecnica: i.tecnica, nombre: i.nombre, cantidad: i.cantidad, precioUnit: i.precioUnit, precioSinDesc: i.precioSinDesc, subtotal: i.subtotal, notas: i.notas, origen: i.origen }))
     const { error } = await supabase.from('presupuestos').update({
-      items: itemsData,
-      total: items.reduce((s, i) => s + i.subtotal, 0),
-      client_id: clientId || null,
-      client_name: clientDisplayName || null,
-      condiciones,
-      validez_dias: validezDias,
-      ...fields,
+      items: itemsData, total: totalVenta,
+      client_id: clientId || null, client_name: clientDisplayName || null,
+      condiciones, validez_dias: validezDias,
     }).eq('id', pid)
-    if (error) { setSaveStatus('error'); console.error('Autosave error:', error) }
+    if (error) { setSaveStatus('error'); alert('Error al guardar: ' + error.message) }
     else { setSaveStatus('saved'); setTimeout(() => setSaveStatus(s => s === 'saved' ? 'idle' : s), 2000) }
   }
 
-  // Trigger autosave when items, client, or conditions change (debounced)
-  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const autoSaveRef = useRef(autoSave)
-  autoSaveRef.current = autoSave // always keep latest closure
-  useEffect(() => {
-    // Only autosave if we're in detail view
-    if (items.length === 0 && !creatingNew && !loadedPresupuestoId && !dbPresupuestoId) return
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
-    saveTimerRef.current = setTimeout(() => { autoSaveRef.current() }, 800)
-    return () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current) }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [items, clientId, newClientName, condiciones, validezDias])
+  async function handleEliminar() {
+    const pid = dbIdRef.current || loadedPresupuestoId
+    if (!pid) { clearItems(); setCreatingNew(false); return }
+    if (!confirm('¿Eliminar este presupuesto? Esta acción no se puede deshacer.')) return
+    await supabase.from('presupuestos').delete().eq('id', pid)
+    clearItems(); setDbId(null); setCreatingNew(false); setPublicLink('')
+    reloadList()
+  }
 
   function startEdit(item: import('@/features/presupuesto/types').PresupuestoItem) {
     setEditingItemId(item.id)
@@ -380,7 +352,6 @@ export default function PresupuestoPage() {
     if (error || !data) { alert('Error al crear cliente'); return }
     setClients(prev => [...prev, data as DBClient])
     setClientId(data.id)
-    saveClientToDb(data.id, data.name)
     setNewClientName('')
     setNewClientPhone('')
     setNewClientEmail('')
@@ -498,7 +469,10 @@ export default function PresupuestoPage() {
                       <p className="font-semibold text-sm text-gray-900">#{p.codigo}</p>
                       <p className="text-xs text-gray-400">{p.client_name || clients.find(c => c.id === p.client_id)?.name || tc('noClient')}</p>
                     </div>
-                    <p className="font-bold text-sm" style={{ color: '#6C5CE7' }}>{fmtCurrency(p.total)}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-bold text-sm" style={{ color: '#6C5CE7' }}>{fmtCurrency(p.total)}</p>
+                      <button onClick={async (e) => { e.stopPropagation(); if (confirm(`¿Eliminar presupuesto #${p.codigo}?`)) { await supabase.from('presupuestos').delete().eq('id', p.id); reloadList() } }} className="p-1 rounded hover:bg-red-50"><Trash2 size={13} className="text-gray-300 hover:text-red-500" /></button>
+                    </div>
                   </div>
                   <div className="mt-1.5 flex items-center gap-3 text-xs text-gray-400">
                     <span>{new Date(p.created_at).toLocaleDateString('es-AR')}</span>
@@ -528,7 +502,10 @@ export default function PresupuestoPage() {
                       <td className="px-4 py-3 text-sm text-gray-400">{new Date(p.created_at).toLocaleDateString('es-AR')}</td>
                       <td className="px-4 py-3 font-bold text-gray-800 text-sm">{fmtCurrency(p.total)}</td>
                       <td className="px-4 py-3">
-                        <a href={`/p/${p.codigo}`} target="_blank" rel="noopener" onClick={e => e.stopPropagation()} className="text-xs text-purple-500 hover:text-purple-700">{t('viewPublic')}</a>
+                        <div className="flex items-center gap-2">
+                          <a href={`/p/${p.codigo}`} target="_blank" rel="noopener" onClick={e => e.stopPropagation()} className="text-xs text-purple-500 hover:text-purple-700">{t('viewPublic')}</a>
+                          <button onClick={async (e) => { e.stopPropagation(); if (confirm(`¿Eliminar #${p.codigo}?`)) { await supabase.from('presupuestos').delete().eq('id', p.id); reloadList() } }} className="p-1 rounded hover:bg-red-50"><Trash2 size={13} className="text-gray-300 hover:text-red-500" /></button>
+                        </div>
                       </td>
                     </tr>
                   )
@@ -642,7 +619,7 @@ export default function PresupuestoPage() {
                             </p>
                           </div>
                         </div>
-                        <button onClick={() => { setClientId(''); setClientSearch(''); setNewClientName(''); saveClientToDb(null, null) }} className="p-1.5 rounded-lg hover:bg-gray-100 flex-shrink-0">
+                        <button onClick={() => { setClientId(''); setClientSearch(''); setNewClientName('') }} className="p-1.5 rounded-lg hover:bg-gray-100 flex-shrink-0">
                           <X size={14} className="text-gray-400" />
                         </button>
                       </div>
@@ -667,7 +644,7 @@ export default function PresupuestoPage() {
                           <div className="absolute z-20 top-full mt-1 left-0 right-0 bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden max-h-60 overflow-y-auto">
                             {filteredClients.length > 0 ? filteredClients.map(c => (
                               <button key={c.id} type="button" className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-gray-50 text-left transition-colors border-b border-gray-50 last:border-0"
-                                onClick={() => { setClientId(c.id); setClientDropdownOpen(false); setClientSearch(''); setNewClientName(''); saveClientToDb(c.id, c.name) }}>
+                                onClick={() => { setClientId(c.id); setClientDropdownOpen(false); setClientSearch(''); setNewClientName('');  }}>
                                 <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 text-xs font-bold text-gray-500">
                                   {c.name[0]?.toUpperCase()}
                                 </div>
@@ -929,6 +906,16 @@ export default function PresupuestoPage() {
 
             {/* ── RIGHT: Actions ── */}
             <div className="lg:w-72 space-y-4 no-print">
+              {/* Save */}
+              <button type="button" onClick={handleGuardar} disabled={saveStatus === 'saving'}
+                className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all ${saveStatus === 'saved' ? 'bg-green-500 text-white' : saveStatus === 'error' ? 'bg-red-500 text-white' : 'text-white'}`}
+                style={saveStatus === 'saved' || saveStatus === 'error' ? {} : { background: '#6C5CE7', boxShadow: '0 4px 14px rgba(108,92,231,0.35)' }}>
+                {saveStatus === 'saving' ? <><Loader2 size={15} className="animate-spin" /> Guardando...</>
+                  : saveStatus === 'saved' ? <><Check size={15} /> Guardado</>
+                  : saveStatus === 'error' ? 'Error al guardar'
+                  : <><Save size={15} /> Guardar presupuesto</>}
+              </button>
+
               {/* Share */}
               <div className="card p-5 space-y-3">
                 <p className="text-xs font-bold uppercase tracking-wider text-gray-400">{t('share')}</p>
@@ -1017,6 +1004,11 @@ export default function PresupuestoPage() {
                   {submitting ? <><Loader2 size={15} className="animate-spin" /> {tc('loading')}</> : t('confirmOrder')}
                 </button>
               </div>
+
+              {/* Delete */}
+              <button type="button" onClick={handleEliminar} className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors">
+                <Trash2 size={14} /> Eliminar presupuesto
+              </button>
 
             </div>
           </div>
