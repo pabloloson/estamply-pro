@@ -106,8 +106,35 @@ export default function EquipamientoPage() {
         ))}
       </div>
 
-      {/* Table */}
-      <div className="card overflow-hidden">
+      {/* Mobile cards */}
+      <div className="md:hidden space-y-2">
+        {filtered.map(e => (
+          <div key={e.id} className="card p-4">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="font-semibold text-gray-800">{e.name}</p>
+                {e.marca && <p className="text-xs text-gray-400">{e.marca}</p>}
+              </div>
+              <div className="flex gap-1">
+                <button onClick={() => setModal(e)} className="p-1.5 rounded-lg hover:bg-gray-100"><Pencil size={14} className="text-gray-400" /></button>
+                <button onClick={() => delEquip(e.id)} className="p-1.5 rounded-lg hover:bg-red-50"><Trash2 size={14} className="text-red-400" /></button>
+              </div>
+            </div>
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {(e.tecnicas_slugs || []).map(s => (
+                <span key={s} className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: `${TEC_COLORS[s] || '#999'}15`, color: TEC_COLORS[s] || '#999' }}>{TEC_LABELS[s] || s}</span>
+              ))}
+            </div>
+            <div className="mt-1.5 text-xs text-gray-400">
+              {fmtCurrency(e.cost)} · {e.lifespan_uses.toLocaleString()} usos · <span className="font-semibold text-green-600">{fmtCurrency(amort(e))}/uso</span>
+            </div>
+          </div>
+        ))}
+        {filtered.length === 0 && <EmptyState icon="🖨" title="Cargá tus máquinas." description="Impresora, plancha, plotter — para calcular amortización." actionLabel="+ Agregar equipo" onAction={() => setModal({ clasificacion: 'plancha', type: 'press_flat', cost: 0, lifespan_uses: 10000, tecnicas_slugs: [] })} />}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden md:block card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[600px]">
             <thead><tr className="border-b border-gray-100">

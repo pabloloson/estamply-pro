@@ -7,6 +7,7 @@ import { Plus, Pencil, Trash2, X, FolderOpen } from 'lucide-react'
 import type { Category, Insumo, InsumoTipo, InsumoConfig } from '@/features/taller/types'
 import CategoryModal from '@/features/taller/components/CategoryModal'
 import NumericInput from '@/shared/components/NumericInput'
+import EmptyState from '@/shared/components/EmptyState'
 import { useTranslations } from '@/shared/hooks/useTranslations'
 import { useLocale } from '@/shared/context/LocaleContext'
 
@@ -194,7 +195,35 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
             <button onClick={() => setModal({ time_subli: 0, time_dtf: 0, time_vinyl: 0, base_cost: 0 } as Partial<Product>)} className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={14} /> {tc('add')}</button>
           </div>
         )}
-        <div className="card overflow-hidden">
+        {/* Mobile cards */}
+        <div className="md:hidden space-y-2">
+          {products.map(p => {
+            const cat = categories.find(c => c.id === p.category_id)
+            const press = equipment.find(e => e.id === p.press_equipment_id)
+            return (
+              <div key={p.id} className="card p-4">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="font-semibold text-gray-800">{p.name}</p>
+                    <p className="text-sm font-medium text-gray-600 mt-0.5">{fmtCurrency(p.base_cost)}</p>
+                  </div>
+                  <div className="flex gap-1">
+                    <button onClick={() => setModal(p as Partial<Product>)} className="p-1.5 rounded-lg hover:bg-gray-100"><Pencil size={14} className="text-gray-400" /></button>
+                    <button onClick={() => deleteProduct(p.id)} className="p-1.5 rounded-lg hover:bg-red-50"><Trash2 size={14} className="text-red-400" /></button>
+                  </div>
+                </div>
+                <div className="mt-1.5 space-y-0.5 text-xs text-gray-400">
+                  {cat && <p>Categoría: <span className="text-gray-600">{cat.name}</span></p>}
+                  {press && <p>Plancha: <span className="text-gray-600">{press.name}</span></p>}
+                </div>
+              </div>
+            )
+          })}
+          {products.length === 0 && <EmptyState icon="👕" title="Cargá los productos que vendés." description="Remeras, tazas, gorras — cada producto con su costo y la plancha que necesita." actionLabel="+ Agregar" onAction={() => setModal({ time_subli: 0, time_dtf: 0, time_vinyl: 0, base_cost: 0 } as Partial<Product>)} />}
+        </div>
+
+        {/* Desktop table */}
+        <div className="hidden md:block card overflow-hidden">
           <div className="overflow-x-auto">
           <table className="w-full min-w-[600px]"><thead><tr className="border-b border-gray-100">
             {['Nombre', 'Costo', 'Categoría', 'Plancha', ''].map(h => <th key={h} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">{h}</th>)}
@@ -242,7 +271,40 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
           </div>
           <button onClick={() => openNewInsumo()} className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#00B894' }}><Plus size={14} /> {tc('add')}</button>
         </div>
-        <div className="card overflow-hidden">
+        {/* Mobile cards */}
+        <div className="md:hidden space-y-2">
+          {filteredInsumos.map(ins => {
+            const cfg = ins.config as Record<string, unknown>
+            const tipo = ins.tipo as InsumoTipo
+            let detail = ''
+            if (tipo === 'papel') detail = `${fmtCurrency(cfg.formato === 'hojas' ? cfg.precio_resma as number : cfg.precio_rollo as number)} · ${cfg.formato === 'hojas' ? `${cfg.hojas_resma} hojas · ${cfg.ancho}×${cfg.alto}cm` : `Rollo ${cfg.rollo_ancho}cm × ${cfg.rollo_largo}m`}`
+            else if (tipo === 'tinta') detail = `${fmtCurrency(cfg.precio as number)} · ${cfg.rendimiento} ${cfg.unidad_rendimiento}`
+            else if (tipo === 'film') detail = `${fmtCurrency(cfg.precio_rollo as number)} · ${cfg.ancho}cm × ${cfg.largo}m`
+            else if (tipo === 'vinilo') detail = `${fmtCurrency(cfg.precio_metro as number)}/m · ${cfg.ancho}cm`
+            return (
+              <div key={ins.id} className="card p-4">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="font-semibold text-gray-800">{ins.nombre}</p>
+                    <p className="text-xs mt-0.5">
+                      <span className="font-bold px-1.5 py-0.5 rounded-full" style={{ background: `${TIPO_COLORS[tipo]}18`, color: TIPO_COLORS[tipo] }}>{TIPO_LABELS[tipo]}</span>
+                      <span className="text-gray-400 ml-1.5">{ins.tecnica_asociada === 'compartido' ? 'Compartido' : TECNICA_FILTER_TABS.find(t => t.id === ins.tecnica_asociada)?.label || ins.tecnica_asociada}</span>
+                    </p>
+                  </div>
+                  <div className="flex gap-1">
+                    <button onClick={() => setInsModal(ins as Partial<Insumo>)} className="p-1.5 rounded-lg hover:bg-gray-100"><Pencil size={14} className="text-gray-400" /></button>
+                    <button onClick={() => deleteInsumo(ins.id)} className="p-1.5 rounded-lg hover:bg-red-50"><Trash2 size={14} className="text-red-400" /></button>
+                  </div>
+                </div>
+                {detail && <p className="text-xs text-gray-400 mt-1.5">{detail}</p>}
+              </div>
+            )
+          })}
+          {filteredInsumos.length === 0 && <div className="text-center py-8 text-gray-400 text-sm">No hay insumos{filterTecnica ? ' para esta técnica' : ''}.</div>}
+        </div>
+
+        {/* Desktop table */}
+        <div className="hidden md:block card overflow-hidden">
           <div className="overflow-x-auto">
           <table className="w-full min-w-[600px]"><thead><tr className="border-b border-gray-100">
             {['Nombre', 'Tipo', 'Técnica', 'Datos clave', ''].map(h => <th key={h} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">{h}</th>)}
