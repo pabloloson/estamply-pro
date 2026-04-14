@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useEffect, useRef, lazy, Suspense } from 'react'
+import { useParams, useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Save, User, Upload, Loader2, X, Plus, Trash2, QrCode, Check, Pencil, ChevronRight, ArrowLeft } from 'lucide-react'
 import { QRCodeCanvas } from 'qrcode.react'
@@ -49,6 +51,8 @@ const TAX_ID_LABELS: Record<string, string> = {
 }
 
 export default function SettingsPage() {
+  const params = useParams<{ section?: string[] }>()
+  const router = useRouter()
   const supabase = createClient()
   const t = useTranslations('settings')
   const tp = useTranslations('permissions')
@@ -75,7 +79,9 @@ export default function SettingsPage() {
     'Los precios pueden variar si cambian los costos de materiales.',
   ])
   const logoInputRef = useRef<HTMLInputElement>(null)
-  const [activeSection, setActiveSection] = useState<string | null>(typeof window !== 'undefined' && window.innerWidth >= 768 ? 'perfil' : null)
+  // Section from URL: /settings/perfil → 'perfil', /settings → null (menu)
+  const sectionFromUrl = params.section?.[0] || null
+  const activeSection = sectionFromUrl || (typeof window !== 'undefined' && window.innerWidth >= 768 ? 'perfil' : null)
   const [openDiscTecs, setOpenDiscTecs] = useState<string[]>(['descuentos_subli'])
 
   const CONFIG_SECTIONS = [
@@ -199,11 +205,11 @@ export default function SettingsPage() {
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1 mb-1.5">{section.group}</p>
               <div className="card overflow-hidden">
                 {section.items.map((item, i) => (
-                  <button key={item.id} onClick={() => setActiveSection(item.id)}
-                    className={`w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50 transition-colors ${i < section.items.length - 1 ? 'border-b border-gray-50' : ''}`}>
+                  <Link key={item.id} href={`/settings/${item.id}`}
+                    className={`flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors ${i < section.items.length - 1 ? 'border-b border-gray-50' : ''}`}>
                     <span className="text-sm font-medium text-gray-700">{item.label}</span>
                     <ChevronRight size={16} className="text-gray-300" />
-                  </button>
+                  </Link>
                 ))}
               </div>
             </div>
@@ -222,12 +228,12 @@ export default function SettingsPage() {
                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-3 mb-1">{section.group}</p>
                 <div className="space-y-0.5">
                   {section.items.map(item => (
-                    <button key={item.id} onClick={() => setActiveSection(item.id)}
-                      className={`w-full text-left px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                    <Link key={item.id} href={`/settings/${item.id}`}
+                      className={`block px-3 py-1.5 rounded-lg text-sm transition-colors ${
                         activeSection === item.id ? 'bg-purple-50 text-purple-700 font-medium' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'
                       }`}>
                       {item.label}
-                    </button>
+                    </Link>
                   ))}
                 </div>
               </div>
@@ -238,9 +244,9 @@ export default function SettingsPage() {
         {/* Content area */}
         <div className="flex-1 min-w-0">
           {/* Mobile back button */}
-          <button onClick={() => setActiveSection(null)} className="md:hidden flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-600 mb-4">
+          <Link href="/settings" className="md:hidden flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-600 mb-4">
             <ArrowLeft size={16} /> {t('title')}
-          </button>
+          </Link>
 
       {activeSection === 'perfil' && (<>
       <div className="card p-6 max-w-2xl">
