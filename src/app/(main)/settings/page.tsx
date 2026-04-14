@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, lazy, Suspense } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Save, User, Upload, Loader2, X, Plus, Trash2, QrCode, Check, Pencil } from 'lucide-react'
+import { Save, User, Upload, Loader2, X, Plus, Trash2, QrCode, Check, Pencil, ChevronRight, ArrowLeft } from 'lucide-react'
 import { QRCodeCanvas } from 'qrcode.react'
 import { DEFAULT_SETTINGS, type WorkshopSettings, type DiscountTier, type ManoDeObraModo, type ComisionBase, DEFAULT_MO_CONFIG } from '@/features/presupuesto/types'
 import { useTranslations } from '@/shared/hooks/useTranslations'
@@ -75,15 +75,22 @@ export default function SettingsPage() {
     'Los precios pueden variar si cambian los costos de materiales.',
   ])
   const logoInputRef = useRef<HTMLInputElement>(null)
-  const [activeTab, setActiveTab] = useState('negocio')
-  const [prodSubTab, setProdSubTab] = useState<'base' | 'insumos' | 'equip' | 'mano-obra'>('base')
+  const [activeSection, setActiveSection] = useState<string | null>(typeof window !== 'undefined' && window.innerWidth >= 768 ? 'perfil' : null)
+  const [prodSubTab, setProdSubTab] = useState<'base' | 'insumos' | 'equip'>('base')
 
-  const TABS = [
-    { id: 'negocio', label: 'Mi negocio' },
-    { id: 'produccion', label: 'Producción' },
-    { id: 'condiciones', label: 'Condiciones de venta' },
-    { id: 'tienda', label: 'Tienda online' },
-    { id: 'usuarios', label: 'Usuarios y permisos' },
+  const CONFIG_SECTIONS = [
+    { group: 'Mi negocio', items: [{ id: 'perfil', label: 'Perfil' }] },
+    { group: 'Producción', items: [
+      { id: 'materiales', label: 'Materiales' },
+      { id: 'equipamiento', label: 'Equipamiento' },
+      { id: 'tecnicas', label: 'Técnicas' },
+    ]},
+    { group: 'Ventas', items: [{ id: 'condiciones', label: 'Condiciones de venta' }] },
+    { group: 'Tienda online', items: [
+      { id: 'catalogo', label: 'Catálogo web' },
+      { id: 'guia-talles', label: 'Guía de talles' },
+    ]},
+    { group: 'Equipo', items: [{ id: 'usuarios', label: 'Usuarios y permisos' }] },
   ]
 
   useEffect(() => {
@@ -178,23 +185,59 @@ export default function SettingsPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
-        <p className="text-gray-500 text-sm mt-1">Configuración general del sistema.</p>
-      </div>
+      {/* ── Mobile: menu list (when no section selected) ── */}
+      {!activeSection && (
+        <div className="md:hidden">
+          <h1 className="text-2xl font-bold text-gray-900 mb-6">{t('title')}</h1>
+          {CONFIG_SECTIONS.map(section => (
+            <div key={section.group} className="mb-4">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1 mb-1.5">{section.group}</p>
+              <div className="card overflow-hidden">
+                {section.items.map((item, i) => (
+                  <button key={item.id} onClick={() => setActiveSection(item.id)}
+                    className={`w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50 transition-colors ${i < section.items.length - 1 ? 'border-b border-gray-50' : ''}`}>
+                    <span className="text-sm font-medium text-gray-700">{item.label}</span>
+                    <ChevronRight size={16} className="text-gray-300" />
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
-      <div className="flex gap-1 overflow-x-auto pb-2 mb-6 -mx-1 px-1">
-        {TABS.map(tab => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-colors ${
-              activeTab === tab.id ? 'bg-[#6C5CE7] text-white' : 'text-gray-500 hover:bg-gray-100'
-            }`}>
-            {tab.label}
+      {/* ── Desktop sidebar + content / Mobile content ── */}
+      <div className={`${activeSection ? '' : 'hidden md:flex'} ${activeSection ? 'flex' : ''}`}>
+        {/* Sidebar (desktop only) */}
+        <aside className="hidden md:block w-52 flex-shrink-0 pr-6 border-r border-gray-100 mr-6">
+          <p className="text-xs text-gray-400 font-semibold mb-4">{t('title')}</p>
+          <nav className="space-y-4">
+            {CONFIG_SECTIONS.map(section => (
+              <div key={section.group}>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-3 mb-1">{section.group}</p>
+                <div className="space-y-0.5">
+                  {section.items.map(item => (
+                    <button key={item.id} onClick={() => setActiveSection(item.id)}
+                      className={`w-full text-left px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                        activeSection === item.id ? 'bg-purple-50 text-purple-700 font-medium' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'
+                      }`}>
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </nav>
+        </aside>
+
+        {/* Content area */}
+        <div className="flex-1 min-w-0">
+          {/* Mobile back button */}
+          <button onClick={() => setActiveSection(null)} className="md:hidden flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-600 mb-4">
+            <ArrowLeft size={16} /> {t('title')}
           </button>
-        ))}
-      </div>
 
-      {activeTab === 'negocio' && (<>
+      {activeSection === 'perfil' && (<>
       <div className="card p-6 max-w-2xl">
         {/* Logo */}
         <div className="mb-6">
@@ -298,7 +341,7 @@ export default function SettingsPage() {
       </div>
       </>)}
 
-      {activeTab === 'tienda' && (<>
+      {activeSection === 'catalogo' && (<>
       {/* Catálogo web */}
       <div className="card p-6 max-w-2xl mt-6">
         <h3 className="font-semibold text-gray-800 mb-1">{t('webCatalog')}</h3>
@@ -392,28 +435,6 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Guía de talles */}
-      <div className="card p-6 max-w-2xl mt-6">
-        <h3 className="font-semibold text-gray-800 mb-1">{t('sizeGuides')}</h3>
-        <p className="text-xs text-gray-400 mb-4">{t('sizeGuidesSubtitle')}</p>
-        <div className="space-y-3 mb-4">
-          {guiasTalles.map(g => (
-            <div key={g.id} className="flex items-center justify-between p-3 rounded-lg border border-gray-100 hover:bg-gray-50">
-              <div>
-                <span className="font-medium text-sm text-gray-800">{g.nombre}</span>
-                <p className="text-xs text-gray-400">{g.columnas.length} medidas · {g.filas.length} talles</p>
-              </div>
-              <div className="flex gap-1">
-                <button onClick={() => setEditingGuia({ id: g.id, nombre: g.nombre, columnas: g.columnas, filas: g.filas, imagen_referencia: (g as Record<string, unknown>).imagen_referencia as string || null })} className="text-xs text-gray-400 hover:text-gray-600 p-1">✎</button>
-                <button onClick={async () => { if (confirm('¿Eliminar?')) { await supabase.from('guias_talles').delete().eq('id', g.id); setGuiasTalles(prev => prev.filter(x => x.id !== g.id)) } }} className="text-xs text-red-400 hover:text-red-600 p-1">✕</button>
-              </div>
-            </div>
-          ))}
-        </div>
-        <button onClick={() => setEditingGuia({ nombre: '', columnas: ['Ancho', 'Largo'], filas: [{ talle: 'S', Ancho: '', Largo: '' }, { talle: 'M', Ancho: '', Largo: '' }, { talle: 'L', Ancho: '', Largo: '' }] })}
-          className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700"><Plus size={14} /> {t('newSizeTable')}</button>
-      </div>
-
       <button onClick={saveWs} disabled={saveState === 'saving'}
         className={`mt-6 flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors ${saveState === 'saved' ? 'bg-green-500' : saveState === 'error' ? 'bg-red-500' : ''}`}
         style={saveState !== 'saved' && saveState !== 'error' ? { background: '#6C5CE7' } : {}}>
@@ -421,7 +442,7 @@ export default function SettingsPage() {
       </button>
       </>)}
 
-      {activeTab === 'condiciones' && (
+      {activeSection === 'condiciones' && (
         <div className="max-w-2xl">
           {/* Condiciones de presupuesto */}
           <div className="card p-6 mb-6">
@@ -471,7 +492,7 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {activeTab === 'usuarios' && (<>
+      {activeSection === 'usuarios' && (<>
       {/* Usuarios */}
       <div className="card p-6 max-w-2xl mt-6">
         <h3 className="font-semibold text-gray-800 mb-1">{t('usersPermissions')}</h3>
@@ -503,40 +524,64 @@ export default function SettingsPage() {
       </div>
       </>)}
 
-      {activeTab === 'produccion' && (
+      {activeSection === 'materiales' && (
         <div>
-          {/* Sub-tabs: underline style */}
+          <h2 className="text-xl font-bold text-gray-900 mb-1">Materiales</h2>
+          <p className="text-sm text-gray-400 mb-4">Todo lo que comprás para producir.</p>
           <div className="flex gap-4 border-b border-gray-100 mb-6">
-            {([['base', 'Productos base'], ['insumos', 'Insumos'], ['equip', 'Equipamiento'], ['mano-obra', 'Mano de obra']] as const).map(([id, label]) => (
-              <button key={id} onClick={() => setProdSubTab(id)}
+            {([['base', 'Productos base'], ['insumos', 'Insumos']] as const).map(([id, label]) => (
+              <button key={id} onClick={() => setProdSubTab(id as typeof prodSubTab)}
                 className={`px-1 pb-2 text-sm font-medium transition-colors border-b-2 -mb-px ${prodSubTab === id ? 'border-[#6C5CE7] text-gray-900' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>
                 {label}
               </button>
             ))}
           </div>
+          <Suspense fallback={<div className="flex items-center justify-center h-32"><div className="w-6 h-6 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>}>
+            <MaterialesPage />
+          </Suspense>
+        </div>
+      )}
 
-          {/* Sub-tab content */}
-          {prodSubTab === 'mano-obra' ? (
-            <div className="card p-6 max-w-2xl">
-              <p className="text-sm text-gray-500">La configuración de mano de obra se gestiona desde cada técnica.</p>
-            </div>
-          ) : prodSubTab === 'equip' ? (
-            <Suspense fallback={<div className="flex items-center justify-center h-32"><div className="w-6 h-6 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>}>
-              <EquipamientoPage />
-            </Suspense>
-          ) : (
-            <Suspense fallback={<div className="flex items-center justify-center h-32"><div className="w-6 h-6 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>}>
-              <MaterialesPage />
-            </Suspense>
-          )}
+      {activeSection === 'equipamiento' && (
+        <div>
+          <h2 className="text-xl font-bold text-gray-900 mb-1">Equipamiento</h2>
+          <p className="text-sm text-gray-400 mb-4">Máquinas y amortización.</p>
+          <Suspense fallback={<div className="flex items-center justify-center h-32"><div className="w-6 h-6 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>}>
+            <EquipamientoPage />
+          </Suspense>
+        </div>
+      )}
 
-          {/* Reglas por técnica */}
-          <div className="mt-8 pt-6 border-t border-gray-100">
-            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Reglas por técnica</h3>
-            <Suspense fallback={<div className="flex items-center justify-center h-32"><div className="w-6 h-6 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>}>
-              <TecnicasPage />
-            </Suspense>
+      {activeSection === 'tecnicas' && (
+        <div>
+          <h2 className="text-xl font-bold text-gray-900 mb-1">Técnicas</h2>
+          <p className="text-sm text-gray-400 mb-4">Reglas de producción por técnica.</p>
+          <Suspense fallback={<div className="flex items-center justify-center h-32"><div className="w-6 h-6 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>}>
+            <TecnicasPage />
+          </Suspense>
+        </div>
+      )}
+
+      {activeSection === 'guia-talles' && (
+        <div>
+          <h2 className="text-xl font-bold text-gray-900 mb-1">Guía de talles</h2>
+          <p className="text-sm text-gray-400 mb-4">Tablas de medidas para tus clientes.</p>
+          <div className="space-y-3">
+            {guiasTalles.map(g => (
+              <div key={g.id} className="flex items-center justify-between p-3 rounded-lg border border-gray-100 hover:bg-gray-50">
+                <div>
+                  <span className="font-medium text-sm text-gray-800">{g.nombre}</span>
+                  <p className="text-xs text-gray-400">{g.columnas.length} medidas · {g.filas.length} talles</p>
+                </div>
+                <div className="flex gap-1">
+                  <button onClick={() => setEditingGuia({ id: g.id, nombre: g.nombre, columnas: g.columnas, filas: g.filas, imagen_referencia: (g as Record<string, unknown>).imagen_referencia as string || null })} className="text-xs text-gray-400 hover:text-gray-600 p-1">✎</button>
+                  <button onClick={async () => { if (confirm('¿Eliminar?')) { await supabase.from('guias_talles').delete().eq('id', g.id); setGuiasTalles(prev => prev.filter(x => x.id !== g.id)) } }} className="text-xs text-red-400 hover:text-red-600 p-1">✕</button>
+                </div>
+              </div>
+            ))}
           </div>
+          <button onClick={() => setEditingGuia({ nombre: '', columnas: ['Ancho', 'Largo'], filas: [{ talle: 'S', Ancho: '', Largo: '' }, { talle: 'M', Ancho: '', Largo: '' }, { talle: 'L', Ancho: '', Largo: '' }] })}
+            className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700 mt-4"><Plus size={14} /> {t('newSizeTable')}</button>
         </div>
       )}
 
@@ -759,6 +804,9 @@ export default function SettingsPage() {
           </div>
         </div>
       )}
+
+        </div>{/* end content area */}
+      </div>{/* end flex wrapper */}
     </div>
   )
 }
