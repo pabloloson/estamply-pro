@@ -98,7 +98,7 @@ export default function EquipamientoPage() {
       {/* Mobile: dropdown filter */}
       <div className="flex md:hidden items-center gap-3 mb-4">
         <select value={filter} onChange={e => setFilter(e.target.value)}
-          className="input-base text-sm flex-1 max-w-[200px]">
+          className="border border-gray-200 bg-white rounded-lg px-4 py-2.5 text-sm font-medium shadow-sm min-w-[150px]">
           {CLASIF_TABS.map(tab => <option key={tab.id} value={tab.id}>{tab.label}</option>)}
         </select>
       </div>

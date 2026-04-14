@@ -264,7 +264,7 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
         {/* Mobile: dropdown filter + add */}
         <div className="flex md:hidden items-center justify-between gap-3 mb-4">
           <select value={filterTecnica} onChange={e => setFilterTecnica(e.target.value)}
-            className="input-base text-sm flex-1 max-w-[200px]">
+            className="border border-gray-200 bg-white rounded-lg px-4 py-2.5 text-sm font-medium shadow-sm min-w-[150px]">
             {TECNICA_FILTER_TABS.map(tf => <option key={tf.id} value={tf.id}>{tf.label}</option>)}
           </select>
           <button onClick={() => openNewInsumo()} className="flex items-center gap-1.5 whitespace-nowrap text-xs px-3 py-2 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={14} /> Agregar</button>
