@@ -385,21 +385,29 @@ export default function SettingsPage() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">{t('coverImage')}</label>
-            {(ws as Record<string, unknown>).banner_url ? (
-              <div className="relative rounded-lg overflow-hidden h-24 mb-2">
-                <img src={(ws as Record<string, unknown>).banner_url as string} alt="" className="w-full h-full object-cover" />
-                <button onClick={() => setWs({ ...ws, banner_url: '' } as WorkshopSettings)} className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/50 flex items-center justify-center text-white hover:bg-black/70"><X size={12} /></button>
-              </div>
-            ) : null}
-            <input type="file" accept="image/*" className="text-sm" onChange={async e => {
-              const file = e.target.files?.[0]; if (!file) return
-              const { data: { user } } = await createClient().auth.getUser()
-              const path = `${user?.id}/banner-${Date.now()}.${file.name.split('.').pop()}`
-              await createClient().storage.from('product-photos').upload(path, file)
-              const { data: { publicUrl } } = createClient().storage.from('product-photos').getPublicUrl(path)
-              setWs({ ...ws, banner_url: publicUrl } as WorkshopSettings)
-            }} />
-            <p className="text-[10px] text-gray-400 mt-1">Recomendado: 1200×400px</p>
+            <label className="flex flex-col items-center justify-center py-6 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-purple-300 transition-colors">
+              {(ws as Record<string, unknown>).banner_url ? (
+                <div className="relative w-full px-4">
+                  <img src={(ws as Record<string, unknown>).banner_url as string} alt="Portada" className="w-full h-32 object-cover rounded-lg" />
+                  <button type="button" onClick={(e) => { e.preventDefault(); setWs({ ...ws, banner_url: '' } as WorkshopSettings) }}
+                    className="absolute top-2 right-6 w-6 h-6 rounded-full bg-black/50 text-white flex items-center justify-center text-xs hover:bg-black/70">&#10005;</button>
+                </div>
+              ) : (
+                <>
+                  <Upload size={24} className="text-gray-300 mb-2" />
+                  <span className="text-sm text-gray-500">Subir imagen de portada</span>
+                  <span className="text-xs text-gray-400 mt-1">Recomendado: 1200x400px</span>
+                </>
+              )}
+              <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={async (e) => {
+                const file = e.target.files?.[0]; if (!file) return
+                const { data: { user } } = await createClient().auth.getUser()
+                const path = `${user?.id}/banner-${Date.now()}.${file.name.split('.').pop()}`
+                await createClient().storage.from('product-photos').upload(path, file)
+                const { data: { publicUrl } } = createClient().storage.from('product-photos').getPublicUrl(path)
+                setWs({ ...ws, banner_url: publicUrl } as WorkshopSettings)
+              }} />
+            </label>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">{t('brandColor')}</label>
@@ -529,13 +537,13 @@ export default function SettingsPage() {
             <table className="w-full text-sm"><thead><tr className="border-b border-gray-200">
               <th className="text-left py-2 px-2 text-[10px] text-gray-400 font-semibold uppercase">Desde</th>
               <th className="text-left py-2 px-2 text-[10px] text-gray-400 font-semibold uppercase">Hasta</th>
-              <th className="text-left py-2 px-2 text-[10px] text-gray-400 font-semibold uppercase">Desc %</th>
+              <th className="text-left py-2 px-2 text-[10px] text-gray-400 font-semibold uppercase">%</th>
               <th className="w-8" />
             </tr></thead><tbody>
               {tiers.map((t, i) => (<tr key={i} className="border-b border-gray-50">
-                <td className="py-1.5 px-2"><input type="number" className="input-base text-sm w-20" min={1} value={t.desde} onChange={e => updateTier(discKey, i, 'desde', Number(e.target.value))} /></td>
-                <td className="py-1.5 px-2"><input type="number" className="input-base text-sm w-20" min={1} value={t.hasta} onChange={e => updateTier(discKey, i, 'hasta', Number(e.target.value))} /></td>
-                <td className="py-1.5 px-2"><input type="number" className="input-base text-sm w-16" min={0} max={100} value={Math.round(t.porcentaje * 100)} onChange={e => updateTier(discKey, i, 'porcentaje', Number(e.target.value) / 100)} /></td>
+                <td className="py-1.5 px-2"><input type="number" className="input-base text-sm w-16 min-w-[45px]" min={1} value={t.desde} onChange={e => updateTier(discKey, i, 'desde', Number(e.target.value))} /></td>
+                <td className="py-1.5 px-2"><input type="number" className="input-base text-sm w-16 min-w-[45px]" min={1} value={t.hasta} onChange={e => updateTier(discKey, i, 'hasta', Number(e.target.value))} /></td>
+                <td className="py-1.5 px-2"><input type="number" className="input-base text-sm w-14 min-w-[50px]" min={0} max={100} value={Math.round(t.porcentaje * 100)} onChange={e => updateTier(discKey, i, 'porcentaje', Number(e.target.value) / 100)} /></td>
                 <td className="py-1.5"><button onClick={() => removeTier(discKey, i)} className="p-1 rounded hover:bg-red-50"><Trash2 size={12} className="text-gray-300 hover:text-red-500" /></button></td>
               </tr>))}
             </tbody></table>

@@ -177,7 +177,7 @@ export default function MaterialesPage() {
             <button onClick={() => setModal({ time_subli: 0, time_dtf: 0, time_vinyl: 0, base_cost: 0 } as Partial<Product>)} className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={14} /> {tc('add')}</button>
           </div>
           <div className="overflow-x-auto">
-          <table className="w-full"><thead><tr className="border-b border-gray-100">
+          <table className="w-full min-w-[600px]"><thead><tr className="border-b border-gray-100">
             {['Nombre', 'Costo', 'Categoría', 'Plancha', ''].map(h => <th key={h} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">{h}</th>)}
           </tr></thead><tbody>
             {products.map(p => {
@@ -216,7 +216,7 @@ export default function MaterialesPage() {
         </div>
         <div className="card overflow-hidden">
           <div className="overflow-x-auto">
-          <table className="w-full"><thead><tr className="border-b border-gray-100">
+          <table className="w-full min-w-[600px]"><thead><tr className="border-b border-gray-100">
             {['Nombre', 'Tipo', 'Técnica', 'Datos clave', ''].map(h => <th key={h} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">{h}</th>)}
           </tr></thead><tbody>
             {filteredInsumos.map(ins => {
