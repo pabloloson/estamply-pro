@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Save, Plus, Trash2, Settings, Lock } from 'lucide-react'
+import { Save, Plus, Trash2 } from 'lucide-react'
 import { DEFAULT_SETTINGS, type WorkshopSettings, type DiscountTier } from '@/features/presupuesto/types'
 import { TECHNIQUE_DEFAULTS, TECNICA_LABELS, ALL_TECNICA_SLUGS, type Tecnica, type TecnicaConfig, type TecnicaSlug, type DTFConfig, type SerigrafiaConfig } from '@/features/taller/types'
 import NumericInput from '@/shared/components/NumericInput'
@@ -52,11 +52,9 @@ export default function ProduccionPage() {
   const [ws, setWs] = useState<WorkshopSettings>(DEFAULT_SETTINGS)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState('general')
+  const [activeTab, setActiveTab] = useState('')
   const [opModal, setOpModal] = useState<Partial<Operator> | null>(null)
 
-  // Feature flag: labor cost management
-  const includeLabor = true
 
   async function load() {
     const [{ data: t }, { data: wsData }, { data: ops }] = await Promise.all([
@@ -77,6 +75,7 @@ export default function ProduccionPage() {
       tecs = ALL_TECNICA_SLUGS.map(slug => ({ id: `local-${slug}`, user_id: '', slug, created_at: '', ...TECHNIQUE_DEFAULTS[slug], equipment_ids: [], insumo_ids: [] }))
     }
     setTecnicas(tecs)
+    if (!activeTab && tecs.length > 0) setActiveTab(tecs.sort((a, b) => ALL_TECNICA_SLUGS.indexOf(a.slug) - ALL_TECNICA_SLUGS.indexOf(b.slug))[0].id)
     setOperators((ops || []) as Operator[])
     if (wsData?.settings) setWs({ ...DEFAULT_SETTINGS, ...(wsData.settings as Partial<WorkshopSettings>) })
     setLoading(false)
@@ -130,15 +129,11 @@ export default function ProduccionPage() {
 
   return (
     <div>
-      <div className="mb-6"><h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
-        <p className="text-gray-500 text-sm mt-1">{t('subtitle')}</p></div>
+      <div className="mb-6"><h1 className="text-2xl font-bold text-gray-900">Técnicas</h1>
+        <p className="text-gray-500 text-sm mt-1">Configurá las reglas de producción de cada técnica.</p></div>
 
-      {/* Tabs: General + techniques */}
+      {/* Technique tabs */}
       <div className="flex gap-1 mb-6 flex-wrap">
-        <button onClick={() => setActiveTab('general')}
-          className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'general' ? 'text-white shadow-md bg-gray-700' : 'bg-gray-100 text-gray-600'}`}>
-          <Settings size={13} className="inline mr-1.5 -mt-0.5" />{t('general')}
-        </button>
         {sortedTecs.map(tec => (
           <button key={tec.id} onClick={() => setActiveTab(tec.id)}
             className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${tec.id === activeTab ? 'text-white shadow-md' : tec.activa ? 'bg-gray-100 text-gray-600' : 'bg-gray-50 text-gray-300 italic'}`}
@@ -148,78 +143,11 @@ export default function ProduccionPage() {
         ))}
       </div>
 
-      {/* ══ General Tab ══ */}
-      {activeTab === 'general' && (
-        <div className="card p-5 space-y-6">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-gray-700 text-white font-black text-sm"><Settings size={18} /></div>
-            <h2 className="font-bold text-gray-900 text-lg">{t('general')}</h2>
-          </div>
-
-          {/* Descuentos por volumen */}
-          <div className="space-y-3">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">1 &middot; {t('globalDiscounts')}</p>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" className="rounded border-gray-300 text-purple-600"
-                checked={ws.descuento_global_enabled ?? false}
-                onChange={() => saveSettings({ descuento_global_enabled: !ws.descuento_global_enabled })} />
-              <span className="text-sm text-gray-600">Activar descuentos globales por volumen</span>
-            </label>
-            {ws.descuento_global_enabled && (
-              <div className="max-w-md">
-                <DiscountTable tiers={ws.descuentos_global ?? []}
-                  onChange={tiers => saveSettings({ descuentos_global: tiers })} />
-              </div>
-            )}
-            {!ws.descuento_global_enabled && (
-              <p className="text-xs text-gray-400">Cada técnica gestiona sus descuentos de forma independiente.</p>
-            )}
-          </div>
-
-          {/* Mano de obra */}
-          <div className="space-y-3">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">2 &middot; {t('laborCost')}</p>
-            {!includeLabor ? (
-              <div className="flex items-center gap-3 p-4 rounded-xl bg-gray-50 border border-gray-200">
-                <Lock size={18} className="text-gray-300 flex-shrink-0" />
-                <div>
-                  <p className="text-sm font-semibold text-gray-500">Gestión de mano de obra</p>
-                  <p className="text-xs text-gray-400">Disponible en el Plan Pro</p>
-                </div>
-              </div>
-            ) : (<>
-              {/* Operator list */}
-              {operators.length > 0 && (
-                <div className="rounded-lg border border-gray-100 overflow-hidden divide-y divide-gray-100">
-                  {operators.map(op => (
-                    <div key={op.id} className="flex items-center justify-between p-3 hover:bg-gray-50">
-                      <div>
-                        <p className="text-sm font-medium text-gray-800">{op.name}</p>
-                        <p className="text-xs text-gray-400">{opSummary(op, fmtCurrency)} &middot; {op.techniques.map(s => TEC_LABELS[s] || s).join(' · ')}</p>
-                      </div>
-                      <div className="flex gap-1">
-                        <button onClick={() => setOpModal(op)} className="p-1.5 rounded hover:bg-gray-100 text-gray-400">✎</button>
-                        <button onClick={() => delOperator(op.id)} className="p-1.5 rounded hover:bg-red-50"><Trash2 size={12} className="text-red-400" /></button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <button onClick={() => setOpModal({ hourly_rate: 0, techniques: [], calculation_mode: 'salary', monthly_salary: 0, monthly_hours: 160, percentage: 0, percentage_base: 'cost', fixed_amount: 0 })}
-                className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700">
-                <Plus size={14} /> Agregar operario
-              </button>
-            </>)}
-          </div>
-        </div>
-      )}
-
       {/* ══ Technique Tabs ══ */}
       {activeTec && (() => {
         const tec = activeTec
         const cfg = tec.config
         const color = tec.color
-        const globalEnabled = ws.descuento_global_enabled ?? false
 
         return (
           <div className="card overflow-hidden">
@@ -278,34 +206,9 @@ export default function ProduccionPage() {
                 </div>
               </div>
 
-              {/* Section 2: Descuentos */}
-              <div className="space-y-3">
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">2 &middot; {t('discounts')}</p>
-                <div className="space-y-2">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" name={`disc-${tec.id}`} className="text-purple-600"
-                      checked={!(cfg as { descuento_override?: boolean }).descuento_override}
-                      onChange={() => updateConfig(tec.id, { descuento_override: false })} />
-                    <span className="text-sm text-gray-600">Usar descuentos globales{globalEnabled ? '' : ' (desactivados)'}</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" name={`disc-${tec.id}`} className="text-purple-600"
-                      checked={(cfg as { descuento_override?: boolean }).descuento_override ?? false}
-                      onChange={() => updateConfig(tec.id, { descuento_override: true })} />
-                    <span className="text-sm text-gray-600">Descuentos personalizados para {tec.nombre}</span>
-                  </label>
-                </div>
-                {(cfg as { descuento_override?: boolean }).descuento_override && (
-                  <div className="max-w-md pl-6">
-                    <DiscountTable tiers={(cfg as { descuentos?: DiscountTier[] }).descuentos ?? []}
-                      onChange={tiers => updateConfig(tec.id, { descuentos: tiers })} />
-                  </div>
-                )}
-              </div>
-
               {/* Save */}
               <button onClick={() => saveTecnica(tec)} disabled={saving === tec.id || tec.id.startsWith('local-')}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: color }}>
+                className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: color }}>
                 <Save size={14} />{saving === tec.id ? tc('saving') : t('saveButton')}
               </button>
             </div>
