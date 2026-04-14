@@ -75,10 +75,11 @@ export default function SettingsPage() {
     'Los precios pueden variar si cambian los costos de materiales.',
   ])
   const logoInputRef = useRef<HTMLInputElement>(null)
-  const [activeTab, setActiveTab] = useState('negocio')
+  const [activeTab, setActiveTab] = useState('general')
   const [matSubTab, setMatSubTab] = useState<'base' | 'insumos' | 'equip'>('base')
 
   const TABS = [
+    { id: 'general', label: 'General' },
     { id: 'negocio', label: 'Mi negocio' },
     { id: 'materiales-equipos', label: 'Materiales y equipos' },
     { id: 'tecnicas', label: 'Técnicas' },
@@ -180,7 +181,7 @@ export default function SettingsPage() {
     <div>
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
-        <p className="text-gray-500 text-sm mt-1">Configurá tu taller y tus reglas de producción.</p>
+        <p className="text-gray-500 text-sm mt-1">Configuración general del sistema.</p>
       </div>
 
       <div className="flex gap-1 overflow-x-auto pb-2 mb-6 -mx-1 px-1">
@@ -194,13 +195,37 @@ export default function SettingsPage() {
         ))}
       </div>
 
+      {activeTab === 'general' && (
+        <div className="max-w-2xl">
+          {/* Condiciones de presupuesto */}
+          <div className="card p-6 mb-6">
+            <h3 className="font-semibold text-gray-800 mb-1">Condiciones de presupuesto</h3>
+            <p className="text-xs text-gray-400 mb-4">Se incluyen automáticamente en cada presupuesto nuevo.</p>
+            <div className="space-y-2 mb-4">
+              {condicionesDefault.map((cond, i) => (
+                <div key={i} className="flex items-start gap-2 p-3 rounded-lg border border-gray-100">
+                  <span className="text-gray-400 text-sm mt-0.5">·</span>
+                  <textarea className="input-base text-sm flex-1 resize-none" rows={2} value={cond}
+                    onChange={e => { const arr = [...condicionesDefault]; arr[i] = e.target.value; setCondicionesDefault(arr) }} />
+                  <button onClick={() => setCondicionesDefault(condicionesDefault.filter((_, j) => j !== i))}
+                    className="p-1 rounded hover:bg-red-50 text-gray-300 hover:text-red-500 flex-shrink-0 mt-0.5"><X size={14} /></button>
+                </div>
+              ))}
+            </div>
+            <button onClick={() => setCondicionesDefault([...condicionesDefault, ''])}
+              className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700"><Plus size={14} /> Agregar condición</button>
+          </div>
+
+          <button onClick={saveWs} disabled={saveState === 'saving'}
+            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors ${saveState === 'saved' ? 'bg-green-500' : saveState === 'error' ? 'bg-red-500' : ''}`}
+            style={saveState !== 'saved' && saveState !== 'error' ? { background: '#6C5CE7' } : {}}>
+            {saveState === 'saving' ? <><Loader2 size={14} className="animate-spin" /> Guardando...</> : saveState === 'saved' ? <><Check size={14} /> Guardado</> : saveState === 'error' ? 'Error' : <><Save size={14} /> Guardar</>}
+          </button>
+        </div>
+      )}
+
       {activeTab === 'negocio' && (<>
       <div className="card p-6 max-w-2xl">
-        <div className="flex items-center gap-2 mb-6">
-          <User size={17} className="text-gray-400" />
-          <span className="font-semibold text-gray-800">{t('businessProfile')}</span>
-        </div>
-
         {/* Logo */}
         <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 mb-2">{t('businessLogo')}</label>
@@ -270,9 +295,7 @@ export default function SettingsPage() {
         </div>
 
         {/* País y moneda */}
-        <div className="border-t border-gray-100 mt-6 pt-4">
-          <h4 className="font-semibold text-gray-800 mb-1">{t('countryAndCurrency')}</h4>
-          <p className="text-xs text-gray-400 mb-4">{t('countrySubtitle')}</p>
+        <div className="mt-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">{t('country')}</label>
@@ -295,25 +318,6 @@ export default function SettingsPage() {
               </select>
             </div>
           </div>
-        </div>
-
-        {/* Condiciones */}
-        <div className="mt-6 pt-6 border-t border-gray-100">
-          <h3 className="font-semibold text-gray-800 mb-1">Condiciones de presupuesto</h3>
-          <p className="text-xs text-gray-400 mb-4">Se incluyen automáticamente en cada presupuesto nuevo.</p>
-          <div className="space-y-2 mb-4">
-            {condicionesDefault.map((cond, i) => (
-              <div key={i} className="flex items-start gap-2 p-3 rounded-lg border border-gray-100">
-                <span className="text-gray-400 text-sm mt-0.5">·</span>
-                <textarea className="input-base text-sm flex-1 resize-none" rows={2} value={cond}
-                  onChange={e => { const arr = [...condicionesDefault]; arr[i] = e.target.value; setCondicionesDefault(arr) }} />
-                <button onClick={() => setCondicionesDefault(condicionesDefault.filter((_, j) => j !== i))}
-                  className="p-1 rounded hover:bg-red-50 text-gray-300 hover:text-red-500 flex-shrink-0 mt-0.5"><X size={14} /></button>
-              </div>
-            ))}
-          </div>
-          <button onClick={() => setCondicionesDefault([...condicionesDefault, ''])}
-            className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700 mb-4"><Plus size={14} /> Agregar condición</button>
         </div>
 
         <button onClick={save} disabled={saveState === 'saving'}
@@ -415,11 +419,6 @@ export default function SettingsPage() {
             </>)}
           </div>
 
-          <button onClick={saveWs} disabled={saveState === 'saving'}
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors ${saveState === 'saved' ? 'bg-green-500' : saveState === 'error' ? 'bg-red-500' : ''}`}
-            style={saveState !== 'saved' && saveState !== 'error' ? { background: '#6C5CE7' } : {}}>
-            {saveState === 'saving' ? <><Loader2 size={14} className="animate-spin" /> Guardando...</> : saveState === 'saved' ? <><Check size={14} /> Guardado</> : saveState === 'error' ? 'Error al guardar' : <><Save size={14} /> {t('saveCatalog')}</>}
-          </button>
         </div>
       </div>
 
@@ -472,6 +471,12 @@ export default function SettingsPage() {
             className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700"><Plus size={14} /> {t('addPaymentMethod')}</button>
         )}
       </div>
+
+      <button onClick={saveWs} disabled={saveState === 'saving'}
+        className={`mt-6 flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors ${saveState === 'saved' ? 'bg-green-500' : saveState === 'error' ? 'bg-red-500' : ''}`}
+        style={saveState !== 'saved' && saveState !== 'error' ? { background: '#6C5CE7' } : {}}>
+        {saveState === 'saving' ? <><Loader2 size={14} className="animate-spin" /> Guardando...</> : saveState === 'saved' ? <><Check size={14} /> Guardado</> : saveState === 'error' ? 'Error al guardar' : <><Save size={14} /> Guardar</>}
+      </button>
       </>)}
 
 
@@ -509,10 +514,10 @@ export default function SettingsPage() {
 
       {activeTab === 'materiales-equipos' && (
         <div>
-          <div className="flex gap-1 mb-4">
+          <div className="flex gap-4 border-b border-gray-100 mb-4">
             {([['base', 'Productos base'], ['insumos', 'Insumos'], ['equip', 'Equipamiento']] as const).map(([id, label]) => (
               <button key={id} onClick={() => setMatSubTab(id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${matSubTab === id ? 'bg-gray-800 text-white' : 'text-gray-500 hover:bg-gray-100'}`}>
+                className={`px-3 py-2 text-sm font-medium transition-colors border-b-2 ${matSubTab === id ? 'border-[#6C5CE7] text-gray-900' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>
                 {label}
               </button>
             ))}
