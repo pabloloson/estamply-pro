@@ -52,13 +52,13 @@ function emptyConfig(tipo: InsumoTipo): InsumoConfig {
   }
 }
 
-export default function MaterialesPage() {
+export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'base' | 'insumos'; hideChrome?: boolean } = {}) {
   const searchParams = useSearchParams()
   const t = useTranslations('materials')
   const tc = useTranslations('common')
   const { fmt: fmtCurrency } = useLocale()
   const supabase = createClient()
-  const [tab, setTab] = useState<'base' | 'insumos'>(searchParams.get('tab') === 'insumos' ? 'insumos' : 'base')
+  const [tab, setTab] = useState<'base' | 'insumos'>(forceTab || (searchParams.get('tab') === 'insumos' ? 'insumos' : 'base'))
   const [products, setProducts] = useState<Product[]>([])
   const [equipment, setEquipment] = useState<Equipment[]>([])
   const [categories, setCategories] = useState<Category[]>([])
@@ -156,18 +156,29 @@ export default function MaterialesPage() {
 
   return (
     <div>
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-        <div><h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
-          <p className="text-gray-500 text-sm mt-1">{t('subtitle')}</p></div>
-        <button onClick={() => setShowCats(true)} className="flex items-center gap-1.5 whitespace-nowrap text-xs sm:text-sm px-3 py-1.5 rounded-lg font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50">
-          <FolderOpen size={14} /> Categorías
-        </button>
-      </div>
+      {!hideChrome && (<>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+          <div><h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
+            <p className="text-gray-500 text-sm mt-1">{t('subtitle')}</p></div>
+          <button onClick={() => setShowCats(true)} className="flex items-center gap-1.5 whitespace-nowrap text-xs sm:text-sm px-3 py-1.5 rounded-lg font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50">
+            <FolderOpen size={14} /> Categorías
+          </button>
+        </div>
 
-      <div className="flex gap-1 mb-6">
-        <button onClick={() => setTab('base')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'base' ? 'bg-gray-800 text-white shadow-md' : 'bg-gray-100 text-gray-600'}`}>{t('baseProducts')}</button>
-        <button onClick={() => setTab('insumos')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'insumos' ? 'text-white shadow-md' : 'bg-gray-100 text-gray-600'}`} style={tab === 'insumos' ? { background: '#00B894' } : {}}>{t('insumos')}</button>
-      </div>
+        <div className="flex gap-1 mb-6">
+          <button onClick={() => setTab('base')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'base' ? 'bg-gray-800 text-white shadow-md' : 'bg-gray-100 text-gray-600'}`}>{t('baseProducts')}</button>
+          <button onClick={() => setTab('insumos')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'insumos' ? 'text-white shadow-md' : 'bg-gray-100 text-gray-600'}`} style={tab === 'insumos' ? { background: '#00B894' } : {}}>{t('insumos')}</button>
+        </div>
+      </>)}
+
+      {/* Categorías button for embedded mode */}
+      {hideChrome && tab === 'base' && (
+        <div className="flex justify-end mb-4">
+          <button onClick={() => setShowCats(true)} className="flex items-center gap-1.5 whitespace-nowrap text-xs sm:text-sm px-3 py-1.5 rounded-lg font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50">
+            <FolderOpen size={14} /> Categorías
+          </button>
+        </div>
+      )}
 
       {/* ══ PRODUCTOS BASE ══ */}
       {tab === 'base' && (

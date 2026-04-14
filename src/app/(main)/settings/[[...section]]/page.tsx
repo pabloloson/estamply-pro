@@ -577,12 +577,16 @@ export default function SettingsPage() {
       </div>
       </>)}
 
-      {(activeSection === 'productos' || activeSection === 'insumos' || activeSection === 'materiales') && (
-        <div>
-          <Suspense fallback={<div className="flex items-center justify-center h-32"><div className="w-6 h-6 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>}>
-            <MaterialesPage />
-          </Suspense>
-        </div>
+      {activeSection === 'productos' && (
+        <Suspense fallback={<div className="flex items-center justify-center h-32"><div className="w-6 h-6 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>}>
+          <MaterialesPage forceTab="base" hideChrome />
+        </Suspense>
+      )}
+
+      {(activeSection === 'insumos' || activeSection === 'materiales') && (
+        <Suspense fallback={<div className="flex items-center justify-center h-32"><div className="w-6 h-6 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>}>
+          <MaterialesPage forceTab="insumos" hideChrome />
+        </Suspense>
       )}
 
       {activeSection === 'equipamiento' && (
