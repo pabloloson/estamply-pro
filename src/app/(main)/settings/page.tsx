@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, lazy, Suspense } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Save, User, Upload, Loader2, X, Plus, Trash2, QrCode } from 'lucide-react'
+import { Save, User, Upload, Loader2, X, Plus, Trash2, QrCode, Check } from 'lucide-react'
 import { QRCodeCanvas } from 'qrcode.react'
 import { DEFAULT_SETTINGS, type WorkshopSettings, type DiscountTier, type ManoDeObraModo, type ComisionBase, DEFAULT_MO_CONFIG } from '@/features/presupuesto/types'
 import { useTranslations } from '@/shared/hooks/useTranslations'
@@ -57,7 +57,8 @@ export default function SettingsPage() {
   const [profile, setProfile] = useState<BusinessProfile>(EMPTY)
   const [userId, setUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const [ownerName, setOwnerName] = useState('')
   const [showQR, setShowQR] = useState(false)
   const [mediosPago, setMediosPago] = useState<Array<{ id: string; nombre: string; tipo_ajuste: string; porcentaje: number; activo: boolean; orden: number }>>([])
   const [editingMedio, setEditingMedio] = useState<{ nombre: string; tipo_ajuste: string; porcentaje: number; id?: string } | null>(null)
@@ -92,6 +93,7 @@ export default function SettingsPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
       setUserId(user.id)
+      setOwnerName(user.email || '')
       const { data } = await supabase
         .from('profiles')
         .select('business_name,business_logo_url,business_cuit,business_address,business_phone,business_email,business_instagram,business_website')
@@ -142,8 +144,9 @@ export default function SettingsPage() {
     const { error } = existing
       ? await supabase.from('workshop_settings').update({ settings: settingsToSave }).eq('id', existing.id)
       : await supabase.from('workshop_settings').insert({ settings: settingsToSave, user_id: userId })
-    if (error) { console.error('saveWs error:', error); alert(`Error: ${error.message}`); return }
-    alert('Guardado ✓')
+    if (error) { console.error('saveWs error:', error); setSaveState('error'); return }
+    setSaveState('saved')
+    setTimeout(() => setSaveState(s => s === 'saved' ? 'idle' : s), 2000)
   }
 
   async function uploadLogo(file: File) {
@@ -161,11 +164,12 @@ export default function SettingsPage() {
 
   async function save() {
     if (!userId) return
-    setSaving(true)
+    setSaveState('saving')
     const { error } = await supabase.from('profiles').upsert({ id: userId, ...profile })
-    setSaving(false)
-    if (error) { console.error('save profile error:', error); alert(`Error: ${error.message}`); return }
-    alert('Perfil guardado ✓')
+    if (error) { console.error('save profile error:', error); setSaveState('error'); return }
+    await saveWs()
+    setSaveState('saved')
+    setTimeout(() => setSaveState(s => s === 'saved' ? 'idle' : s), 2000)
   }
 
   if (loading) return (
@@ -178,7 +182,7 @@ export default function SettingsPage() {
     <div>
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
-        <p className="text-gray-500 text-sm mt-1">{t('subtitle')}</p>
+        <p className="text-gray-500 text-sm mt-1">Configurá tu taller y tus reglas de producción.</p>
       </div>
 
       <div className="flex gap-1 overflow-x-auto pb-2 mb-6 -mx-1 px-1">
@@ -267,14 +271,38 @@ export default function SettingsPage() {
           ))}
         </div>
 
-        <button
-          onClick={save}
-          disabled={saving}
-          className="mt-6 flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white"
-          style={{ background: '#6C5CE7' }}
-        >
-          <Save size={15} />
-          {saving ? 'Guardando...' : t('saveProfile')}
+        {/* País y moneda */}
+        <div className="border-t border-gray-100 mt-6 pt-4">
+          <h4 className="font-semibold text-gray-800 mb-1">{t('countryAndCurrency')}</h4>
+          <p className="text-xs text-gray-400 mb-4">{t('countrySubtitle')}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('country')}</label>
+              <select className="input-base" value={(ws as Record<string, unknown>).pais as string || 'AR'}
+                onChange={e => {
+                  const c = require('@/shared/lib/currency').getCountry(e.target.value)
+                  setWs({ ...ws, pais: e.target.value, moneda: c.currency, simbolo_moneda: c.symbol, idioma: c.locale } as WorkshopSettings)
+                }}>
+                {require('@/shared/lib/currency').COUNTRIES.map((c: { code: string; name: string; currency: string; symbol: string }) => (
+                  <option key={c.code} value={c.code}>{c.name} — {c.symbol} ({c.currency})</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('language')}</label>
+              <select className="input-base" value={(ws as Record<string, unknown>).idioma as string || 'es'}
+                onChange={e => setWs({ ...ws, idioma: e.target.value } as WorkshopSettings)}>
+                <option value="es">{t('spanish')}</option>
+                <option value="pt">{t('portuguese')}</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <button onClick={save} disabled={saveState === 'saving'}
+          className={`mt-6 flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors ${saveState === 'saved' ? 'bg-green-500' : saveState === 'error' ? 'bg-red-500' : ''}`}
+          style={saveState !== 'saved' && saveState !== 'error' ? { background: '#6C5CE7' } : {}}>
+          {saveState === 'saving' ? <><Loader2 size={14} className="animate-spin" /> Guardando...</> : saveState === 'saved' ? <><Check size={14} /> Guardado</> : saveState === 'error' ? 'Error al guardar' : <><Save size={14} /> Guardar</>}
         </button>
       </div>
       </>)}
@@ -370,10 +398,34 @@ export default function SettingsPage() {
             </>)}
           </div>
 
-          <button onClick={saveWs} className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white" style={{ background: '#6C5CE7' }}>
-            <Save size={14} /> {t('saveCatalog')}
+          <button onClick={saveWs} disabled={saveState === 'saving'}
+            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors ${saveState === 'saved' ? 'bg-green-500' : saveState === 'error' ? 'bg-red-500' : ''}`}
+            style={saveState !== 'saved' && saveState !== 'error' ? { background: '#6C5CE7' } : {}}>
+            {saveState === 'saving' ? <><Loader2 size={14} className="animate-spin" /> Guardando...</> : saveState === 'saved' ? <><Check size={14} /> Guardado</> : saveState === 'error' ? 'Error al guardar' : <><Save size={14} /> {t('saveCatalog')}</>}
           </button>
         </div>
+      </div>
+
+      {/* Guía de talles */}
+      <div className="card p-6 max-w-2xl mt-6">
+        <h3 className="font-semibold text-gray-800 mb-1">{t('sizeGuides')}</h3>
+        <p className="text-xs text-gray-400 mb-4">{t('sizeGuidesSubtitle')}</p>
+        <div className="space-y-3 mb-4">
+          {guiasTalles.map(g => (
+            <div key={g.id} className="flex items-center justify-between p-3 rounded-lg border border-gray-100 hover:bg-gray-50">
+              <div>
+                <span className="font-medium text-sm text-gray-800">{g.nombre}</span>
+                <p className="text-xs text-gray-400">{g.columnas.length} medidas · {g.filas.length} talles</p>
+              </div>
+              <div className="flex gap-1">
+                <button onClick={() => setEditingGuia({ id: g.id, nombre: g.nombre, columnas: g.columnas, filas: g.filas, imagen_referencia: (g as Record<string, unknown>).imagen_referencia as string || null })} className="text-xs text-gray-400 hover:text-gray-600 p-1">✎</button>
+                <button onClick={async () => { if (confirm('¿Eliminar?')) { await supabase.from('guias_talles').delete().eq('id', g.id); setGuiasTalles(prev => prev.filter(x => x.id !== g.id)) } }} className="text-xs text-red-400 hover:text-red-600 p-1">✕</button>
+              </div>
+            </div>
+          ))}
+        </div>
+        <button onClick={() => setEditingGuia({ nombre: '', columnas: ['Ancho', 'Largo'], filas: [{ talle: 'S', Ancho: '', Largo: '' }, { talle: 'M', Ancho: '', Largo: '' }, { talle: 'L', Ancho: '', Largo: '' }] })}
+          className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700"><Plus size={14} /> {t('newSizeTable')}</button>
       </div>
       </>)}
 
@@ -427,68 +479,11 @@ export default function SettingsPage() {
           className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700 mb-4">
           <Plus size={14} /> Agregar condición
         </button>
-        <button onClick={saveWs} className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white" style={{ background: '#6C5CE7' }}>
-          <Save size={14} /> Guardar condiciones
+        <button onClick={saveWs} disabled={saveState === 'saving'}
+          className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors ${saveState === 'saved' ? 'bg-green-500' : saveState === 'error' ? 'bg-red-500' : ''}`}
+          style={saveState !== 'saved' && saveState !== 'error' ? { background: '#6C5CE7' } : {}}>
+          {saveState === 'saving' ? <><Loader2 size={14} className="animate-spin" /> Guardando...</> : saveState === 'saved' ? <><Check size={14} /> Guardado</> : saveState === 'error' ? 'Error al guardar' : <><Save size={14} /> Guardar condiciones</>}
         </button>
-      </div>
-      </>)}
-
-      {activeTab === 'pagos' && (
-      <>
-      {/* Guía de talles */}
-      <div className="card p-6 max-w-2xl mt-6">
-        <h3 className="font-semibold text-gray-800 mb-1">{t('sizeGuides')}</h3>
-        <p className="text-xs text-gray-400 mb-4">{t('sizeGuidesSubtitle')}</p>
-        <div className="space-y-3 mb-4">
-          {guiasTalles.map(g => (
-            <div key={g.id} className="flex items-center justify-between p-3 rounded-lg border border-gray-100 hover:bg-gray-50">
-              <div>
-                <span className="font-medium text-sm text-gray-800">{g.nombre}</span>
-                <p className="text-xs text-gray-400">{g.columnas.length} medidas · {g.filas.length} talles</p>
-              </div>
-              <div className="flex gap-1">
-                <button onClick={() => setEditingGuia({ id: g.id, nombre: g.nombre, columnas: g.columnas, filas: g.filas, imagen_referencia: (g as Record<string, unknown>).imagen_referencia as string || null })} className="text-xs text-gray-400 hover:text-gray-600 p-1">✎</button>
-                <button onClick={async () => { if (confirm('¿Eliminar?')) { await supabase.from('guias_talles').delete().eq('id', g.id); setGuiasTalles(prev => prev.filter(x => x.id !== g.id)) } }} className="text-xs text-red-400 hover:text-red-600 p-1">✕</button>
-              </div>
-            </div>
-          ))}
-        </div>
-        <button onClick={() => setEditingGuia({ nombre: '', columnas: ['Ancho', 'Largo'], filas: [{ talle: 'S', Ancho: '', Largo: '' }, { talle: 'M', Ancho: '', Largo: '' }, { talle: 'L', Ancho: '', Largo: '' }] })}
-          className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700"><Plus size={14} /> {t('newSizeTable')}</button>
-      </div>
-      </>
-      )}
-
-      {activeTab === 'perfil' && (<>
-      {/* País y moneda */}
-      <div className="card p-6 max-w-2xl mt-6">
-        <h3 className="font-semibold text-gray-800 mb-1">{t('countryAndCurrency')}</h3>
-        <p className="text-xs text-gray-400 mb-4">{t('countrySubtitle')}</p>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('country')}</label>
-            <select className="input-base" value={(ws as Record<string, unknown>).pais as string || 'AR'}
-              onChange={e => {
-                const c = require('@/shared/lib/currency').getCountry(e.target.value)
-                setWs({ ...ws, pais: e.target.value, moneda: c.currency, simbolo_moneda: c.symbol, idioma: c.locale } as WorkshopSettings)
-              }}>
-              {require('@/shared/lib/currency').COUNTRIES.map((c: { code: string; name: string; currency: string; symbol: string }) => (
-                <option key={c.code} value={c.code}>{c.name} — {c.symbol} ({c.currency})</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('language')}</label>
-            <select className="input-base" value={(ws as Record<string, unknown>).idioma as string || 'es'}
-              onChange={e => setWs({ ...ws, idioma: e.target.value } as WorkshopSettings)}>
-              <option value="es">{t('spanish')}</option>
-              <option value="pt">{t('portuguese')}</option>
-            </select>
-          </div>
-          <button onClick={saveWs} className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white" style={{ background: '#6C5CE7' }}>
-            <Save size={14} /> Guardar
-          </button>
-        </div>
       </div>
       </>)}
 
@@ -499,7 +494,7 @@ export default function SettingsPage() {
         <p className="text-xs text-gray-400 mb-4">{t('usersSubtitle')}</p>
         <div className="space-y-2 mb-4">
           <div className="flex items-center gap-3 p-3 rounded-lg bg-purple-50">
-            <span className="font-medium text-sm text-gray-800 flex-1">{profile.business_name || t('owner')}</span>
+            <span className="font-medium text-sm text-gray-800 flex-1">{ownerName || t('owner')}</span>
             <span className="text-xs px-2 py-0.5 rounded-full bg-purple-200 text-purple-700 font-bold">👑 {t('owner')}</span>
             <span className="text-xs text-green-600">● Activo</span>
           </div>
@@ -722,6 +717,9 @@ export default function SettingsPage() {
             <div className="flex gap-3 mt-5">
               <button onClick={() => setEditingMedio(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">Cancelar</button>
               <button disabled={!editingMedio.nombre.trim()} onClick={async () => {
+                if (!editingMedio.id && mediosPago.some(m => m.nombre.toLowerCase() === editingMedio.nombre.toLowerCase().trim())) {
+                  alert('Este medio de pago ya existe'); return
+                }
                 const payload = { nombre: editingMedio.nombre, tipo_ajuste: editingMedio.tipo_ajuste, porcentaje: editingMedio.tipo_ajuste === 'sin_ajuste' ? 0 : editingMedio.porcentaje, activo: true, orden: mediosPago.length }
                 if (editingMedio.id) {
                   await supabase.from('medios_pago').update(payload).eq('id', editingMedio.id)
