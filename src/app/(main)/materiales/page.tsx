@@ -398,7 +398,10 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
                     { value: 'Tamaño', label: 'Tamaño', options: ['Chico', 'Mediano', 'Grande'] },
                     { value: 'custom', label: 'Personalizado', options: [] as string[] },
                   ]
-                  const currentPreset = !modal.variant_name ? 'none' : PRESETS.find(p => p.value === modal.variant_name)?.value || 'custom'
+                  // null/undefined = no variants, '' = custom (user hasn't typed name yet)
+                  const currentPreset = modal.variant_name === null || modal.variant_name === undefined
+                    ? 'none'
+                    : PRESETS.find(p => p.value === modal.variant_name)?.value || 'custom'
 
                   const handlePresetChange = (val: string) => {
                     if (val === 'none') { setModal({ ...modal, variant_name: null, variant_options: [] }); return }
