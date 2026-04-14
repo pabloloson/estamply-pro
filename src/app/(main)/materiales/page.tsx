@@ -171,22 +171,30 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
         </div>
       </>)}
 
-      {/* Categorías button for embedded mode */}
-      {hideChrome && tab === 'base' && (
-        <div className="flex justify-end mb-4">
-          <button onClick={() => setShowCats(true)} className="flex items-center gap-1.5 whitespace-nowrap text-xs sm:text-sm px-3 py-1.5 rounded-lg font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50">
-            <FolderOpen size={14} /> Categorías
-          </button>
-        </div>
-      )}
-
       {/* ══ PRODUCTOS BASE ══ */}
-      {tab === 'base' && (
-        <div className="card overflow-hidden">
+      {tab === 'base' && (<>
+        {/* Header — matches Equipamiento layout */}
+        {hideChrome && (
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Productos</h1>
+              <p className="text-gray-500 text-sm mt-1">Prendas, tazas, blanks y soportes.</p>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => setShowCats(true)} className="flex items-center gap-1.5 whitespace-nowrap text-xs sm:text-sm px-3 py-1.5 rounded-lg font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50">
+                <FolderOpen size={14} /> Categorías
+              </button>
+              <button onClick={() => setModal({ time_subli: 0, time_dtf: 0, time_vinyl: 0, base_cost: 0 } as Partial<Product>)} className="flex items-center gap-1.5 whitespace-nowrap text-xs sm:text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={14} /> + Agregar</button>
+            </div>
+          </div>
+        )}
+        {!hideChrome && (
           <div className="p-5 border-b border-gray-100 flex items-center justify-between">
             <div><span className="font-semibold text-gray-800">{t('baseProducts')}</span><p className="text-xs text-gray-400 mt-0.5">{t('baseSubtitle')}</p></div>
             <button onClick={() => setModal({ time_subli: 0, time_dtf: 0, time_vinyl: 0, base_cost: 0 } as Partial<Product>)} className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={14} /> {tc('add')}</button>
           </div>
+        )}
+        <div className="card overflow-hidden">
           <div className="overflow-x-auto">
           <table className="w-full min-w-[600px]"><thead><tr className="border-b border-gray-100">
             {['Nombre', 'Costo', 'Categoría', 'Plancha', ''].map(h => <th key={h} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">{h}</th>)}
@@ -211,10 +219,19 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
           </div>
           {products.length === 0 && <div className="text-center py-12 text-gray-400">No hay productos base.</div>}
         </div>
-      )}
+      </>)}
 
       {/* ══ INSUMOS ══ */}
       {tab === 'insumos' && (<>
+        {/* Header — matches Equipamiento layout */}
+        {hideChrome && (
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Insumos</h1>
+              <p className="text-gray-500 text-sm mt-1">Todo lo que consumís para producir.</p>
+            </div>
+          </div>
+        )}
         <div className="flex items-center justify-between mb-4">
           <div className="flex gap-1.5 flex-wrap">
             {TECNICA_FILTER_TABS.map(tf => (
