@@ -447,61 +447,102 @@ export default function SettingsPage() {
       </>)}
 
       {activeSection === 'condiciones' && (
-        <div className="max-w-2xl">
-          <h2 className="text-xl font-bold text-gray-900 mb-1">Condiciones</h2>
-          <p className="text-sm text-gray-400 mb-4">Se incluyen automáticamente en cada presupuesto nuevo.</p>
-          <div className="space-y-2 mb-4">
-            {condicionesDefault.map((cond, i) => (
-              <div key={i} className="flex items-start gap-2 p-3 rounded-lg border border-gray-100">
-                <span className="text-gray-400 text-sm mt-0.5">·</span>
-                <textarea className="input-base text-sm flex-1 resize-none" rows={2} value={cond}
-                  onChange={e => { const arr = [...condicionesDefault]; arr[i] = e.target.value; setCondicionesDefault(arr) }} />
-                <button onClick={() => setCondicionesDefault(condicionesDefault.filter((_, j) => j !== i))}
-                  className="p-1 rounded hover:bg-red-50 text-gray-300 hover:text-red-500 flex-shrink-0 mt-0.5"><X size={14} /></button>
-              </div>
-            ))}
-          </div>
-          <button onClick={() => setCondicionesDefault([...condicionesDefault, ''])}
-            className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700 mb-6"><Plus size={14} /> Agregar condición</button>
-          <button onClick={saveWs} disabled={saveState === 'saving'}
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors ${saveState === 'saved' ? 'bg-green-500' : saveState === 'error' ? 'bg-red-500' : ''}`}
-            style={saveState !== 'saved' && saveState !== 'error' ? { background: '#6C5CE7' } : {}}>
-            {saveState === 'saving' ? <><Loader2 size={14} className="animate-spin" /> Guardando...</> : saveState === 'saved' ? '✓ Guardado' : saveState === 'error' ? 'Error' : <><Save size={14} /> Guardar</>}
-          </button>
+  <div className="max-w-2xl">
+    <h2 className="text-xl font-bold text-gray-900 mb-1">Condiciones</h2>
+    <p className="text-sm text-gray-400 mb-4">Se incluyen automáticamente en cada presupuesto nuevo.</p>
+    <div className="space-y-3 mb-4">
+      {condicionesDefault.map((cond, i) => (
+        <div key={i} className="card p-4 flex items-start gap-3">
+          <span className="text-gray-300 mt-0.5 cursor-grab">⠿</span>
+          <textarea className="flex-1 text-sm text-gray-700 bg-transparent resize-none outline-none focus:bg-gray-50 rounded p-1 -m-1 transition-colors" rows={2} value={cond}
+            onChange={e => { const arr = [...condicionesDefault]; arr[i] = e.target.value; setCondicionesDefault(arr) }} />
+          <button onClick={() => { if (!cond.trim() || confirm('¿Eliminar esta condición?')) setCondicionesDefault(condicionesDefault.filter((_, j) => j !== i)) }}
+            className="p-1 rounded hover:bg-red-50 text-gray-300 hover:text-red-500 flex-shrink-0"><X size={14} /></button>
         </div>
-      )}
+      ))}
+    </div>
+    <button onClick={() => setCondicionesDefault([...condicionesDefault, ''])}
+      className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700 mb-6"><Plus size={14} /> Agregar condición</button>
+    <button onClick={saveWs} disabled={saveState === 'saving'}
+      className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors ${saveState === 'saved' ? 'bg-green-500' : saveState === 'error' ? 'bg-red-500' : ''}`}
+      style={saveState !== 'saved' && saveState !== 'error' ? { background: '#6C5CE7' } : {}}>
+      {saveState === 'saving' ? <><Loader2 size={14} className="animate-spin" /> Guardando...</> : saveState === 'saved' ? '✓ Guardado' : saveState === 'error' ? 'Error' : <><Save size={14} /> Guardar</>}
+    </button>
+  </div>
+)}
 
       {activeSection === 'medios-pago' && (
-        <div className="max-w-2xl">
-          <h2 className="text-xl font-bold text-gray-900 mb-1">Medios de pago</h2>
-          <p className="text-sm text-gray-400 mb-4">Configurá cómo pagan tus clientes.</p>
-          <div className="space-y-2 mb-4">
-            {mediosPago.map(m => (
-              <div key={m.id} className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 hover:bg-gray-50">
-                <div className={`w-2 h-2 rounded-full ${m.activo ? 'bg-green-500' : 'bg-gray-300'}`} />
-                <span className="text-sm font-medium text-gray-800 flex-1">{m.nombre}</span>
-                <span className="text-xs text-gray-400">{m.tipo_ajuste === 'sin_ajuste' || m.tipo_ajuste === 'ninguno' ? 'Sin ajuste' : `${m.porcentaje > 0 ? '+' : ''}${m.porcentaje}%`}</span>
-                <button onClick={() => setEditingMedio({ nombre: m.nombre, tipo_ajuste: m.tipo_ajuste, porcentaje: m.porcentaje, id: m.id })} className="p-1 rounded hover:bg-gray-100"><Pencil size={12} className="text-gray-400" /></button>
-                <button onClick={async () => { if (confirm('¿Eliminar?')) { await supabase.from('medios_pago').delete().eq('id', m.id); setMediosPago(prev => prev.filter(x => x.id !== m.id)) } }} className="p-1 rounded hover:bg-red-50"><Trash2 size={12} className="text-gray-300 hover:text-red-500" /></button>
-              </div>
-            ))}
+  <div className="max-w-2xl">
+    <h2 className="text-xl font-bold text-gray-900 mb-1">Medios de pago</h2>
+    <p className="text-sm text-gray-400 mb-4">Configurá cómo pagan tus clientes.</p>
+    <div className="space-y-3 mb-4">
+      {mediosPago.map(m => (
+        <div key={m.id} className="card p-4 flex items-start justify-between">
+          <div className="flex items-start gap-3">
+            <div className={`w-2.5 h-2.5 rounded-full mt-1.5 ${m.activo ? 'bg-green-500' : 'bg-gray-300'}`} />
+            <div>
+              <p className="text-base font-semibold text-gray-800">{m.nombre}</p>
+              <p className={`text-sm ${m.tipo_ajuste === 'sin_ajuste' || m.tipo_ajuste === 'ninguno' || m.porcentaje === 0 ? 'text-gray-400' : m.porcentaje > 0 ? 'text-amber-600' : 'text-green-600'}`}>
+                {m.tipo_ajuste === 'sin_ajuste' || m.tipo_ajuste === 'ninguno' || m.porcentaje === 0 ? 'Sin ajuste' : m.porcentaje > 0 ? `⬆ Recargo +${m.porcentaje}%` : `⬇ Descuento ${m.porcentaje}%`}
+              </p>
+            </div>
           </div>
-          {mediosPago.length < 6 && (
-            <button onClick={() => setEditingMedio({ nombre: '', tipo_ajuste: 'sin_ajuste', porcentaje: 0 })}
-              className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700"><Plus size={14} /> Agregar medio de pago</button>
-          )}
+          <div className="flex gap-1 opacity-60 hover:opacity-100 transition-opacity">
+            <button onClick={() => setEditingMedio({ nombre: m.nombre, tipo_ajuste: m.tipo_ajuste, porcentaje: m.porcentaje, id: m.id })} className="p-2 rounded-lg hover:bg-gray-100"><Pencil size={14} className="text-gray-500" /></button>
+            <button onClick={async () => { if (confirm('¿Eliminar?')) { await supabase.from('medios_pago').delete().eq('id', m.id); setMediosPago(prev => prev.filter(x => x.id !== m.id)) } }} className="p-2 rounded-lg hover:bg-red-50"><Trash2 size={14} className="text-gray-400 hover:text-red-500" /></button>
+          </div>
         </div>
-      )}
+      ))}
+    </div>
+    {mediosPago.length < 8 && (
+      <button onClick={() => setEditingMedio({ nombre: '', tipo_ajuste: 'sin_ajuste', porcentaje: 0 })}
+        className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700"><Plus size={14} /> Agregar medio de pago</button>
+    )}
+  </div>
+)}
 
       {activeSection === 'descuentos' && (
-        <div className="max-w-2xl">
-          <h2 className="text-xl font-bold text-gray-900 mb-1">Descuentos</h2>
-          <p className="text-sm text-gray-400 mb-4">Configurá descuentos por volumen para tus clientes.</p>
-          <div className="card p-6">
-            <p className="text-sm text-gray-500">Los descuentos por volumen se configuran desde cada técnica en la sección Técnicas.</p>
-          </div>
+  <div className="max-w-2xl">
+    <h2 className="text-xl font-bold text-gray-900 mb-1">Descuentos</h2>
+    <p className="text-sm text-gray-400 mb-4">Configurá descuentos por volumen para tus clientes.</p>
+    <div className="card p-6 space-y-4">
+      <div className="flex items-center gap-2 mb-2">
+        <input type="checkbox" checked={ws.descuento_global_enabled} onChange={e => setWs({ ...ws, descuento_global_enabled: e.target.checked } as WorkshopSettings)} className="rounded text-purple-600" />
+        <span className="text-sm font-medium text-gray-700">Activar descuentos globales por volumen</span>
+      </div>
+      {ws.descuento_global_enabled && (
+        <div>
+          <p className="text-xs text-gray-400 mb-3">Estos descuentos se aplican a todas las técnicas.</p>
+          <table className="w-full text-sm">
+            <thead><tr className="border-b border-gray-100">
+              <th className="text-left py-2 text-xs text-gray-400 font-semibold">Desde (unid.)</th>
+              <th className="text-left py-2 text-xs text-gray-400 font-semibold">Hasta (unid.)</th>
+              <th className="text-left py-2 text-xs text-gray-400 font-semibold">Descuento %</th>
+              <th className="w-8"></th>
+            </tr></thead>
+            <tbody>
+              {ws.descuentos_global.map((tier, i) => (
+                <tr key={i} className="border-b border-gray-50">
+                  <td className="py-2 pr-2"><input type="number" className="input-base text-sm w-full" min={0} value={tier.desde} onChange={e => { const arr = [...ws.descuentos_global]; arr[i] = { ...tier, desde: Number(e.target.value) }; setWs({ ...ws, descuentos_global: arr } as WorkshopSettings) }} /></td>
+                  <td className="py-2 pr-2"><input type="number" className="input-base text-sm w-full" min={0} value={tier.hasta} onChange={e => { const arr = [...ws.descuentos_global]; arr[i] = { ...tier, hasta: Number(e.target.value) }; setWs({ ...ws, descuentos_global: arr } as WorkshopSettings) }} /></td>
+                  <td className="py-2 pr-2"><input type="number" className="input-base text-sm w-full" min={0} max={100} value={Math.round(tier.porcentaje * 100)} onChange={e => { const arr = [...ws.descuentos_global]; arr[i] = { ...tier, porcentaje: Number(e.target.value) / 100 }; setWs({ ...ws, descuentos_global: arr } as WorkshopSettings) }} /></td>
+                  <td className="py-2"><button onClick={() => setWs({ ...ws, descuentos_global: ws.descuentos_global.filter((_, j) => j !== i) } as WorkshopSettings)} className="p-1 rounded hover:bg-red-50"><Trash2 size={12} className="text-gray-300 hover:text-red-500" /></button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <button onClick={() => setWs({ ...ws, descuentos_global: [...ws.descuentos_global, { desde: (ws.descuentos_global.at(-1)?.hasta || 0) + 1, hasta: 9999, porcentaje: 0 }] } as WorkshopSettings)}
+            className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700 mt-3"><Plus size={14} /> Agregar tramo</button>
         </div>
       )}
+    </div>
+    <button onClick={saveWs} disabled={saveState === 'saving'}
+      className={`mt-6 flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors ${saveState === 'saved' ? 'bg-green-500' : saveState === 'error' ? 'bg-red-500' : ''}`}
+      style={saveState !== 'saved' && saveState !== 'error' ? { background: '#6C5CE7' } : {}}>
+      {saveState === 'saving' ? <><Loader2 size={14} className="animate-spin" /> Guardando...</> : saveState === 'saved' ? '✓ Guardado' : saveState === 'error' ? 'Error' : <><Save size={14} /> Guardar</>}
+    </button>
+  </div>
+)}
 
       {activeSection === 'usuarios' && (<>
       {/* Usuarios */}
@@ -552,14 +593,67 @@ export default function SettingsPage() {
       )}
 
       {activeSection === 'mano-obra' && (
-        <div className="max-w-2xl">
-          <h2 className="text-xl font-bold text-gray-900 mb-1">Mano de obra</h2>
-          <p className="text-sm text-gray-400 mb-4">Configurá los costos de tus operarios.</p>
-          <div className="card p-6">
-            <p className="text-sm text-gray-500">La configuración de mano de obra se gestiona desde cada técnica en la sección Técnicas.</p>
+  <div className="max-w-2xl">
+    <h2 className="text-xl font-bold text-gray-900 mb-1">Mano de obra</h2>
+    <p className="text-sm text-gray-400 mb-4">Configurá los costos de tus operarios.</p>
+    <div className="card p-6 space-y-4">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Modo de cálculo</label>
+        <select className="input-base" value={(ws as Record<string, unknown>).mano_de_obra ? ((ws as Record<string, unknown>).mano_de_obra as Record<string, unknown>).modo as string : 'por_unidad'}
+          onChange={e => setWs({ ...ws, mano_de_obra: { ...ws.mano_de_obra, modo: e.target.value as 'sueldo_fijo' | 'por_unidad' | 'porcentaje' } } as WorkshopSettings)}>
+          <option value="sueldo_fijo">Sueldo fijo</option>
+          <option value="por_unidad">Fijo por trabajo</option>
+          <option value="porcentaje">Porcentaje</option>
+        </select>
+      </div>
+
+      {ws.mano_de_obra.modo === 'sueldo_fijo' && (<>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Costo total mano de obra mensual ($)</label>
+          <input type="number" className="input-base" min={0} value={ws.mano_de_obra.sueldo_mensual || ''} onChange={e => setWs({ ...ws, mano_de_obra: { ...ws.mano_de_obra, sueldo_mensual: Number(e.target.value) } } as WorkshopSettings)} />
+          <p className="text-[10px] text-gray-400 mt-1">Si tenés varios empleados, sumá todos los sueldos.</p>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Horas productivas totales mensuales</label>
+          <input type="number" className="input-base" min={1} value={ws.mano_de_obra.horas_mensuales || ''} onChange={e => setWs({ ...ws, mano_de_obra: { ...ws.mano_de_obra, horas_mensuales: Number(e.target.value) } } as WorkshopSettings)} />
+          <p className="text-[10px] text-gray-400 mt-1">Si tenés varios empleados, sumá todas las horas.</p>
+        </div>
+        {ws.mano_de_obra.sueldo_mensual > 0 && ws.mano_de_obra.horas_mensuales > 0 && (
+          <div className="p-3 rounded-lg bg-purple-50 border border-purple-100">
+            <p className="text-xs text-purple-600 font-semibold">Costo por hora: {fmtCurrency(Math.round(ws.mano_de_obra.sueldo_mensual / ws.mano_de_obra.horas_mensuales))}/h</p>
           </div>
+        )}
+      </>)}
+
+      {ws.mano_de_obra.modo === 'por_unidad' && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Costo por unidad producida ($)</label>
+          <input type="number" className="input-base" min={0} value={ws.mano_de_obra.monto_por_unidad || ''} onChange={e => setWs({ ...ws, mano_de_obra: { ...ws.mano_de_obra, monto_por_unidad: Number(e.target.value) } } as WorkshopSettings)} />
+          <p className="text-[10px] text-gray-400 mt-1">Monto fijo que se suma por cada unidad producida.</p>
         </div>
       )}
+
+      {ws.mano_de_obra.modo === 'porcentaje' && (<>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Porcentaje (%)</label>
+          <input type="number" className="input-base" min={0} max={100} value={ws.mano_de_obra.porcentaje_comision || ''} onChange={e => setWs({ ...ws, mano_de_obra: { ...ws.mano_de_obra, porcentaje_comision: Number(e.target.value) } } as WorkshopSettings)} />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Calcular sobre</label>
+          <select className="input-base" value={ws.mano_de_obra.comision_base} onChange={e => setWs({ ...ws, mano_de_obra: { ...ws.mano_de_obra, comision_base: e.target.value as 'venta' | 'ganancia' } } as WorkshopSettings)}>
+            <option value="venta">Precio de venta</option>
+            <option value="ganancia">Ganancia neta</option>
+          </select>
+        </div>
+      </>)}
+    </div>
+    <button onClick={saveWs} disabled={saveState === 'saving'}
+      className={`mt-6 flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors ${saveState === 'saved' ? 'bg-green-500' : saveState === 'error' ? 'bg-red-500' : ''}`}
+      style={saveState !== 'saved' && saveState !== 'error' ? { background: '#6C5CE7' } : {}}>
+      {saveState === 'saving' ? <><Loader2 size={14} className="animate-spin" /> Guardando...</> : saveState === 'saved' ? '✓ Guardado' : saveState === 'error' ? 'Error' : <><Save size={14} /> Guardar</>}
+    </button>
+  </div>
+)}
 
       {activeSection === 'tecnicas' && (
         <div>
