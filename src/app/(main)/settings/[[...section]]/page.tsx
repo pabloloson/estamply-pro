@@ -1,10 +1,10 @@
 'use client'
 
 import { useState, useEffect, useRef, lazy, Suspense } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { Save, User, Upload, Loader2, X, Plus, Trash2, QrCode, Check, Pencil, ChevronRight, ArrowLeft } from 'lucide-react'
+import { Save, User, Upload, Loader2, X, Plus, Trash2, QrCode, Check, Pencil } from 'lucide-react'
 import { QRCodeCanvas } from 'qrcode.react'
 import { DEFAULT_SETTINGS, type WorkshopSettings, type DiscountTier, type ManoDeObraModo, type ComisionBase, DEFAULT_MO_CONFIG } from '@/features/presupuesto/types'
 import { useTranslations } from '@/shared/hooks/useTranslations'
@@ -52,7 +52,6 @@ const TAX_ID_LABELS: Record<string, string> = {
 
 export default function SettingsPage() {
   const params = useParams<{ section?: string[] }>()
-  const router = useRouter()
   const supabase = createClient()
   const t = useTranslations('settings')
   const tp = useTranslations('permissions')
@@ -196,57 +195,6 @@ export default function SettingsPage() {
 
   return (
     <div>
-      {/* ── Mobile: menu list (when no section selected) ── */}
-      {!activeSection && (
-        <div className="md:hidden">
-          <h1 className="text-2xl font-bold text-gray-900 mb-6">{t('title')}</h1>
-          {CONFIG_SECTIONS.map(section => (
-            <div key={section.group} className="mb-4">
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1 mb-1.5">{section.group}</p>
-              <div className="card overflow-hidden">
-                {section.items.map((item, i) => (
-                  <Link key={item.id} href={`/settings/${item.id}`}
-                    className={`flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors ${i < section.items.length - 1 ? 'border-b border-gray-50' : ''}`}>
-                    <span className="text-sm font-medium text-gray-700">{item.label}</span>
-                    <ChevronRight size={16} className="text-gray-300" />
-                  </Link>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* ── Desktop sidebar + content / Mobile content ── */}
-      <div className={`${activeSection ? '' : 'hidden md:flex'} ${activeSection ? 'flex' : ''}`}>
-        {/* Sidebar (desktop only) */}
-        <aside className="hidden md:block w-52 flex-shrink-0 pr-6 border-r border-gray-100 mr-6">
-          <p className="text-xs text-gray-400 font-semibold mb-4">{t('title')}</p>
-          <nav className="space-y-4">
-            {CONFIG_SECTIONS.map(section => (
-              <div key={section.group}>
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-3 mb-1">{section.group}</p>
-                <div className="space-y-0.5">
-                  {section.items.map(item => (
-                    <Link key={item.id} href={`/settings/${item.id}`}
-                      className={`block px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                        activeSection === item.id ? 'bg-purple-50 text-purple-700 font-medium' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'
-                      }`}>
-                      {item.label}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </nav>
-        </aside>
-
-        {/* Content area */}
-        <div className="flex-1 min-w-0">
-          {/* Mobile back button */}
-          <Link href="/settings" className="md:hidden flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-600 mb-4">
-            <ArrowLeft size={16} /> {t('title')}
-          </Link>
 
       {activeSection === 'perfil' && (<>
       <div className="card p-6 max-w-2xl">
@@ -978,8 +926,6 @@ export default function SettingsPage() {
         </div>
       )}
 
-        </div>{/* end content area */}
-      </div>{/* end flex wrapper */}
     </div>
   )
 }
