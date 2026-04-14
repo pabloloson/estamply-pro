@@ -7,7 +7,7 @@ import { usePathname } from 'next/navigation'
 import { logout } from '@/app/actions/auth'
 import {
   LayoutDashboard, Calculator, FileText, ShoppingBag,
-  Users, Package, Droplets, Cpu, Palette, Tag, BarChart3,
+  Users, Package, BarChart3,
   Settings, LogOut, Menu, X,
 } from 'lucide-react'
 import { usePresupuesto } from '@/features/presupuesto/context/PresupuestoContext'
@@ -82,19 +82,6 @@ export function Sidebar({ workshopName = 'Mi Taller' }: SidebarProps) {
         {canAccess('catalogo') && <NavLink href="/catalogo" icon={Package} label={t('catalog')} />}
         {canAccess('estadisticas') && <NavLink href="/estadisticas" icon={BarChart3} label={t('statistics')} />}
       </nav>
-
-      {/* ── Separador + Sección 2: Motor del negocio ── */}
-      {(canAccess('materiales') || canAccess('equipamiento') || canAccess('produccion')) && (<>
-        <div className="mx-4 mt-4 mb-1 border-t border-gray-100" />
-        <div className="px-3 space-y-0.5">
-          <p className="px-3 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-            {t('myWorkshop')}
-          </p>
-          {canAccess('materiales') && <NavLink href="/materiales" icon={Droplets} label={t('materials')} />}
-          {canAccess('equipamiento') && <NavLink href="/equipamiento" icon={Cpu} label={t('equipment')} />}
-          {canAccess('produccion') && <NavLink href="/tecnicas" icon={Palette} label={t('production')} />}
-        </div>
-      </>)}
 
       {/* ── Spacer ── */}
       <div className="flex-1" />

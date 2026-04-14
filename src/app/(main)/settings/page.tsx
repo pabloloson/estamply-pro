@@ -1,12 +1,16 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, lazy, Suspense } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Save, User, Upload, Loader2, X, Plus, Trash2, QrCode } from 'lucide-react'
 import { QRCodeCanvas } from 'qrcode.react'
 import { DEFAULT_SETTINGS, type WorkshopSettings, type DiscountTier, type ManoDeObraModo, type ComisionBase, DEFAULT_MO_CONFIG } from '@/features/presupuesto/types'
 import { useTranslations } from '@/shared/hooks/useTranslations'
 import { useLocale } from '@/shared/context/LocaleContext'
+
+const MaterialesPage = lazy(() => import('@/app/(main)/materiales/page'))
+const EquipamientoPage = lazy(() => import('@/app/(main)/equipamiento/page'))
+const TecnicasPage = lazy(() => import('@/app/(main)/tecnicas/page'))
 
 interface BusinessProfile {
   business_name: string
@@ -70,6 +74,18 @@ export default function SettingsPage() {
     'Los precios pueden variar si cambian los costos de materiales.',
   ])
   const logoInputRef = useRef<HTMLInputElement>(null)
+  const [activeTab, setActiveTab] = useState('perfil')
+
+  const TABS = [
+    { id: 'perfil', label: 'Perfil' },
+    { id: 'materiales', label: 'Materiales' },
+    { id: 'equipamiento', label: 'Equipamiento' },
+    { id: 'produccion', label: 'Producción' },
+    { id: 'catalogo', label: 'Catálogo web' },
+    { id: 'pagos', label: 'Pagos' },
+    { id: 'condiciones', label: 'Condiciones' },
+    { id: 'equipo', label: 'Equipo' },
+  ]
 
   useEffect(() => {
     async function load() {
@@ -165,6 +181,18 @@ export default function SettingsPage() {
         <p className="text-gray-500 text-sm mt-1">{t('subtitle')}</p>
       </div>
 
+      <div className="flex gap-1 overflow-x-auto pb-2 mb-6 -mx-1 px-1">
+        {TABS.map(tab => (
+          <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+            className={`px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-colors ${
+              activeTab === tab.id ? 'bg-[#6C5CE7] text-white' : 'text-gray-500 hover:bg-gray-100'
+            }`}>
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'perfil' && (<>
       <div className="card p-6 max-w-2xl">
         <div className="flex items-center gap-2 mb-6">
           <User size={17} className="text-gray-400" />
@@ -249,7 +277,9 @@ export default function SettingsPage() {
           {saving ? 'Guardando...' : t('saveProfile')}
         </button>
       </div>
+      </>)}
 
+      {activeTab === 'catalogo' && (<>
       {/* Catálogo web */}
       <div className="card p-6 max-w-2xl mt-6">
         <h3 className="font-semibold text-gray-800 mb-1">{t('webCatalog')}</h3>
@@ -345,6 +375,9 @@ export default function SettingsPage() {
           </button>
         </div>
       </div>
+      </>)}
+
+      {activeTab === 'pagos' && (<>
       {/* Medios de pago */}
       <div className="card p-6 max-w-2xl mt-6">
         <h3 className="font-semibold text-gray-800 mb-1">{t('paymentMethods')}</h3>
@@ -370,7 +403,9 @@ export default function SettingsPage() {
             className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700"><Plus size={14} /> {t('addPaymentMethod')}</button>
         )}
       </div>
+      </>)}
 
+      {activeTab === 'condiciones' && (<>
       {/* Condiciones de presupuesto */}
       <div className="card p-6 max-w-2xl mt-6">
         <h3 className="font-semibold text-gray-800 mb-1">Condiciones de presupuesto</h3>
@@ -396,7 +431,10 @@ export default function SettingsPage() {
           <Save size={14} /> Guardar condiciones
         </button>
       </div>
+      </>)}
 
+      {activeTab === 'pagos' && (
+      <>
       {/* Guía de talles */}
       <div className="card p-6 max-w-2xl mt-6">
         <h3 className="font-semibold text-gray-800 mb-1">{t('sizeGuides')}</h3>
@@ -418,7 +456,10 @@ export default function SettingsPage() {
         <button onClick={() => setEditingGuia({ nombre: '', columnas: ['Ancho', 'Largo'], filas: [{ talle: 'S', Ancho: '', Largo: '' }, { talle: 'M', Ancho: '', Largo: '' }, { talle: 'L', Ancho: '', Largo: '' }] })}
           className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700"><Plus size={14} /> {t('newSizeTable')}</button>
       </div>
+      </>
+      )}
 
+      {activeTab === 'perfil' && (<>
       {/* País y moneda */}
       <div className="card p-6 max-w-2xl mt-6">
         <h3 className="font-semibold text-gray-800 mb-1">{t('countryAndCurrency')}</h3>
@@ -449,7 +490,9 @@ export default function SettingsPage() {
           </button>
         </div>
       </div>
+      </>)}
 
+      {activeTab === 'equipo' && (<>
       {/* Usuarios */}
       <div className="card p-6 max-w-2xl mt-6">
         <h3 className="font-semibold text-gray-800 mb-1">{t('usersPermissions')}</h3>
@@ -479,6 +522,25 @@ export default function SettingsPage() {
         <button onClick={() => setInviteModal({ nombre: '', email: '', password: '', nivel: 'solo_precios', secciones: {} })}
           className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700"><Plus size={14} /> {t('inviteUser')}</button>
       </div>
+      </>)}
+
+      {activeTab === 'materiales' && (
+        <Suspense fallback={<div className="flex items-center justify-center h-32"><div className="w-6 h-6 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>}>
+          <MaterialesPage />
+        </Suspense>
+      )}
+
+      {activeTab === 'equipamiento' && (
+        <Suspense fallback={<div className="flex items-center justify-center h-32"><div className="w-6 h-6 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>}>
+          <EquipamientoPage />
+        </Suspense>
+      )}
+
+      {activeTab === 'produccion' && (
+        <Suspense fallback={<div className="flex items-center justify-center h-32"><div className="w-6 h-6 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>}>
+          <TecnicasPage />
+        </Suspense>
+      )}
 
       {/* Invite/Edit user modal */}
       {inviteModal && (() => {
