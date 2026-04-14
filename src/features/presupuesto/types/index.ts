@@ -12,6 +12,8 @@ export interface PresupuestoItem {
   ganancia: number
   notas?: string
   origen?: 'cotizador' | 'catalogo' | 'catalogo_web' | 'manual'
+  variantName?: string
+  variantBreakdown?: Record<string, number>
 }
 
 export interface DiscountTier {

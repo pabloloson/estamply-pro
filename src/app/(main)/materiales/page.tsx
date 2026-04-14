@@ -15,6 +15,7 @@ interface Product {
   id: string; name: string; base_cost: number; category_id: string | null
   time_subli: number; time_dtf: number; time_vinyl: number
   press_equipment_id: string | null
+  variant_name: string | null; variant_options: string[]
 }
 interface Equipment { id: string; name: string; type: string }
 
@@ -91,6 +92,8 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
       name: modal.name, base_cost: modal.base_cost || 0, category_id: modal.category_id || null,
       time_subli: modal.time_subli || 0, time_dtf: modal.time_dtf || 0, time_vinyl: modal.time_vinyl || 0,
       press_equipment_id: modal.press_equipment_id || null,
+      variant_name: modal.variant_name?.trim() || null,
+      variant_options: (modal.variant_options || []).filter(Boolean),
     }
     if (modal.id) await supabase.from('products').update(payload).eq('id', modal.id)
     else await supabase.from('products').insert(payload)
@@ -383,6 +386,51 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
                       <NumericInput className="input-base text-center" value={(modal as Record<string, number>)[k as string] || 0} onChange={v => setModal({ ...modal, [k as string]: v })} /></div>
                   ))}
                 </div></div>
+
+              {/* Variantes */}
+              <div className="pt-4 border-t border-gray-100">
+                <label className="block text-sm font-semibold text-gray-600 mb-2">Variantes (opcional)</label>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Nombre de la variante</label>
+                    <input className="input-base text-sm" placeholder="Ej: Talle, Color, Modelo" value={modal.variant_name || ''} onChange={e => setModal({ ...modal, variant_name: e.target.value })} />
+                  </div>
+                  {modal.variant_name?.trim() && (
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Opciones</label>
+                      <div className="flex flex-wrap gap-1.5 mb-2">
+                        {(modal.variant_options || []).map((opt, i) => (
+                          <span key={i} className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 text-xs font-medium">
+                            {opt}
+                            <button type="button" onClick={() => setModal({ ...modal, variant_options: (modal.variant_options || []).filter((_, j) => j !== i) })} className="hover:text-red-500">×</button>
+                          </span>
+                        ))}
+                      </div>
+                      <div className="flex gap-2">
+                        <input id="variant-option-input" className="input-base text-sm flex-1" placeholder="Escribí una opción y presioná Enter"
+                          onKeyDown={e => {
+                            if (e.key === 'Enter' || e.key === ',') {
+                              e.preventDefault()
+                              const v = (e.target as HTMLInputElement).value.trim().replace(/,$/, '')
+                              if (v && !(modal.variant_options || []).includes(v)) {
+                                setModal({ ...modal, variant_options: [...(modal.variant_options || []), v] })
+                              }
+                              ;(e.target as HTMLInputElement).value = ''
+                            }
+                          }} />
+                        <button type="button" onClick={() => {
+                          const inp = document.getElementById('variant-option-input') as HTMLInputElement
+                          const v = inp?.value.trim()
+                          if (v && !(modal.variant_options || []).includes(v)) {
+                            setModal({ ...modal, variant_options: [...(modal.variant_options || []), v] })
+                            inp.value = ''
+                          }
+                        }} className="px-3 py-1.5 rounded-lg text-sm font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50">+</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
             <div className="flex gap-3 mt-6">
               <button onClick={() => setModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">{tc('cancel')}</button>

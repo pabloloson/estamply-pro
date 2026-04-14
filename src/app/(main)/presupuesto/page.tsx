@@ -73,6 +73,7 @@ export default function PresupuestoPage() {
   const [emailBody, setEmailBody] = useState('')
   const [linkCopied, setLinkCopied] = useState(false)
 
+  const [breakdownOpen, setBreakdownOpen] = useState<string | null>(null)
   const [editingItemId, setEditingItemId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<{ nombre: string; cantidad: number; precioUnit: number }>({ nombre: '', cantidad: 1, precioUnit: 0 })
   const [showAddPanel, setShowAddPanel] = useState<'catalog' | 'free' | null>(null)
@@ -130,6 +131,8 @@ export default function PresupuestoPage() {
       ganancia: ((i.subtotal as number) || 0) - ((i.costoUnit as number) || 0) * ((i.cantidad as number) || 1),
       notas: (i.notas as string) || undefined,
       origen: (i.origen as 'cotizador' | 'catalogo' | 'catalogo_web' | 'manual') || undefined,
+      variantName: (i.variantName as string) || undefined,
+      variantBreakdown: (i.variantBreakdown as Record<string, number>) || undefined,
     }))
     loadItems(mapped)
     setLoadedPresupuestoId(presId)
@@ -174,7 +177,7 @@ export default function PresupuestoPage() {
       const { data, error } = await supabase.from('presupuestos').insert({
         codigo, numero: quoteNumber, validez_dias: validezDias,
         client_id: clientId || null, client_name: clientDisplayName || null,
-        items: items.map(i => ({ tecnica: i.tecnica, nombre: i.nombre, cantidad: i.cantidad, precioUnit: i.precioUnit, precioSinDesc: i.precioSinDesc, subtotal: i.subtotal, notas: i.notas, origen: i.origen })),
+        items: items.map(i => ({ tecnica: i.tecnica, nombre: i.nombre, cantidad: i.cantidad, precioUnit: i.precioUnit, precioSinDesc: i.precioSinDesc, subtotal: i.subtotal, notas: i.notas, origen: i.origen, variantName: i.variantName, variantBreakdown: i.variantBreakdown })),
         total: totalVenta, condiciones, business_profile: bizProfile || {},
       }).select('id, codigo').single()
       if (error || !data) { setSaveStatus('error'); alert('Error al crear: ' + (error?.message || '')); return }
@@ -187,7 +190,7 @@ export default function PresupuestoPage() {
       return
     }
     setSaveStatus('saving')
-    const itemsData = items.map(i => ({ tecnica: i.tecnica, nombre: i.nombre, cantidad: i.cantidad, precioUnit: i.precioUnit, precioSinDesc: i.precioSinDesc, subtotal: i.subtotal, notas: i.notas, origen: i.origen }))
+    const itemsData = items.map(i => ({ tecnica: i.tecnica, nombre: i.nombre, cantidad: i.cantidad, precioUnit: i.precioUnit, precioSinDesc: i.precioSinDesc, subtotal: i.subtotal, notas: i.notas, origen: i.origen, variantName: i.variantName, variantBreakdown: i.variantBreakdown }))
     const { error } = await supabase.from('presupuestos').update({
       items: itemsData, total: totalVenta,
       client_id: clientId || null, client_name: clientDisplayName || null,
@@ -248,10 +251,11 @@ export default function PresupuestoPage() {
     const itemRows = items.map(item => {
       const hasTechnique = item.origen !== 'manual' && item.origen !== 'catalogo' && item.costoUnit > 0
       const techText = hasTechnique ? techniqueLabel(item.tecnica) : ''
+      const breakdownText = item.variantBreakdown ? Object.entries(item.variantBreakdown as Record<string, number>).filter(([,v]) => v > 0).map(([k, v]) => `${k} ×${v}`).join(' · ') : ''
       return `
       <tr>
         ${showTechCol ? `<td style="padding:10px 8px;font-size:12px;color:#333">${techText}</td>` : ''}
-        <td style="padding:10px 8px"><div style="font-weight:500">${item.nombre}</div>${item.notas ? `<div style="font-size:11px;color:#999">${item.notas}</div>` : ''}</td>
+        <td style="padding:10px 8px"><div style="font-weight:500">${item.nombre}</div>${item.notas ? `<div style="font-size:11px;color:#999">${item.notas}</div>` : ''}${breakdownText ? `<div style="font-size:10px;color:#999;margin-top:2px">${breakdownText}</div>` : ''}</td>
         <td style="padding:10px 8px;text-align:center">${item.cantidad}</td>
         <td style="padding:10px 8px;text-align:right">${fmtCurrency(item.precioUnit)}</td>
         <td style="padding:10px 8px;text-align:right;font-weight:600">${fmtCurrency(item.subtotal)}</td>
@@ -761,6 +765,25 @@ export default function PresupuestoPage() {
                       </div>
                       <p className="font-medium text-sm text-gray-800 mt-1">{item.nombre}</p>
                       <p className="text-xs text-gray-400 mt-0.5">{item.notas ? `${item.notas} — ` : ''}Cant: {item.cantidad} × {fmtCurrency(item.precioUnit)}</p>
+                      {item.variantName && (
+                        <div className="mt-2">
+                          <button type="button" onClick={() => setBreakdownOpen(breakdownOpen === item.id ? null : item.id)}
+                            className="text-xs text-purple-500 font-medium">
+                            📐 {breakdownOpen === item.id ? 'Cerrar' : `Desglosar por ${item.variantName.toLowerCase()}`}
+                          </button>
+                          {breakdownOpen === item.id && (
+                            <div className="mt-2 space-y-1.5 pl-2">
+                              {(item.variantBreakdown && Object.keys(item.variantBreakdown).length > 0) ? (
+                                <div className="text-xs text-gray-500">
+                                  {Object.entries(item.variantBreakdown).filter(([,v]) => v > 0).map(([k, v]) => `${k} ×${v}`).join(' · ')}
+                                </div>
+                              ) : (
+                                <p className="text-xs text-gray-400 italic">Sin desglose configurado</p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -805,6 +828,11 @@ export default function PresupuestoPage() {
                           <td className="py-3 pr-3 align-top">
                             <p className="font-semibold text-gray-800 text-sm">{item.nombre}</p>
                             {item.notas && <p className="text-[11px] text-gray-400 mt-0.5">{item.notas}</p>}
+                            {item.variantBreakdown && Object.keys(item.variantBreakdown).length > 0 && (
+                              <p className="text-[10px] text-gray-400 mt-0.5">
+                                {Object.entries(item.variantBreakdown).filter(([,v]) => v > 0).map(([k, v]) => `${k} ×${v}`).join(' · ')}
+                              </p>
+                            )}
                           </td>
                           <td className="py-3 text-center text-sm text-gray-600 font-medium align-top">{item.cantidad}</td>
                           <td className="py-3 text-right text-sm text-gray-600 align-top">{fmtCurrency(item.precioUnit)}</td>
