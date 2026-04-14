@@ -168,7 +168,7 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
 
         <div className="flex gap-1 mb-6">
           <button onClick={() => setTab('base')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'base' ? 'bg-gray-800 text-white shadow-md' : 'bg-gray-100 text-gray-600'}`}>{t('baseProducts')}</button>
-          <button onClick={() => setTab('insumos')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'insumos' ? 'text-white shadow-md' : 'bg-gray-100 text-gray-600'}`} style={tab === 'insumos' ? { background: '#00B894' } : {}}>{t('insumos')}</button>
+          <button onClick={() => setTab('insumos')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'insumos' ? 'text-white shadow-md' : 'bg-gray-100 text-gray-600'}`} style={tab === 'insumos' ? { background: '#6C5CE7' } : {}}>{t('insumos')}</button>
         </div>
       </>)}
 
@@ -261,7 +261,16 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
             </div>
           </div>
         )}
-        <div className="flex items-center justify-between mb-4">
+        {/* Mobile: dropdown filter + add */}
+        <div className="flex md:hidden items-center justify-between gap-3 mb-4">
+          <select value={filterTecnica} onChange={e => setFilterTecnica(e.target.value)}
+            className="input-base text-sm flex-1 max-w-[200px]">
+            {TECNICA_FILTER_TABS.map(tf => <option key={tf.id} value={tf.id}>{tf.label}</option>)}
+          </select>
+          <button onClick={() => openNewInsumo()} className="flex items-center gap-1.5 whitespace-nowrap text-xs px-3 py-2 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={14} /> Agregar</button>
+        </div>
+        {/* Desktop: tabs + add */}
+        <div className="hidden md:flex items-center justify-between mb-4">
           <div className="flex gap-1.5 flex-wrap">
             {TECNICA_FILTER_TABS.map(tf => (
               <button key={tf.id} onClick={() => setFilterTecnica(tf.id)}
@@ -269,7 +278,7 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
                 style={filterTecnica === tf.id ? { background: tf.color || '#374151' } : {}}>{tf.label}</button>
             ))}
           </div>
-          <button onClick={() => openNewInsumo()} className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#00B894' }}><Plus size={14} /> {tc('add')}</button>
+          <button onClick={() => openNewInsumo()} className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={14} /> {tc('add')}</button>
         </div>
         {/* Mobile cards */}
         <div className="md:hidden space-y-2">
@@ -513,7 +522,7 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
             </div>
             <div className="flex gap-3 mt-6">
               <button onClick={() => setInsModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">{tc('cancel')}</button>
-              <button onClick={saveInsumo} disabled={saving || !insModal.nombre?.trim()} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#00B894' }}>{saving ? tc('saving') : tc('save')}</button>
+              <button onClick={saveInsumo} disabled={saving || !insModal.nombre?.trim()} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#6C5CE7' }}>{saving ? tc('saving') : tc('save')}</button>
             </div>
           </div>
         </div>

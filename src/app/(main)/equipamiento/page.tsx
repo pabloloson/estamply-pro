@@ -95,8 +95,15 @@ export default function EquipamientoPage() {
         </button>
       </div>
 
-      {/* Filter tabs */}
-      <div className="flex gap-1.5 mb-4 flex-wrap">
+      {/* Mobile: dropdown filter */}
+      <div className="flex md:hidden items-center gap-3 mb-4">
+        <select value={filter} onChange={e => setFilter(e.target.value)}
+          className="input-base text-sm flex-1 max-w-[200px]">
+          {CLASIF_TABS.map(tab => <option key={tab.id} value={tab.id}>{tab.label}</option>)}
+        </select>
+      </div>
+      {/* Desktop: tabs */}
+      <div className="hidden md:flex gap-1.5 mb-4 flex-wrap">
         {CLASIF_TABS.map(tab => (
           <button key={tab.id} onClick={() => setFilter(tab.id)}
             className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${filter === tab.id ? 'text-white' : 'bg-gray-100 text-gray-500'}`}
