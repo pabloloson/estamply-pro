@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -78,7 +78,7 @@ export default function PresupuestoPage() {
   const [editForm, setEditForm] = useState<{ nombre: string; cantidad: number; precioUnit: number }>({ nombre: '', cantidad: 1, precioUnit: 0 })
   const [showAddPanel, setShowAddPanel] = useState<'catalog' | 'free' | null>(null)
   const [freeItem, setFreeItem] = useState({ nombre: '', cantidad: 1, precioUnit: 0 })
-  const [catalogProducts, setCatalogProducts] = useState<Array<{ id: string; name: string; selling_price: number; photos: string[]; category_name?: string }>>([])
+  const [catalogProducts, setCatalogProducts] = useState<Array<{ id: string; name: string; selling_price: number; photos: string[]; category_name?: string; variant_name?: string; variant_options?: string[] }>>([])
   const [catalogSearch, setCatalogSearch] = useState('')
   const [catalogQty, setCatalogQty] = useState(1)
   const [selectedCatalogProduct, setSelectedCatalogProduct] = useState<{ id: string; name: string; selling_price: number } | null>(null)
@@ -228,8 +228,20 @@ export default function PresupuestoPage() {
   function addCatalogItem() {
     if (!selectedCatalogProduct) return
     const qty = Math.max(1, catalogQty)
-    addItem({ tecnica: 'subli', nombre: selectedCatalogProduct.name, costoUnit: 0, precioUnit: selectedCatalogProduct.selling_price, precioSinDesc: selectedCatalogProduct.selling_price, cantidad: qty, subtotal: qty * selectedCatalogProduct.selling_price, ganancia: qty * selectedCatalogProduct.selling_price, origen: 'catalogo' })
+    const fullProduct = catalogProducts.find(p => p.id === selectedCatalogProduct.id)
+    addItem({ tecnica: 'subli', nombre: selectedCatalogProduct.name, costoUnit: 0, precioUnit: selectedCatalogProduct.selling_price, precioSinDesc: selectedCatalogProduct.selling_price, cantidad: qty, subtotal: qty * selectedCatalogProduct.selling_price, ganancia: qty * selectedCatalogProduct.selling_price, origen: 'catalogo', variantName: fullProduct?.variant_name || undefined })
     setSelectedCatalogProduct(null); setCatalogQty(1); setCatalogSearch(''); setShowAddPanel(null)
+  }
+  function openBreakdown(item: import('@/features/presupuesto/types').PresupuestoItem) {
+    if (!item.variantBreakdown || Object.keys(item.variantBreakdown).length === 0) {
+      const product = catalogProducts.find(p => p.name === item.nombre)
+      if (product?.variant_options?.length) {
+        const breakdown: Record<string, number> = {}
+        product.variant_options.forEach(opt => { breakdown[opt] = 0 })
+        updateItem(item.id, { variantBreakdown: breakdown })
+      }
+    }
+    setBreakdownOpen(item.id)
   }
   async function reloadList() {
     const { data: saved } = await supabase.from('presupuestos').select('id,codigo,numero,client_name,client_id,total,origen,created_at').order('created_at', { ascending: false }).limit(20)
@@ -340,7 +352,7 @@ export default function PresupuestoPage() {
 
   async function loadCatalog() {
     if (catalogProducts.length > 0) return
-    const { data } = await supabase.from('catalog_products').select('id, name, selling_price, photos').eq('visible_in_catalog', true).order('name')
+    const { data } = await supabase.from('catalog_products').select('id, name, selling_price, photos, variant_name, variant_options').eq('visible_in_catalog', true).order('name')
     if (data) setCatalogProducts(data as typeof catalogProducts)
   }
 
@@ -379,7 +391,7 @@ export default function PresupuestoPage() {
       if (cls) setClients(cls)
       if (saved) setSavedPresupuestos(saved as typeof savedPresupuestos)
       if (prof) setBizProfile(prof)
-      const { data: catProds } = await supabase.from('catalog_products').select('id, name, selling_price, photos, category_name').eq('visible', true).order('name')
+      const { data: catProds } = await supabase.from('catalog_products').select('id, name, selling_price, photos, category_name, variant_name, variant_options').eq('visible', true).order('name')
       if (catProds) setCatalogProducts(catProds as typeof catalogProducts)
       if (wsData?.settings) {
         const s = { ...DEFAULT_SETTINGS, ...(wsData.settings as Partial<WorkshopSettings>) }
@@ -765,23 +777,45 @@ export default function PresupuestoPage() {
                       </div>
                       <p className="font-medium text-sm text-gray-800 mt-1">{item.nombre}</p>
                       <p className="text-xs text-gray-400 mt-0.5">{item.notas ? `${item.notas} — ` : ''}Cant: {item.cantidad} × {fmtCurrency(item.precioUnit)}</p>
-                      {item.variantName && (
-                        <div className="mt-2">
-                          <button type="button" onClick={() => setBreakdownOpen(breakdownOpen === item.id ? null : item.id)}
-                            className="text-xs text-purple-500 font-medium">
-                            📐 {breakdownOpen === item.id ? 'Cerrar' : `Desglosar por ${item.variantName.toLowerCase()}`}
+                      {item.variantName && breakdownOpen !== item.id && (() => {
+                        const hasValues = item.variantBreakdown && Object.values(item.variantBreakdown).some(v => v > 0)
+                        return hasValues ? (
+                          <div className="mt-2 flex items-center gap-2">
+                            <p className="text-xs text-gray-400">{Object.entries(item.variantBreakdown || {}).filter(([,v]) => v > 0).map(([k,v]) => `${k} ×${v}`).join(' · ')}</p>
+                            <button onClick={() => openBreakdown(item)} className="text-xs text-purple-500">✏️</button>
+                          </div>
+                        ) : (
+                          <button onClick={() => openBreakdown(item)} className="text-xs text-purple-500 font-medium mt-2">
+                            📐 Desglosar por {item.variantName?.toLowerCase()}
                           </button>
-                          {breakdownOpen === item.id && (
-                            <div className="mt-2 space-y-1.5 pl-2">
-                              {(item.variantBreakdown && Object.keys(item.variantBreakdown).length > 0) ? (
-                                <div className="text-xs text-gray-500">
-                                  {Object.entries(item.variantBreakdown).filter(([,v]) => v > 0).map(([k, v]) => `${k} ×${v}`).join(' · ')}
-                                </div>
-                              ) : (
-                                <p className="text-xs text-gray-400 italic">Sin desglose configurado</p>
-                              )}
+                        )
+                      })()}
+                      {item.variantName && breakdownOpen === item.id && (
+                        <div className="mt-2 space-y-1.5 p-3 rounded-lg bg-gray-50">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-xs font-semibold text-gray-500">Desglose por {item.variantName?.toLowerCase()}:</span>
+                            <button onClick={() => setBreakdownOpen(null)} className="text-xs text-gray-400">Cerrar</button>
+                          </div>
+                          {(Object.keys(item.variantBreakdown || {}).length > 0
+                            ? Object.keys(item.variantBreakdown!)
+                            : catalogProducts.find(p => p.name === item.nombre)?.variant_options || []
+                          ).map(opt => (
+                            <div key={opt} className="flex items-center justify-between">
+                              <span className="text-xs text-gray-600">{opt}</span>
+                              <input type="number" min={0} className="input-base text-xs w-16 text-center"
+                                value={(item.variantBreakdown || {})[opt] || 0}
+                                onChange={e => updateItem(item.id, { variantBreakdown: { ...(item.variantBreakdown || {}), [opt]: Number(e.target.value) || 0 } })} />
                             </div>
-                          )}
+                          ))}
+                          {(() => {
+                            const total = Object.values(item.variantBreakdown || {}).reduce((s, v) => s + v, 0)
+                            const diff = total - item.cantidad
+                            return (
+                              <p className={`text-xs font-medium mt-1 ${diff === 0 ? 'text-green-600' : diff < 0 ? 'text-amber-500' : 'text-red-500'}`}>
+                                Total: {total} / {item.cantidad} {diff === 0 ? '✅' : diff < 0 ? `— Faltan ${-diff}` : `— Sobran ${diff}`}
+                              </p>
+                            )
+                          })()}
                         </div>
                       )}
                     </div>
@@ -808,6 +842,7 @@ export default function PresupuestoPage() {
                               : <span className="text-xs font-bold px-2 py-0.5 rounded-full whitespace-nowrap" style={{ background: `${TECHNIQUE_COLORS[item.tecnica]}18`, color: TECHNIQUE_COLORS[item.tecnica] }}>{TECHNIQUE_LABELS[item.tecnica]}</span>}
                           </td>
                           <td className="py-3 pr-3 align-top"><input type="text" className="input-base text-sm" value={editForm.nombre} onChange={e => setEditForm({ ...editForm, nombre: e.target.value })} /></td>
+
                           <td className="py-3 align-top"><input type="number" className="input-base text-sm w-16 text-center" min={1} value={editForm.cantidad} onChange={e => setEditForm({ ...editForm, cantidad: Number(e.target.value) })} /></td>
                           <td className="py-3 align-top"><input type="number" className="input-base text-sm w-24 text-right" min={0} value={editForm.precioUnit} onChange={e => setEditForm({ ...editForm, precioUnit: Number(e.target.value) })} /></td>
                           <td className="py-3 text-right font-bold text-gray-800 align-top">{fmtCurrency(editForm.cantidad * editForm.precioUnit)}</td>
@@ -819,7 +854,8 @@ export default function PresupuestoPage() {
                           </td>
                         </tr>
                       ) : (
-                        <tr key={item.id} style={{ borderBottom: '1px solid #F9FAFB' }}>
+                        <React.Fragment key={item.id}>
+                        <tr style={{ borderBottom: '1px solid #F9FAFB' }}>
                           <td className="py-3 pr-3 align-top">
                             {item.origen === 'manual' ? null
                               : item.origen === 'catalogo' ? <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: '#6C5CE715', color: '#6C5CE7' }}>Catálogo</span>
@@ -828,11 +864,19 @@ export default function PresupuestoPage() {
                           <td className="py-3 pr-3 align-top">
                             <p className="font-semibold text-gray-800 text-sm">{item.nombre}</p>
                             {item.notas && <p className="text-[11px] text-gray-400 mt-0.5">{item.notas}</p>}
-                            {item.variantBreakdown && Object.keys(item.variantBreakdown).length > 0 && (
-                              <p className="text-[10px] text-gray-400 mt-0.5">
-                                {Object.entries(item.variantBreakdown).filter(([,v]) => v > 0).map(([k, v]) => `${k} ×${v}`).join(' · ')}
-                              </p>
-                            )}
+                            {item.variantName && breakdownOpen !== item.id && (() => {
+                              const hasValues = item.variantBreakdown && Object.values(item.variantBreakdown).some(v => v > 0)
+                              return hasValues ? (
+                                <div className="mt-0.5 flex items-center gap-2">
+                                  <p className="text-[10px] text-gray-400">{Object.entries(item.variantBreakdown || {}).filter(([,v]) => v > 0).map(([k,v]) => `${k} ×${v}`).join(' · ')}</p>
+                                  <button onClick={() => openBreakdown(item)} className="text-[10px] text-purple-500 no-print">✏️</button>
+                                </div>
+                              ) : (
+                                <button onClick={() => openBreakdown(item)} className="text-[10px] text-purple-500 font-medium mt-0.5 no-print">
+                                  📐 Desglosar por {item.variantName?.toLowerCase()}
+                                </button>
+                              )
+                            })()}
                           </td>
                           <td className="py-3 text-center text-sm text-gray-600 font-medium align-top">{item.cantidad}</td>
                           <td className="py-3 text-right text-sm text-gray-600 align-top">{fmtCurrency(item.precioUnit)}</td>
@@ -844,7 +888,41 @@ export default function PresupuestoPage() {
                             </div>
                           </td>
                         </tr>
-                      ))}
+                        {breakdownOpen === item.id && item.variantName && (
+                          <tr key={`${item.id}-breakdown`} style={{ borderBottom: '1px solid #F9FAFB' }}>
+                            <td colSpan={6} className="py-2 px-3">
+                              <div className="space-y-1.5 p-3 rounded-lg bg-gray-50">
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="text-xs font-semibold text-gray-500">Desglose por {item.variantName?.toLowerCase()}:</span>
+                                  <button onClick={() => setBreakdownOpen(null)} className="text-xs text-gray-400">Cerrar</button>
+                                </div>
+                                <div className="flex flex-wrap gap-3">
+                                  {(Object.keys(item.variantBreakdown || {}).length > 0
+                                    ? Object.keys(item.variantBreakdown!)
+                                    : catalogProducts.find(p => p.name === item.nombre)?.variant_options || []
+                                  ).map(opt => (
+                                    <div key={opt} className="flex items-center gap-2">
+                                      <span className="text-xs text-gray-600">{opt}</span>
+                                      <input type="number" min={0} className="input-base text-xs w-16 text-center"
+                                        value={(item.variantBreakdown || {})[opt] || 0}
+                                        onChange={e => updateItem(item.id, { variantBreakdown: { ...(item.variantBreakdown || {}), [opt]: Number(e.target.value) || 0 } })} />
+                                    </div>
+                                  ))}
+                                </div>
+                                {(() => {
+                                  const total = Object.values(item.variantBreakdown || {}).reduce((s, v) => s + v, 0)
+                                  const diff = total - item.cantidad
+                                  return (
+                                    <p className={`text-xs font-medium mt-1 ${diff === 0 ? 'text-green-600' : diff < 0 ? 'text-amber-500' : 'text-red-500'}`}>
+                                      Total: {total} / {item.cantidad} {diff === 0 ? '✅' : diff < 0 ? `— Faltan ${-diff}` : `— Sobran ${diff}`}
+                                    </p>
+                                  )
+                                })()}
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>))}
                     </tbody>
                   </table>
                 </div>
