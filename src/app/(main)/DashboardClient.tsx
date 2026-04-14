@@ -50,7 +50,7 @@ export default function DashboardClient({ shopName, orders, payments, presupuest
   // Welcome panel for new workshops
   const isNewWorkshop = presupuestos.length === 0 && orders.length === 0
   const steps = [
-    { icon: '📦', label: 'Cargá tus materiales', desc: 'Papel, tinta, film — con tus precios reales.', href: '/settings/materiales', done: (setupCounts?.materials || 0) > 0 },
+    { icon: '📦', label: 'Cargá tus insumos', desc: 'Papel, tinta, film — con tus precios reales.', href: '/settings/insumos', done: (setupCounts?.materials || 0) > 0 },
     { icon: '🖨', label: 'Cargá tu equipamiento', desc: 'Impresora, plancha — para calcular amortización.', href: '/settings/equipamiento', done: (setupCounts?.equipment || 0) > 0 },
     { icon: '👕', label: 'Cargá tus productos', desc: 'Remeras, tazas, lo que vendas.', href: '/catalogo', done: (setupCounts?.products || 0) > 0 },
     { icon: '🧮', label: 'Cotizá tu primer trabajo', desc: 'Con todo configurado, el cotizador calcula costos y ganancia automáticamente.', href: '/cotizador', done: presupuestos.length > 0 },

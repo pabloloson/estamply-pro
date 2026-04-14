@@ -83,25 +83,6 @@ export default function SettingsPage() {
   const activeSection = sectionFromUrl || (typeof window !== 'undefined' && window.innerWidth >= 768 ? 'perfil' : null)
   const [openDiscTecs, setOpenDiscTecs] = useState<string[]>(['descuentos_subli'])
 
-  const CONFIG_SECTIONS = [
-    { group: 'Mi negocio', items: [{ id: 'perfil', label: 'Perfil' }] },
-    { group: 'Producción', items: [
-      { id: 'materiales', label: 'Materiales' },
-      { id: 'equipamiento', label: 'Equipamiento' },
-      { id: 'mano-obra', label: 'Mano de obra' },
-      { id: 'tecnicas', label: 'Técnicas' },
-    ]},
-    { group: 'Ventas', items: [
-      { id: 'descuentos', label: 'Descuentos' },
-      { id: 'medios-pago', label: 'Medios de pago' },
-      { id: 'condiciones', label: 'Condiciones' },
-    ]},
-    { group: 'Tienda online', items: [
-      { id: 'catalogo', label: 'Catálogo web' },
-      { id: 'guia-talles', label: 'Guía de talles' },
-    ]},
-    { group: 'Equipo', items: [{ id: 'usuarios', label: 'Usuarios y permisos' }] },
-  ]
 
   useEffect(() => {
     async function load() {
@@ -596,7 +577,7 @@ export default function SettingsPage() {
       </div>
       </>)}
 
-      {activeSection === 'materiales' && (
+      {(activeSection === 'productos' || activeSection === 'insumos' || activeSection === 'materiales') && (
         <div>
           <Suspense fallback={<div className="flex items-center justify-center h-32"><div className="w-6 h-6 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>}>
             <MaterialesPage />
