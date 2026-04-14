@@ -76,7 +76,7 @@ export default function SettingsPage() {
   ])
   const logoInputRef = useRef<HTMLInputElement>(null)
   const [activeSection, setActiveSection] = useState<string | null>(typeof window !== 'undefined' && window.innerWidth >= 768 ? 'perfil' : null)
-  const [openDiscTec, setOpenDiscTec] = useState<string | null>('descuentos_subli')
+  const [openDiscTecs, setOpenDiscTecs] = useState<string[]>(['descuentos_subli'])
 
   const CONFIG_SECTIONS = [
     { group: 'Mi negocio', items: [{ id: 'perfil', label: 'Perfil' }] },
@@ -506,8 +506,10 @@ export default function SettingsPage() {
         const DISC_TECNICAS = [
           { key: 'descuentos_subli', label: 'Sublimación', color: '#6C5CE7' },
           { key: 'descuentos_dtf', label: 'DTF Textil', color: '#E17055' },
+          { key: 'descuentos_dtf_uv', label: 'DTF UV', color: '#00B894' },
           { key: 'descuentos_vinyl', label: 'Vinilo', color: '#E84393' },
-        ] as const
+          { key: 'descuentos_serigrafia', label: 'Serigrafía', color: '#FDCB6E' },
+        ]
         type DiscKey = string
         const getTiers = (k: DiscKey) => (ws as unknown as Record<string, unknown>)[k] as import('@/features/presupuesto/types').DiscountTier[] || []
         const setTiers = (k: DiscKey, tiers: import('@/features/presupuesto/types').DiscountTier[]) => setWs({ ...ws, [k]: tiers } as WorkshopSettings)
@@ -571,11 +573,11 @@ export default function SettingsPage() {
             {/* Per-technique accordions */}
             {!ws.descuento_global_enabled && (
               <div className="space-y-2 mb-6">
-                {DISC_TECNICAS.map((dt, idx) => {
-                  const isOpen = (openDiscTec ?? DISC_TECNICAS[0].key) === dt.key
+                {DISC_TECNICAS.map((dt) => {
+                  const isOpen = openDiscTecs.includes(dt.key)
                   return (
                     <div key={dt.key} className="card overflow-hidden">
-                      <button type="button" onClick={() => setOpenDiscTec(isOpen ? null : dt.key)}
+                      <button type="button" onClick={() => setOpenDiscTecs(isOpen ? openDiscTecs.filter(k => k !== dt.key) : [...openDiscTecs, dt.key])}
                         className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors">
                         <div className="flex items-center gap-2">
                           <div className="w-6 h-6 rounded-md flex items-center justify-center text-[10px] font-bold text-white" style={{ background: dt.color }}>{dt.label[0]}</div>
