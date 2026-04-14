@@ -390,46 +390,71 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
               {/* Variantes */}
               <div className="pt-4 border-t border-gray-100">
                 <label className="block text-sm font-semibold text-gray-600 mb-2">Variantes (opcional)</label>
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">Nombre de la variante</label>
-                    <input className="input-base text-sm" placeholder="Ej: Talle, Color, Modelo" value={modal.variant_name || ''} onChange={e => setModal({ ...modal, variant_name: e.target.value })} />
-                  </div>
-                  {modal.variant_name?.trim() && (
-                    <div>
-                      <label className="block text-xs text-gray-500 mb-1">Opciones</label>
-                      <div className="flex flex-wrap gap-1.5 mb-2">
-                        {(modal.variant_options || []).map((opt, i) => (
-                          <span key={i} className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 text-xs font-medium">
-                            {opt}
-                            <button type="button" onClick={() => setModal({ ...modal, variant_options: (modal.variant_options || []).filter((_, j) => j !== i) })} className="hover:text-red-500">×</button>
-                          </span>
-                        ))}
-                      </div>
-                      <div className="flex gap-2">
-                        <input id="variant-option-input" className="input-base text-sm flex-1" placeholder="Escribí una opción y presioná Enter"
-                          onKeyDown={e => {
-                            if (e.key === 'Enter' || e.key === ',') {
-                              e.preventDefault()
-                              const v = (e.target as HTMLInputElement).value.trim().replace(/,$/, '')
-                              if (v && !(modal.variant_options || []).includes(v)) {
-                                setModal({ ...modal, variant_options: [...(modal.variant_options || []), v] })
-                              }
-                              ;(e.target as HTMLInputElement).value = ''
-                            }
-                          }} />
-                        <button type="button" onClick={() => {
-                          const inp = document.getElementById('variant-option-input') as HTMLInputElement
-                          const v = inp?.value.trim()
-                          if (v && !(modal.variant_options || []).includes(v)) {
-                            setModal({ ...modal, variant_options: [...(modal.variant_options || []), v] })
-                            inp.value = ''
-                          }
-                        }} className="px-3 py-1.5 rounded-lg text-sm font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50">+</button>
-                      </div>
+                {(() => {
+                  const PRESETS = [
+                    { value: 'none', label: 'Sin variantes', options: [] as string[] },
+                    { value: 'Talle', label: 'Talle', options: ['XS', 'S', 'M', 'L', 'XL', 'XXL'] },
+                    { value: 'Color', label: 'Color', options: ['Blanco', 'Negro', 'Gris', 'Rojo', 'Azul', 'Verde', 'Amarillo', 'Rosa'] },
+                    { value: 'Tamaño', label: 'Tamaño', options: ['Chico', 'Mediano', 'Grande'] },
+                    { value: 'custom', label: 'Personalizado', options: [] as string[] },
+                  ]
+                  const currentPreset = !modal.variant_name ? 'none' : PRESETS.find(p => p.value === modal.variant_name)?.value || 'custom'
+
+                  const handlePresetChange = (val: string) => {
+                    if (val === 'none') { setModal({ ...modal, variant_name: null, variant_options: [] }); return }
+                    if (val === 'custom') { setModal({ ...modal, variant_name: '', variant_options: [] }); return }
+                    const preset = PRESETS.find(p => p.value === val)
+                    if (preset) setModal({ ...modal, variant_name: preset.value, variant_options: [...preset.options] })
+                  }
+
+                  const addOption = (v: string) => {
+                    if (v && !(modal.variant_options || []).includes(v)) setModal({ ...modal, variant_options: [...(modal.variant_options || []), v] })
+                  }
+
+                  return (
+                    <div className="space-y-3">
+                      <select className="input-base text-sm" value={currentPreset} onChange={e => handlePresetChange(e.target.value)}>
+                        {PRESETS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+                      </select>
+
+                      {currentPreset === 'custom' && (
+                        <div>
+                          <label className="block text-xs text-gray-500 mb-1">Nombre de la variante *</label>
+                          <input className="input-base text-sm" placeholder="Ej: Material, Acabado, Versión" value={modal.variant_name || ''} onChange={e => setModal({ ...modal, variant_name: e.target.value })} />
+                        </div>
+                      )}
+
+                      {currentPreset !== 'none' && (
+                        <div>
+                          <label className="block text-xs text-gray-500 mb-1">Opciones</label>
+                          <div className="flex flex-wrap gap-1.5 mb-2">
+                            {(modal.variant_options || []).map((opt, i) => (
+                              <span key={i} className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 text-xs font-medium">
+                                {opt}
+                                <button type="button" onClick={() => setModal({ ...modal, variant_options: (modal.variant_options || []).filter((_, j) => j !== i) })} className="hover:text-red-500">×</button>
+                              </span>
+                            ))}
+                          </div>
+                          <div className="flex gap-2">
+                            <input className="input-base text-sm flex-1" placeholder="Agregar opción + Enter"
+                              onKeyDown={e => {
+                                if (e.key === 'Enter' || e.key === ',') {
+                                  e.preventDefault()
+                                  const v = (e.target as HTMLInputElement).value.trim().replace(/,$/, '')
+                                  addOption(v); (e.target as HTMLInputElement).value = ''
+                                }
+                              }} />
+                            <button type="button" onClick={e => {
+                              const inp = (e.target as HTMLElement).previousElementSibling as HTMLInputElement
+                              if (inp) { addOption(inp.value.trim()); inp.value = '' }
+                            }} className="px-3 py-1.5 rounded-lg text-sm font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50">+</button>
+                          </div>
+                          <p className="text-[10px] text-gray-400 mt-1">Eliminá los que no apliquen o agregá nuevos.</p>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
+                  )
+                })()}
               </div>
             </div>
             <div className="flex gap-3 mt-6">
