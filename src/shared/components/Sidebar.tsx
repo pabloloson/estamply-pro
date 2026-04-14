@@ -21,7 +21,7 @@ interface SidebarProps {
 export function Sidebar({ workshopName = 'Mi Taller' }: SidebarProps) {
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
-  const { items } = usePresupuesto()
+  const { items, clearItems } = usePresupuesto()
   const { canAccess, isOwner } = usePermissions()
   const t = useTranslations('sidebar')
 
@@ -33,15 +33,17 @@ export function Sidebar({ workshopName = 'Mi Taller' }: SidebarProps) {
     icon: Icon,
     label,
     badge,
+    onNav,
   }: {
     href: string
     icon: React.ElementType
     label: string
     badge?: number
+    onNav?: () => void
   }) => (
     <Link
       href={href}
-      onClick={() => setMobileOpen(false)}
+      onClick={() => { setMobileOpen(false); onNav?.() }}
       className={`sidebar-link ${isActive(href) ? 'active' : ''}`}
     >
       <Icon size={17} />
@@ -74,7 +76,7 @@ export function Sidebar({ workshopName = 'Mi Taller' }: SidebarProps) {
       <nav className="px-3 pt-4 space-y-0.5">
         {canAccess('inicio') && <NavLink href="/dashboard" icon={LayoutDashboard} label={t('home')} />}
         {canAccess('cotizador') && <NavLink href="/cotizador" icon={Calculator} label={t('quoter')} />}
-        {canAccess('presupuestos') && <NavLink href="/presupuesto" icon={FileText} label={t('quotes')} badge={items.length} />}
+        {canAccess('presupuestos') && <NavLink href="/presupuesto" icon={FileText} label={t('quotes')} badge={items.length} onNav={clearItems} />}
         {canAccess('pedidos') && <NavLink href="/orders" icon={ShoppingBag} label={t('orders')} />}
         {canAccess('clientes') && <NavLink href="/clients" icon={Users} label={t('clients')} />}
         {canAccess('catalogo') && <NavLink href="/catalogo" icon={Package} label={t('catalog')} />}
