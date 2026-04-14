@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Calculator, ShoppingBag, Users, Package } from 'lucide-react'
+import { Calculator, ShoppingBag, Users, Package, Check } from 'lucide-react'
 import { useTranslations } from '@/shared/hooks/useTranslations'
 import { useLocale } from '@/shared/context/LocaleContext'
 import { usePermissions } from '@/shared/context/PermissionsContext'
@@ -11,6 +11,7 @@ interface Props {
   orders: Record<string, unknown>[]
   payments: Record<string, unknown>[]
   presupuestos: Record<string, unknown>[]
+  setupCounts?: { materials: number; equipment: number; products: number }
 }
 
 // fmt moved to useLocale().fmt
@@ -18,7 +19,7 @@ interface Props {
 const SL: Record<string, string> = { pending: 'Pendiente', production: 'En producción', ready: 'Listo' }
 const SC: Record<string, string> = { pending: '#FDCB6E', production: '#6C5CE7', ready: '#00B894' }
 
-export default function DashboardClient({ shopName, orders, payments, presupuestos }: Props) {
+export default function DashboardClient({ shopName, orders, payments, presupuestos, setupCounts }: Props) {
   const t = useTranslations('dashboard')
   const ts = useTranslations('sidebar')
   const { fmt } = useLocale()
@@ -45,6 +46,50 @@ export default function DashboardClient({ shopName, orders, payments, presupuest
   active.forEach(o => { const s = o.status as keyof typeof countBy; if (s in countBy) countBy[s]++ })
 
   const hasAlerts = overdue.length > 0 || webPres.length > 0 || thisWeek.length > 0 || totalPorCobrar > 0
+
+  // Welcome panel for new workshops
+  const isNewWorkshop = presupuestos.length === 0 && orders.length === 0
+  const steps = [
+    { icon: '📦', label: 'Cargá tus materiales', desc: 'Papel, tinta, film — con tus precios reales.', href: '/settings', done: (setupCounts?.materials || 0) > 0 },
+    { icon: '🖨', label: 'Cargá tu equipamiento', desc: 'Impresora, plancha — para calcular amortización.', href: '/settings', done: (setupCounts?.equipment || 0) > 0 },
+    { icon: '👕', label: 'Cargá tus productos', desc: 'Remeras, tazas, lo que vendas.', href: '/catalogo', done: (setupCounts?.products || 0) > 0 },
+    { icon: '🧮', label: 'Cotizá tu primer trabajo', desc: 'Con todo configurado, el cotizador calcula costos y ganancia automáticamente.', href: '/cotizador', done: presupuestos.length > 0 },
+  ]
+
+  if (isNewWorkshop) {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <div className="mb-8 text-center">
+          <h1 className="text-2xl font-black text-gray-900">¡Bienvenido a Estamply! 👋</h1>
+          <p className="text-gray-500 mt-2">Configurá tu taller para empezar a cotizar con precisión.</p>
+        </div>
+        <div className="space-y-3">
+          {steps.map((step, i) => {
+            const isFirst = !step.done && steps.slice(0, i).every(s => s.done)
+            return (
+              <Link key={i} href={step.href}
+                className={`block p-5 rounded-xl border-2 transition-all ${step.done ? 'border-green-100 bg-green-50/50 opacity-70' : isFirst ? 'border-purple-200 bg-white shadow-sm' : 'border-gray-100 bg-white'}`}>
+                <div className="flex items-start gap-4">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0 ${step.done ? 'bg-green-100' : isFirst ? 'bg-purple-50' : 'bg-gray-50'}`}>
+                    {step.done ? <Check size={18} className="text-green-600" /> : step.icon}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold text-gray-400 uppercase">Paso {i + 1}</span>
+                      {step.done && <span className="text-[10px] font-bold text-green-600">Completado</span>}
+                    </div>
+                    <p className={`font-semibold text-sm ${step.done ? 'text-gray-500' : 'text-gray-800'}`}>{step.label}</p>
+                    {!step.done && <p className="text-xs text-gray-400 mt-0.5">{step.desc}</p>}
+                  </div>
+                  {!step.done && <span className="text-gray-300 mt-2">→</span>}
+                </div>
+              </Link>
+            )
+          })}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="max-w-5xl mx-auto">

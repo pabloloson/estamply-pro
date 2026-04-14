@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { TrendingUp, TrendingDown, ShoppingBag, FileText, DollarSign, BarChart3, Download, FileDown } from 'lucide-react'
+import EmptyState from '@/shared/components/EmptyState'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts'
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
@@ -232,6 +233,8 @@ export default function EstadisticasPage() {
   }
 
   if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>
+
+  if (orders.length === 0 && presupuestos.length === 0) return <EmptyState icon="📊" title="Todavía no hay datos para mostrar." description="Las estadísticas se generan a partir de tus presupuestos y pedidos. Empezá a cotizar y vas a ver tus métricas acá." actionLabel="Ir al Cotizador" actionHref="/cotizador" />
 
   return (
     <div className="max-w-5xl mx-auto" id="stats-content">

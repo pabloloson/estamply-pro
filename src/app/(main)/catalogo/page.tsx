@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Plus, Pencil, Trash2, X, Eye, EyeOff, AlertTriangle, Upload, Image as ImageIcon, FolderOpen } from 'lucide-react'
+import EmptyState from '@/shared/components/EmptyState'
 import type { Category } from '@/features/taller/types'
 import CategoryModal from '@/features/taller/components/CategoryModal'
 import NumericInput from '@/shared/components/NumericInput'
@@ -220,7 +221,7 @@ export default function CatalogoPage() {
             </div>
           )
         })}
-        {filtered.length === 0 && <div className="text-center py-12 text-gray-400">No hay productos en esta vista.</div>}
+        {filtered.length === 0 && (catalogProducts.length === 0 ? <EmptyState icon="👕" title="Cargá los productos que vendés." description="Remeras, tazas, gorras, fundas — cada producto con su costo y la plancha que necesita." actionLabel="+ Agregar producto" onAction={() => setCatModal({})} /> : <div className="text-center py-12 text-gray-400">No hay productos en esta vista.</div>)}
       </div>
 
       {/* Product table */}
@@ -276,7 +277,7 @@ export default function CatalogoPage() {
               )
             })}
           </tbody></table>
-          {filtered.length === 0 && <div className="text-center py-12 text-gray-400">No hay productos en esta vista.</div>}
+          {filtered.length === 0 && (catalogProducts.length === 0 ? <EmptyState icon="👕" title="Cargá los productos que vendés." description="Remeras, tazas, gorras, fundas — cada producto con su costo y la plancha que necesita." actionLabel="+ Agregar producto" onAction={() => setCatModal({})} /> : <div className="text-center py-12 text-gray-400">No hay productos en esta vista.</div>)}
         </div>
       </div>
 

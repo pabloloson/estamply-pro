@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { ChevronDown, ChevronUp, MessageCircle, Trash2, Calendar, Plus, LayoutList, LayoutGrid, X, ExternalLink, Printer, Search } from 'lucide-react'
+import EmptyState from '@/shared/components/EmptyState'
 import { useTranslations } from '@/shared/hooks/useTranslations'
 import { useLocale } from '@/shared/context/LocaleContext'
 import { usePermissions } from '@/shared/context/PermissionsContext'
@@ -454,7 +455,7 @@ export default function OrdersPage() {
         </div>
       </div>
 
-      {orders.length === 0 ? <div className="card flex flex-col items-center justify-center py-16"><p className="text-gray-400 text-sm">No hay pedidos todavía.</p></div>
+      {orders.length === 0 ? <EmptyState icon="📦" title="Todavía no tenés pedidos." description="Los pedidos se crean cuando un cliente aprueba un presupuesto." actionLabel="Ir a Presupuestos" actionHref="/presupuesto" />
       : view === 'list' ? (
         <div className="space-y-6">
           {activos.length > 0 && <div>

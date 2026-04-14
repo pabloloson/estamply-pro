@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Plus, Pencil, Trash2, X, Users, Search, MessageCircle, Upload, Download, MoreVertical } from 'lucide-react'
+import EmptyState from '@/shared/components/EmptyState'
 import { useTranslations } from '@/shared/hooks/useTranslations'
 import { useLocale } from '@/shared/context/LocaleContext'
 import * as XLSX from 'xlsx'
@@ -143,11 +144,12 @@ export default function ClientsPage() {
       </div>
 
       <div className="card overflow-hidden">
-        {filtered.length === 0 ? (
+        {clients.length === 0 && !search ? (
+          <EmptyState icon="👥" title="Todavía no tenés clientes registrados." description="Los clientes se crean automáticamente cuando generás un presupuesto, o podés agregarlos manualmente." actionLabel="+ Agregar cliente" onAction={() => setModal({})} />
+        ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3">
             <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center"><Users size={22} className="text-gray-400" /></div>
-            <p className="text-gray-400 text-sm">{search ? tc('noData') : tc('noData')}</p>
-            {!search && <button onClick={() => setModal({})} className="text-sm px-4 py-2 rounded-xl font-semibold text-white" style={{ background: '#6C5CE7' }}>{t('newClient')}</button>}
+            <p className="text-gray-400 text-sm">{tc('noData')}</p>
           </div>
         ) : (
           <>

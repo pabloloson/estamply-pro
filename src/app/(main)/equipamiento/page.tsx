@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Plus, Pencil, Trash2, X } from 'lucide-react'
 import NumericInput from '@/shared/components/NumericInput'
+import EmptyState from '@/shared/components/EmptyState'
 import { useTranslations } from '@/shared/hooks/useTranslations'
 import { useLocale } from '@/shared/context/LocaleContext'
 
@@ -148,7 +149,7 @@ export default function EquipamientoPage() {
               ))}
             </tbody>
           </table>
-          {filtered.length === 0 && <div className="text-center py-12 text-gray-400">{filter ? 'Sin equipos en esta categoría.' : 'No hay equipos. Agregá el primero.'}</div>}
+          {filtered.length === 0 && (equipment.length === 0 ? <EmptyState icon="🖨" title="Cargá tus máquinas: impresora, plancha, plotter." description="Con el valor de compra y la vida útil, Estamply calcula automáticamente el costo de amortización por cada trabajo." actionLabel="+ Agregar equipo" onAction={() => setModal({ clasificacion: 'plancha', type: 'press_flat', cost: 0, lifespan_uses: 10000, tecnicas_slugs: [] })} /> : <div className="text-center py-12 text-gray-400">Sin equipos en esta categoría.</div>)}
         </div>
       </div>
 
