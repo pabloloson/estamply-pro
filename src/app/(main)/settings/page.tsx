@@ -76,6 +76,7 @@ export default function SettingsPage() {
   ])
   const logoInputRef = useRef<HTMLInputElement>(null)
   const [activeSection, setActiveSection] = useState<string | null>(typeof window !== 'undefined' && window.innerWidth >= 768 ? 'perfil' : null)
+  const [openDiscTec, setOpenDiscTec] = useState<string | null>('descuentos_subli')
 
   const CONFIG_SECTIONS = [
     { group: 'Mi negocio', items: [{ id: 'perfil', label: 'Perfil' }] },
@@ -501,48 +502,103 @@ export default function SettingsPage() {
   </div>
 )}
 
-      {activeSection === 'descuentos' && (
-  <div className="max-w-2xl">
-    <h2 className="text-xl font-bold text-gray-900 mb-1">Descuentos</h2>
-    <p className="text-sm text-gray-400 mb-4">Configurá descuentos por volumen para tus clientes.</p>
-    <div className="card p-6 space-y-4">
-      <div className="flex items-center gap-2 mb-2">
-        <input type="checkbox" checked={ws.descuento_global_enabled} onChange={e => setWs({ ...ws, descuento_global_enabled: e.target.checked } as WorkshopSettings)} className="rounded text-purple-600" />
-        <span className="text-sm font-medium text-gray-700">Activar descuentos globales por volumen</span>
-      </div>
-      {ws.descuento_global_enabled && (
-        <div>
-          <p className="text-xs text-gray-400 mb-3">Estos descuentos se aplican a todas las técnicas.</p>
-          <table className="w-full text-sm">
-            <thead><tr className="border-b border-gray-100">
-              <th className="text-left py-2 text-xs text-gray-400 font-semibold">Desde (unid.)</th>
-              <th className="text-left py-2 text-xs text-gray-400 font-semibold">Hasta (unid.)</th>
-              <th className="text-left py-2 text-xs text-gray-400 font-semibold">Descuento %</th>
-              <th className="w-8"></th>
-            </tr></thead>
-            <tbody>
-              {ws.descuentos_global.map((tier, i) => (
-                <tr key={i} className="border-b border-gray-50">
-                  <td className="py-2 pr-2"><input type="number" className="input-base text-sm w-full" min={0} value={tier.desde} onChange={e => { const arr = [...ws.descuentos_global]; arr[i] = { ...tier, desde: Number(e.target.value) }; setWs({ ...ws, descuentos_global: arr } as WorkshopSettings) }} /></td>
-                  <td className="py-2 pr-2"><input type="number" className="input-base text-sm w-full" min={0} value={tier.hasta} onChange={e => { const arr = [...ws.descuentos_global]; arr[i] = { ...tier, hasta: Number(e.target.value) }; setWs({ ...ws, descuentos_global: arr } as WorkshopSettings) }} /></td>
-                  <td className="py-2 pr-2"><input type="number" className="input-base text-sm w-full" min={0} max={100} value={Math.round(tier.porcentaje * 100)} onChange={e => { const arr = [...ws.descuentos_global]; arr[i] = { ...tier, porcentaje: Number(e.target.value) / 100 }; setWs({ ...ws, descuentos_global: arr } as WorkshopSettings) }} /></td>
-                  <td className="py-2"><button onClick={() => setWs({ ...ws, descuentos_global: ws.descuentos_global.filter((_, j) => j !== i) } as WorkshopSettings)} className="p-1 rounded hover:bg-red-50"><Trash2 size={12} className="text-gray-300 hover:text-red-500" /></button></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <button onClick={() => setWs({ ...ws, descuentos_global: [...ws.descuentos_global, { desde: (ws.descuentos_global.at(-1)?.hasta || 0) + 1, hasta: 9999, porcentaje: 0 }] } as WorkshopSettings)}
-            className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700 mt-3"><Plus size={14} /> Agregar tramo</button>
-        </div>
-      )}
-    </div>
-    <button onClick={saveWs} disabled={saveState === 'saving'}
-      className={`mt-6 flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors ${saveState === 'saved' ? 'bg-green-500' : saveState === 'error' ? 'bg-red-500' : ''}`}
-      style={saveState !== 'saved' && saveState !== 'error' ? { background: '#6C5CE7' } : {}}>
-      {saveState === 'saving' ? <><Loader2 size={14} className="animate-spin" /> Guardando...</> : saveState === 'saved' ? '✓ Guardado' : saveState === 'error' ? 'Error' : <><Save size={14} /> Guardar</>}
-    </button>
-  </div>
-)}
+      {activeSection === 'descuentos' && (() => {
+        const DISC_TECNICAS = [
+          { key: 'descuentos_subli', label: 'Sublimación', color: '#6C5CE7' },
+          { key: 'descuentos_dtf', label: 'DTF Textil', color: '#E17055' },
+          { key: 'descuentos_vinyl', label: 'Vinilo', color: '#E84393' },
+        ] as const
+        type DiscKey = string
+        const getTiers = (k: DiscKey) => (ws as unknown as Record<string, unknown>)[k] as import('@/features/presupuesto/types').DiscountTier[] || []
+        const setTiers = (k: DiscKey, tiers: import('@/features/presupuesto/types').DiscountTier[]) => setWs({ ...ws, [k]: tiers } as WorkshopSettings)
+        const addTier = (k: DiscKey) => setTiers(k, [...getTiers(k), { desde: (getTiers(k).at(-1)?.hasta || 0) + 1, hasta: 9999, porcentaje: 0 }])
+        const updateTier = (k: DiscKey, i: number, f: string, v: number) => setTiers(k, getTiers(k).map((t, j) => j === i ? { ...t, [f]: v } : t))
+        const removeTier = (k: DiscKey, i: number) => setTiers(k, getTiers(k).filter((_, j) => j !== i))
+
+        const TierTable = ({ discKey }: { discKey: DiscKey }) => {
+          const tiers = getTiers(discKey)
+          if (tiers.length === 0) return (
+            <div className="text-center py-4">
+              <p className="text-sm text-gray-400 mb-2">Sin descuentos configurados.</p>
+              <button onClick={() => addTier(discKey)} className="text-sm font-semibold text-purple-600"><Plus size={12} className="inline mr-1" />Agregar primer tramo</button>
+            </div>
+          )
+          return (<div>
+            <table className="w-full text-sm"><thead><tr className="border-b border-gray-200">
+              <th className="text-left py-2 px-2 text-[10px] text-gray-400 font-semibold uppercase">Desde</th>
+              <th className="text-left py-2 px-2 text-[10px] text-gray-400 font-semibold uppercase">Hasta</th>
+              <th className="text-left py-2 px-2 text-[10px] text-gray-400 font-semibold uppercase">Desc %</th>
+              <th className="w-8" />
+            </tr></thead><tbody>
+              {tiers.map((t, i) => (<tr key={i} className="border-b border-gray-50">
+                <td className="py-1.5 px-2"><input type="number" className="input-base text-sm w-20" min={1} value={t.desde} onChange={e => updateTier(discKey, i, 'desde', Number(e.target.value))} /></td>
+                <td className="py-1.5 px-2"><input type="number" className="input-base text-sm w-20" min={1} value={t.hasta} onChange={e => updateTier(discKey, i, 'hasta', Number(e.target.value))} /></td>
+                <td className="py-1.5 px-2"><input type="number" className="input-base text-sm w-16" min={0} max={100} value={Math.round(t.porcentaje * 100)} onChange={e => updateTier(discKey, i, 'porcentaje', Number(e.target.value) / 100)} /></td>
+                <td className="py-1.5"><button onClick={() => removeTier(discKey, i)} className="p-1 rounded hover:bg-red-50"><Trash2 size={12} className="text-gray-300 hover:text-red-500" /></button></td>
+              </tr>))}
+            </tbody></table>
+            <button onClick={() => addTier(discKey)} className="flex items-center gap-1 text-sm font-semibold text-purple-600 hover:text-purple-700 mt-2"><Plus size={12} /> Agregar tramo</button>
+          </div>)
+        }
+
+        return (
+          <div className="max-w-2xl">
+            <h2 className="text-xl font-bold text-gray-900 mb-1">Descuentos</h2>
+            <p className="text-sm text-gray-400 mb-4">Configurá descuentos por volumen para tus clientes.</p>
+
+            {/* Switch */}
+            <div className="card p-5 mb-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-gray-800">Aplicar descuento global</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{ws.descuento_global_enabled ? 'El mismo descuento se aplica a todas las técnicas.' : 'Cada técnica tiene sus propios descuentos.'}</p>
+                </div>
+                <button type="button" onClick={() => setWs({ ...ws, descuento_global_enabled: !ws.descuento_global_enabled } as WorkshopSettings)}
+                  className="relative w-11 h-6 rounded-full transition-colors" style={{ background: ws.descuento_global_enabled ? '#6C5CE7' : '#D1D5DB' }}>
+                  <span className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform" style={{ transform: ws.descuento_global_enabled ? 'translateX(20px)' : 'translateX(0)' }} />
+                </button>
+              </div>
+            </div>
+
+            {/* Global table */}
+            {ws.descuento_global_enabled && (
+              <div className="card p-5 mb-6">
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Descuentos globales</p>
+                <TierTable discKey="descuentos_global" />
+              </div>
+            )}
+
+            {/* Per-technique accordions */}
+            {!ws.descuento_global_enabled && (
+              <div className="space-y-2 mb-6">
+                {DISC_TECNICAS.map((dt, idx) => {
+                  const isOpen = (openDiscTec ?? DISC_TECNICAS[0].key) === dt.key
+                  return (
+                    <div key={dt.key} className="card overflow-hidden">
+                      <button type="button" onClick={() => setOpenDiscTec(isOpen ? null : dt.key)}
+                        className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-md flex items-center justify-center text-[10px] font-bold text-white" style={{ background: dt.color }}>{dt.label[0]}</div>
+                          <span className="text-sm font-medium text-gray-800">{dt.label}</span>
+                          <span className="text-xs text-gray-400">{getTiers(dt.key).length} tramos</span>
+                        </div>
+                        <span className="text-gray-400 text-xs">{isOpen ? '▼' : '▶'}</span>
+                      </button>
+                      {isOpen && <div className="px-4 pb-4 border-t border-gray-100 pt-3"><TierTable discKey={dt.key} /></div>}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+
+            <button onClick={saveWs} disabled={saveState === 'saving'}
+              className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors ${saveState === 'saved' ? 'bg-green-500' : saveState === 'error' ? 'bg-red-500' : ''}`}
+              style={saveState !== 'saved' && saveState !== 'error' ? { background: '#6C5CE7' } : {}}>
+              {saveState === 'saving' ? <><Loader2 size={14} className="animate-spin" /> Guardando...</> : saveState === 'saved' ? '✓ Guardado' : saveState === 'error' ? 'Error' : <><Save size={14} /> Guardar</>}
+            </button>
+          </div>
+        )
+      })()}
 
       {activeSection === 'usuarios' && (<>
       {/* Usuarios */}
