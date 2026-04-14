@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, lazy, Suspense } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Save, User, Upload, Loader2, X, Plus, Trash2, QrCode, Check } from 'lucide-react'
+import { Save, User, Upload, Loader2, X, Plus, Trash2, QrCode, Check, Pencil } from 'lucide-react'
 import { QRCodeCanvas } from 'qrcode.react'
 import { DEFAULT_SETTINGS, type WorkshopSettings, type DiscountTier, type ManoDeObraModo, type ComisionBase, DEFAULT_MO_CONFIG } from '@/features/presupuesto/types'
 import { useTranslations } from '@/shared/hooks/useTranslations'
@@ -75,14 +75,13 @@ export default function SettingsPage() {
     'Los precios pueden variar si cambian los costos de materiales.',
   ])
   const logoInputRef = useRef<HTMLInputElement>(null)
-  const [activeTab, setActiveTab] = useState('general')
-  const [matSubTab, setMatSubTab] = useState<'base' | 'insumos' | 'equip'>('base')
+  const [activeTab, setActiveTab] = useState('negocio')
+  const [prodSubTab, setProdSubTab] = useState<'base' | 'insumos' | 'equip' | 'mano-obra'>('base')
 
   const TABS = [
-    { id: 'general', label: 'General' },
     { id: 'negocio', label: 'Mi negocio' },
-    { id: 'materiales-equipos', label: 'Materiales y equipos' },
-    { id: 'tecnicas', label: 'Técnicas' },
+    { id: 'produccion', label: 'Producción' },
+    { id: 'condiciones', label: 'Condiciones de venta' },
     { id: 'tienda', label: 'Tienda online' },
     { id: 'usuarios', label: 'Usuarios y permisos' },
   ]
@@ -194,35 +193,6 @@ export default function SettingsPage() {
           </button>
         ))}
       </div>
-
-      {activeTab === 'general' && (
-        <div className="max-w-2xl">
-          {/* Condiciones de presupuesto */}
-          <div className="card p-6 mb-6">
-            <h3 className="font-semibold text-gray-800 mb-1">Condiciones de presupuesto</h3>
-            <p className="text-xs text-gray-400 mb-4">Se incluyen automáticamente en cada presupuesto nuevo.</p>
-            <div className="space-y-2 mb-4">
-              {condicionesDefault.map((cond, i) => (
-                <div key={i} className="flex items-start gap-2 p-3 rounded-lg border border-gray-100">
-                  <span className="text-gray-400 text-sm mt-0.5">·</span>
-                  <textarea className="input-base text-sm flex-1 resize-none" rows={2} value={cond}
-                    onChange={e => { const arr = [...condicionesDefault]; arr[i] = e.target.value; setCondicionesDefault(arr) }} />
-                  <button onClick={() => setCondicionesDefault(condicionesDefault.filter((_, j) => j !== i))}
-                    className="p-1 rounded hover:bg-red-50 text-gray-300 hover:text-red-500 flex-shrink-0 mt-0.5"><X size={14} /></button>
-                </div>
-              ))}
-            </div>
-            <button onClick={() => setCondicionesDefault([...condicionesDefault, ''])}
-              className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700"><Plus size={14} /> Agregar condición</button>
-          </div>
-
-          <button onClick={saveWs} disabled={saveState === 'saving'}
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors ${saveState === 'saved' ? 'bg-green-500' : saveState === 'error' ? 'bg-red-500' : ''}`}
-            style={saveState !== 'saved' && saveState !== 'error' ? { background: '#6C5CE7' } : {}}>
-            {saveState === 'saving' ? <><Loader2 size={14} className="animate-spin" /> Guardando...</> : saveState === 'saved' ? <><Check size={14} /> Guardado</> : saveState === 'error' ? 'Error' : <><Save size={14} /> Guardar</>}
-          </button>
-        </div>
-      )}
 
       {activeTab === 'negocio' && (<>
       <div className="card p-6 max-w-2xl">
@@ -443,34 +413,6 @@ export default function SettingsPage() {
         <button onClick={() => setEditingGuia({ nombre: '', columnas: ['Ancho', 'Largo'], filas: [{ talle: 'S', Ancho: '', Largo: '' }, { talle: 'M', Ancho: '', Largo: '' }, { talle: 'L', Ancho: '', Largo: '' }] })}
           className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700"><Plus size={14} /> {t('newSizeTable')}</button>
       </div>
-      </>)}
-
-      {activeTab === 'tienda' && (<>
-      {/* Medios de pago */}
-      <div className="card p-6 max-w-2xl mt-6">
-        <h3 className="font-semibold text-gray-800 mb-1">{t('paymentMethods')}</h3>
-        <p className="text-xs text-gray-400 mb-4">{t('paymentMethodsSubtitle')}</p>
-        <div className="space-y-2 mb-4">
-          {mediosPago.map(m => (
-            <div key={m.id} className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 hover:bg-gray-50">
-              <button type="button" onClick={async () => { await supabase.from('medios_pago').update({ activo: !m.activo }).eq('id', m.id); setMediosPago(prev => prev.map(x => x.id === m.id ? { ...x, activo: !x.activo } : x)) }}
-                className="relative w-9 h-5 rounded-full transition-colors flex-shrink-0" style={{ background: m.activo ? '#6C5CE7' : '#D1D5DB' }}>
-                <span className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform" style={{ transform: m.activo ? 'translateX(16px)' : 'translateX(0)' }} />
-              </button>
-              <span className={`font-medium text-sm flex-1 ${m.activo ? 'text-gray-800' : 'text-gray-400'}`}>{m.nombre}</span>
-              <span className="text-xs text-gray-400">
-                {m.tipo_ajuste === 'descuento' ? `-${m.porcentaje}%` : m.tipo_ajuste === 'recargo' ? `+${m.porcentaje}%` : 'Sin ajuste'}
-              </span>
-              <button onClick={() => setEditingMedio({ nombre: m.nombre, tipo_ajuste: m.tipo_ajuste, porcentaje: m.porcentaje, id: m.id })} className="text-xs text-gray-400 hover:text-gray-600">✎</button>
-              <button onClick={async () => { if (confirm('¿Eliminar?')) { await supabase.from('medios_pago').delete().eq('id', m.id); setMediosPago(prev => prev.filter(x => x.id !== m.id)) } }} className="text-xs text-red-400 hover:text-red-600">✕</button>
-            </div>
-          ))}
-        </div>
-        {mediosPago.length < 6 && (
-          <button onClick={() => setEditingMedio({ nombre: '', tipo_ajuste: 'sin_ajuste', porcentaje: 0 })}
-            className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700"><Plus size={14} /> {t('addPaymentMethod')}</button>
-        )}
-      </div>
 
       <button onClick={saveWs} disabled={saveState === 'saving'}
         className={`mt-6 flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors ${saveState === 'saved' ? 'bg-green-500' : saveState === 'error' ? 'bg-red-500' : ''}`}
@@ -479,6 +421,55 @@ export default function SettingsPage() {
       </button>
       </>)}
 
+      {activeTab === 'condiciones' && (
+        <div className="max-w-2xl">
+          {/* Condiciones de presupuesto */}
+          <div className="card p-6 mb-6">
+            <h3 className="font-semibold text-gray-800 mb-1">Condiciones de presupuesto</h3>
+            <p className="text-xs text-gray-400 mb-4">Se incluyen automáticamente en cada presupuesto nuevo.</p>
+            <div className="space-y-2 mb-4">
+              {condicionesDefault.map((cond, i) => (
+                <div key={i} className="flex items-start gap-2 p-3 rounded-lg border border-gray-100">
+                  <span className="text-gray-400 text-sm mt-0.5">·</span>
+                  <textarea className="input-base text-sm flex-1 resize-none" rows={2} value={cond}
+                    onChange={e => { const arr = [...condicionesDefault]; arr[i] = e.target.value; setCondicionesDefault(arr) }} />
+                  <button onClick={() => setCondicionesDefault(condicionesDefault.filter((_, j) => j !== i))}
+                    className="p-1 rounded hover:bg-red-50 text-gray-300 hover:text-red-500 flex-shrink-0 mt-0.5"><X size={14} /></button>
+                </div>
+              ))}
+            </div>
+            <button onClick={() => setCondicionesDefault([...condicionesDefault, ''])}
+              className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700"><Plus size={14} /> Agregar condición</button>
+          </div>
+
+          {/* Medios de pago */}
+          <div className="card p-6 mb-6">
+            <h3 className="font-semibold text-gray-800 mb-1">{t('paymentMethods')}</h3>
+            <p className="text-xs text-gray-400 mb-4">{t('paymentMethodsSubtitle')}</p>
+            <div className="space-y-2 mb-4">
+              {mediosPago.map(m => (
+                <div key={m.id} className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 hover:bg-gray-50">
+                  <div className={`w-2 h-2 rounded-full ${m.activo ? 'bg-green-500' : 'bg-gray-300'}`} />
+                  <span className="text-sm font-medium text-gray-800 flex-1">{m.nombre}</span>
+                  <span className="text-xs text-gray-400">{m.tipo_ajuste === 'sin_ajuste' || m.tipo_ajuste === 'ninguno' ? 'Sin ajuste' : `${m.porcentaje > 0 ? '+' : ''}${m.porcentaje}%`}</span>
+                  <button onClick={() => setEditingMedio({ nombre: m.nombre, tipo_ajuste: m.tipo_ajuste, porcentaje: m.porcentaje, id: m.id })} className="p-1 rounded hover:bg-gray-100"><Pencil size={12} className="text-gray-400" /></button>
+                  <button onClick={async () => { if (confirm('¿Eliminar?')) { await supabase.from('medios_pago').delete().eq('id', m.id); setMediosPago(prev => prev.filter(x => x.id !== m.id)) } }} className="p-1 rounded hover:bg-red-50"><Trash2 size={12} className="text-gray-300 hover:text-red-500" /></button>
+                </div>
+              ))}
+            </div>
+            {mediosPago.length < 6 && (
+              <button onClick={() => setEditingMedio({ nombre: '', tipo_ajuste: 'sin_ajuste', porcentaje: 0 })}
+                className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700"><Plus size={14} /> {t('addPaymentMethod')}</button>
+            )}
+          </div>
+
+          <button onClick={saveWs} disabled={saveState === 'saving'}
+            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors ${saveState === 'saved' ? 'bg-green-500' : saveState === 'error' ? 'bg-red-500' : ''}`}
+            style={saveState !== 'saved' && saveState !== 'error' ? { background: '#6C5CE7' } : {}}>
+            {saveState === 'saving' ? <><Loader2 size={14} className="animate-spin" /> Guardando...</> : saveState === 'saved' ? <><Check size={14} /> Guardado</> : saveState === 'error' ? 'Error' : <><Save size={14} /> Guardar</>}
+          </button>
+        </div>
+      )}
 
       {activeTab === 'usuarios' && (<>
       {/* Usuarios */}
@@ -512,17 +503,24 @@ export default function SettingsPage() {
       </div>
       </>)}
 
-      {activeTab === 'materiales-equipos' && (
+      {activeTab === 'produccion' && (
         <div>
-          <div className="flex gap-4 border-b border-gray-100 mb-4">
-            {([['base', 'Productos base'], ['insumos', 'Insumos'], ['equip', 'Equipamiento']] as const).map(([id, label]) => (
-              <button key={id} onClick={() => setMatSubTab(id)}
-                className={`px-3 py-2 text-sm font-medium transition-colors border-b-2 ${matSubTab === id ? 'border-[#6C5CE7] text-gray-900' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>
+          {/* Sub-tabs: underline style */}
+          <div className="flex gap-4 border-b border-gray-100 mb-6">
+            {([['base', 'Productos base'], ['insumos', 'Insumos'], ['equip', 'Equipamiento'], ['mano-obra', 'Mano de obra']] as const).map(([id, label]) => (
+              <button key={id} onClick={() => setProdSubTab(id)}
+                className={`px-1 pb-2 text-sm font-medium transition-colors border-b-2 -mb-px ${prodSubTab === id ? 'border-[#6C5CE7] text-gray-900' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>
                 {label}
               </button>
             ))}
           </div>
-          {matSubTab === 'equip' ? (
+
+          {/* Sub-tab content */}
+          {prodSubTab === 'mano-obra' ? (
+            <div className="card p-6 max-w-2xl">
+              <p className="text-sm text-gray-500">La configuración de mano de obra se gestiona desde cada técnica.</p>
+            </div>
+          ) : prodSubTab === 'equip' ? (
             <Suspense fallback={<div className="flex items-center justify-center h-32"><div className="w-6 h-6 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>}>
               <EquipamientoPage />
             </Suspense>
@@ -531,13 +529,15 @@ export default function SettingsPage() {
               <MaterialesPage />
             </Suspense>
           )}
-        </div>
-      )}
 
-      {activeTab === 'tecnicas' && (
-        <Suspense fallback={<div className="flex items-center justify-center h-32"><div className="w-6 h-6 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>}>
-          <TecnicasPage />
-        </Suspense>
+          {/* Reglas por técnica */}
+          <div className="mt-8 pt-6 border-t border-gray-100">
+            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Reglas por técnica</h3>
+            <Suspense fallback={<div className="flex items-center justify-center h-32"><div className="w-6 h-6 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>}>
+              <TecnicasPage />
+            </Suspense>
+          </div>
+        </div>
       )}
 
       {/* Invite/Edit user modal */}
