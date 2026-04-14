@@ -86,21 +86,25 @@ export default function EquipamientoPage() {
 
   return (
     <div>
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+      <div className="flex items-center justify-between gap-3 mb-6">
         <div><h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
           <p className="text-gray-500 text-sm mt-1">{t('subtitle')}</p></div>
         <button onClick={() => setModal({ clasificacion: 'plancha', type: 'press_flat', cost: 0, lifespan_uses: 10000, tecnicas_slugs: [] })}
-          className="flex items-center gap-1.5 whitespace-nowrap text-xs sm:text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}>
+          className="hidden md:flex items-center gap-1.5 whitespace-nowrap text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}>
           <Plus size={14} /> {t('addEquipment')}
         </button>
       </div>
 
-      {/* Mobile: dropdown filter */}
-      <div className="flex md:hidden items-center gap-3 mb-4">
+      {/* Mobile: dropdown filter + add button */}
+      <div className="flex md:hidden items-center justify-between gap-3 mb-4">
         <select value={filter} onChange={e => setFilter(e.target.value)}
           className="border border-gray-200 bg-white rounded-lg px-4 py-2.5 text-sm font-medium shadow-sm min-w-[150px]">
           {CLASIF_TABS.map(tab => <option key={tab.id} value={tab.id}>{tab.label}</option>)}
         </select>
+        <button onClick={() => setModal({ clasificacion: 'plancha', type: 'press_flat', cost: 0, lifespan_uses: 10000, tecnicas_slugs: [] })}
+          className="flex items-center gap-1.5 whitespace-nowrap text-xs px-3 py-2 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}>
+          <Plus size={14} /> Agregar
+        </button>
       </div>
       {/* Desktop: tabs */}
       <div className="hidden md:flex gap-1.5 mb-4 flex-wrap">
