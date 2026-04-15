@@ -806,28 +806,31 @@ export default function PresupuestoPage() {
                         )
                       })()}
                       {getItemVariant(item) && breakdownOpen === item.id && (
-                        <div className="mt-2 space-y-1.5 p-3 rounded-lg bg-gray-50">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-xs font-semibold text-gray-500">Desglose por {(getItemVariant(item)?.name || '').toLowerCase()}:</span>
-                            <button onClick={() => setBreakdownOpen(null)} className="text-xs text-gray-400">Cerrar</button>
+                        <div className="mt-2 rounded-lg bg-gray-50 p-4 max-w-sm">
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="text-sm font-medium text-gray-700">Desglose por {(getItemVariant(item)?.name || '').toLowerCase()}:</span>
+                            <button onClick={() => setBreakdownOpen(null)} className="text-sm text-gray-400 hover:text-gray-600">Cerrar</button>
                           </div>
-                          {(Object.keys(item.variantBreakdown || {}).length > 0
-                            ? Object.keys(item.variantBreakdown!)
-                            : catalogProducts.find(p => p.name === item.nombre)?.variant_options || []
-                          ).map(opt => (
-                            <div key={opt} className="flex items-center justify-between">
-                              <span className="text-xs text-gray-600">{opt}</span>
-                              <input type="number" min={0} className="input-base text-xs w-16 text-center"
-                                value={(item.variantBreakdown || {})[opt] || 0}
-                                onChange={e => updateItem(item.id, { variantBreakdown: { ...(item.variantBreakdown || {}), [opt]: Number(e.target.value) || 0 } })} />
-                            </div>
-                          ))}
+                          <div className="space-y-2">
+                            {(Object.keys(item.variantBreakdown || {}).length > 0
+                              ? Object.keys(item.variantBreakdown!)
+                              : getItemVariant(item)?.options || []
+                            ).map(opt => (
+                              <div key={opt} className="flex items-center justify-between">
+                                <label className="text-sm font-medium text-gray-600 w-12">{opt}</label>
+                                <input type="number" min={0}
+                                  className="w-20 text-center text-sm border border-gray-200 rounded-md px-2 py-1.5 bg-white focus:border-purple-400 focus:outline-none"
+                                  value={(item.variantBreakdown || {})[opt] || 0}
+                                  onChange={e => updateItem(item.id, { variantBreakdown: { ...(item.variantBreakdown || {}), [opt]: Number(e.target.value) || 0 } })} />
+                              </div>
+                            ))}
+                          </div>
                           {(() => {
                             const total = Object.values(item.variantBreakdown || {}).reduce((s, v) => s + v, 0)
                             const diff = total - item.cantidad
                             return (
-                              <p className={`text-xs font-medium mt-1 ${diff === 0 ? 'text-green-600' : diff < 0 ? 'text-amber-500' : 'text-red-500'}`}>
-                                Total: {total} / {item.cantidad} {diff === 0 ? '✅' : diff < 0 ? `— Faltan ${-diff}` : `— Sobran ${diff}`}
+                              <p className={`mt-3 pt-3 border-t border-gray-200 text-sm font-medium ${diff === 0 ? 'text-green-600' : diff < 0 ? 'text-amber-600' : 'text-red-600'}`}>
+                                Total: {total} / {item.cantidad}{diff === 0 ? ' ✅' : diff < 0 ? ` — Faltan ${-diff} ⚠️` : ` — Sobran ${diff} ❌`}
                               </p>
                             )
                           })()}
