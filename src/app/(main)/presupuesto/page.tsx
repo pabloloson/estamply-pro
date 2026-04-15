@@ -181,6 +181,7 @@ export default function PresupuestoPage() {
         client_id: clientId || null, client_name: clientDisplayName || null,
         items: items.map(i => ({ tecnica: i.tecnica, nombre: i.nombre, cantidad: i.cantidad, precioUnit: i.precioUnit, precioSinDesc: i.precioSinDesc, subtotal: i.subtotal, notas: i.notas, origen: i.origen, variantName: i.variantName, variantBreakdown: i.variantBreakdown })),
         total: totalVenta, condiciones, business_profile: bizProfile || {},
+        tipo_cambio_congelado: (ws as Record<string, unknown>).tipo_cambio || null,
       }).select('id, codigo').single()
       if (error || !data) { setSaveStatus('error'); alert('Error al crear: ' + (error?.message || '')); return }
       setDbId(data.id as string)

@@ -29,8 +29,8 @@ export function calcRollNesting(dw: number, dh: number, rollW: number, qty: numb
 
 export interface ComputeInput {
   config: TecnicaConfig
-  product: { base_cost: number; press_equipment_id?: string | null; [k: string]: unknown }
-  equipment: Array<{ id: string; type: string; clasificacion: string; cost: number; lifespan_uses: number; tecnicas_slugs?: string[] }>
+  product: { base_cost: number; press_equipment_id?: string | null; moneda?: string; [k: string]: unknown }
+  equipment: Array<{ id: string; type: string; clasificacion: string; cost: number; lifespan_uses: number; tecnicas_slugs?: string[]; moneda?: string }>
   techniqueEquipmentIds: string[]
   insumos: Insumo[]
   quantity: number
@@ -42,6 +42,7 @@ export interface ComputeInput {
   otrosGastos: number
   setupMin: number
   discountTiers: DiscountTier[]
+  tipoCambio?: number  // exchange rate: 1 USD = X local. Default 1 (no conversion)
   vinylSelections?: Array<{ materialIdx: number; colorIdx: number; ancho: number; alto: number }>
   // Zones for subli/dtf (multiple stamping areas per unit)
   zones?: Array<{ ancho: number; alto: number; ubicacion?: string }>
@@ -54,12 +55,39 @@ export interface ComputeInput {
 
 export function computeCost(input: ComputeInput): CostResult {
   const { config } = input
+  const tc = input.tipoCambio || 1
+
+  // Pre-convert insumo prices from USD to local if needed
+  const convertedInsumos: Insumo[] = tc > 1 ? input.insumos.map(ins => {
+    if (ins.moneda !== 'USD') return ins
+    const cfg = { ...ins.config } as Record<string, unknown>
+    // Multiply all price fields by exchange rate
+    for (const key of Object.keys(cfg)) {
+      if ((key.startsWith('precio') || key === 'precio_metro' || key === 'precio_kg') && typeof cfg[key] === 'number') {
+        cfg[key] = (cfg[key] as number) * tc
+      }
+    }
+    return { ...ins, config: cfg as typeof ins.config, moneda: 'local' as const }
+  }) : input.insumos
+
+  // Pre-convert product base cost
+  const convertedProduct = tc > 1 && input.product.moneda === 'USD'
+    ? { ...input.product, base_cost: input.product.base_cost * tc }
+    : input.product
+
+  // Pre-convert equipment costs
+  const convertedEquipment = tc > 1 ? input.equipment.map(eq =>
+    eq.moneda === 'USD' ? { ...eq, cost: eq.cost * tc } : eq
+  ) : input.equipment
+
+  const converted = { ...input, insumos: convertedInsumos, product: convertedProduct, equipment: convertedEquipment }
+
   switch (config.tipo) {
-    case 'subli': return computeSubli(input, config)
-    case 'dtf': return computeDTF(input, config)
-    case 'dtf_uv': return computeDTF(input, config) // same logic, different insumos
-    case 'vinyl': return computeVinyl(input, config)
-    case 'serigrafia': return computeSerigrafia(input, config)
+    case 'subli': return computeSubli(converted, config)
+    case 'dtf': return computeDTF(converted, config)
+    case 'dtf_uv': return computeDTF(converted, config)
+    case 'vinyl': return computeVinyl(converted, config)
+    case 'serigrafia': return computeSerigrafia(converted, config)
   }
 }
 
@@ -67,6 +95,14 @@ export function computeCost(input: ComputeInput): CostResult {
 
 function findInsumo(insumos: Insumo[], ...tipos: string[]) { return insumos.find(i => tipos.includes(i.tipo)) }
 function insCfg(ins: Insumo | undefined) { return (ins?.config || {}) as Record<string, unknown> }
+
+// Currency conversion: multiply by exchange rate if insumo/product is in USD
+function fx(amount: number, moneda: string | undefined, tc: number) {
+  return moneda === 'USD' && tc > 1 ? amount * tc : amount
+}
+function fxIns(ins: Insumo | undefined, tc: number) {
+  return ins?.moneda === 'USD' && tc > 1 ? tc : 1
+}
 
 function getAmort(equipment: Array<{ id: string; cost: number; lifespan_uses: number }>, ids: string[]) {
   return ids.reduce((sum, id) => { const eq = equipment.find(e => e.id === id); return sum + (eq ? eq.cost / eq.lifespan_uses : 0) }, 0)
