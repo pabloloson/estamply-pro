@@ -81,7 +81,7 @@ export function Sidebar({ workshopName = 'Mi Taller' }: SidebarProps) {
         {canAccess('clientes') && <NavLink href="/clients" icon={Users} label={t('clients')} />}
         {canAccess('catalogo') && <NavLink href="/catalogo" icon={Package} label={t('catalog')} />}
         {canAccess('estadisticas') && <NavLink href="/estadisticas" icon={BarChart3} label={t('statistics')} />}
-        {canAccess('pedidos') && <NavLink href="/compras" icon={ClipboardList} label="Compras" />}
+        {canAccess('pedidos') && <NavLink href="/compras" icon={ClipboardList} label="Abastecimiento" />}
       </nav>
 
       {/* ── Spacer ── */}
