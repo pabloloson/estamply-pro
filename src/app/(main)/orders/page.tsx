@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { ChevronDown, ChevronUp, MessageCircle, Trash2, Calendar, Plus, LayoutList, LayoutGrid, X, ExternalLink, Printer, Search } from 'lucide-react'
+import { ChevronDown, ChevronUp, MessageCircle, Trash2, Calendar, Plus, LayoutList, LayoutGrid, X, ExternalLink, Printer, Search, ClipboardList } from 'lucide-react'
 import EmptyState from '@/shared/components/EmptyState'
 import { useTranslations } from '@/shared/hooks/useTranslations'
 import { useLocale } from '@/shared/context/LocaleContext'
@@ -76,6 +76,7 @@ export default function OrdersPage() {
   const [statusDropdown, setStatusDropdown] = useState<string | null>(null)
   const [tallerName, setTallerName] = useState('')
   const [search, setSearch] = useState('')
+  const [checklist, setChecklist] = useState<Record<string, Record<string, boolean>>>({})
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }))
 
@@ -187,6 +188,97 @@ export default function OrdersPage() {
     setTimeout(() => document.body.removeChild(iframe), 2000)
   }
 
+  function printWorkshopSheet(order: Order) {
+    const items = (order.items || []) as OrderItem[]
+    const client = order.clients
+
+    const iframe = document.createElement('iframe')
+    iframe.style.display = 'none'
+    document.body.appendChild(iframe)
+    const doc = iframe.contentDocument || iframe.contentWindow?.document
+    if (!doc) return
+
+    const itemRows = items.map(i => {
+      const breakdownHtml = i.variantBreakdown && Object.values(i.variantBreakdown).some(v => v > 0)
+        ? `<div style="margin:6px 0;padding:8px;background:#f3f4f6;border-radius:4px;font-size:13px">
+            <strong>${i.variantName || 'Variantes'}:</strong><br/>
+            ${Object.entries(i.variantBreakdown).filter(([,v]) => v > 0).map(([k,v]) => `${k}: <strong>${v}</strong>`).join(' &nbsp;·&nbsp; ')}
+          </div>` : ''
+      return `<tr>
+        <td style="padding:10px 8px;font-weight:500">${i.nombre}${i.notas ? `<div style="font-size:11px;color:#666;margin-top:2px">📝 ${i.notas}</div>` : ''}${breakdownHtml}</td>
+        <td style="padding:10px 8px;text-align:center;font-weight:600;font-size:16px">${i.cantidad}</td>
+        <td style="padding:10px 8px"><div style="width:40px;height:40px;border:1px solid #ccc;border-radius:4px"></div></td>
+      </tr>`
+    }).join('')
+
+    doc.open()
+    doc.write(`<!DOCTYPE html><html><head><title>Hoja de Taller</title>
+    <style>
+      body{font-family:Arial,sans-serif;color:#000;margin:0;padding:15mm}
+      table{width:100%;border-collapse:collapse}
+      thead tr{border-bottom:2px solid #333}
+      tbody tr{border-bottom:1px solid #e5e7eb}
+      th{font-size:11px;text-transform:uppercase;color:#666;font-weight:600;padding:8px;text-align:left}
+      .section{margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid #ddd}
+      .check{display:inline-block;width:18px;height:18px;border:2px solid #333;border-radius:3px;margin-right:8px;vertical-align:middle}
+      @page{size:A4;margin:0}
+    </style></head><body>
+      <div class="section" style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #333">
+        <div>
+          <div style="font-size:22px;font-weight:800">HOJA DE TALLER</div>
+          ${tallerName ? `<div style="font-size:14px;color:#666">${tallerName}</div>` : ''}
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:20px;font-weight:800">#${order.id.slice(0, 8)}</div>
+          <div style="font-size:12px;color:#666">${new Date(order.created_at).toLocaleDateString('es-AR')}</div>
+          <div style="font-size:13px;font-weight:600;color:#333">Estado: ${SL[order.status] || order.status}</div>
+        </div>
+      </div>
+
+      <div class="section" style="display:flex;justify-content:space-between">
+        <div>
+          <div style="font-size:11px;color:#999;text-transform:uppercase">Cliente</div>
+          <div style="font-size:16px;font-weight:600">${client?.name || 'Sin cliente'}</div>
+          ${client?.whatsapp || client?.phone ? `<div style="color:#666">${client.whatsapp || client.phone}</div>` : ''}
+        </div>
+        ${order.due_date ? `<div style="text-align:right">
+          <div style="font-size:11px;color:#999;text-transform:uppercase">Fecha de entrega</div>
+          <div style="font-size:18px;font-weight:800">${new Date(order.due_date).toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })}</div>
+        </div>` : ''}
+      </div>
+
+      <table style="margin-bottom:16px">
+        <thead><tr><th>Producto / Detalle</th><th style="text-align:center">Cantidad</th><th style="width:60px">✓</th></tr></thead>
+        <tbody>${itemRows}</tbody>
+      </table>
+
+      ${order.notes ? `<div class="section">
+        <div style="font-size:11px;color:#999;text-transform:uppercase;margin-bottom:4px">Notas de producción</div>
+        <div style="font-size:13px;padding:8px;background:#f9fafb;border-radius:4px">${order.notes}</div>
+      </div>` : ''}
+
+      ${order.files_link ? `<div class="section">
+        <div style="font-size:11px;color:#999;text-transform:uppercase;margin-bottom:4px">Archivos</div>
+        <div style="font-size:12px">${order.files_link}</div>
+      </div>` : ''}
+
+      <div style="margin-top:24px">
+        <div style="font-size:11px;color:#999;text-transform:uppercase;margin-bottom:8px">Control de producción</div>
+        <div style="display:flex;gap:24px;font-size:13px">
+          <div><span class="check"></span> Diseño verificado</div>
+          <div><span class="check"></span> Estampado</div>
+          <div><span class="check"></span> Control de calidad</div>
+        </div>
+      </div>
+
+      <div style="text-align:center;font-size:10px;color:#ccc;margin-top:32px">Estamply · estamply.app</div>
+    </body></html>`)
+    doc.close()
+    iframe.contentWindow?.focus()
+    iframe.contentWindow?.print()
+    setTimeout(() => document.body.removeChild(iframe), 2000)
+  }
+
   async function setStatus(id: string, s: string) { await supabase.from('orders').update({ status: s }).eq('id', id); load() }
   async function setDueDate(id: string, d: string) { await supabase.from('orders').update({ due_date: d || null }).eq('id', id); load() }
   async function setFilesLink(id: string, link: string) { await supabase.from('orders').update({ files_link: link || null }).eq('id', id); load() }
@@ -268,6 +360,36 @@ export default function OrdersPage() {
             </div>
           ) : (
             <button onClick={() => setEditingLink(true)} className="text-xs text-gray-400 hover:text-gray-600">+ Agregar link de archivos</button>
+          )}
+        </div>
+
+        {/* Production checklist (digital) */}
+        <div className="rounded-lg border border-gray-100 p-4">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-3">Control de producción</p>
+          <div className="space-y-2">
+            {[
+              { key: 'diseno', label: 'Diseño verificado' },
+              { key: 'estampado', label: 'Estampado completado' },
+              { key: 'control', label: 'Control de calidad' },
+            ].map(step => {
+              const checked = checklist[order.id]?.[step.key] || false
+              return (
+                <label key={step.key} className="flex items-center gap-2.5 cursor-pointer">
+                  <input type="checkbox" checked={checked}
+                    onChange={() => setChecklist(prev => ({
+                      ...prev,
+                      [order.id]: { ...(prev[order.id] || {}), [step.key]: !checked }
+                    }))}
+                    className="w-4 h-4 rounded border-gray-300 text-purple-600" />
+                  <span className={`text-sm ${checked ? 'text-gray-400 line-through' : 'text-gray-700'}`}>{step.label}</span>
+                </label>
+              )
+            })}
+          </div>
+          {checklist[order.id]?.diseno && checklist[order.id]?.estampado && checklist[order.id]?.control && order.status !== 'ready' && order.status !== 'delivered' && (
+            <button onClick={() => setStatus(order.id, 'ready')} className="mt-3 w-full py-2 rounded-lg text-sm font-semibold text-white" style={{ background: '#00B894' }}>
+              ✓ Finalizar producción
+            </button>
           )}
         </div>
 
@@ -430,7 +552,7 @@ export default function OrdersPage() {
               {order.due_date && <span className={`text-xs flex items-center gap-1 ${od ? 'text-red-500 font-bold' : du <= 2 ? 'text-orange-500' : 'text-gray-400'}`}><Calendar size={10} />{new Date(order.due_date).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}{od && <span className="text-[9px] font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded">Vencido</span>}</span>}
             </div>
             <div className="flex items-center gap-1">
-              <button onClick={e => { e.stopPropagation(); printOrder(order) }} className="p-2.5 -m-1 rounded-lg hover:bg-gray-100 transition-colors" title="Imprimir orden de trabajo"><Printer size={18} className="text-gray-400 hover:text-gray-700" /></button>
+              <button onClick={e => { e.stopPropagation(); showPrices ? printOrder(order) : printWorkshopSheet(order) }} className="p-2.5 -m-1 rounded-lg hover:bg-gray-100 transition-colors" title={showPrices ? "Imprimir orden" : "Hoja de taller"}><Printer size={18} className="text-gray-400 hover:text-gray-700" /></button>
               {isExp ? <ChevronUp size={14} className="text-gray-400" /> : <ChevronDown size={14} className="text-gray-400" />}
             </div>
           </div>
@@ -517,7 +639,7 @@ export default function OrdersPage() {
                             className={`p-3 rounded-lg bg-white shadow-sm cursor-pointer hover:shadow-md transition-all ${od ? 'border-l-4 border-l-red-500' : 'border border-transparent'}`}>
                             <div className="flex items-center justify-between">
                               <p className="font-semibold text-gray-800 text-sm truncate">{order.clients?.name || <span className="text-gray-400 italic">Cliente no asignado</span>}</p>
-                              <button onClick={e => { e.stopPropagation(); printOrder(order) }} className="p-2.5 -m-1 rounded-lg hover:bg-gray-100 transition-colors" title="Imprimir orden de trabajo"><Printer size={18} className="text-gray-400 hover:text-gray-700" /></button>
+                              <button onClick={e => { e.stopPropagation(); showPrices ? printOrder(order) : printWorkshopSheet(order) }} className="p-2.5 -m-1 rounded-lg hover:bg-gray-100 transition-colors" title={showPrices ? "Imprimir orden" : "Hoja de taller"}><Printer size={18} className="text-gray-400 hover:text-gray-700" /></button>
                             </div>
                             {first ? (
                               <p className="text-[10px] text-gray-500 mt-0.5 truncate flex items-center gap-1">
@@ -564,7 +686,8 @@ export default function OrdersPage() {
                 {showPrices && <p className="text-xs text-gray-400 mt-0.5">{fmtCurrency(detailOrder.total_price)}</p>}
               </div>
               <div className="flex gap-1">
-                <button onClick={() => printOrder(detailOrder)} className="p-2 rounded-lg hover:bg-gray-100 text-gray-400" title="Imprimir"><Printer size={16} /></button>
+                <button onClick={() => showPrices ? printOrder(detailOrder) : printWorkshopSheet(detailOrder)} className="p-2 rounded-lg hover:bg-gray-100 text-gray-400" title={showPrices ? "Imprimir orden" : "Hoja de taller"}><Printer size={16} /></button>
+                <button onClick={() => printWorkshopSheet(detailOrder)} className="p-2 rounded-lg hover:bg-gray-100 text-gray-400" title="Hoja de taller"><ClipboardList size={16} /></button>
                 <button onClick={() => setDetailPanel(null)} className="p-2 rounded-lg hover:bg-gray-100"><X size={16} /></button>
               </div>
             </div>
