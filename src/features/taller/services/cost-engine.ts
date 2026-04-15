@@ -43,6 +43,7 @@ export interface ComputeInput {
   setupMin: number
   discountTiers: DiscountTier[]
   tipoCambio?: number  // exchange rate: 1 USD = X local. Default 1 (no conversion)
+  redondeo_precios?: 'none' | 'integer' | 'tens' | 'hundreds'
   vinylSelections?: Array<{ materialIdx: number; colorIdx: number; ancho: number; alto: number }>
   // Zones for subli/dtf (multiple stamping areas per unit)
   zones?: Array<{ ancho: number; alto: number; ubicacion?: string }>
@@ -55,7 +56,7 @@ export interface ComputeInput {
 
 export function computeCost(input: ComputeInput): CostResult {
   const { config } = input
-  const tc = input.tipoCambio || 1
+  const tc = Math.max(input.tipoCambio || 1, 0.0001)
 
   // Pre-convert insumo prices from USD to local if needed
   const convertedInsumos: Insumo[] = tc > 1 ? input.insumos.map(ins => {
@@ -81,14 +82,21 @@ export function computeCost(input: ComputeInput): CostResult {
   ) : input.equipment
 
   const converted = { ...input, insumos: convertedInsumos, product: convertedProduct, equipment: convertedEquipment }
+  const redondeo = input.redondeo_precios || 'none'
 
+  let result: CostResult
   switch (config.tipo) {
-    case 'subli': return computeSubli(converted, config)
-    case 'dtf': return computeDTF(converted, config)
-    case 'dtf_uv': return computeDTF(converted, config)
-    case 'vinyl': return computeVinyl(converted, config)
-    case 'serigrafia': return computeSerigrafia(converted, config)
+    case 'subli': result = computeSubli(converted, config); break
+    case 'dtf': case 'dtf_uv': result = computeDTF(converted, config); break
+    case 'vinyl': result = computeVinyl(converted, config); break
+    case 'serigrafia': result = computeSerigrafia(converted, config); break
   }
+
+  // Apply rounding to suggested price
+  if (redondeo !== 'none' && result.precioSugerido) {
+    result = { ...result, precioSugerido: applyRounding(result.precioSugerido, redondeo) }
+  }
+  return result
 }
 
 // ── Helpers to read insumo data ──
@@ -102,6 +110,16 @@ function fx(amount: number, moneda: string | undefined, tc: number) {
 }
 function fxIns(ins: Insumo | undefined, tc: number) {
   return ins?.moneda === 'USD' && tc > 1 ? tc : 1
+}
+
+// Price rounding
+function applyRounding(value: number, mode: string): number {
+  switch (mode) {
+    case 'integer': return Math.round(value)
+    case 'tens': return Math.round(value / 10) * 10
+    case 'hundreds': return Math.round(value / 100) * 100
+    default: return value
+  }
 }
 
 function getAmort(equipment: Array<{ id: string; cost: number; lifespan_uses: number }>, ids: string[]) {

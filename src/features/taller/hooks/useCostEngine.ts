@@ -156,6 +156,7 @@ export function useCostEngine(
       vinylSelections: technique.slug === 'vinyl' ? vinylSelections.slice(0, numColors) : undefined,
       overrideMerma, overrideAmortPrint, overrideAmortPress, overrideCostoPantalla,
       tipoCambio: (settings as Record<string, unknown>).tipo_cambio as number || 1,
+      redondeo_precios: ((settings as Record<string, unknown>).redondeo_precios as string || 'none') as 'none' | 'integer' | 'tens' | 'hundreds',
     })
   }, [technique, product, equipment, linkedInsumos, settings, quantity, designWidth, designHeight, numColors, numZones, zones, margin, mo, otrosGastos, vinylSelections, discountTiers, overrideMerma, overrideAmortPrint, overrideAmortPress, overrideCostoPantalla, overrideDiscountPct, overridePrinterId, overridePressId, overrideDtfMode])
 

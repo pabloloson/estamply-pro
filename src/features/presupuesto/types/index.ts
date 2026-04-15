@@ -107,6 +107,7 @@ export type WorkshopSettings = {
   moneda_referencia: string       // 'USD' default
   tipo_cambio: number             // exchange rate: 1 USD = X local
   tipo_cambio_modo: 'manual' | 'auto'
+  redondeo_precios: 'none' | 'integer' | 'tens' | 'hundreds'
   // Strategy
   margen_sugerido: number
   descuento_global_enabled: boolean
@@ -163,6 +164,7 @@ export const DEFAULT_SETTINGS: WorkshopSettings = {
   moneda_referencia: 'USD',
   tipo_cambio: 1,
   tipo_cambio_modo: 'manual' as const,
+  redondeo_precios: 'none' as const,
   // Strategy
   margen_sugerido: 50,
   descuento_global_enabled: false,

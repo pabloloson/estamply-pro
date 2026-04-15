@@ -409,12 +409,23 @@ export default function SettingsPage() {
         <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de cambio</label>
         <div className="flex items-center gap-3">
           <span className="text-sm font-medium text-gray-500">1 {(ws as Record<string, unknown>).moneda_referencia as string || 'USD'} =</span>
-          <input type="number" className="input-base text-sm w-32" min={0} step={0.01}
+          <input type="number" className="input-base text-sm w-32" min={0.01} step={0.01}
             value={(ws as Record<string, unknown>).tipo_cambio as number || 1}
-            onChange={e => setWs({ ...ws, tipo_cambio: Number(e.target.value) } as WorkshopSettings)} />
+            onChange={e => setWs({ ...ws, tipo_cambio: Math.max(Number(e.target.value), 0) } as WorkshopSettings)} />
           <span className="text-sm text-gray-500">{fmtCurrency(1).replace(/[\d.,]/g, '').trim() || '$'}</span>
         </div>
         <p className="text-[10px] text-gray-400 mt-1">Actualizá este valor cuando cambie el tipo de cambio.</p>
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Redondeo de precios finales</label>
+        <select className="input-base text-sm" value={(ws as Record<string, unknown>).redondeo_precios as string || 'none'}
+          onChange={e => setWs({ ...ws, redondeo_precios: e.target.value } as WorkshopSettings)}>
+          <option value="none">Sin redondeo (decimales reales)</option>
+          <option value="integer">Sin decimales (entero más cercano)</option>
+          <option value="tens">Múltiplos de 10</option>
+          <option value="hundreds">Múltiplos de 100</option>
+        </select>
+        <p className="text-[10px] text-gray-400 mt-1">Cómo se redondean los precios sugeridos en el cotizador.</p>
       </div>
       {Number((ws as Record<string, unknown>).tipo_cambio) > 0 && (
         <div className="p-3 rounded-lg bg-blue-50 border border-blue-100">
