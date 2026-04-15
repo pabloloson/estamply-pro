@@ -634,6 +634,8 @@ export default function CotizadorPage() {
                 hasOverrides={engine.hasOverrides}
                 onResetOverrides={() => { engine.resetOverrides(); setExtraCosts([]) }}
                 onDiscountChange={engine.setOverrideDiscountPct}
+                tipoCambio={(settings as Record<string, unknown>).tipo_cambio as number || undefined}
+                monedaReferencia={(settings as Record<string, unknown>).moneda_referencia as string || undefined}
                 consumibles={engine.linkedInsumos
                   .filter(ins => !['papel', 'tinta', 'film', 'vinilo', 'tinta_serigrafica', 'servicio_impresion', 'emulsion'].includes(ins.tipo))
                   .map(ins => {

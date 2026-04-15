@@ -1170,6 +1170,20 @@ export default function PresupuestoPage() {
                 </button>
               </div>
 
+              {/* Update prices */}
+              {Number((ws as Record<string, unknown>).tipo_cambio) > 1 && (
+                <button type="button" onClick={async () => {
+                  if (!confirm('¿Actualizar precios al tipo de cambio vigente?')) return
+                  const pid = dbIdRef.current
+                  if (!pid) return
+                  await supabase.from('presupuestos').update({ tipo_cambio_congelado: (ws as Record<string, unknown>).tipo_cambio }).eq('id', pid)
+                  setSaveStatus('saved')
+                  setTimeout(() => setSaveStatus(s => s === 'saved' ? 'idle' : s), 2000)
+                }} className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-xl transition-colors">
+                  💱 Actualizar a precios actuales
+                </button>
+              )}
+
               {/* Delete */}
               <button type="button" onClick={handleEliminar} className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors">
                 <Trash2 size={14} /> Eliminar presupuesto

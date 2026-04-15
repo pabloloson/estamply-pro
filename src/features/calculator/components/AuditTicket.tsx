@@ -31,6 +31,8 @@ interface AuditTicketProps {
   hasOverrides?: boolean; onResetOverrides?: () => void
   onDiscountChange?: (pct: number) => void
   consumibles?: Array<{ name: string; costPerUse: number }>
+  tipoCambio?: number
+  monedaReferencia?: string
 }
 
 const COLORS: Record<string, string> = { subli: '#6C5CE7', dtf: '#E17055', dtf_uv: '#00B894', vinyl: '#E84393', serigrafia: '#FDCB6E' }
@@ -106,6 +108,7 @@ export default function AuditTicket(props: AuditTicketProps) {
     mo, onMoChange, extraCosts = [], onExtraCostsChange,
     hasOverrides, onResetOverrides, onDiscountChange,
     consumibles = [],
+    tipoCambio, monedaReferencia,
   } = props
 
   const color = COLORS[technique] || '#6C5CE7'
@@ -339,7 +342,10 @@ export default function AuditTicket(props: AuditTicketProps) {
               <div className="rounded-xl p-3.5" style={{ background: ganancia > 0 ? 'rgba(0,184,148,0.06)' : 'rgba(255,71,87,0.06)', border: `1px solid ${ganancia > 0 ? 'rgba(0,184,148,0.12)' : 'rgba(255,71,87,0.12)'}` }}>
                 <div className="flex items-center gap-1.5 mb-1.5"><TrendingUp size={13} style={{ color: ganancia > 0 ? '#00B894' : '#FF4757' }} /><span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Ganancia neta</span></div>
                 <p className="text-xl font-black" style={{ color: ganancia > 0 ? '#00B894' : '#FF4757' }}>{fmt(ganancia)}</p>
-                <p className="text-xs font-semibold mt-0.5" style={{ color: ganancia > 0 ? '#00B89499' : '#FF475799' }}>{gananciaPercent}% del total</p>
+                <p className="text-xs font-semibold mt-0.5" style={{ color: ganancia > 0 ? '#00B89499' : '#FF475799' }}>
+                  {gananciaPercent}% del total
+                  {tipoCambio && tipoCambio > 1 && <span className="ml-1 opacity-70">({monedaReferencia || 'USD'} {Math.round(ganancia / tipoCambio).toLocaleString('es-AR')})</span>}
+                </p>
               </div>
               <div className="rounded-xl p-3.5 bg-gray-50 border border-gray-100">
                 <div className="flex items-center gap-1.5 mb-1.5"><Clock size={13} className="text-gray-400" /><span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Tiempo total</span></div>
