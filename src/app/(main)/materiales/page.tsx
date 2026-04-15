@@ -104,7 +104,7 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
   // ── Insumo CRUD (with auto-vinculation) ──
   async function saveInsumo() {
     if (!insModal?.nombre) return; setSaving(true)
-    const payload = { nombre: insModal.nombre, tipo: insModal.tipo || 'otro', tecnica_asociada: insModal.tecnica_asociada || 'compartido', config: insModal.config || emptyConfig('otro') }
+    const payload = { nombre: insModal.nombre, tipo: insModal.tipo || 'otro', tecnica_asociada: insModal.tecnica_asociada || 'compartido', config: insModal.config || emptyConfig('otro'), moneda: insModal.moneda || 'local' }
     const tecAsociada = payload.tecnica_asociada
     if (insModal.id) {
       const oldInsumo = insumos.find(i => i.id === insModal.id)
@@ -301,6 +301,7 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
                     <p className="text-xs mt-0.5">
                       <span className="font-bold px-1.5 py-0.5 rounded-full" style={{ background: `${TIPO_COLORS[tipo]}18`, color: TIPO_COLORS[tipo] }}>{TIPO_LABELS[tipo]}</span>
                       <span className="text-gray-400 ml-1.5">{ins.tecnica_asociada === 'compartido' ? 'Compartido' : TECNICA_FILTER_TABS.find(t => t.id === ins.tecnica_asociada)?.label || ins.tecnica_asociada}</span>
+                      {(ins as unknown as Record<string, unknown>).moneda === 'USD' && <span className="ml-1.5 text-[9px] px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600 font-bold">USD</span>}
                     </p>
                   </div>
                   <div className="flex gap-1">
@@ -338,7 +339,7 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
                   <td className="px-4 py-3 font-medium text-gray-800">{ins.nombre}</td>
                   <td className="px-4 py-3"><span className="text-[10px] px-2 py-0.5 rounded-full font-bold text-white" style={{ background: TIPO_COLORS[tipo] || '#636e72' }}>{TIPO_LABELS[tipo] || tipo}</span></td>
                   <td className="px-4 py-3 text-sm text-gray-500">{TECNICA_OPTS.find(o => o[0] === ins.tecnica_asociada)?.[1] || ins.tecnica_asociada}</td>
-                  <td className="px-4 py-3 text-sm text-gray-500">{keyData}</td>
+                  <td className="px-4 py-3 text-sm text-gray-500">{keyData} {(ins as unknown as Record<string, unknown>).moneda === 'USD' && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600 font-bold ml-1">USD</span>}</td>
                   <td className="px-4 py-3"><div className="flex gap-1">
                     <button onClick={() => setInsModal(ins)} className="p-1.5 rounded-lg hover:bg-gray-100"><Pencil size={14} className="text-gray-400" /></button>
                     <button onClick={() => deleteInsumo(ins.id)} className="p-1.5 rounded-lg hover:bg-red-50"><Trash2 size={14} className="text-red-400" /></button>
@@ -488,6 +489,20 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
                   <select className="input-base" value={insModal.tecnica_asociada || 'compartido'} onChange={e => setInsModal({ ...insModal, tecnica_asociada: e.target.value })}>
                     {TECNICA_OPTS.map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                   </select></div>
+              </div>
+
+              {/* Currency selector */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Moneda del costo</label>
+                <div className="flex gap-2">
+                  {[['local', 'Moneda local'], ['USD', 'USD']].map(([v, l]) => (
+                    <button key={v} type="button" onClick={() => setInsModal({ ...insModal, moneda: v as 'local' | 'USD' })}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${(insModal.moneda || 'local') === v ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-500'}`}>
+                      {l}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[10px] text-gray-400 mt-1">¿En qué moneda comprás este insumo?</p>
               </div>
 
               {/* Type-specific fields */}

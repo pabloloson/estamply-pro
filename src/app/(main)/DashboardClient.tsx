@@ -12,6 +12,7 @@ interface Props {
   payments: Record<string, unknown>[]
   presupuestos: Record<string, unknown>[]
   setupCounts?: { materials: number; equipment: number; products: number }
+  exchangeRate?: { value: number; currency: string }
 }
 
 // fmt moved to useLocale().fmt
@@ -19,7 +20,7 @@ interface Props {
 const SL: Record<string, string> = { pending: 'Pendiente', production: 'En producción', ready: 'Listo' }
 const SC: Record<string, string> = { pending: '#FDCB6E', production: '#6C5CE7', ready: '#00B894' }
 
-export default function DashboardClient({ shopName, orders, payments, presupuestos, setupCounts }: Props) {
+export default function DashboardClient({ shopName, orders, payments, presupuestos, setupCounts, exchangeRate }: Props) {
   const t = useTranslations('dashboard')
   const ts = useTranslations('sidebar')
   const { fmt } = useLocale()
@@ -96,6 +97,17 @@ export default function DashboardClient({ shopName, orders, payments, presupuest
       <div className="mb-6">
         <h1 className="text-2xl font-black text-gray-900">{t(greetingKey, { name: shopName })} 👋</h1>
       </div>
+
+      {/* Exchange rate widget */}
+      {exchangeRate && (
+        <Link href="/settings/moneda" className="flex items-center justify-between p-3 rounded-xl bg-blue-50 border border-blue-100 mb-4 hover:bg-blue-100 transition-colors">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">💱</span>
+            <span className="text-sm font-medium text-blue-800">1 {exchangeRate.currency} = {fmt(exchangeRate.value)}</span>
+          </div>
+          <span className="text-xs text-blue-500">Editar →</span>
+        </Link>
+      )}
 
       {/* Alerts */}
       <div className={`rounded-xl p-4 mb-6 ${hasAlerts ? 'bg-amber-50 border border-amber-100' : 'bg-green-50 border border-green-100'}`}>

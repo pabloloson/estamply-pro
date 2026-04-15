@@ -44,6 +44,7 @@ export interface Insumo {
   tipo: InsumoTipo
   tecnica_asociada: string // slug or 'compartido'
   config: InsumoConfig
+  moneda?: 'local' | 'USD'  // currency of the cost prices
   created_at: string
 }
 

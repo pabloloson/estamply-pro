@@ -20,6 +20,8 @@ export default async function HomePage() {
 
   const s = (wsData?.settings || {}) as Record<string, unknown>
   const shopName = (s.nombre_tienda as string) || profile?.business_name || 'Mi Taller'
+  const tipoCambio = (s.tipo_cambio as number) || 0
+  const monedaRef = (s.moneda_referencia as string) || 'USD'
 
   return (
     <DashboardClient
@@ -28,6 +30,7 @@ export default async function HomePage() {
       payments={(payments || []) as Record<string, unknown>[]}
       presupuestos={(presupuestos || []) as Record<string, unknown>[]}
       setupCounts={{ materials: materialsCount || 0, equipment: equipmentCount || 0, products: productsCount || 0 }}
+      exchangeRate={tipoCambio > 1 ? { value: tipoCambio, currency: monedaRef } : undefined}
     />
   )
 }

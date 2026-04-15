@@ -103,6 +103,10 @@ export type WorkshopSettings = {
   fixed_costs_monthly: number
   // Mano de obra
   mano_de_obra: ManoDeObraConfig
+  // Multi-currency
+  moneda_referencia: string       // 'USD' default
+  tipo_cambio: number             // exchange rate: 1 USD = X local
+  tipo_cambio_modo: 'manual' | 'auto'
   // Strategy
   margen_sugerido: number
   descuento_global_enabled: boolean
@@ -155,6 +159,10 @@ export const DEFAULT_SETTINGS: WorkshopSettings = {
   setup_min: 15,
   fixed_costs_monthly: 50000,
   mano_de_obra: DEFAULT_MO_CONFIG,
+  // Multi-currency
+  moneda_referencia: 'USD',
+  tipo_cambio: 1,
+  tipo_cambio_modo: 'manual' as const,
   // Strategy
   margen_sugerido: 50,
   descuento_global_enabled: false,

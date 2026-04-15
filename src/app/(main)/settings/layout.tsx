@@ -15,6 +15,7 @@ const CONFIG_SECTIONS = [
   ]},
   { group: 'Ventas', items: [
     { id: 'descuentos', label: 'Descuentos' },
+    { id: 'moneda', label: 'Moneda' },
     { id: 'medios-pago', label: 'Medios de pago' },
     { id: 'condiciones', label: 'Condiciones' },
   ]},

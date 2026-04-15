@@ -390,6 +390,48 @@ export default function SettingsPage() {
       </button>
       </>)}
 
+      {activeSection === 'moneda' && (
+  <div className="max-w-2xl">
+    <h2 className="text-xl font-bold text-gray-900 mb-1">Moneda</h2>
+    <p className="text-sm text-gray-400 mb-4">Configurá el tipo de cambio para tus insumos importados.</p>
+    <div className="card p-6 space-y-4">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Moneda de referencia (insumos importados)</label>
+        <select className="input-base text-sm" value={(ws as Record<string, unknown>).moneda_referencia as string || 'USD'}
+          onChange={e => setWs({ ...ws, moneda_referencia: e.target.value } as WorkshopSettings)}>
+          <option value="USD">USD — Dólar estadounidense</option>
+          <option value="EUR">EUR — Euro</option>
+          <option value="BRL">BRL — Real brasileño</option>
+        </select>
+        <p className="text-[10px] text-gray-400 mt-1">La moneda en la que comprás insumos importados.</p>
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de cambio</label>
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-medium text-gray-500">1 {(ws as Record<string, unknown>).moneda_referencia as string || 'USD'} =</span>
+          <input type="number" className="input-base text-sm w-32" min={0} step={0.01}
+            value={(ws as Record<string, unknown>).tipo_cambio as number || 1}
+            onChange={e => setWs({ ...ws, tipo_cambio: Number(e.target.value) } as WorkshopSettings)} />
+          <span className="text-sm text-gray-500">{fmtCurrency(1).replace(/[\d.,]/g, '').trim() || '$'}</span>
+        </div>
+        <p className="text-[10px] text-gray-400 mt-1">Actualizá este valor cuando cambie el tipo de cambio.</p>
+      </div>
+      {Number((ws as Record<string, unknown>).tipo_cambio) > 0 && (
+        <div className="p-3 rounded-lg bg-blue-50 border border-blue-100">
+          <p className="text-sm text-blue-700 font-medium">
+            1 {(ws as Record<string, unknown>).moneda_referencia as string || 'USD'} = {fmtCurrency(Number((ws as Record<string, unknown>).tipo_cambio))}
+          </p>
+        </div>
+      )}
+    </div>
+    <button onClick={saveWs} disabled={saveState === 'saving'}
+      className={`mt-6 flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors ${saveState === 'saved' ? 'bg-green-500' : saveState === 'error' ? 'bg-red-500' : ''}`}
+      style={saveState !== 'saved' && saveState !== 'error' ? { background: '#6C5CE7' } : {}}>
+      {saveState === 'saving' ? <><Loader2 size={14} className="animate-spin" /> Guardando...</> : saveState === 'saved' ? '✓ Guardado' : saveState === 'error' ? 'Error' : <><Save size={14} /> Guardar</>}
+    </button>
+  </div>
+)}
+
       {activeSection === 'condiciones' && (
   <div className="max-w-2xl">
     <h2 className="text-xl font-bold text-gray-900 mb-1">Condiciones</h2>
