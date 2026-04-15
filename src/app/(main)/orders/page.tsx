@@ -10,7 +10,7 @@ import { usePermissions } from '@/shared/context/PermissionsContext'
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
 import { useDraggable, useDroppable } from '@dnd-kit/core'
 
-interface OrderItem { tecnica: string; nombre: string; cantidad: number; precioUnit?: number; subtotal: number; notas?: string; origen?: string }
+interface OrderItem { tecnica: string; nombre: string; cantidad: number; precioUnit?: number; subtotal: number; notas?: string; origen?: string; variantName?: string; variantBreakdown?: Record<string, number> }
 interface Order {
   id: string; client_id: string | null; status: string; total_price: number; total_cost: number
   advance_payment: number; due_date: string | null; notes: string | null; created_at: string
@@ -112,14 +112,22 @@ export default function OrdersPage() {
     const doc = iframe.contentDocument || iframe.contentWindow?.document
     if (!doc) return
 
-    const itemRows = items.map(i => `
+    const itemRows = items.map(i => {
+      const breakdownHtml = i.variantBreakdown && Object.values(i.variantBreakdown as Record<string, number>).some(v => v > 0)
+        ? `<tr><td colspan="4" style="padding:0 8px 8px">
+            <div style="margin:4px 0 8px;padding:8px 12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px">
+              <div style="font-size:10px;color:#999;text-transform:uppercase;font-weight:600;margin-bottom:4px">${i.variantName || 'Variantes'}</div>
+              ${Object.entries(i.variantBreakdown as Record<string, number>).filter(([,v]) => v > 0).map(([k,v]) => `<div style="display:flex;justify-content:space-between;font-size:12px"><span>${k}</span><span style="font-weight:600">${v}</span></div>`).join('')}
+            </div>
+          </td></tr>` : ''
+      return `
       <tr>
         <td style="padding:8px">${i.nombre}${i.notas ? `<div style="font-size:11px;color:#999">${i.notas}</div>` : ''}</td>
         <td style="padding:8px;text-align:center">${i.cantidad}</td>
         <td style="padding:8px;text-align:right">${fmtCurrency(i.precioUnit || 0)}</td>
         <td style="padding:8px;text-align:right;font-weight:600">${fmtCurrency(i.subtotal)}</td>
-      </tr>
-    `).join('')
+      </tr>${breakdownHtml}`
+    }).join('')
 
     doc.open()
     doc.write(`<!DOCTYPE html><html><head><title>Orden de Trabajo</title>
@@ -224,6 +232,19 @@ export default function OrdersPage() {
                 <div key={i}>
                   <div className="flex items-center gap-2 mb-1"><TechBadge t={item.tecnica} origen={item.origen} /><span className="text-sm font-semibold text-gray-800">{item.nombre}</span></div>
                   <p className="text-xs text-gray-500">Cantidad: {item.cantidad}{showPrices && item.precioUnit ? ` · P.unit: ${fmtCurrency(item.precioUnit)}` : ''}{showPrices ? <> · Subtotal: <span className="font-medium text-gray-700">{fmtCurrency(item.subtotal)}</span></> : null}</p>
+                  {item.variantBreakdown && Object.values(item.variantBreakdown).some(v => v > 0) && (
+                    <div className="mt-1.5 p-2 rounded bg-gray-50 border border-gray-100">
+                      <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">{item.variantName || 'Variantes'}</p>
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
+                        {Object.entries(item.variantBreakdown).filter(([,v]) => v > 0).map(([k, v]) => (
+                          <div key={k} className="flex justify-between text-xs">
+                            <span className="text-gray-600">{k}</span>
+                            <span className="font-medium text-gray-800">{v}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   {item.notas && <p className="text-xs text-gray-500 mt-1 italic bg-gray-50 px-2 py-1 rounded">📝 {item.notas}</p>}
                 </div>
               ))}

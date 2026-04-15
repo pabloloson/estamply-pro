@@ -13,6 +13,7 @@ function fmt(n: number) { return `$${Math.round(n).toLocaleString('es-AR')}` }
 
 interface Item {
   tecnica: string; nombre: string; cantidad: number; precioUnit: number; precioSinDesc: number; subtotal: number
+  variantName?: string; variantBreakdown?: Record<string, number>
 }
 
 interface Props {
@@ -112,7 +113,14 @@ export default function PublicQuoteView({ presupuesto }: Props) {
                           {TECHNIQUE_LABELS[item.tecnica] || item.tecnica}
                         </span>
                       </td>
-                      <td className="py-3 pr-3 align-top"><p className="font-semibold text-gray-800 text-sm">{item.nombre}</p></td>
+                      <td className="py-3 pr-3 align-top">
+                        <p className="font-semibold text-gray-800 text-sm">{item.nombre}</p>
+                        {item.variantBreakdown && Object.values(item.variantBreakdown as Record<string, number>).some(v => v > 0) && (
+                          <p className="text-xs text-gray-400 mt-0.5">
+                            {Object.entries(item.variantBreakdown as Record<string, number>).filter(([,v]) => v > 0).map(([k, v]) => `${k} ×${v}`).join(' · ')}
+                          </p>
+                        )}
+                      </td>
                       <td className="py-3 text-center text-sm text-gray-600 font-medium align-top">{item.cantidad}</td>
                       <td className="py-3 text-right text-sm text-gray-600 align-top">
                         {item.precioSinDesc > item.precioUnit + 1 && <span className="text-xs text-gray-400 line-through mr-1">{fmt(item.precioSinDesc)}</span>}
