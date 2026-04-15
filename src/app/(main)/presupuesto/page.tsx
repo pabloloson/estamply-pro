@@ -74,6 +74,8 @@ export default function PresupuestoPage() {
   const [linkCopied, setLinkCopied] = useState(false)
 
   const [breakdownOpen, setBreakdownOpen] = useState<string | null>(null)
+  const [baseProducts, setBaseProducts] = useState<Array<{ name: string; variant_name: string | null; variant_options: string[] }>>([])
+
   const [editingItemId, setEditingItemId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<{ nombre: string; cantidad: number; precioUnit: number }>({ nombre: '', cantidad: 1, precioUnit: 0 })
   const [showAddPanel, setShowAddPanel] = useState<'catalog' | 'free' | null>(null)
@@ -232,14 +234,23 @@ export default function PresupuestoPage() {
     addItem({ tecnica: 'subli', nombre: selectedCatalogProduct.name, costoUnit: 0, precioUnit: selectedCatalogProduct.selling_price, precioSinDesc: selectedCatalogProduct.selling_price, cantidad: qty, subtotal: qty * selectedCatalogProduct.selling_price, ganancia: qty * selectedCatalogProduct.selling_price, origen: 'catalogo', variantName: fullProduct?.variant_name || undefined })
     setSelectedCatalogProduct(null); setCatalogQty(1); setCatalogSearch(''); setShowAddPanel(null)
   }
+  // Get variant info for an item — checks item itself, catalog products, and base products
+  function getItemVariant(item: import('@/features/presupuesto/types').PresupuestoItem) {
+    if (item.variantName) return { name: item.variantName, options: Object.keys(item.variantBreakdown || {}) }
+    const catProd = catalogProducts.find(p => p.name === item.nombre)
+    if (catProd?.variant_name) return { name: catProd.variant_name, options: catProd.variant_options || [] }
+    const baseProd = baseProducts.find(p => p.name === item.nombre)
+    if (baseProd?.variant_name) return { name: baseProd.variant_name, options: baseProd.variant_options || [] }
+    return null
+  }
+
   function openBreakdown(item: import('@/features/presupuesto/types').PresupuestoItem) {
+    const variant = getItemVariant(item)
+    if (!variant) return
     if (!item.variantBreakdown || Object.keys(item.variantBreakdown).length === 0) {
-      const product = catalogProducts.find(p => p.name === item.nombre)
-      if (product?.variant_options?.length) {
-        const breakdown: Record<string, number> = {}
-        product.variant_options.forEach(opt => { breakdown[opt] = 0 })
-        updateItem(item.id, { variantBreakdown: breakdown })
-      }
+      const breakdown: Record<string, number> = {}
+      variant.options.forEach(opt => { breakdown[opt] = 0 })
+      updateItem(item.id, { variantName: variant.name, variantBreakdown: breakdown })
     }
     setBreakdownOpen(item.id)
   }
@@ -405,6 +416,10 @@ export default function PresupuestoPage() {
           setCondiciones((sx.condiciones_presupuesto as string).split('\n').map((l: string) => l.replace(/^[·\-•]\s*/, '').trim()).filter(Boolean))
         }
       }
+      // Load base products with variants
+      const { data: bp } = await supabase.from('products').select('name, variant_name, variant_options').not('variant_name', 'is', null)
+      if (bp) setBaseProducts(bp as typeof baseProducts)
+
       setLoadingClients(false)
 
       // Restore client if presupuesto was loaded (e.g. after page refresh)
@@ -777,7 +792,7 @@ export default function PresupuestoPage() {
                       </div>
                       <p className="font-medium text-sm text-gray-800 mt-1">{item.nombre}</p>
                       <p className="text-xs text-gray-400 mt-0.5">{item.notas ? `${item.notas} — ` : ''}Cant: {item.cantidad} × {fmtCurrency(item.precioUnit)}</p>
-                      {item.variantName && breakdownOpen !== item.id && (() => {
+                      {getItemVariant(item) && breakdownOpen !== item.id && (() => {
                         const hasValues = item.variantBreakdown && Object.values(item.variantBreakdown).some(v => v > 0)
                         return hasValues ? (
                           <div className="mt-2 flex items-center gap-2">
@@ -786,14 +801,14 @@ export default function PresupuestoPage() {
                           </div>
                         ) : (
                           <button onClick={() => openBreakdown(item)} className="text-xs text-purple-500 font-medium mt-2">
-                            📐 Desglosar por {item.variantName?.toLowerCase()}
+                            📐 Desglosar por {(getItemVariant(item)?.name || '').toLowerCase()}
                           </button>
                         )
                       })()}
-                      {item.variantName && breakdownOpen === item.id && (
+                      {getItemVariant(item) && breakdownOpen === item.id && (
                         <div className="mt-2 space-y-1.5 p-3 rounded-lg bg-gray-50">
                           <div className="flex items-center justify-between mb-1">
-                            <span className="text-xs font-semibold text-gray-500">Desglose por {item.variantName?.toLowerCase()}:</span>
+                            <span className="text-xs font-semibold text-gray-500">Desglose por {(getItemVariant(item)?.name || '').toLowerCase()}:</span>
                             <button onClick={() => setBreakdownOpen(null)} className="text-xs text-gray-400">Cerrar</button>
                           </div>
                           {(Object.keys(item.variantBreakdown || {}).length > 0
@@ -864,7 +879,7 @@ export default function PresupuestoPage() {
                           <td className="py-3 pr-3 align-top">
                             <p className="font-semibold text-gray-800 text-sm">{item.nombre}</p>
                             {item.notas && <p className="text-[11px] text-gray-400 mt-0.5">{item.notas}</p>}
-                            {item.variantName && breakdownOpen !== item.id && (() => {
+                            {getItemVariant(item) && breakdownOpen !== item.id && (() => {
                               const hasValues = item.variantBreakdown && Object.values(item.variantBreakdown).some(v => v > 0)
                               return hasValues ? (
                                 <div className="mt-0.5 flex items-center gap-2">
@@ -873,7 +888,7 @@ export default function PresupuestoPage() {
                                 </div>
                               ) : (
                                 <button onClick={() => openBreakdown(item)} className="text-[10px] text-purple-500 font-medium mt-0.5 no-print">
-                                  📐 Desglosar por {item.variantName?.toLowerCase()}
+                                  📐 Desglosar por {(getItemVariant(item)?.name || '').toLowerCase()}
                                 </button>
                               )
                             })()}
@@ -893,7 +908,7 @@ export default function PresupuestoPage() {
                             <td colSpan={6} className="py-2 px-3">
                               <div className="space-y-1.5 p-3 rounded-lg bg-gray-50">
                                 <div className="flex items-center justify-between mb-1">
-                                  <span className="text-xs font-semibold text-gray-500">Desglose por {item.variantName?.toLowerCase()}:</span>
+                                  <span className="text-xs font-semibold text-gray-500">Desglose por {(getItemVariant(item)?.name || '').toLowerCase()}:</span>
                                   <button onClick={() => setBreakdownOpen(null)} className="text-xs text-gray-400">Cerrar</button>
                                 </div>
                                 <div className="flex flex-wrap gap-3">
