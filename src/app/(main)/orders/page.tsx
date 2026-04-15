@@ -264,6 +264,15 @@ export default function OrdersPage() {
         <div style="font-size:12px">${order.files_link}</div>
       </div>` : ''}
 
+      ${(() => {
+        const mats = orderMaterials[order.id] || []
+        return mats.length > 0 ? `
+        <div class="section">
+          <div style="font-size:11px;color:#999;text-transform:uppercase;margin-bottom:8px">Materiales necesarios</div>
+          ${mats.map(m => `<div style="font-size:13px;margin-bottom:4px"><span class="check"></span>${m.nombre} × ${m.cantidad} ${m.unidad}</div>`).join('')}
+        </div>` : ''
+      })()}
+
       <div style="margin-top:24px">
         <div style="font-size:11px;color:#999;text-transform:uppercase;margin-bottom:8px">Control de producción</div>
         <div style="display:flex;gap:24px;font-size:13px">
@@ -405,7 +414,21 @@ export default function OrdersPage() {
                   {orderMaterials[order.id].filter(m => m.disponible).length}/{orderMaterials[order.id].length} disponibles
                 </p>
               </div>
-            ) : <p className="text-xs text-gray-400 italic">Sin materiales registrados.</p>
+            ) : <div>
+              <p className="text-xs text-gray-400 italic">Sin materiales registrados.</p>
+              <button onClick={async () => {
+                const { data: { user } } = await supabase.auth.getUser()
+                if (!user) return
+                const orderItems = (order.items || []) as OrderItem[]
+                const mats = orderItems
+                  .filter(i => !(i.origen === 'manual' && ['envío','envio','diseño','diseno','urgencia','flete','servicio','recargo'].some(kw => i.nombre.toLowerCase().includes(kw))))
+                  .map(i => ({ pedido_id: order.id, user_id: user.id, tipo: 'producto_base', nombre: i.nombre, cantidad: i.cantidad, unidad: 'unidades' }))
+                if (mats.length > 0) {
+                  await supabase.from('pedido_materiales').insert(mats)
+                  loadMaterials(order.id)
+                }
+              }} className="text-xs text-purple-500 font-medium mt-2">Generar materiales</button>
+            </div>
           ) : <p className="text-xs text-gray-400 italic">Click &quot;Cargar&quot; para ver materiales.</p>}
         </div>
 

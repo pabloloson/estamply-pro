@@ -6,16 +6,13 @@ import { createClient } from '@/lib/supabase/client'
 import { Check, Copy, Printer, EyeOff, MessageCircle, Globe, ChevronDown, ChevronUp } from 'lucide-react'
 import { useLocale } from '@/shared/context/LocaleContext'
 
-interface OrderItem { tecnica: string; nombre: string; cantidad: number; origen?: string; variantName?: string; variantBreakdown?: Record<string, number> }
-interface Order { id: string; status: string; due_date: string | null; created_at: string; items: OrderItem[]; clients?: { name: string } | null }
-interface Product { id: string; name: string; supplier_id: string | null }
+interface Material { id: string; nombre: string; cantidad: number; unidad: string; disponible: boolean; proveedor_id: string | null; proveedor_nombre: string | null; pedido_id: string }
+interface Order { id: string; status: string; created_at: string }
 interface Supplier { id: string; name: string; whatsapp: string | null; website: string | null }
 
-const SERVICE_KEYWORDS = ['envío', 'envio', 'diseño', 'diseno', 'urgencia', 'recargo', 'descuento', 'ajuste', 'flete', 'delivery', 'servicio', 'comisión', 'comision']
-
-function isService(item: OrderItem): boolean {
-  if (item.origen !== 'manual') return false
-  return SERVICE_KEYWORDS.some(kw => item.nombre.toLowerCase().includes(kw))
+interface ConsolidatedItem {
+  nombre: string; required: number; unidad: string
+  pedidos: Array<{ id: string; label: string }>; supplierName: string | null; supplierId: string | null
 }
 
 function orderLabel(id: string, date: string) {
@@ -23,18 +20,13 @@ function orderLabel(id: string, date: string) {
   return `#${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${id.slice(0, 4)}`
 }
 
-interface ConsolidatedItem {
-  nombre: string; required: number; variants: Record<string, number>
-  pedidos: Array<{ id: string; label: string }>; supplierId: string | null
-}
-
 const LS_KEY = 'estamply-abastecimiento'
 
 export default function AbastecimientoPage() {
   const supabase = createClient()
   const { fmt } = useLocale()
+  const [materials, setMaterials] = useState<Material[]>([])
   const [orders, setOrders] = useState<Order[]>([])
-  const [products, setProducts] = useState<Product[]>([])
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -65,38 +57,38 @@ export default function AbastecimientoPage() {
 
   useEffect(() => {
     async function load() {
-      const [{ data: o }, { data: p }, { data: s }] = await Promise.all([
-        supabase.from('orders').select('id, status, due_date, created_at, items, clients(name)').in('status', ['pending', 'production']).order('due_date', { ascending: true }),
-        supabase.from('products').select('id, name, supplier_id'),
+      const [{ data: mats }, { data: ords }, { data: sups }] = await Promise.all([
+        supabase.from('pedido_materiales').select('id, nombre, cantidad, unidad, disponible, proveedor_id, proveedor_nombre, pedido_id').eq('disponible', false),
+        supabase.from('orders').select('id, status, created_at').in('status', ['pending', 'production']),
         supabase.from('suppliers').select('id, name, whatsapp, website').order('name'),
       ])
-      setOrders((o || []) as unknown as Order[])
-      setProducts((p || []) as Product[])
-      setSuppliers((s || []) as Supplier[])
+      setMaterials((mats || []) as Material[])
+      setOrders((ords || []) as Order[])
+      setSuppliers((sups || []) as Supplier[])
       setLoading(false)
     }
     load()
   }, [])
 
-  // Consolidate
+  // Build order date map for labels
+  const orderDateMap = new Map<string, string>()
+  for (const o of orders) orderDateMap.set(o.id, o.created_at)
+
+  // Only include materials from active orders
+  const activeOrderIds = new Set(orders.map(o => o.id))
+  const activeMaterials = materials.filter(m => activeOrderIds.has(m.pedido_id))
+
+  // Consolidate materials by name
   const itemMap = new Map<string, ConsolidatedItem>()
-  for (const order of orders) {
-    for (const item of (order.items || []) as OrderItem[]) {
-      if (isService(item)) continue
-      const key = item.nombre
-      const existing = itemMap.get(key) || { nombre: item.nombre, required: 0, variants: {}, pedidos: [], supplierId: null }
-      existing.required += item.cantidad
-      existing.pedidos.push({ id: order.id, label: orderLabel(order.id, order.created_at) })
-      if (item.variantBreakdown) {
-        for (const [k, v] of Object.entries(item.variantBreakdown)) {
-          if (v > 0) existing.variants[k] = (existing.variants[k] || 0) + v
-        }
-      }
-      // Find supplier from products table
-      const prod = products.find(p => p.name === item.nombre)
-      if (prod?.supplier_id) existing.supplierId = prod.supplier_id
-      itemMap.set(key, existing)
-    }
+  for (const mat of activeMaterials) {
+    const key = mat.nombre
+    const existing = itemMap.get(key) || { nombre: mat.nombre, required: 0, unidad: mat.unidad, pedidos: [], supplierName: null, supplierId: null }
+    existing.required += mat.cantidad
+    if (mat.unidad) existing.unidad = mat.unidad
+    const dateStr = orderDateMap.get(mat.pedido_id)
+    if (dateStr) existing.pedidos.push({ id: mat.pedido_id, label: orderLabel(mat.pedido_id, dateStr) })
+    if (mat.proveedor_id) { existing.supplierId = mat.proveedor_id; existing.supplierName = mat.proveedor_nombre }
+    itemMap.set(key, existing)
   }
 
   const allItems = Array.from(itemMap.values()).filter(p => !hidden[p.nombre]).sort((a, b) => b.required - a.required)
@@ -105,7 +97,7 @@ export default function AbastecimientoPage() {
   const groups = new Map<string, { supplier: Supplier | null; items: ConsolidatedItem[] }>()
   for (const item of allItems) {
     const sid = item.supplierId || 'none'
-    const existing = groups.get(sid) || { supplier: suppliers.find(s => s.id === sid) || null, items: [] }
+    const existing = groups.get(sid) || { supplier: suppliers.find(s => s.id === sid) || (item.supplierName ? { id: sid, name: item.supplierName, whatsapp: null, website: null } : null), items: [] }
     existing.items.push(item)
     groups.set(sid, existing)
   }
@@ -117,16 +109,15 @@ export default function AbastecimientoPage() {
   function copyToClipboard() {
     const sections: string[] = []
     for (const [, group] of sortedGroups) {
-      const header = group.supplier ? `📦 ${group.supplier.name}:` : '📦 Sin proveedor:'
+      const header = group.supplier ? `${group.supplier.name}:` : 'Sin proveedor:'
       sections.push(header)
       group.items.forEach(p => {
         const qty = getQty(p.nombre, p.required)
-        const v = Object.keys(p.variants).length > 0 ? `\n  ${Object.entries(p.variants).map(([k, v]) => `${k}: ${v}`).join(', ')}` : ''
-        sections.push(`• ${p.nombre} × ${qty}${v}`)
+        sections.push(`  ${p.nombre} x ${qty} ${p.unidad}`)
       })
       sections.push('')
     }
-    const text = `📋 Abastecimiento — ${new Date().toLocaleDateString('es-AR')}\n\n${sections.join('\n')}Total: ${allItems.reduce((s, p) => s + getQty(p.nombre, p.required), 0)} unidades`
+    const text = `Materiales - ${new Date().toLocaleDateString('es-AR')}\n\n${sections.join('\n')}`
     navigator.clipboard.writeText(text)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
@@ -144,16 +135,14 @@ export default function AbastecimientoPage() {
       const title = group.supplier?.name || 'Sin proveedor asignado'
       const rows = group.items.map(p => {
         const qty = getQty(p.nombre, p.required)
-        const variants = Object.keys(p.variants).length > 0
-          ? `<div style="font-size:11px;color:#666;margin-top:2px">${Object.entries(p.variants).map(([k, v]) => `${k}: ${v}`).join(' · ')}</div>` : ''
-        return `<tr><td style="padding:8px;border-bottom:1px solid #eee"><span style="display:inline-block;width:16px;height:16px;border:2px solid #333;border-radius:3px;margin-right:8px;vertical-align:middle"></span>${p.nombre}${variants}</td><td style="padding:8px;text-align:center;font-weight:700;font-size:16px;border-bottom:1px solid #eee">${qty}</td></tr>`
+        return `<tr><td style="padding:8px;border-bottom:1px solid #eee"><span style="display:inline-block;width:16px;height:16px;border:2px solid #333;border-radius:3px;margin-right:8px;vertical-align:middle"></span>${p.nombre}</td><td style="padding:8px;text-align:center;font-weight:700;font-size:16px;border-bottom:1px solid #eee">${qty} ${p.unidad}</td></tr>`
       }).join('')
       body += `<div style="font-size:13px;font-weight:700;text-transform:uppercase;color:#666;margin:20px 0 8px;letter-spacing:1px;border-bottom:1px solid #ccc;padding-bottom:4px">${title}</div><table style="width:100%;border-collapse:collapse"><tbody>${rows}</tbody></table>`
     }
 
     doc.open()
-    doc.write(`<!DOCTYPE html><html><head><title>Abastecimiento</title><style>body{font-family:Arial,sans-serif;color:#000;margin:0;padding:20mm}@page{size:A4;margin:0}</style></head><body>
-      <div style="display:flex;justify-content:space-between;margin-bottom:16px;padding-bottom:12px;border-bottom:3px solid #333"><div><div style="font-size:22px;font-weight:800">ABASTECIMIENTO</div><div style="font-size:12px;color:#666">${new Date().toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })}</div></div><div style="text-align:right"><div style="font-size:14px;font-weight:600">${orders.length} pedidos</div><div style="font-size:12px;color:#666">${allItems.reduce((s, p) => s + getQty(p.nombre, p.required), 0)} unidades</div></div></div>
+    doc.write(`<!DOCTYPE html><html><head><title>Materiales</title><style>body{font-family:Arial,sans-serif;color:#000;margin:0;padding:20mm}@page{size:A4;margin:0}</style></head><body>
+      <div style="display:flex;justify-content:space-between;margin-bottom:16px;padding-bottom:12px;border-bottom:3px solid #333"><div><div style="font-size:22px;font-weight:800">MATERIALES</div><div style="font-size:12px;color:#666">${new Date().toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })}</div></div><div style="text-align:right"><div style="font-size:14px;font-weight:600">${orders.length} pedidos</div><div style="font-size:12px;color:#666">${allItems.length} materiales</div></div></div>
       ${body}
       <div style="text-align:center;font-size:10px;color:#ccc;margin-top:32px">Estamply</div></body></html>`)
     doc.close()
@@ -176,8 +165,8 @@ export default function AbastecimientoPage() {
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Abastecimiento</h1>
-          <p className="text-gray-500 text-sm mt-1">{orders.length} pedidos activos · {allItems.reduce((s, p) => s + getQty(p.nombre, p.required), 0)} unidades</p>
+          <h1 className="text-2xl font-bold text-gray-900">Materiales</h1>
+          <p className="text-gray-500 text-sm mt-1">{orders.length} pedidos activos · {allItems.length} materiales pendientes</p>
         </div>
         <div className="flex gap-2 flex-wrap">
           <button onClick={copyToClipboard} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50">
@@ -206,7 +195,7 @@ export default function AbastecimientoPage() {
                 <button onClick={() => setOpenGroups(prev => ({ ...prev, [groupId]: !isOpen }))} className="w-full flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">{group.supplier?.name || 'Sin proveedor'}</span>
-                    <span className="text-[10px] text-gray-300">{group.items.length} productos</span>
+                    <span className="text-[10px] text-gray-300">{group.items.length} materiales</span>
                   </div>
                   <div className="flex items-center gap-2">
                     {group.supplier?.whatsapp && (
@@ -235,17 +224,11 @@ export default function AbastecimientoPage() {
                               <div className="flex items-center gap-1.5 flex-shrink-0">
                                 <input type="number" min={0} className="w-16 text-center text-sm font-bold border border-gray-200 rounded-md py-1 bg-white"
                                   value={qty} onChange={e => setQtyOverrides(prev => ({ ...prev, [item.nombre]: Number(e.target.value) || 0 }))} />
+                                <span className="text-[10px] text-gray-400">{item.unidad}</span>
                                 {qty !== item.required && <span className="text-[9px] text-gray-400">(req: {item.required})</span>}
                                 <button onClick={() => setHidden(prev => ({ ...prev, [item.nombre]: true }))} className="p-1 rounded hover:bg-gray-100" title="Ocultar"><EyeOff size={12} className="text-gray-300" /></button>
                               </div>
                             </div>
-                            {Object.keys(item.variants).length > 0 && (
-                              <div className="mt-1.5 flex flex-wrap gap-1.5">
-                                {Object.entries(item.variants).map(([k, v]) => (
-                                  <span key={k} className="text-xs px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 font-medium">{k}: {v}</span>
-                                ))}
-                              </div>
-                            )}
                             <div className="mt-1 flex flex-wrap gap-1">
                               {uniquePedidos.map(pd => (
                                 <Link key={pd.id} href="/orders" className="text-[10px] text-purple-400 hover:text-purple-600 hover:underline">{pd.label}</Link>
@@ -263,7 +246,7 @@ export default function AbastecimientoPage() {
 
           {allChecked && (
             <div className="p-4 rounded-xl bg-green-50 border border-green-100 text-center space-y-2">
-              <p className="text-sm font-semibold text-green-700">✅ Todos los materiales marcados.</p>
+              <p className="text-sm font-semibold text-green-700">Todos los materiales marcados.</p>
               <button onClick={handleFinalize} className="px-4 py-2 rounded-lg text-xs font-semibold text-white" style={{ background: '#6C5CE7' }}>Finalizar abastecimiento</button>
             </div>
           )}

@@ -483,23 +483,90 @@ export default function PresupuestoPage() {
       // Generate materials list for the order
       if (order) {
         const materials: Array<{ pedido_id: string; user_id: string; tipo: string; nombre: string; cantidad: number; unidad: string; proveedor_id?: string; proveedor_nombre?: string }> = []
-        // Fetch products + suppliers for linking
-        const { data: prods } = await supabase.from('products').select('name, supplier_id, suppliers(name)').not('supplier_id', 'is', null)
+
+        // Fetch products + suppliers
+        const { data: prods } = await supabase.from('products').select('name, supplier_id, suppliers(name)')
         const prodSuppliers = new Map<string, { id: string; name: string }>()
         if (prods) prods.forEach((p: Record<string, unknown>) => {
           if (p.supplier_id) prodSuppliers.set(p.name as string, { id: p.supplier_id as string, name: ((p.suppliers as Record<string, unknown>)?.name as string) || '' })
         })
+
+        // Fetch insumos for technique-based material calculation
+        const { data: insumosData } = await supabase.from('insumos').select('id, nombre, tipo, tecnica_asociada, config, supplier_id, suppliers(name)')
+
         for (const item of items) {
+          // Skip services
           if (item.origen === 'manual') {
             const lower = item.nombre.toLowerCase()
-            if (['envío', 'envio', 'diseño', 'diseno', 'urgencia', 'flete', 'servicio', 'recargo'].some(kw => lower.includes(kw))) continue
+            if (['envío', 'envio', 'diseño', 'diseno', 'urgencia', 'flete', 'servicio', 'recargo', 'comisión', 'comision', 'mano de obra'].some(kw => lower.includes(kw))) continue
           }
+
+          // 1. Product base material
           const sup = prodSuppliers.get(item.nombre)
           materials.push({
             pedido_id: order.id, user_id: user.id, tipo: 'producto_base',
             nombre: item.nombre, cantidad: item.cantidad, unidad: 'unidades',
             ...(sup ? { proveedor_id: sup.id, proveedor_nombre: sup.name } : {}),
           })
+
+          // 2. Insumos by technique (simplified calculation)
+          if (item.tecnica && insumosData) {
+            const techInsumos = insumosData.filter((ins: Record<string, unknown>) =>
+              ins.tecnica_asociada === item.tecnica || ins.tecnica_asociada === 'compartido'
+            )
+
+            for (const ins of techInsumos) {
+              const insObj = ins as Record<string, unknown>
+              const cfg = (insObj.config || {}) as Record<string, unknown>
+              const tipo = insObj.tipo as string
+              let cantidad = 0
+              let unidad = 'unidades'
+
+              // Calculate consumption based on insumo type
+              if (tipo === 'papel') {
+                // Estimate sheets needed (simplified: 1 sheet per unit as baseline)
+                const hojasPorResma = (cfg.hojas_resma as number) || 100
+                cantidad = Math.ceil(item.cantidad * 1.1) // +10% waste
+                unidad = cfg.formato === 'rollo' ? 'metros' : 'hojas'
+                if (cfg.formato === 'rollo') {
+                  cantidad = Math.round(item.cantidad * 0.3 * 10) / 10 // rough estimate: 30cm per unit
+                }
+              } else if (tipo === 'tinta') {
+                const rendimiento = (cfg.rendimiento as number) || 4000
+                cantidad = Math.round((item.cantidad / rendimiento) * 1000) // ml
+                unidad = 'ml'
+                if (cantidad < 1) cantidad = 1
+              } else if (tipo === 'film') {
+                const ancho = (cfg.ancho as number) || 60
+                cantidad = Math.round(item.cantidad * 0.25 * 10) / 10 // rough: 25cm per unit
+                unidad = 'metros'
+              } else if (tipo === 'polvo') {
+                cantidad = Math.round(item.cantidad * 0.01 * 100) / 100 // rough: 10g per unit
+                unidad = 'kg'
+              } else if (tipo === 'vinilo') {
+                cantidad = Math.round(item.cantidad * 0.3 * 10) / 10
+                unidad = 'metros'
+              } else if (tipo === 'servicio_impresion') {
+                cantidad = Math.round(item.cantidad * 0.25 * 10) / 10
+                unidad = 'metros'
+              } else {
+                continue // skip unknown types
+              }
+
+              if (cantidad <= 0) continue
+
+              const insSup = insObj.supplier_id ? {
+                proveedor_id: insObj.supplier_id as string,
+                proveedor_nombre: ((insObj.suppliers as Record<string, unknown>)?.name as string) || ''
+              } : {}
+
+              materials.push({
+                pedido_id: order.id, user_id: user.id, tipo: 'insumo',
+                nombre: insObj.nombre as string, cantidad, unidad,
+                ...insSup,
+              })
+            }
+          }
         }
         if (materials.length > 0) {
           await supabase.from('pedido_materiales').insert(materials)
