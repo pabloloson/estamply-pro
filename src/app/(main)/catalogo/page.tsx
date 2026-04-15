@@ -192,43 +192,45 @@ export default function CatalogoPage() {
                 </div>
               </div>
               <div className="mt-2 flex items-center gap-3 text-xs">
-                {showCosts && (
-                  <div>
-                    <span className="text-gray-400">{t('cost')}</span>
-                    <p className="font-semibold text-gray-700">{fmtCurrency(p.unit_cost)}</p>
-                  </div>
-                )}
                 <div>
                   <span className="text-gray-400">{t('price')}</span>
                   <p className="font-semibold text-gray-700">{fmtCurrency(p.selling_price)}</p>
                 </div>
                 {showCosts && (
                   <div>
+                    <span className="text-gray-400">{t('cost')}</span>
+                    <p className="font-semibold text-gray-700">{p.unit_cost ? fmtCurrency(p.unit_cost) : '—'}</p>
+                  </div>
+                )}
+                {showCosts && (
+                  <div>
                     <span className="text-gray-400">{t('margin')}</span>
-                    <p className={`font-semibold ${marginColor(margin)}`}>{margin}%</p>
+                    <p className={`font-semibold ${p.unit_cost ? marginColor(margin) : 'text-gray-300'}`}>{p.unit_cost ? `${margin}%` : '—'}</p>
                   </div>
                 )}
                 <div className="ml-auto text-right">
                   {p.manage_stock ? (
-                    <p className={`font-medium ${lowStock ? 'text-red-500' : 'text-gray-600'}`}>
-                      {lowStock && <AlertTriangle size={10} className="inline mr-0.5" />}{p.current_stock} u.
-                    </p>
+                    p.current_stock > 0 ? (
+                      <p className="font-medium text-gray-600">{p.current_stock} en stock</p>
+                    ) : (
+                      <p className="font-medium text-red-500">Sin stock</p>
+                    )
                   ) : (
-                    <span className="text-gray-400">{t('onDemand')}</span>
+                    <span className="text-gray-400">A pedido</span>
                   )}
                 </div>
               </div>
             </div>
           )
         })}
-        {filtered.length === 0 && (catalogProducts.length === 0 ? <EmptyState icon="👕" title="Cargá los productos que vendés." description="Remeras, tazas, gorras, fundas — cada producto con su costo y la plancha que necesita." actionLabel="+ Agregar producto" onAction={() => setCatModal({})} /> : <div className="text-center py-12 text-gray-400">No hay productos en esta vista.</div>)}
+        {filtered.length === 0 && (catalogProducts.length === 0 ? <EmptyState icon="👕" title="Cargá los productos de tu tienda." description="Productos terminados con diseño y precio de venta para tu catálogo web." actionLabel="+ Agregar producto" onAction={() => setCatModal({})} /> : <div className="text-center py-12 text-gray-400">No hay productos en esta vista.</div>)}
       </div>
 
       {/* Product table */}
       <div className="hidden md:block card" style={{ overflow: 'visible' }}>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[600px]"><thead><tr className="border-b border-gray-100">
-            {['', t('productName').replace(' *', ''), ...(showCosts ? [t('cost')] : []), t('price'), ...(showCosts ? [t('margin')] : []), t('stock'), '', ''].map((h, i) =>
+            {['', t('productName').replace(' *', ''), t('price'), ...(showCosts ? [t('cost')] : []), ...(showCosts ? [t('margin')] : []), 'Disponibilidad', '', ''].map((h, i) =>
               <th key={i} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 py-3">{h}</th>)}
           </tr></thead><tbody>
             {filtered.map(p => {
@@ -244,29 +246,33 @@ export default function CatalogoPage() {
                     <p className="font-medium text-gray-800">{p.name}</p>
                     {p.description && <p className="text-xs text-gray-400 truncate max-w-[200px]">{p.description}</p>}
                   </td>
-                  {showCosts && <td className="px-3 py-3 text-gray-600 text-sm">{fmtCurrency(p.unit_cost)}</td>}
                   <td className="px-3 py-3 font-semibold text-gray-800 text-sm">{fmtCurrency(p.selling_price)}</td>
-                  {showCosts && <td className="px-3 py-3"><span className={`text-sm font-medium ${marginColor(margin)}`}>{margin}%</span></td>}
+                  {showCosts && <td className="px-3 py-3 text-gray-600 text-sm">{p.unit_cost ? fmtCurrency(p.unit_cost) : '—'}</td>}
+                  {showCosts && <td className="px-3 py-3"><span className={`text-sm font-medium ${p.unit_cost ? marginColor(margin) : 'text-gray-300'}`}>{p.unit_cost ? `${margin}%` : '—'}</span></td>}
                   <td className="px-3 py-3 text-sm">
                     {p.manage_stock ? (
-                      <div className="relative inline-block">
-                        <button onClick={e => { e.stopPropagation(); setStockPopover(stockPopover === p.id ? null : p.id) }} className={`flex items-center gap-1 cursor-pointer ${lowStock ? 'text-red-500 font-medium' : 'text-gray-600 hover:text-gray-800'}`}>
-                          {lowStock && <AlertTriangle size={12} />}{p.current_stock} u.
-                        </button>
-                        {stockPopover === p.id && (
-                          <div className="absolute left-0 top-full mt-1 w-48 py-2 bg-white rounded-lg z-50" onClick={e => e.stopPropagation()}
-                            style={{ border: '1px solid #e5e5e5', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
-                            <p className="px-3 py-1 text-xs font-semibold text-gray-500 border-b border-gray-100 mb-1 pb-1.5">Stock: {p.current_stock} u.</p>
-                            <button onClick={() => { setStockPopover(null); setStockModal({ product: p, type: 'produce', qty: 0, note: '', movements: [] }) }} className="w-full text-left px-3 py-1.5 text-sm hover:bg-purple-50 text-gray-700 transition-colors">+ Producir</button>
-                            <button onClick={() => { setStockPopover(null); setStockModal({ product: p, type: 'sell', qty: 0, note: '', movements: [] }) }} className="w-full text-left px-3 py-1.5 text-sm hover:bg-purple-50 text-gray-700 transition-colors">− Vender</button>
-                            <button onClick={() => { setStockPopover(null); setStockModal({ product: p, type: 'adjust', qty: p.current_stock, note: '', movements: [] }) }} className="w-full text-left px-3 py-1.5 text-sm hover:bg-purple-50 text-gray-700 transition-colors">⟳ Ajustar</button>
-                            <div className="border-t border-gray-100 mt-1 pt-1">
-                              <button onClick={() => { setStockPopover(null); openHistory(p) }} className="w-full text-left px-3 py-1.5 text-sm hover:bg-purple-50 text-gray-400 transition-colors">📋 Historial</button>
+                      p.current_stock > 0 ? (
+                        <div className="relative inline-block">
+                          <button onClick={e => { e.stopPropagation(); setStockPopover(stockPopover === p.id ? null : p.id) }} className="flex items-center gap-1 cursor-pointer text-gray-600 hover:text-gray-800">
+                            {p.current_stock} en stock
+                          </button>
+                          {stockPopover === p.id && (
+                            <div className="absolute left-0 top-full mt-1 w-48 py-2 bg-white rounded-lg z-50" onClick={e => e.stopPropagation()}
+                              style={{ border: '1px solid #e5e5e5', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+                              <p className="px-3 py-1 text-xs font-semibold text-gray-500 border-b border-gray-100 mb-1 pb-1.5">Stock: {p.current_stock} u.</p>
+                              <button onClick={() => { setStockPopover(null); setStockModal({ product: p, type: 'produce', qty: 0, note: '', movements: [] }) }} className="w-full text-left px-3 py-1.5 text-sm hover:bg-purple-50 text-gray-700 transition-colors">+ Producir</button>
+                              <button onClick={() => { setStockPopover(null); setStockModal({ product: p, type: 'sell', qty: 0, note: '', movements: [] }) }} className="w-full text-left px-3 py-1.5 text-sm hover:bg-purple-50 text-gray-700 transition-colors">− Vender</button>
+                              <button onClick={() => { setStockPopover(null); setStockModal({ product: p, type: 'adjust', qty: p.current_stock, note: '', movements: [] }) }} className="w-full text-left px-3 py-1.5 text-sm hover:bg-purple-50 text-gray-700 transition-colors">⟳ Ajustar</button>
+                              <div className="border-t border-gray-100 mt-1 pt-1">
+                                <button onClick={() => { setStockPopover(null); openHistory(p) }} className="w-full text-left px-3 py-1.5 text-sm hover:bg-purple-50 text-gray-400 transition-colors">📋 Historial</button>
+                              </div>
                             </div>
-                          </div>
-                        )}
-                      </div>
-                    ) : <span className="text-gray-400 text-xs">{t('onDemand')}</span>}
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-red-500 font-medium text-xs">Sin stock</span>
+                      )
+                    ) : <span className="text-gray-400 text-xs">A pedido</span>}
                   </td>
                   <td className="px-3 py-3">{p.visible_in_catalog ? <Eye size={14} className="text-green-500" /> : <EyeOff size={14} className="text-gray-300" />}</td>
                   <td className="px-3 py-3"><div className="flex gap-1">
@@ -277,7 +283,7 @@ export default function CatalogoPage() {
               )
             })}
           </tbody></table>
-          {filtered.length === 0 && (catalogProducts.length === 0 ? <EmptyState icon="👕" title="Cargá los productos que vendés." description="Remeras, tazas, gorras, fundas — cada producto con su costo y la plancha que necesita." actionLabel="+ Agregar producto" onAction={() => setCatModal({})} /> : <div className="text-center py-12 text-gray-400">No hay productos en esta vista.</div>)}
+          {filtered.length === 0 && (catalogProducts.length === 0 ? <EmptyState icon="👕" title="Cargá los productos de tu tienda." description="Productos terminados con diseño y precio de venta para tu catálogo web." actionLabel="+ Agregar producto" onAction={() => setCatModal({})} /> : <div className="text-center py-12 text-gray-400">No hay productos en esta vista.</div>)}
         </div>
       </div>
 
@@ -323,12 +329,15 @@ export default function CatalogoPage() {
               {/* Cost & Price */}
               <div className="border-t border-gray-100 pt-4">
                 <div className={`grid gap-3 ${showCosts ? 'grid-cols-3' : 'grid-cols-2'}`}>
-                  {showCosts && <div><label className="block text-sm font-medium text-gray-700 mb-1">{t('unitCost')}</label>
-                    <NumericInput className="input-base" value={catModal.unit_cost || 0} onChange={v => setCatModal({ ...catModal, unit_cost: v })} /></div>}
                   <div><label className="block text-sm font-medium text-gray-700 mb-1">{t('salePrice')}</label>
-                    <NumericInput className="input-base" value={catModal.selling_price || 0} onChange={v => setCatModal({ ...catModal, selling_price: v })} /></div>
-                  <div><label className="block text-sm font-medium text-gray-700 mb-1">{t('previousPrice')}</label>
-                    <NumericInput className="input-base" value={catModal.precio_anterior || 0} onChange={v => setCatModal({ ...catModal, precio_anterior: v || null })} /></div>
+                    <NumericInput className="input-base" value={catModal.selling_price || 0} onChange={v => setCatModal({ ...catModal, selling_price: v })} />
+                    <p className="text-[10px] text-gray-400 mt-0.5">Precio de venta para tus clientes.</p></div>
+                  <div><label className="block text-sm font-medium text-gray-700 mb-1">Precio promocional ($)</label>
+                    <NumericInput className="input-base" value={catModal.precio_anterior || 0} onChange={v => setCatModal({ ...catModal, precio_anterior: v || null })} />
+                    <p className="text-[10px] text-gray-400 mt-0.5">Si lo completás, aparece como oferta.</p></div>
+                  {showCosts && <div><label className="block text-sm font-medium text-gray-700 mb-1">{t('unitCost')}</label>
+                    <NumericInput className="input-base" value={catModal.unit_cost || 0} onChange={v => setCatModal({ ...catModal, unit_cost: v })} />
+                    <p className="text-[10px] text-gray-400 mt-0.5">Opcional. Para calcular margen.</p></div>}
                 </div>
                 {showCosts && catMargin > 0 && <p className={`text-xs font-medium mt-1.5 ${marginColor(catMargin)}`}>Margen: {catMargin}%</p>}
                 {(catModal.precio_anterior || 0) > (catModal.selling_price || 0) && <p className="text-xs text-red-500 mt-0.5">-{Math.round((1 - (catModal.selling_price || 0) / (catModal.precio_anterior || 1)) * 100)}% {t('discount')}</p>}

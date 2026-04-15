@@ -19,7 +19,7 @@ const CONFIG_SECTIONS = [
     { id: 'condiciones', label: 'Condiciones' },
   ]},
   { group: 'Tienda online', items: [
-    { id: 'catalogo', label: 'Catálogo web' },
+    { id: 'catalogo', label: 'Tienda online' },
     { id: 'guia-talles', label: 'Guía de talles' },
   ]},
   { group: 'Equipo', items: [{ id: 'usuarios', label: 'Usuarios y permisos' }] },
