@@ -16,6 +16,7 @@ interface Order {
   advance_payment: number; due_date: string | null; notes: string | null; created_at: string
   items: OrderItem[]; files_link?: string | null
   clients?: { name: string; whatsapp?: string; phone?: string } | null
+  materiales_listos?: boolean
 }
 interface Payment { id: string; order_id: string; monto: number; metodo: string; fecha: string }
 
@@ -338,6 +339,8 @@ export default function OrdersPage() {
     const [editingLink, setEditingLink] = useState(false)
     const [linkVal, setLinkVal] = useState(order.files_link || '')
 
+    useEffect(() => { if (!orderMaterials[order.id]) loadMaterials(order.id) }, [order.id])
+
     return (
       <div className="space-y-4">
         {/* DETALLE DEL PEDIDO */}
@@ -392,7 +395,9 @@ export default function OrdersPage() {
         <div className="rounded-lg border border-gray-100 p-4">
           <div className="flex items-center justify-between mb-3">
             <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Materiales</p>
-            {!orderMaterials[order.id] && <button onClick={() => loadMaterials(order.id)} className="text-xs text-purple-500 font-medium">Cargar</button>}
+            {orderMaterials[order.id] && orderMaterials[order.id].length > 0 && (
+              <span className="text-[10px] text-gray-400">{orderMaterials[order.id].filter(m => m.disponible).length}/{orderMaterials[order.id].length} disponibles</span>
+            )}
           </div>
           {orderMaterials[order.id] ? (
             orderMaterials[order.id].length > 0 ? (
@@ -402,34 +407,32 @@ export default function OrdersPage() {
                     <input type="checkbox" checked={mat.disponible}
                       onChange={() => toggleMaterial(mat.id, order.id, !mat.disponible)}
                       className="w-4 h-4 rounded border-gray-300 text-green-600" />
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 flex items-center justify-between min-w-0">
                       <span className={`text-sm ${mat.disponible ? 'text-gray-400 line-through' : 'text-gray-700'}`}>
                         {mat.nombre} × {mat.cantidad} {mat.unidad}
                       </span>
-                      {mat.proveedor_nombre && <span className="text-[10px] text-gray-400 ml-1.5">{mat.proveedor_nombre}</span>}
+                      {mat.proveedor_nombre && <span className="text-[10px] text-gray-400 ml-1.5 flex-shrink-0">{mat.proveedor_nombre}</span>}
                     </div>
                   </label>
                 ))}
-                <p className="text-[10px] text-gray-400 mt-1">
-                  {orderMaterials[order.id].filter(m => m.disponible).length}/{orderMaterials[order.id].length} disponibles
-                </p>
+                {orderMaterials[order.id].some(m => !m.disponible) && (
+                  <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
+                    <span className="text-xs text-amber-600">⚠ Faltan materiales</span>
+                    <button onClick={async () => {
+                      for (const m of orderMaterials[order.id].filter(m => !m.disponible)) {
+                        await supabase.from('pedido_materiales').update({ disponible: true }).eq('id', m.id)
+                      }
+                      await supabase.from('orders').update({ materiales_listos: true }).eq('id', order.id)
+                      loadMaterials(order.id)
+                    }} className="text-xs text-purple-500 font-medium">✓ Tengo todo</button>
+                  </div>
+                )}
+                {orderMaterials[order.id].every(m => m.disponible) && (
+                  <p className="text-xs text-green-600 font-medium mt-2">✓ Materiales completos</p>
+                )}
               </div>
-            ) : <div>
-              <p className="text-xs text-gray-400 italic">Sin materiales registrados.</p>
-              <button onClick={async () => {
-                const { data: { user } } = await supabase.auth.getUser()
-                if (!user) return
-                const orderItems = (order.items || []) as OrderItem[]
-                const mats = orderItems
-                  .filter(i => !(i.origen === 'manual' && ['envío','envio','diseño','diseno','urgencia','flete','servicio','recargo'].some(kw => i.nombre.toLowerCase().includes(kw))))
-                  .map(i => ({ pedido_id: order.id, user_id: user.id, tipo: 'producto_base', nombre: i.nombre, cantidad: i.cantidad, unidad: 'unidades' }))
-                if (mats.length > 0) {
-                  await supabase.from('pedido_materiales').insert(mats)
-                  loadMaterials(order.id)
-                }
-              }} className="text-xs text-purple-500 font-medium mt-2">Generar materiales</button>
-            </div>
-          ) : <p className="text-xs text-gray-400 italic">Click &quot;Cargar&quot; para ver materiales.</p>}
+            ) : <p className="text-xs text-gray-400 italic">Este pedido no requiere materiales.</p>
+          ) : <div className="flex items-center justify-center py-3"><div className="w-4 h-4 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>}
         </div>
 
         {/* Production checklist (digital) */}
@@ -707,7 +710,7 @@ export default function OrdersPage() {
                           <div onClick={() => setDetailPanel(order.id)}
                             className={`p-3 rounded-lg bg-white shadow-sm cursor-pointer hover:shadow-md transition-all ${od ? 'border-l-4 border-l-red-500' : 'border border-transparent'}`}>
                             <div className="flex items-center justify-between">
-                              <p className="font-semibold text-gray-800 text-sm truncate">{order.clients?.name || <span className="text-gray-400 italic">Cliente no asignado</span>}</p>
+                              <p className="font-semibold text-gray-800 text-sm truncate flex items-center gap-1.5">{order.clients?.name || <span className="text-gray-400 italic">Cliente no asignado</span>}{order.materiales_listos === false && <span className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" title="Faltan materiales" />}</p>
                               <button onClick={e => { e.stopPropagation(); showPrices ? printOrder(order) : printWorkshopSheet(order) }} className="p-2.5 -m-1 rounded-lg hover:bg-gray-100 transition-colors" title={showPrices ? "Imprimir orden" : "Hoja de taller"}><Printer size={18} className="text-gray-400 hover:text-gray-700" /></button>
                             </div>
                             {first ? (
