@@ -7,7 +7,7 @@ import { ChevronRight, ArrowLeft } from 'lucide-react'
 const CONFIG_SECTIONS = [
   { group: 'Mi negocio', items: [{ id: 'perfil', label: 'Perfil' }] },
   { group: 'Producción', items: [
-    { id: 'productos', label: 'Productos' },
+    { id: 'productos', label: 'Productos base' },
     { id: 'insumos', label: 'Insumos' },
     { id: 'equipamiento', label: 'Equipamiento' },
     { id: 'mano-obra', label: 'Mano de obra' },
