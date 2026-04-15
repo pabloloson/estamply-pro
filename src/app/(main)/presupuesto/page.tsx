@@ -480,6 +480,31 @@ export default function PresupuestoPage() {
       if (advanceAmount > 0 && order) {
         await supabase.from('payments').insert({ order_id: order.id, monto: advanceAmount, metodo: 'seña', fecha: new Date().toISOString().split('T')[0] })
       }
+      // Generate materials list for the order
+      if (order) {
+        const materials: Array<{ pedido_id: string; user_id: string; tipo: string; nombre: string; cantidad: number; unidad: string; proveedor_id?: string; proveedor_nombre?: string }> = []
+        // Fetch products + suppliers for linking
+        const { data: prods } = await supabase.from('products').select('name, supplier_id, suppliers(name)').not('supplier_id', 'is', null)
+        const prodSuppliers = new Map<string, { id: string; name: string }>()
+        if (prods) prods.forEach((p: Record<string, unknown>) => {
+          if (p.supplier_id) prodSuppliers.set(p.name as string, { id: p.supplier_id as string, name: ((p.suppliers as Record<string, unknown>)?.name as string) || '' })
+        })
+        for (const item of items) {
+          if (item.origen === 'manual') {
+            const lower = item.nombre.toLowerCase()
+            if (['envío', 'envio', 'diseño', 'diseno', 'urgencia', 'flete', 'servicio', 'recargo'].some(kw => lower.includes(kw))) continue
+          }
+          const sup = prodSuppliers.get(item.nombre)
+          materials.push({
+            pedido_id: order.id, user_id: user.id, tipo: 'producto_base',
+            nombre: item.nombre, cantidad: item.cantidad, unidad: 'unidades',
+            ...(sup ? { proveedor_id: sup.id, proveedor_nombre: sup.name } : {}),
+          })
+        }
+        if (materials.length > 0) {
+          await supabase.from('pedido_materiales').insert(materials)
+        }
+      }
       // Mark presupuesto as accepted if it was loaded from a saved one
       if (loadedPresupuestoId) {
         await supabase.from('presupuestos').update({ estado: 'aceptado' }).eq('id', loadedPresupuestoId)

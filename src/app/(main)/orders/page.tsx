@@ -77,6 +77,8 @@ export default function OrdersPage() {
   const [tallerName, setTallerName] = useState('')
   const [search, setSearch] = useState('')
   const [checklist, setChecklist] = useState<Record<string, Record<string, boolean>>>({})
+  const [orderMaterials, setOrderMaterials] = useState<Record<string, Array<{ id: string; nombre: string; cantidad: number; unidad: string; disponible: boolean; proveedor_nombre: string | null }>>>({})
+
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }))
 
@@ -285,6 +287,20 @@ export default function OrdersPage() {
   async function regPay(oid: string) { if (payAmount <= 0) return; await supabase.from('payments').insert({ order_id: oid, monto: payAmount, metodo: payMethod }); setPayingOrder(null); setPayAmount(0); load() }
   async function delOrder(id: string) { if (confirm('¿Eliminar?')) { await supabase.from('orders').delete().eq('id', id); load() } }
 
+  async function loadMaterials(orderId: string) {
+    const { data } = await supabase.from('pedido_materiales').select('id, nombre, cantidad, unidad, disponible, proveedor_nombre').eq('pedido_id', orderId).order('tipo')
+    if (data) setOrderMaterials(prev => ({ ...prev, [orderId]: data }))
+  }
+
+  async function toggleMaterial(materialId: string, orderId: string, newVal: boolean) {
+    await supabase.from('pedido_materiales').update({ disponible: newVal }).eq('id', materialId)
+    loadMaterials(orderId)
+    // Update materiales_listos flag
+    const { data: mats } = await supabase.from('pedido_materiales').select('disponible').eq('pedido_id', orderId)
+    const allReady = mats?.every(m => m.disponible) || false
+    await supabase.from('orders').update({ materiales_listos: allReady }).eq('id', orderId)
+  }
+
   function getPays(oid: string) { return payments.filter(p => p.order_id === oid) }
   function paid(oid: string) { return getPays(oid).reduce((s, p) => s + Number(p.monto), 0) }
 
@@ -361,6 +377,36 @@ export default function OrdersPage() {
           ) : (
             <button onClick={() => setEditingLink(true)} className="text-xs text-gray-400 hover:text-gray-600">+ Agregar link de archivos</button>
           )}
+        </div>
+
+        {/* MATERIALES */}
+        <div className="rounded-lg border border-gray-100 p-4">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Materiales</p>
+            {!orderMaterials[order.id] && <button onClick={() => loadMaterials(order.id)} className="text-xs text-purple-500 font-medium">Cargar</button>}
+          </div>
+          {orderMaterials[order.id] ? (
+            orderMaterials[order.id].length > 0 ? (
+              <div className="space-y-2">
+                {orderMaterials[order.id].map(mat => (
+                  <label key={mat.id} className="flex items-center gap-2.5 cursor-pointer">
+                    <input type="checkbox" checked={mat.disponible}
+                      onChange={() => toggleMaterial(mat.id, order.id, !mat.disponible)}
+                      className="w-4 h-4 rounded border-gray-300 text-green-600" />
+                    <div className="flex-1 min-w-0">
+                      <span className={`text-sm ${mat.disponible ? 'text-gray-400 line-through' : 'text-gray-700'}`}>
+                        {mat.nombre} × {mat.cantidad} {mat.unidad}
+                      </span>
+                      {mat.proveedor_nombre && <span className="text-[10px] text-gray-400 ml-1.5">{mat.proveedor_nombre}</span>}
+                    </div>
+                  </label>
+                ))}
+                <p className="text-[10px] text-gray-400 mt-1">
+                  {orderMaterials[order.id].filter(m => m.disponible).length}/{orderMaterials[order.id].length} disponibles
+                </p>
+              </div>
+            ) : <p className="text-xs text-gray-400 italic">Sin materiales registrados.</p>
+          ) : <p className="text-xs text-gray-400 italic">Click &quot;Cargar&quot; para ver materiales.</p>}
         </div>
 
         {/* Production checklist (digital) */}
