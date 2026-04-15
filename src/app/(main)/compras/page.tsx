@@ -244,6 +244,14 @@ export default function AbastecimientoPage() {
             )
           })}
 
+          {/* No suppliers hint */}
+          {allItems.length > 0 && !allItems.some(i => i.supplierId) && (
+            <div className="p-4 rounded-xl bg-gray-50 border border-gray-100 flex items-start gap-3 mt-4">
+              <span className="text-lg">💡</span>
+              <p className="text-xs text-gray-500">Asigná proveedores a tus productos en <Link href="/settings/proveedores" className="text-purple-500 hover:underline font-medium">Configuración → Proveedores</Link> para agrupar tu lista de compras y enviarla por WhatsApp.</p>
+            </div>
+          )}
+
           {allChecked && (
             <div className="p-4 rounded-xl bg-green-50 border border-green-100 text-center space-y-2">
               <p className="text-sm font-semibold text-green-700">Todos los materiales marcados.</p>

@@ -492,22 +492,34 @@ export default function PresupuestoPage() {
             if (p.supplier_id) prodSuppliers.set(p.name as string, { id: p.supplier_id as string, name: ((p.suppliers as Record<string, unknown>)?.name as string) || '' })
           })
 
-          const materials = items
-            .filter(i => {
-              if (i.origen === 'manual') {
-                const lower = i.nombre.toLowerCase()
-                return !['envío', 'envio', 'diseño', 'diseno', 'urgencia', 'flete', 'servicio', 'recargo', 'comisión', 'comision', 'mano de obra'].some(kw => lower.includes(kw))
+          const materials: Array<{ pedido_id: string; user_id: string; tipo: string; nombre: string; cantidad: number; unidad: string; proveedor_id?: string; proveedor_nombre?: string }> = []
+          for (const i of items) {
+            if (i.origen === 'manual') {
+              const lower = i.nombre.toLowerCase()
+              if (['envío', 'envio', 'diseño', 'diseno', 'urgencia', 'flete', 'servicio', 'recargo', 'comisión', 'comision', 'mano de obra'].some(kw => lower.includes(kw))) continue
+            }
+            const sup = prodSuppliers.get(i.nombre)
+            const supFields = sup ? { proveedor_id: sup.id, proveedor_nombre: sup.name } : {}
+
+            // If item has variant breakdown, create one material per variant
+            if (i.variantBreakdown && Object.values(i.variantBreakdown).some(v => v > 0)) {
+              for (const [variant, qty] of Object.entries(i.variantBreakdown)) {
+                if (qty <= 0) continue
+                materials.push({
+                  pedido_id: order.id, user_id: user.id, tipo: 'producto_base',
+                  nombre: `${i.nombre} (${variant})`, cantidad: qty, unidad: 'unidades',
+                  ...supFields,
+                })
               }
-              return true
-            })
-            .map(i => {
-              const sup = prodSuppliers.get(i.nombre)
-              return {
+            } else {
+              // No variants — single material
+              materials.push({
                 pedido_id: order.id, user_id: user.id, tipo: 'producto_base',
                 nombre: i.nombre, cantidad: i.cantidad, unidad: 'unidades',
-                ...(sup ? { proveedor_id: sup.id, proveedor_nombre: sup.name } : {}),
-              }
-            })
+                ...supFields,
+              })
+            }
+          }
 
           if (materials.length > 0) {
             await supabase.from('pedido_materiales').insert(materials)
