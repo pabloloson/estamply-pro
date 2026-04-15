@@ -12,6 +12,7 @@ const CONFIG_SECTIONS = [
     { id: 'equipamiento', label: 'Equipamiento' },
     { id: 'mano-obra', label: 'Mano de obra' },
     { id: 'tecnicas', label: 'Técnicas' },
+    { id: 'proveedores', label: 'Proveedores' },
   ]},
   { group: 'Ventas', items: [
     { id: 'descuentos', label: 'Descuentos' },

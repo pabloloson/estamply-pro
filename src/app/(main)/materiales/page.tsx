@@ -16,6 +16,7 @@ interface Product {
   time_subli: number; time_dtf: number; time_vinyl: number
   press_equipment_id: string | null
   variant_name: string | null; variant_options: string[]
+  supplier_id: string | null
 }
 interface Equipment { id: string; name: string; type: string }
 
@@ -65,6 +66,7 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
   const [equipment, setEquipment] = useState<Equipment[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [insumos, setInsumos] = useState<Insumo[]>([])
+  const [suppliers, setSuppliers] = useState<Array<{ id: string; name: string }>>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [modal, setModal] = useState<Partial<Product> | null>(null)
@@ -79,7 +81,10 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
       supabase.from('categories').select('*').order('name'),
       supabase.from('insumos').select('*').order('nombre'),
     ])
-    setProducts(p || []); setEquipment(e || []); setCategories(c || []); setInsumos((ins || []) as Insumo[]); setLoading(false)
+    setProducts(p || []); setEquipment(e || []); setCategories(c || []); setInsumos((ins || []) as Insumo[])
+    const { data: sups } = await supabase.from('suppliers').select('id, name').order('name')
+    if (sups) setSuppliers(sups)
+    setLoading(false)
   }
   useEffect(() => { load() }, [])
 
@@ -94,6 +99,7 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
       press_equipment_id: modal.press_equipment_id || null,
       variant_name: modal.variant_name?.trim() || null,
       variant_options: (modal.variant_options || []).filter(Boolean),
+      supplier_id: modal.supplier_id || null,
     }
     if (modal.id) await supabase.from('products').update(payload).eq('id', modal.id)
     else await supabase.from('products').insert(payload)
@@ -387,6 +393,15 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
                       <NumericInput className="input-base text-center" value={(modal as Record<string, number>)[k as string] || 0} onChange={v => setModal({ ...modal, [k as string]: v })} /></div>
                   ))}
                 </div></div>
+
+              {/* Proveedor */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Proveedor</label>
+                <select className="input-base" value={modal.supplier_id || ''} onChange={e => setModal({ ...modal, supplier_id: e.target.value || null })}>
+                  <option value="">Sin proveedor</option>
+                  {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+              </div>
 
               {/* Variantes */}
               <div className="pt-4 border-t border-gray-100">

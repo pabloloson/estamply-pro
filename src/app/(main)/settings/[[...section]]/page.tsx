@@ -81,6 +81,8 @@ export default function SettingsPage() {
   // Section from URL: /settings/perfil → 'perfil', /settings → null (menu)
   const sectionFromUrl = params.section?.[0] || null
   const activeSection = sectionFromUrl || (typeof window !== 'undefined' && window.innerWidth >= 768 ? 'perfil' : null)
+  const [suppliers, setSuppliers] = useState<Array<{ id: string; name: string; whatsapp: string | null; website: string | null; notes: string | null }>>([])
+  const [editingSupplier, setEditingSupplier] = useState<{ id?: string; name: string; whatsapp: string; website: string; notes: string } | null>(null)
   const [openDiscTecs, setOpenDiscTecs] = useState<string[]>(['descuentos_subli'])
 
 
@@ -127,6 +129,8 @@ export default function SettingsPage() {
       if (mp) setMediosPago(mp)
       if (gt) setGuiasTalles(gt as typeof guiasTalles)
       if (tm) setTeamMembers(tm as typeof teamMembers)
+      const { data: sup } = await supabase.from('suppliers').select('*').order('name')
+      if (sup) setSuppliers(sup)
       setLoading(false)
     }
     load()
@@ -721,6 +725,33 @@ export default function SettingsPage() {
         </div>
       )}
 
+      {activeSection === 'proveedores' && (
+        <div className="max-w-2xl">
+          <h2 className="text-xl font-bold text-gray-900 mb-1">Proveedores</h2>
+          <p className="text-sm text-gray-400 mb-4">Gestioná tus proveedores de materiales.</p>
+          <div className="space-y-2 mb-4">
+            {suppliers.map(s => (
+              <div key={s.id} className="card p-4 flex items-start justify-between">
+                <div>
+                  <p className="font-semibold text-gray-800">{s.name}</p>
+                  <div className="flex gap-3 mt-1 text-xs text-gray-400">
+                    {s.whatsapp && <span>📱 {s.whatsapp}</span>}
+                    {s.website && <span>🌐 {s.website}</span>}
+                  </div>
+                  {s.notes && <p className="text-xs text-gray-400 mt-1 italic">{s.notes}</p>}
+                </div>
+                <div className="flex gap-1">
+                  <button onClick={() => setEditingSupplier({ id: s.id, name: s.name, whatsapp: s.whatsapp || '', website: s.website || '', notes: s.notes || '' })} className="p-1.5 rounded hover:bg-gray-100"><Pencil size={13} className="text-gray-400" /></button>
+                  <button onClick={async () => { if (confirm('¿Eliminar proveedor?')) { await supabase.from('suppliers').delete().eq('id', s.id); setSuppliers(prev => prev.filter(x => x.id !== s.id)) } }} className="p-1.5 rounded hover:bg-red-50"><Trash2 size={13} className="text-gray-300 hover:text-red-500" /></button>
+                </div>
+              </div>
+            ))}
+          </div>
+          <button onClick={() => setEditingSupplier({ name: '', whatsapp: '', website: '', notes: '' })}
+            className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700"><Plus size={14} /> Agregar proveedor</button>
+        </div>
+      )}
+
       {activeSection === 'guia-talles' && (
         <div>
           <h2 className="text-xl font-bold text-gray-900 mb-1">Guía de talles</h2>
@@ -937,6 +968,41 @@ export default function SettingsPage() {
                 }
                 setEditingMedio(null)
               }} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#6C5CE7' }}>Guardar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Supplier modal */}
+      {editingSupplier && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)' }} onClick={() => setEditingSupplier(null)}>
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl max-h-[90dvh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <h3 className="font-bold text-gray-900 mb-4">{editingSupplier.id ? 'Editar' : 'Nuevo'} proveedor</h3>
+            <div className="space-y-4">
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+                <input className="input-base" value={editingSupplier.name} onChange={e => setEditingSupplier({ ...editingSupplier, name: e.target.value })} /></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp</label>
+                <input className="input-base" value={editingSupplier.whatsapp} onChange={e => setEditingSupplier({ ...editingSupplier, whatsapp: e.target.value })} placeholder="+54 11 1234-5678" /></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Sitio web</label>
+                <input className="input-base" value={editingSupplier.website} onChange={e => setEditingSupplier({ ...editingSupplier, website: e.target.value })} placeholder="https://..." /></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Notas</label>
+                <textarea className="input-base resize-none" rows={2} value={editingSupplier.notes} onChange={e => setEditingSupplier({ ...editingSupplier, notes: e.target.value })} /></div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => setEditingSupplier(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">Cancelar</button>
+              <button disabled={!editingSupplier.name.trim()} onClick={async () => {
+                const payload = { name: editingSupplier.name.trim(), whatsapp: editingSupplier.whatsapp || null, website: editingSupplier.website || null, notes: editingSupplier.notes || null }
+                if (editingSupplier.id) {
+                  await supabase.from('suppliers').update(payload).eq('id', editingSupplier.id)
+                } else {
+                  await supabase.from('suppliers').insert(payload)
+                }
+                setEditingSupplier(null)
+                const { data: sup } = await supabase.from('suppliers').select('*').order('name')
+                if (sup) setSuppliers(sup)
+              }} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#6C5CE7' }}>
+                {editingSupplier.id ? 'Guardar' : 'Crear'}
+              </button>
             </div>
           </div>
         </div>
