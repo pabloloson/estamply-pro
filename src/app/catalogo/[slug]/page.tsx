@@ -22,6 +22,7 @@ interface Category { id: string; name: string }
 interface ShopInfo {
   nombre: string; logo: string | null; color: string; description: string
   whatsapp: string; instagram: string; user_id: string; banner: string | null; direccion: string
+  website: string; facebook: string; tiktok: string; youtube: string
   mediosPago: Array<{ id: string; nombre: string; tipo_ajuste: string; porcentaje: number }>
   lang: string; countryCode: string
   anuncio: { activo: boolean; texto: string; bgColor: string; textColor: string }
@@ -87,7 +88,7 @@ export default function PublicCatalogPage() {
       const s = match.settings as Record<string, unknown>
       const userId = match.user_id as string
       // Fetch profile for business info (phone, name, logo, instagram, address)
-      const { data: prof } = await supabase.from('profiles').select('business_name,business_phone,business_instagram,business_logo_url,business_address').eq('id', userId).single()
+      const { data: prof } = await supabase.from('profiles').select('business_name,business_phone,business_instagram,business_logo_url,business_address,business_website,facebook,tiktok,youtube').eq('id', userId).single()
       const p = (prof || {}) as Record<string, string>
       setShop({
         nombre: (s.nombre_tienda as string) || (s.nombre_taller as string) || (p.business_name as string) || 'Mi Taller',
@@ -99,6 +100,10 @@ export default function PublicCatalogPage() {
         user_id: userId,
         banner: (s.banner_url as string) || null,
         direccion: (p.business_address as string) || '',
+        website: (p.business_website as string) || '',
+        facebook: (p.facebook as string) || '',
+        tiktok: (p.tiktok as string) || '',
+        youtube: (p.youtube as string) || '',
         anuncio: {
           activo: !!(s.anuncio_activo) && !!(s.anuncio_texto),
           texto: (s.anuncio_texto as string) || '',
@@ -267,11 +272,15 @@ function CatalogContent({ shop, products, categories, sizeGuides }: { shop: Shop
           <div className="space-y-1 text-sm text-gray-500 mb-4">
             {shop.direccion && <p>📍 {shop.direccion}</p>}
             {shop.whatsapp && <p>📱 {shop.whatsapp}</p>}
+            {shop.website && <p>🌐 {shop.website}</p>}
           </div>
-          {(shop.instagram || shop.whatsapp) && (
-            <div className="flex items-center justify-center gap-4 mb-4">
-              {shop.instagram && <a href={`https://instagram.com/${shop.instagram.replace('@', '')}`} target="_blank" rel="noopener" className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-300 transition-colors"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5"/></svg></a>}
-              {shop.whatsapp && <a href={`https://wa.me/${shop.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener" className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-300 transition-colors"><MessageCircle size={16} /></a>}
+          {(shop.instagram || shop.whatsapp || shop.facebook || shop.tiktok || shop.youtube) && (
+            <div className="flex items-center justify-center flex-wrap gap-3 mb-4">
+              {shop.instagram && <a href={`https://instagram.com/${shop.instagram.replace('@', '')}`} target="_blank" rel="noopener" className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-300 transition-colors" title={shop.instagram}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5"/></svg></a>}
+              {shop.facebook && <a href={shop.facebook.startsWith('http') ? shop.facebook : `https://facebook.com/${shop.facebook.replace(/^facebook\.com\/?/, '')}`} target="_blank" rel="noopener" className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-300 transition-colors" title={shop.facebook}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg></a>}
+              {shop.tiktok && <a href={`https://tiktok.com/${shop.tiktok.startsWith('@') ? shop.tiktok : '@' + shop.tiktok}`} target="_blank" rel="noopener" className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-300 transition-colors" title={shop.tiktok}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"/></svg></a>}
+              {shop.youtube && <a href={shop.youtube.startsWith('http') ? shop.youtube : `https://youtube.com/${shop.youtube.startsWith('@') ? shop.youtube : '@' + shop.youtube}`} target="_blank" rel="noopener" className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-300 transition-colors" title={shop.youtube}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"/><path d="m10 15 5-3-5-3z"/></svg></a>}
+              {shop.whatsapp && <a href={`https://wa.me/${shop.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener" className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-300 transition-colors" title={shop.whatsapp}><MessageCircle size={16} /></a>}
             </div>
           )}
           <p className="text-xs text-gray-400 flex items-center justify-center gap-1.5">{tc('webCatalog', 'poweredBy')} <img src="/logo-icon.png" alt="" className="inline-block w-3.5 h-3.5" /><a href="https://www.estamply.app" className="font-semibold hover:text-gray-500">Estamply</a></p>

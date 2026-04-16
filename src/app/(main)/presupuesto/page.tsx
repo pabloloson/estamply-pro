@@ -30,6 +30,7 @@ interface BusinessProfile {
   business_name: string | null; business_logo_url: string | null; business_cuit: string | null
   business_address: string | null; business_phone: string | null; business_email: string | null
   business_instagram: string | null; business_website: string | null; workshop_name: string | null
+  facebook: string | null; tiktok: string | null; youtube: string | null
 }
 
 export default function PresupuestoPage() {
@@ -354,6 +355,18 @@ export default function PresupuestoPage() {
           <div style="font-size:12px;color:#666">Firma del cliente</div>
         </div>
       </div>
+      ${(() => {
+        const socials: string[] = []
+        if (bizProfile?.business_website) socials.push(`<span>🌐 ${bizProfile.business_website}</span>`)
+        if (bizProfile?.business_instagram) socials.push(`<span>📷 ${bizProfile.business_instagram}</span>`)
+        if (bizProfile?.facebook) socials.push(`<span>📘 ${bizProfile.facebook}</span>`)
+        if (bizProfile?.tiktok) socials.push(`<span>♪ ${bizProfile.tiktok}</span>`)
+        if (bizProfile?.youtube) socials.push(`<span>▶ ${bizProfile.youtube}</span>`)
+        if (socials.length === 0) return ''
+        return `<div style="text-align:center;font-size:11px;color:#888;padding:16px 0;border-top:1px solid #e5e7eb;margin-top:24px">
+          <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:16px">${socials.join('')}</div>
+        </div>`
+      })()}
       <div style="text-align:center;font-size:11px;color:#ccc;padding-top:16px;border-top:1px solid #eee">Generado con Estamply · estamply.app</div>
     </body></html>`)
     doc.close()
@@ -396,13 +409,13 @@ export default function PresupuestoPage() {
       const { data: { user } } = await supabase.auth.getUser()
       const [{ data: cls }, { data: prof }, { data: wsData }, { data: saved }] = await Promise.all([
         supabase.from('clients').select('id, name, phone, email, whatsapp').order('name'),
-        user ? supabase.from('profiles').select('business_name,business_logo_url,business_cuit,business_address,business_phone,business_email,business_instagram,business_website,workshop_name').eq('id', user.id).single() : Promise.resolve({ data: null }),
+        user ? supabase.from('profiles').select('business_name,business_logo_url,business_cuit,business_address,business_phone,business_email,business_instagram,business_website,workshop_name,facebook,tiktok,youtube').eq('id', user.id).single() : Promise.resolve({ data: null }),
         supabase.from('workshop_settings').select('settings').single(),
         supabase.from('presupuestos').select('id,codigo,numero,client_name,client_id,total,origen,created_at').order('created_at', { ascending: false }).limit(20),
       ])
       if (cls) setClients(cls)
       if (saved) setSavedPresupuestos(saved as typeof savedPresupuestos)
-      if (prof) setBizProfile(prof)
+      if (prof) setBizProfile(prof as unknown as BusinessProfile)
       const { data: catProds } = await supabase.from('catalog_products').select('id, name, selling_price, photos, category_name, variant_name, variant_options').eq('visible', true).order('name')
       if (catProds) setCatalogProducts(catProds as typeof catalogProducts)
       if (wsData?.settings) {

@@ -23,6 +23,9 @@ interface BusinessProfile {
   business_email: string
   business_instagram: string
   business_website: string
+  facebook: string
+  tiktok: string
+  youtube: string
 }
 
 const EMPTY: BusinessProfile = {
@@ -34,6 +37,9 @@ const EMPTY: BusinessProfile = {
   business_email: '',
   business_instagram: '',
   business_website: '',
+  facebook: '',
+  tiktok: '',
+  youtube: '',
 }
 
 const TAX_ID_LABELS: Record<string, string> = {
@@ -94,7 +100,7 @@ export default function SettingsPage() {
       setOwnerName(user.email || '')
       const { data } = await supabase
         .from('profiles')
-        .select('business_name,business_logo_url,business_cuit,business_address,business_phone,business_email,business_instagram,business_website')
+        .select('business_name,business_logo_url,business_cuit,business_address,business_phone,business_email,business_instagram,business_website,facebook,tiktok,youtube')
         .eq('id', user.id)
         .single()
       if (data) {
@@ -107,6 +113,9 @@ export default function SettingsPage() {
           business_email: data.business_email || '',
           business_instagram: data.business_instagram || '',
           business_website: data.business_website || '',
+          facebook: data.facebook || '',
+          tiktok: data.tiktok || '',
+          youtube: data.youtube || '',
         })
       }
       // Load workshop settings
@@ -249,6 +258,24 @@ export default function SettingsPage() {
               />
             </div>
           ))}
+        </div>
+
+        {/* Redes sociales */}
+        <div className="mt-6 pt-5 border-t border-gray-100">
+          <label className="block text-sm font-semibold text-gray-700 mb-1">{t('socialNetworks')}</label>
+          <p className="text-[11px] text-gray-400 mb-3">{t('socialNetworksHint')}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {([
+              ['facebook', t('facebook'), 'facebook.com/tu_pagina'],
+              ['tiktok', t('tiktok'), '@tu_tiktok'],
+              ['youtube', t('youtube'), 'youtube.com/@tu_canal'],
+            ] as [keyof BusinessProfile, string, string][]).map(([key, label, placeholder]) => (
+              <div key={key}>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">{label}</label>
+                <input value={profile[key]} onChange={e => setProfile(p => ({ ...p, [key]: e.target.value }))} className="input-base" placeholder={placeholder} />
+              </div>
+            ))}
+          </div>
         </div>
 
         <button onClick={save} disabled={saveState === 'saving'}
