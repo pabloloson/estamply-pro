@@ -3,7 +3,7 @@
 import { useState, useEffect, createContext, useContext, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { ShoppingCart, X, Plus, Minus, Trash2, MessageCircle, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ShoppingCart, X, Plus, Minus, Trash2, MessageCircle, ArrowLeft, ChevronLeft, ChevronRight, Check } from 'lucide-react'
 import esMsg from '../../../../messages/es.json'
 import ptMsg from '../../../../messages/pt.json'
 import { formatCurrency, getCountry } from '@/shared/lib/currency'
@@ -324,6 +324,8 @@ function ProductDetail({ product, shop, sizeGuides, onClose }: { product: Catalo
   const [selColor, setSelColor] = useState<string | null>(null)
   const [sizeError, setSizeError] = useState(false)
   const [showGuide, setShowGuide] = useState(false)
+  const [justAdded, setJustAdded] = useState(false)
+  const [addToast, setAddToast] = useState(false)
   const guide = product.guia_talles_id ? sizeGuides.find(g => g.id === product.guia_talles_id) : null
   const photos = (product.photos || []).slice(0, 3)
   const sizes = product.sizes || []
@@ -336,7 +338,11 @@ function ProductDetail({ product, shop, sizeGuides, onClose }: { product: Catalo
     if (sizes.length && !selSize) { setSizeError(true); return }
     const parts = [selSize, selColor].filter(Boolean)
     add(product, qty, parts.join(', '))
-    onClose()
+    setQty(1)
+    setJustAdded(true)
+    setAddToast(true)
+    setTimeout(() => setJustAdded(false), 1500)
+    setTimeout(() => setAddToast(false), 3500)
   }
 
   const consultUrl = `https://wa.me/${shop.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(`Hola! 👋 Me interesa este producto de tu catálogo:\n\n📦 ${product.name}\n💰 ${status === 'ondemand' ? 'desde ' : ''}${fmt(product.selling_price)}\n\n¿Podrías darme más info?`)}`
@@ -425,10 +431,18 @@ function ProductDetail({ product, shop, sizeGuides, onClose }: { product: Catalo
               </div>
 
               <button onClick={handleAdd}
-                className="w-full py-3.5 rounded-xl font-bold text-white text-sm flex items-center justify-center gap-2"
-                style={{ background: shop.color }}>
-                <ShoppingCart size={16} /> Agregar al pedido — {fmt(product.selling_price * qty)}
+                className={`w-full py-3.5 rounded-xl font-bold text-white text-sm flex items-center justify-center gap-2 transition-all ${justAdded ? 'scale-95' : ''}`}
+                style={{ background: justAdded ? '#22C55E' : shop.color }}>
+                {justAdded ? <><Check size={16} /> Agregado</> : <><ShoppingCart size={16} /> {tc('webCatalog', 'addToOrder')} — {fmt(product.selling_price * qty)}</>}
               </button>
+              {addToast && (
+                <div className="fixed bottom-20 left-4 right-4 z-50 max-w-lg mx-auto">
+                  <div className="bg-gray-800 text-white text-sm font-medium px-4 py-3 rounded-xl shadow-lg flex items-center justify-between">
+                    <span>Producto agregado al pedido</span>
+                    <button onClick={() => { setAddToast(false); onClose() }} className="text-xs font-semibold text-purple-300 hover:text-white ml-3 whitespace-nowrap">Ver pedido →</button>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <a href={consultUrl} target="_blank" rel="noopener noreferrer"
