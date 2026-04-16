@@ -252,8 +252,8 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
         )}
         {/* Search */}
         <div className="relative mb-4 max-w-[400px]">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" />
-          <input className="input-base pl-9 text-sm" placeholder="Buscar producto..." value={searchProduct} onChange={e => setSearchProduct(e.target.value)} />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+          <input className="input-base pl-10 text-sm" placeholder="Buscar producto..." value={searchProduct} onChange={e => setSearchProduct(e.target.value)} />
         </div>
         {/* Mobile cards */}
         <div className="md:hidden space-y-2">
@@ -354,9 +354,9 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
           <button onClick={() => openNewInsumo()} className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={14} /> {tc('add')}</button>
         </div>
         {/* Search */}
-        <div className="relative mb-4 max-w-[400px]">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" />
-          <input className="input-base pl-9 text-sm" placeholder="Buscar insumo..." value={searchInsumo} onChange={e => setSearchInsumo(e.target.value)} />
+        <div className="relative mt-4 mb-4 max-w-[400px]">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+          <input className="input-base pl-10 text-sm" placeholder="Buscar insumo..." value={searchInsumo} onChange={e => setSearchInsumo(e.target.value)} />
         </div>
         {/* Mobile cards */}
         <div className="md:hidden space-y-2">
