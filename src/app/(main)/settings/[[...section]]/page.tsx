@@ -548,35 +548,68 @@ export default function SettingsPage() {
   </div>
 )}
 
-      {activeSection === 'medios-pago' && (
-  <div className="max-w-2xl">
-    <h2 className="text-xl font-bold text-gray-900 mb-1">Medios de pago</h2>
-    <p className="text-sm text-gray-400 mb-4">Configurá cómo pagan tus clientes.</p>
-    <div className="space-y-3 mb-4">
+      {activeSection === 'medios-pago' && (() => {
+  const ajusteLabel = (m: { tipo_ajuste: string; porcentaje: number }) =>
+    m.tipo_ajuste === 'sin_ajuste' || m.tipo_ajuste === 'ninguno' || m.porcentaje === 0 ? 'Sin ajuste' : m.porcentaje > 0 ? `Recargo +${m.porcentaje}%` : `Descuento ${Math.abs(m.porcentaje)}%`
+  const toggleActivo = async (m: { id: string; activo: boolean }) => {
+    await supabase.from('medios_pago').update({ activo: !m.activo }).eq('id', m.id)
+    setMediosPago(prev => prev.map(x => x.id === m.id ? { ...x, activo: !x.activo } : x))
+  }
+  return (
+  <div>
+    <div className="flex items-start justify-between gap-3 mb-4">
+      <div><h2 className="text-xl font-bold text-gray-900 mb-1">Medios de pago</h2>
+        <p className="text-sm text-gray-400">Configurá cómo pagan tus clientes.</p></div>
+      <button onClick={() => setEditingMedio({ nombre: '', tipo_ajuste: 'sin_ajuste', porcentaje: 0 })}
+        className="flex items-center gap-1.5 whitespace-nowrap text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={14} /> Agregar</button>
+    </div>
+    {/* Mobile cards */}
+    <div className="md:hidden space-y-2">
       {mediosPago.map(m => (
         <div key={m.id} className="card p-4 flex items-start justify-between">
           <div className="flex items-start gap-3">
-            <div className={`w-2.5 h-2.5 rounded-full mt-1.5 ${m.activo ? 'bg-green-500' : 'bg-gray-300'}`} />
+            <button onClick={() => toggleActivo(m)} className={`w-2.5 h-2.5 rounded-full mt-1.5 flex-shrink-0 ${m.activo ? 'bg-green-500' : 'bg-gray-300'}`} />
             <div>
-              <p className="text-base font-semibold text-gray-800">{m.nombre}</p>
-              <p className={`text-sm ${m.tipo_ajuste === 'sin_ajuste' || m.tipo_ajuste === 'ninguno' || m.porcentaje === 0 ? 'text-gray-400' : m.porcentaje > 0 ? 'text-amber-600' : 'text-green-600'}`}>
-                {m.tipo_ajuste === 'sin_ajuste' || m.tipo_ajuste === 'ninguno' || m.porcentaje === 0 ? 'Sin ajuste' : m.porcentaje > 0 ? `⬆ Recargo +${m.porcentaje}%` : `⬇ Descuento ${m.porcentaje}%`}
-              </p>
+              <p className="font-semibold text-gray-800">{m.nombre}</p>
+              <p className={`text-xs ${m.tipo_ajuste === 'sin_ajuste' || m.porcentaje === 0 ? 'text-gray-400' : m.porcentaje > 0 ? 'text-amber-600' : 'text-green-600'}`}>{ajusteLabel(m)}</p>
             </div>
           </div>
-          <div className="flex gap-1 opacity-60 hover:opacity-100 transition-opacity">
-            <button onClick={() => setEditingMedio({ nombre: m.nombre, tipo_ajuste: m.tipo_ajuste, porcentaje: m.porcentaje, id: m.id })} className="p-2 rounded-lg hover:bg-gray-100"><Pencil size={14} className="text-gray-500" /></button>
-            <button onClick={async () => { if (confirm('¿Eliminar?')) { await supabase.from('medios_pago').delete().eq('id', m.id); setMediosPago(prev => prev.filter(x => x.id !== m.id)) } }} className="p-2 rounded-lg hover:bg-red-50"><Trash2 size={14} className="text-gray-400 hover:text-red-500" /></button>
+          <div className="flex gap-1">
+            <button onClick={() => setEditingMedio({ nombre: m.nombre, tipo_ajuste: m.tipo_ajuste, porcentaje: m.porcentaje, id: m.id })} className="p-1.5 rounded hover:bg-gray-100"><Pencil size={13} className="text-gray-400" /></button>
+            <button onClick={async () => { if (confirm('¿Eliminar medio de pago?')) { await supabase.from('medios_pago').delete().eq('id', m.id); setMediosPago(prev => prev.filter(x => x.id !== m.id)) } }} className="p-1.5 rounded hover:bg-red-50"><Trash2 size={13} className="text-gray-300 hover:text-red-500" /></button>
           </div>
         </div>
       ))}
+      {mediosPago.length === 0 && <div className="text-center py-12 text-gray-400 text-sm">Todavía no configuraste medios de pago.</div>}
     </div>
-    {mediosPago.length < 8 && (
-      <button onClick={() => setEditingMedio({ nombre: '', tipo_ajuste: 'sin_ajuste', porcentaje: 0 })}
-        className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700"><Plus size={14} /> Agregar medio de pago</button>
-    )}
+    {/* Desktop table */}
+    <div className="hidden md:block card overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full"><thead><tr className="border-b border-gray-100">
+          {['Nombre', 'Ajuste', '%', 'Estado', ''].map(h => <th key={h} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">{h}</th>)}
+        </tr></thead><tbody>
+          {mediosPago.map(m => (
+            <tr key={m.id} className="border-b border-gray-50 hover:bg-gray-50">
+              <td className="px-4 py-3 font-medium text-gray-800">{m.nombre}</td>
+              <td className="px-4 py-3 text-sm text-gray-500">{m.tipo_ajuste === 'sin_ajuste' || m.tipo_ajuste === 'ninguno' ? 'Sin ajuste' : m.tipo_ajuste === 'recargo' ? 'Recargo' : 'Descuento'}</td>
+              <td className="px-4 py-3 text-sm text-gray-500">{m.porcentaje !== 0 ? `${m.porcentaje}%` : '—'}</td>
+              <td className="px-4 py-3">
+                <button onClick={() => toggleActivo(m)} className={`text-xs font-semibold px-2 py-0.5 rounded-full ${m.activo ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'}`}>
+                  {m.activo ? 'Activo' : 'Inactivo'}
+                </button>
+              </td>
+              <td className="px-4 py-3"><div className="flex gap-1">
+                <button onClick={() => setEditingMedio({ nombre: m.nombre, tipo_ajuste: m.tipo_ajuste, porcentaje: m.porcentaje, id: m.id })} className="p-1.5 rounded-lg hover:bg-gray-100"><Pencil size={14} className="text-gray-400" /></button>
+                <button onClick={async () => { if (confirm('¿Eliminar medio de pago?')) { await supabase.from('medios_pago').delete().eq('id', m.id); setMediosPago(prev => prev.filter(x => x.id !== m.id)) } }} className="p-1.5 rounded-lg hover:bg-red-50"><Trash2 size={14} className="text-red-400" /></button>
+              </div></td>
+            </tr>
+          ))}
+        </tbody></table>
+        {mediosPago.length === 0 && <div className="text-center py-12 text-gray-400 text-sm">Todavía no configuraste medios de pago.</div>}
+      </div>
+    </div>
   </div>
-)}
+)})()}
 
       {activeSection === 'descuentos' && (() => {
         const DISC_TECNICAS = [
@@ -1129,7 +1162,10 @@ export default function SettingsPage() {
             <h3 className="font-bold text-gray-900 mb-4">{editingMedio.id ? 'Editar' : 'Nuevo'} medio de pago</h3>
             <div className="space-y-3">
               <div><label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
-                <input className="input-base" value={editingMedio.nombre} onChange={e => setEditingMedio({ ...editingMedio, nombre: e.target.value })} placeholder="Ej: Transferencia bancaria" /></div>
+                <input className="input-base" value={editingMedio.nombre} onChange={e => setEditingMedio({ ...editingMedio, nombre: e.target.value })} placeholder="Ej: Transferencia, MercadoPago, PIX, Efectivo" />
+                {editingMedio.nombre.trim() && mediosPago.some(m => m.nombre.toLowerCase().trim() === editingMedio.nombre.toLowerCase().trim() && m.id !== editingMedio.id) && (
+                  <p className="text-xs text-red-500 mt-1">Ya existe un medio de pago con ese nombre.</p>
+                )}</div>
               <div><label className="block text-sm font-medium text-gray-700 mb-1">Ajuste de precio</label>
                 <div className="flex gap-2">
                   {[['sin_ajuste', 'Sin ajuste'], ['descuento', 'Descuento'], ['recargo', 'Recargo']].map(([v, l]) => (
@@ -1145,10 +1181,7 @@ export default function SettingsPage() {
             </div>
             <div className="flex gap-3 mt-5">
               <button onClick={() => setEditingMedio(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">Cancelar</button>
-              <button disabled={!editingMedio.nombre.trim()} onClick={async () => {
-                if (!editingMedio.id && mediosPago.some(m => m.nombre.toLowerCase() === editingMedio.nombre.toLowerCase().trim())) {
-                  alert('Este medio de pago ya existe'); return
-                }
+              <button disabled={!editingMedio.nombre.trim() || mediosPago.some(m => m.nombre.toLowerCase().trim() === editingMedio.nombre.toLowerCase().trim() && m.id !== editingMedio.id)} onClick={async () => {
                 const payload = { nombre: editingMedio.nombre, tipo_ajuste: editingMedio.tipo_ajuste, porcentaje: editingMedio.tipo_ajuste === 'sin_ajuste' ? 0 : editingMedio.porcentaje, activo: true, orden: mediosPago.length }
                 if (editingMedio.id) {
                   await supabase.from('medios_pago').update(payload).eq('id', editingMedio.id)
