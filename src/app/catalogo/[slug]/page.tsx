@@ -260,7 +260,14 @@ function CatalogContent({ shop, products, categories, sizeGuides }: { shop: Shop
             )
           })}
         </div>
-        {filtered.length === 0 && <p className="text-center text-gray-400 py-12">{search ? tc('webCatalog', 'noResults').replace('{query}', search) : tc('webCatalog', 'noProducts')}</p>}
+        {filtered.length === 0 && (
+          <div className="text-center py-12">
+            <p className="text-gray-400">{search ? tc('webCatalog', 'noResults').replace('{query}', search) : selectedCat ? 'No encontramos productos en esta categoría.' : tc('webCatalog', 'noProducts')}</p>
+            {(search || selectedCat) && (
+              <button onClick={() => { setSearch(''); setSelectedCat(null) }} className="text-sm font-semibold mt-2" style={{ color }}>{selectedCat && search ? 'Limpiar filtros' : search ? 'Limpiar búsqueda' : 'Ver todos'}</button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Footer */}
