@@ -73,6 +73,8 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
   const [inlineCat, setInlineCat] = useState<{ name: string; margen_sugerido: number } | null>(null)
   const [inlinePress, setInlinePress] = useState<{ name: string } | null>(null)
   const [pressCreatedHint, setPressCreatedHint] = useState(false)
+  const [inlineSupplier, setInlineSupplier] = useState<{ name: string; whatsapp: string } | null>(null)
+  const [supplierCreatedHint, setSupplierCreatedHint] = useState(false)
   const [insModal, setInsModal] = useState<Partial<Insumo> | null>(null)
   const [showCats, setShowCats] = useState(false)
   const [filterTecnica, setFilterTecnica] = useState('')
@@ -474,11 +476,50 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
               {/* Proveedor */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Proveedor</label>
-                <select className="input-base" value={modal.supplier_id || ''} onChange={e => setModal({ ...modal, supplier_id: e.target.value || null })}>
+                <select className="input-base" value={inlineSupplier ? '__new__' : (modal.supplier_id || '')} onChange={e => {
+                  if (e.target.value === '__new__') { setInlineSupplier({ name: '', whatsapp: '' }); return }
+                  setInlineSupplier(null)
+                  setModal({ ...modal, supplier_id: e.target.value || null })
+                }}>
                   <option value="">Sin proveedor</option>
                   {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  <option disabled>───────────</option>
+                  <option value="__new__">+ Nuevo proveedor</option>
                 </select>
               </div>
+              {inlineSupplier && (
+                <div className="p-4 rounded-xl bg-gray-50 border border-gray-200 space-y-3">
+                  <div><label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+                    <input className="input-base" placeholder="Ej: TextilNorte" value={inlineSupplier.name} onChange={e => setInlineSupplier({ ...inlineSupplier, name: e.target.value })} autoFocus /></div>
+                  <div><label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp</label>
+                    <input className="input-base" placeholder="Ej: +5435155512345" value={inlineSupplier.whatsapp} onChange={e => setInlineSupplier({ ...inlineSupplier, whatsapp: e.target.value })} /></div>
+                  <div className="flex items-center gap-3">
+                    <button type="button" onClick={async () => {
+                      if (!inlineSupplier.name.trim()) return
+                      const { data: ownerId } = await supabase.rpc('get_team_owner_id')
+                      let userId = ownerId as string | null
+                      if (!userId) {
+                        const { data: { user } } = await supabase.auth.getUser()
+                        userId = user?.id || null
+                      }
+                      if (!userId) return
+                      const { data, error } = await supabase.from('suppliers').insert({
+                        name: inlineSupplier.name.trim(), whatsapp: inlineSupplier.whatsapp.trim() || null, user_id: userId,
+                      }).select('id').single()
+                      if (error) { console.error('Supplier insert error:', error); return }
+                      if (data) { setModal({ ...modal, supplier_id: data.id }); await load(); setSupplierCreatedHint(true); setTimeout(() => setSupplierCreatedHint(false), 6000) }
+                      setInlineSupplier(null)
+                    }} className="px-4 py-2 rounded-lg text-xs font-semibold text-white" style={{ background: '#6C5CE7' }}>Crear proveedor</button>
+                    <button type="button" onClick={() => setInlineSupplier(null)} className="text-xs font-medium text-gray-400 hover:text-gray-600">Cancelar</button>
+                  </div>
+                </div>
+              )}
+              {supplierCreatedHint && (
+                <div className="p-3 rounded-lg bg-green-50 border border-green-100 flex items-start gap-2 text-xs">
+                  <span className="text-green-600 font-medium flex-shrink-0">✓</span>
+                  <p className="text-green-700">Proveedor creado. Completá el resto de los datos en <a href="/settings/proveedores" target="_blank" rel="noopener" className="font-semibold text-purple-600 hover:underline">Configuración → Proveedores →</a></p>
+                </div>
+              )}
 
               {/* Variantes */}
               <div className="pt-4 border-t border-gray-100">
