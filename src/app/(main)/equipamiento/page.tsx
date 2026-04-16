@@ -321,20 +321,28 @@ export default function EquipamientoPage() {
                         <AlertTriangle size={14} className="flex-shrink-0" /> Faltan insumos asignados — el cotizador no podrá calcular el costo de producción.
                       </div>
                     )}
-                    <div className="grid grid-cols-2 gap-3">
-                      {slots.map(slot => (
-                        <div key={slot.key}>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">{slot.label}</label>
-                          <select className="input-base" value={(modal as Record<string, unknown>)[slot.key] as string || ''} onChange={e => setModal({ ...modal, [slot.key]: e.target.value || null })}>
-                            <option value="">Sin asignar</option>
-                            {insumosAll.map(i => (
-                              <option key={i.id} value={i.id}>{i.nombre} ({TIPO_LABEL_MAP[i.tipo] || i.tipo})</option>
-                            ))}
-                          </select>
-                          {slot.hint && <p className="text-[10px] text-gray-400 mt-0.5">{slot.hint}</p>}
+                    {(() => {
+                      const assignable = insumosAll.filter(i => i.tipo !== 'otro')
+                      return (<>
+                        <div className="grid grid-cols-2 gap-3">
+                          {slots.map(slot => (
+                            <div key={slot.key}>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">{slot.label}</label>
+                              <select className="input-base" value={(modal as Record<string, unknown>)[slot.key] as string || ''} onChange={e => setModal({ ...modal, [slot.key]: e.target.value || null })}>
+                                <option value="">Sin asignar</option>
+                                {assignable.map(i => (
+                                  <option key={i.id} value={i.id}>{i.nombre} ({TIPO_LABEL_MAP[i.tipo] || i.tipo})</option>
+                                ))}
+                              </select>
+                              {slot.hint && <p className="text-[10px] text-gray-400 mt-0.5">{slot.hint}</p>}
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
+                        {assignable.length === 0 && (
+                          <p className="text-xs text-gray-400 mt-2">💡 ¿No tenés insumos cargados? Crealos en <a href="/settings/insumos" target="_blank" rel="noopener" className="font-semibold text-purple-600 hover:underline">Insumos →</a></p>
+                        )}
+                      </>)
+                    })()}
                   </div>
                 )
               })()}
