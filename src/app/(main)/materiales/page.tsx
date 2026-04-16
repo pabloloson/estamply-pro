@@ -213,8 +213,8 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
 
       {/* ══ PRODUCTOS BASE ══ */}
       {tab === 'base' && (<>
-        {/* Header: título + acciones */}
-        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 mb-4">
+        {/* Desktop header */}
+        <div className="hidden md:flex items-start justify-between gap-3 mb-4">
           <div>
             {hideChrome && <h1 className="text-2xl font-bold text-gray-900">Productos base</h1>}
             {hideChrome && <p className="text-gray-500 text-sm mt-1">Prendas, tazas, blanks y soportes.</p>}
@@ -222,23 +222,40 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
             {!hideChrome && <p className="text-xs text-gray-400 mt-0.5">{t('baseSubtitle')}</p>}
           </div>
           <div className="flex gap-2">
-            <button onClick={() => setShowCats(true)} className="flex items-center gap-1.5 whitespace-nowrap text-xs sm:text-sm px-3 py-1.5 rounded-lg font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50">
+            <button onClick={() => setShowCats(true)} className="flex items-center gap-1.5 whitespace-nowrap text-sm px-3 py-1.5 rounded-lg font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50">
               <FolderOpen size={14} /> Categorías
             </button>
-            <button onClick={() => setModal({ time_subli: 0, time_dtf: 0, time_vinyl: 0, base_cost: 0 } as Partial<Product>)} className="flex items-center gap-1.5 whitespace-nowrap text-xs sm:text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={14} /> Agregar</button>
+            <button onClick={() => setModal({ time_subli: 0, time_dtf: 0, time_vinyl: 0, base_cost: 0 } as Partial<Product>)} className="flex items-center gap-1.5 whitespace-nowrap text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={14} /> Agregar</button>
           </div>
         </div>
-        {/* Filtros: categoría + search */}
-        <div className="space-y-2 mb-4">
-          <select className="input-base text-sm w-full sm:w-auto sm:min-w-[220px] sm:max-w-[280px]" value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
+        {/* Desktop filters */}
+        <div className="hidden md:flex gap-2 mb-4">
+          <select className="input-base text-sm w-auto min-w-[220px] max-w-[280px]" value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
             <option value="">Todas las categorías ({products.length})</option>
             {categories.map(c => <option key={c.id} value={c.id}>{c.name} ({products.filter(p => p.category_id === c.id).length})</option>)}
             <option value="__none__">Sin categoría ({products.filter(p => !p.category_id).length})</option>
           </select>
-          <div className="relative w-full sm:max-w-[400px]">
+          <div className="relative max-w-[400px] flex-1">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
             <input className="input-base text-sm w-full" style={{ paddingLeft: 40 }} placeholder="Buscar producto..." value={searchProduct} onChange={e => setSearchProduct(e.target.value)} />
           </div>
+        </div>
+        {/* Mobile: compact single row */}
+        <div className="flex md:hidden items-center gap-2 mb-4">
+          <select className="input-base text-sm min-w-[100px] max-w-[140px] flex-shrink-0" value={filterCategory} onChange={e => {
+            if (e.target.value === '__manage__') { setShowCats(true); e.target.value = filterCategory; return }
+            setFilterCategory(e.target.value)
+          }}>
+            <option value="">Todas</option>
+            {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            <option value="__none__">Sin cat.</option>
+            <option value="__manage__">⚙ Categorías</option>
+          </select>
+          <div className="relative flex-1">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            <input className="input-base text-sm w-full" style={{ paddingLeft: 40 }} placeholder="Buscar..." value={searchProduct} onChange={e => setSearchProduct(e.target.value)} />
+          </div>
+          <button onClick={() => setModal({ time_subli: 0, time_dtf: 0, time_vinyl: 0, base_cost: 0 } as Partial<Product>)} className="h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 text-white" style={{ background: '#6C5CE7' }}><Plus size={18} /></button>
         </div>
         {/* Mobile cards */}
         <div className="md:hidden space-y-2">
@@ -319,15 +336,7 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
             </div>
           </div>
         )}
-        {/* Mobile: dropdown filter + add */}
-        <div className="flex md:hidden items-center justify-between gap-3 mb-4">
-          <select value={filterTecnica} onChange={e => setFilterTecnica(e.target.value)}
-            className="border border-gray-200 bg-white rounded-lg px-4 py-2.5 text-sm font-medium shadow-sm min-w-[150px]">
-            {TECNICA_FILTER_TABS.map(tf => <option key={tf.id} value={tf.id}>{tf.label}</option>)}
-          </select>
-          <button onClick={() => openNewInsumo()} className="flex items-center gap-1.5 whitespace-nowrap text-xs px-3 py-2 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={14} /> Agregar</button>
-        </div>
-        {/* Desktop: tabs + add */}
+        {/* Desktop: tabs + add + search */}
         <div className="hidden md:flex items-center justify-between mb-2">
           <div className="flex gap-1.5 flex-wrap">
             {TECNICA_FILTER_TABS.map(tf => (
@@ -338,10 +347,21 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
           </div>
           <button onClick={() => openNewInsumo()} className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={14} /> {tc('add')}</button>
         </div>
-        {/* Search */}
-        <div className="relative mt-4 mb-4 w-full sm:max-w-[400px]">
+        <div className="hidden md:block relative mt-3 mb-4 max-w-[400px]">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
           <input className="input-base text-sm w-full" style={{ paddingLeft: 40 }} placeholder="Buscar insumo..." value={searchInsumo} onChange={e => setSearchInsumo(e.target.value)} />
+        </div>
+        {/* Mobile: compact single row */}
+        <div className="flex md:hidden items-center gap-2 mb-4">
+          <select value={filterTecnica} onChange={e => setFilterTecnica(e.target.value)}
+            className="input-base text-sm min-w-[110px] max-w-[140px] flex-shrink-0">
+            {TECNICA_FILTER_TABS.map(tf => <option key={tf.id} value={tf.id}>{tf.label}</option>)}
+          </select>
+          <div className="relative flex-1">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            <input className="input-base text-sm w-full" style={{ paddingLeft: 40 }} placeholder="Buscar..." value={searchInsumo} onChange={e => setSearchInsumo(e.target.value)} />
+          </div>
+          <button onClick={() => openNewInsumo()} className="h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 text-white" style={{ background: '#6C5CE7' }}><Plus size={18} /></button>
         </div>
         {/* Mobile cards */}
         <div className="md:hidden space-y-2">
