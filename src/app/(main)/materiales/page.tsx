@@ -72,6 +72,7 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
   const [modal, setModal] = useState<Partial<Product> | null>(null)
   const [inlineCat, setInlineCat] = useState<{ name: string; margen_sugerido: number } | null>(null)
   const [inlinePress, setInlinePress] = useState<{ name: string } | null>(null)
+  const [pressCreatedHint, setPressCreatedHint] = useState(false)
   const [insModal, setInsModal] = useState<Partial<Insumo> | null>(null)
   const [showCats, setShowCats] = useState(false)
   const [filterTecnica, setFilterTecnica] = useState('')
@@ -388,58 +389,73 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
                 <div><label className="block text-sm font-medium text-gray-700 mb-1">Costo base ($)</label>
                   <NumericInput className="input-base" value={modal.base_cost || 0} onChange={v => setModal({ ...modal, base_cost: v })} /></div>
                 <div><label className="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
-                  <select className="input-base" value={modal.category_id || ''} onChange={e => {
-                    if (e.target.value === '__new__') { setInlineCat({ name: '', margen_sugerido: 50 }); return }
-                    setModal({ ...modal, category_id: e.target.value || null })
-                  }}>
-                    <option value="">Sin categoría</option>
-                    {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    <option disabled>───────────</option>
-                    <option value="__new__">+ Nueva categoría</option>
-                  </select>
+                  {!inlineCat && (
+                    <select className="input-base" value={modal.category_id || ''} onChange={e => {
+                      if (e.target.value === '__new__') { setInlineCat({ name: '', margen_sugerido: 50 }); return }
+                      setModal({ ...modal, category_id: e.target.value || null })
+                    }}>
+                      <option value="">Sin categoría</option>
+                      {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      <option disabled>───────────</option>
+                      <option value="__new__">+ Nueva categoría</option>
+                    </select>
+                  )}
                   {inlineCat && (
-                    <div className="mt-2 p-3 rounded-lg bg-gray-50 border border-gray-200 space-y-2">
-                      <div><label className="block text-xs text-gray-500 mb-1">Nombre de la categoría</label>
-                        <input className="input-base text-sm" placeholder="Ej: Textil" value={inlineCat.name} onChange={e => setInlineCat({ ...inlineCat, name: e.target.value })} /></div>
-                      <div><label className="block text-xs text-gray-500 mb-1">Margen sugerido (%)</label>
-                        <input type="number" className="input-base text-sm" value={inlineCat.margen_sugerido} onChange={e => setInlineCat({ ...inlineCat, margen_sugerido: Number(e.target.value) })} />
-                        <p className="text-[11px] text-gray-400 mt-0.5">Se sugiere automáticamente al cotizar productos de esta categoría.</p></div>
-                      <div className="flex gap-2">
+                    <div className="mt-2 p-4 rounded-xl bg-gray-50 border border-gray-200 space-y-3 animate-in fade-in duration-200">
+                      <div><label className="block text-xs font-medium text-gray-600 mb-1">Nombre de la categoría *</label>
+                        <input className="input-base" placeholder="Ej: Textil" value={inlineCat.name} onChange={e => setInlineCat({ ...inlineCat, name: e.target.value })} autoFocus /></div>
+                      <div><label className="block text-xs font-medium text-gray-600 mb-1">Margen sugerido (%)</label>
+                        <input type="number" className="input-base" value={inlineCat.margen_sugerido} onChange={e => setInlineCat({ ...inlineCat, margen_sugerido: Number(e.target.value) })} />
+                        <p className="text-[11px] text-gray-400 mt-1">Se sugiere automáticamente al cotizar productos de esta categoría.</p></div>
+                      <div className="flex items-center gap-3">
                         <button type="button" onClick={async () => {
                           if (!inlineCat.name.trim()) return
                           const { data } = await supabase.from('categories').insert({ name: inlineCat.name.trim(), margen_sugerido: inlineCat.margen_sugerido }).select('id').single()
                           if (data) { setModal({ ...modal, category_id: data.id }); await load() }
                           setInlineCat(null)
-                        }} className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white" style={{ background: '#6C5CE7' }}>Crear</button>
-                        <button type="button" onClick={() => setInlineCat(null)} className="px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-500 hover:bg-gray-100">Cancelar</button>
+                        }} className="px-4 py-2 rounded-lg text-xs font-semibold text-white" style={{ background: '#6C5CE7' }}>Crear categoría</button>
+                        <button type="button" onClick={() => setInlineCat(null)} className="text-xs font-medium text-gray-400 hover:text-gray-600">Cancelar</button>
                       </div>
                     </div>
                   )}</div>
               </div>
               <div>
                 <div><label className="block text-sm font-medium text-gray-700 mb-1">Plancha asignada</label>
-                  <select className="input-base" value={modal.press_equipment_id || ''} onChange={e => {
-                    if (e.target.value === '__new__') { setInlinePress({ name: '' }); return }
-                    setModal({ ...modal, press_equipment_id: e.target.value || null })
-                  }}>
-                    <option value="">Sin plancha</option>
-                    {presses.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
-                    <option disabled>───────────</option>
-                    <option value="__new__">+ Nueva plancha</option>
-                  </select>
+                  {!inlinePress && (
+                    <select className="input-base" value={modal.press_equipment_id || ''} onChange={e => {
+                      if (e.target.value === '__new__') { setInlinePress({ name: '' }); return }
+                      setModal({ ...modal, press_equipment_id: e.target.value || null })
+                    }}>
+                      <option value="">Sin plancha</option>
+                      {presses.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+                      <option disabled>───────────</option>
+                      <option value="__new__">+ Nueva plancha</option>
+                    </select>
+                  )}
                   {inlinePress && (
-                    <div className="mt-2 p-3 rounded-lg bg-gray-50 border border-gray-200 space-y-2">
-                      <div><label className="block text-xs text-gray-500 mb-1">Nombre</label>
-                        <input className="input-base text-sm" placeholder="Ej: Plancha plana 40×60" value={inlinePress.name} onChange={e => setInlinePress({ ...inlinePress, name: e.target.value })} /></div>
-                      <div className="flex gap-2">
+                    <div className="mt-2 p-4 rounded-xl bg-gray-50 border border-gray-200 space-y-3 animate-in fade-in duration-200">
+                      <div><label className="block text-xs font-medium text-gray-600 mb-1">Nombre de la plancha *</label>
+                        <input className="input-base" placeholder="Ej: Plancha plana 40×60" value={inlinePress.name} onChange={e => setInlinePress({ ...inlinePress, name: e.target.value })} autoFocus /></div>
+                      <div className="flex items-center gap-3">
                         <button type="button" onClick={async () => {
                           if (!inlinePress.name.trim()) return
-                          const { data } = await supabase.from('equipment').insert({ name: inlinePress.name.trim(), type: 'press' }).select('id').single()
-                          if (data) { setModal({ ...modal, press_equipment_id: data.id }); await load() }
+                          const { data: { user } } = await supabase.auth.getUser()
+                          if (!user) return
+                          const { data } = await supabase.from('equipment').insert({
+                            name: inlinePress.name.trim(), type: 'press', clasificacion: 'Plancha',
+                            cost: 0, lifespan_uses: 10000, user_id: user.id, tecnicas_slugs: [],
+                          }).select('id').single()
+                          if (data) { setModal({ ...modal, press_equipment_id: data.id }); await load(); setPressCreatedHint(true); setTimeout(() => setPressCreatedHint(false), 6000) }
                           setInlinePress(null)
-                        }} className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white" style={{ background: '#6C5CE7' }}>Crear</button>
-                        <button type="button" onClick={() => setInlinePress(null)} className="px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-500 hover:bg-gray-100">Cancelar</button>
+                        }} className="px-4 py-2 rounded-lg text-xs font-semibold text-white" style={{ background: '#6C5CE7' }}>Crear plancha</button>
+                        <button type="button" onClick={() => setInlinePress(null)} className="text-xs font-medium text-gray-400 hover:text-gray-600">Cancelar</button>
                       </div>
+                    </div>
+                  )}
+                  {pressCreatedHint && (
+                    <div className="mt-2 p-3 rounded-lg bg-green-50 border border-green-100 flex items-start gap-2 text-xs animate-in fade-in duration-200">
+                      <span className="text-green-600 font-medium flex-shrink-0">✓</span>
+                      <p className="text-green-700">Plancha creada. Completá el valor y vida útil en <a href="/settings/equipamiento" target="_blank" rel="noopener" className="font-semibold text-purple-600 hover:underline">Equipamiento →</a> para calcular la amortización.</p>
                     </div>
                   )}</div>
               </div>
