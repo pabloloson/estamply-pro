@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, lazy, Suspense } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { Save, User, Upload, Loader2, X, Plus, Trash2, QrCode, Check, Pencil } from 'lucide-react'
+import { Save, User, Upload, Loader2, X, Plus, Trash2, QrCode, Check, Pencil, Search } from 'lucide-react'
 import { QRCodeCanvas } from 'qrcode.react'
 import { DEFAULT_SETTINGS, type WorkshopSettings, type DiscountTier, type ManoDeObraModo, type ComisionBase, DEFAULT_MO_CONFIG } from '@/features/presupuesto/types'
 import { useTranslations } from '@/shared/hooks/useTranslations'
@@ -82,6 +82,7 @@ export default function SettingsPage() {
   const activeSection = sectionFromUrl || (typeof window !== 'undefined' && window.innerWidth >= 768 ? 'perfil' : null)
   const [suppliers, setSuppliers] = useState<Array<{ id: string; name: string; whatsapp: string | null; website: string | null; notes: string | null; email: string | null; location: string | null }>>([])
   const [editingSupplier, setEditingSupplier] = useState<{ id?: string; name: string; whatsapp: string; email: string; website: string; location: string; notes: string } | null>(null)
+  const [searchSupplier, setSearchSupplier] = useState('')
   const [openDiscTecs, setOpenDiscTecs] = useState<string[]>(['descuentos_subli'])
 
 
@@ -848,17 +849,38 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {activeSection === 'proveedores' && (
+      {activeSection === 'proveedores' && (() => {
+        const filteredSuppliers = searchSupplier ? suppliers.filter(s => s.name.toLowerCase().includes(searchSupplier.toLowerCase())) : suppliers
+        const newSup = () => setEditingSupplier({ name: '', whatsapp: '', email: '', website: '', location: '', notes: '' })
+        return (
         <div>
-          <div className="flex items-start justify-between gap-3 mb-4">
+          {/* Desktop header */}
+          <div className="hidden md:flex items-start justify-between gap-3 mb-4">
             <div><h2 className="text-xl font-bold text-gray-900 mb-1">Proveedores</h2>
               <p className="text-sm text-gray-400">Gestioná tus proveedores de materiales.</p></div>
-            <button onClick={() => setEditingSupplier({ name: '', whatsapp: '', email: '', website: '', location: '', notes: '' })}
+            <button onClick={newSup}
               className="flex items-center gap-1.5 whitespace-nowrap text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={14} /> Agregar</button>
+          </div>
+          {/* Desktop search */}
+          <div className="hidden md:block relative mb-4 max-w-[400px]">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            <input className="input-base text-sm w-full" style={{ paddingLeft: 40 }} placeholder="Buscar proveedor..." value={searchSupplier} onChange={e => setSearchSupplier(e.target.value)} />
+          </div>
+          {/* Mobile header + compact row */}
+          <div className="md:hidden mb-4">
+            <h2 className="text-xl font-bold text-gray-900 mb-1">Proveedores</h2>
+            <p className="text-sm text-gray-400 mb-3">Gestioná tus proveedores de materiales.</p>
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                <input className="input-base text-sm w-full" style={{ paddingLeft: 40 }} placeholder="Buscar..." value={searchSupplier} onChange={e => setSearchSupplier(e.target.value)} />
+              </div>
+              <button onClick={newSup} className="h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 text-white" style={{ background: '#6C5CE7' }}><Plus size={18} /></button>
+            </div>
           </div>
           {/* Mobile cards */}
           <div className="md:hidden space-y-2">
-            {suppliers.map(s => (
+            {filteredSuppliers.map(s => (
               <div key={s.id} className="card p-4">
                 <div className="flex items-start justify-between">
                   <div>
@@ -878,7 +900,7 @@ export default function SettingsPage() {
                 </div>
               </div>
             ))}
-            {suppliers.length === 0 && <div className="text-center py-12 text-gray-400 text-sm">No hay proveedores cargados.</div>}
+            {filteredSuppliers.length === 0 && <div className="text-center py-12 text-gray-400 text-sm">{suppliers.length === 0 ? 'No hay proveedores cargados.' : 'No hay proveedores que coincidan.'}</div>}
           </div>
           {/* Desktop table */}
           <div className="hidden md:block card overflow-hidden">
@@ -886,7 +908,7 @@ export default function SettingsPage() {
               <table className="w-full min-w-[600px]"><thead><tr className="border-b border-gray-100">
                 {['Nombre', 'WhatsApp', 'Email', 'Web', 'Ubicación', ''].map(h => <th key={h} className={`text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3 ${h === 'Email' || h === 'Ubicación' ? 'hidden lg:table-cell' : ''}`}>{h}</th>)}
               </tr></thead><tbody>
-                {suppliers.map(s => (
+                {filteredSuppliers.map(s => (
                   <tr key={s.id} className="border-b border-gray-50 hover:bg-gray-50">
                     <td className="px-4 py-3">
                       <span className="font-medium text-gray-800">{s.name}</span>
@@ -903,11 +925,11 @@ export default function SettingsPage() {
                   </tr>
                 ))}
               </tbody></table>
-              {suppliers.length === 0 && <div className="text-center py-12 text-gray-400 text-sm">No hay proveedores cargados.</div>}
+              {filteredSuppliers.length === 0 && <div className="text-center py-12 text-gray-400 text-sm">{suppliers.length === 0 ? 'No hay proveedores cargados.' : 'No hay proveedores que coincidan.'}</div>}
             </div>
           </div>
         </div>
-      )}
+      )})()}
 
       {activeSection === 'guia-talles' && (
         <div>
