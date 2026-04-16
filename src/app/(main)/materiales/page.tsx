@@ -51,7 +51,7 @@ function emptyConfig(tipo: InsumoTipo): InsumoConfig {
     case 'tinta_serigrafica': return { tipo: 'tinta_serigrafica', precio_kg: 0, rendimiento_estampadas_kg: 100, color: '' }
     case 'servicio_impresion': return { tipo: 'servicio_impresion', precio_metro: 0, ancho_material: 60, proveedor: '' }
     case 'emulsion': return { tipo: 'emulsion', precio_kg: 0, rendimiento_pantallas_kg: 20 }
-    case 'otro': return { tipo: 'otro', precio: 0, unidad: 'unidad', rendimiento: 1, unidad_rendimiento: 'usos', vida_util_usos: 0 }
+    case 'otro': return { tipo: 'otro', precio: 0, unidad: 'unidad', rendimiento: 1, unidad_rendimiento: 'usos' }
   }
 }
 
@@ -379,7 +379,7 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
               else if (tipo === 'tinta_serigrafica') keyData = `${fmtCurrency(c.precio_kg as number || 0)}/kg · rinde ${c.rendimiento_estampadas_kg} pantallas`
               else if (tipo === 'servicio_impresion') keyData = `${fmtCurrency(c.precio_metro as number || 0)}/m · ancho ${c.ancho_material}cm`
               else if (tipo === 'emulsion') keyData = `${fmtCurrency(c.precio_kg as number || 0)}/kg · rinde ${c.rendimiento_pantallas_kg} pantallas`
-              else if (tipo === 'otro') keyData = `${fmtCurrency(c.precio as number || 0)} por ${c.unidad || 'unidad'}${c.vida_util_usos ? ` · ${c.vida_util_usos} usos` : ''}`
+              else if (tipo === 'otro') keyData = `${fmtCurrency(c.precio as number || 0)} por ${c.unidad || 'unidad'}`
               return (
                 <tr key={ins.id} className="border-b border-gray-50 hover:bg-gray-50">
                   <td className="px-4 py-3 font-medium text-gray-800">{ins.nombre}</td>
@@ -797,19 +797,12 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
                 })()}
                 {insModal.tipo === 'otro' && (() => {
                   const c = (insModal.config || {}) as Record<string, unknown>
-                  return (<div className="space-y-3">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div><label className="block text-xs text-gray-500 mb-1">Precio ($) *</label><NumericInput className="input-base" value={c.precio as number || 0} onChange={v => up({ precio: v })} /></div>
-                      <div><label className="block text-xs text-gray-500 mb-1">Unidad de compra</label>
-                        <select className="input-base" value={c.unidad as string || 'unidad'} onChange={e => up({ unidad: e.target.value })}>
-                          {['Unidad', 'Rollo', 'Metro', 'Kilo', 'Litro', 'Caja'].map(u => <option key={u} value={u.toLowerCase()}>{u}</option>)}
-                        </select></div>
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-500 mb-1">Vida útil estimada (usos)</label>
-                      <NumericInput className="input-base" value={c.vida_util_usos as number || 0} onChange={v => up({ vida_util_usos: v })} />
-                      <p className="text-[10px] text-gray-400 mt-1">Se usa para prorratear el costo en las técnicas que lo usen.</p>
-                    </div>
+                  return (<div className="grid grid-cols-2 gap-3">
+                    <div><label className="block text-xs text-gray-500 mb-1">Precio ($) *</label><NumericInput className="input-base" value={c.precio as number || 0} onChange={v => up({ precio: v })} /></div>
+                    <div><label className="block text-xs text-gray-500 mb-1">Unidad de compra</label>
+                      <select className="input-base" value={c.unidad as string || 'unidad'} onChange={e => up({ unidad: e.target.value })}>
+                        {['Unidad', 'Rollo', 'Metro', 'Kilo', 'Litro', 'Caja'].map(u => <option key={u} value={u.toLowerCase()}>{u}</option>)}
+                      </select></div>
                   </div>)
                 })()}
               </div>
