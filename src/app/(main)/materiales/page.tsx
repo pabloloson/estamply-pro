@@ -197,7 +197,7 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
               <button onClick={() => setShowCats(true)} className="flex items-center gap-1.5 whitespace-nowrap text-xs sm:text-sm px-3 py-1.5 rounded-lg font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50">
                 <FolderOpen size={14} /> Categorías
               </button>
-              <button onClick={() => setModal({ time_subli: 0, time_dtf: 0, time_vinyl: 0, base_cost: 0 } as Partial<Product>)} className="flex items-center gap-1.5 whitespace-nowrap text-xs sm:text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={14} /> + Agregar</button>
+              <button onClick={() => setModal({ time_subli: 0, time_dtf: 0, time_vinyl: 0, base_cost: 0 } as Partial<Product>)} className="flex items-center gap-1.5 whitespace-nowrap text-xs sm:text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={14} /> Agregar</button>
             </div>
           </div>
         )}
@@ -439,12 +439,19 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
                       <div className="flex items-center gap-3">
                         <button type="button" onClick={async () => {
                           if (!inlinePress.name.trim()) return
-                          const { data: { user } } = await supabase.auth.getUser()
-                          if (!user) return
-                          const { data } = await supabase.from('equipment').insert({
-                            name: inlinePress.name.trim(), type: 'press', clasificacion: 'Plancha',
-                            cost: 0, lifespan_uses: 10000, user_id: user.id, tecnicas_slugs: [],
+                          // Use team owner ID if available, otherwise current user
+                          const { data: ownerId } = await supabase.rpc('get_team_owner_id')
+                          let userId = ownerId as string | null
+                          if (!userId) {
+                            const { data: { user } } = await supabase.auth.getUser()
+                            userId = user?.id || null
+                          }
+                          if (!userId) return
+                          const { data, error } = await supabase.from('equipment').insert({
+                            name: inlinePress.name.trim(), type: 'press_flat', clasificacion: 'plancha',
+                            cost: 0, lifespan_uses: 10000, user_id: userId, tecnicas_slugs: [],
                           }).select('id').single()
+                          if (error) { console.error('Press insert error:', error); return }
                           if (data) { setModal({ ...modal, press_equipment_id: data.id }); await load(); setPressCreatedHint(true); setTimeout(() => setPressCreatedHint(false), 6000) }
                           setInlinePress(null)
                         }} className="px-4 py-2 rounded-lg text-xs font-semibold text-white" style={{ background: '#6C5CE7' }}>Crear plancha</button>
