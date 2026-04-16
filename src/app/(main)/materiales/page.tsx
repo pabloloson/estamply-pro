@@ -73,7 +73,7 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
   const [inlineCat, setInlineCat] = useState<{ name: string; margen_sugerido: number } | null>(null)
   const [inlinePress, setInlinePress] = useState<{ name: string } | null>(null)
   const [pressCreatedHint, setPressCreatedHint] = useState(false)
-  const [inlineSupplier, setInlineSupplier] = useState<{ name: string; whatsapp: string } | null>(null)
+  const [inlineSupplier, setInlineSupplier] = useState<{ name: string } | null>(null)
   const [supplierCreatedHint, setSupplierCreatedHint] = useState(false)
   const [insModal, setInsModal] = useState<Partial<Insumo> | null>(null)
   const [showCats, setShowCats] = useState(false)
@@ -398,7 +398,6 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
                   }}>
                     <option value="">Sin categoría</option>
                     {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    <option disabled>───────────</option>
                     <option value="__new__">+ Nueva categoría</option>
                   </select></div>
               </div>
@@ -429,7 +428,6 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
                 }}>
                   <option value="">Sin plancha</option>
                   {presses.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
-                  <option disabled>───────────</option>
                   <option value="__new__">+ Nueva plancha</option>
                 </select>
               </div>
@@ -477,13 +475,12 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Proveedor</label>
                 <select className="input-base" value={inlineSupplier ? '__new__' : (modal.supplier_id || '')} onChange={e => {
-                  if (e.target.value === '__new__') { setInlineSupplier({ name: '', whatsapp: '' }); return }
+                  if (e.target.value === '__new__') { setInlineSupplier({ name: '' }); return }
                   setInlineSupplier(null)
                   setModal({ ...modal, supplier_id: e.target.value || null })
                 }}>
                   <option value="">Sin proveedor</option>
                   {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                  <option disabled>───────────</option>
                   <option value="__new__">+ Nuevo proveedor</option>
                 </select>
               </div>
@@ -491,8 +488,6 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
                 <div className="p-4 rounded-xl bg-gray-50 border border-gray-200 space-y-3">
                   <div><label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
                     <input className="input-base" placeholder="Ej: TextilNorte" value={inlineSupplier.name} onChange={e => setInlineSupplier({ ...inlineSupplier, name: e.target.value })} autoFocus /></div>
-                  <div><label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp</label>
-                    <input className="input-base" placeholder="Ej: +5435155512345" value={inlineSupplier.whatsapp} onChange={e => setInlineSupplier({ ...inlineSupplier, whatsapp: e.target.value })} /></div>
                   <div className="flex items-center gap-3">
                     <button type="button" onClick={async () => {
                       if (!inlineSupplier.name.trim()) return
@@ -504,7 +499,7 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
                       }
                       if (!userId) return
                       const { data, error } = await supabase.from('suppliers').insert({
-                        name: inlineSupplier.name.trim(), whatsapp: inlineSupplier.whatsapp.trim() || null, user_id: userId,
+                        name: inlineSupplier.name.trim(), user_id: userId,
                       }).select('id').single()
                       if (error) { console.error('Supplier insert error:', error); return }
                       if (data) { setModal({ ...modal, supplier_id: data.id }); await load(); setSupplierCreatedHint(true); setTimeout(() => setSupplierCreatedHint(false), 6000) }
@@ -517,7 +512,7 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
               {supplierCreatedHint && (
                 <div className="p-3 rounded-lg bg-green-50 border border-green-100 flex items-start gap-2 text-xs">
                   <span className="text-green-600 font-medium flex-shrink-0">✓</span>
-                  <p className="text-green-700">Proveedor creado. Completá el resto de los datos en <a href="/settings/proveedores" target="_blank" rel="noopener" className="font-semibold text-purple-600 hover:underline">Configuración → Proveedores →</a></p>
+                  <p className="text-green-700">Proveedor creado. Completá los datos de contacto en <a href="/settings/proveedores" target="_blank" rel="noopener" className="font-semibold text-purple-600 hover:underline">Configuración → Proveedores →</a></p>
                 </div>
               )}
 
