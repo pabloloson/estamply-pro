@@ -71,10 +71,10 @@ export default function SettingsPage() {
   const [inviting, setInviting] = useState(false)
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const [ws, setWs] = useState<WorkshopSettings>(DEFAULT_SETTINGS)
-  const [condicionesDefault, setCondicionesDefault] = useState<string[]>([
-    'Se requiere seña para iniciar el trabajo.',
-    'El tiempo de entrega se confirma al aprobar el presupuesto.',
-    'Los precios pueden variar si cambian los costos de materiales.',
+  const [condicionesDefault, setCondicionesDefault] = useState<Array<{ text: string; activa: boolean }>>([
+    { text: 'Se requiere seña para iniciar el trabajo.', activa: true },
+    { text: 'El tiempo de entrega se confirma al aprobar el presupuesto.', activa: true },
+    { text: 'Los precios pueden variar si cambian los costos de materiales.', activa: true },
   ])
   const logoInputRef = useRef<HTMLInputElement>(null)
   // Section from URL: /settings/perfil → 'perfil', /settings → null (menu)
@@ -127,10 +127,11 @@ export default function SettingsPage() {
         const sx = wsData.settings as Record<string, unknown>
         setWs({ ...DEFAULT_SETTINGS, ...(sx as Partial<WorkshopSettings>) })
         if (sx.condiciones_default && Array.isArray(sx.condiciones_default)) {
-          setCondicionesDefault(sx.condiciones_default as string[])
+          const raw = sx.condiciones_default as Array<string | { text: string; activa: boolean }>
+          setCondicionesDefault(raw.map(c => typeof c === 'string' ? { text: c, activa: true } : c))
         } else if (sx.condiciones_presupuesto && typeof sx.condiciones_presupuesto === 'string') {
           // Migrate from old string format
-          setCondicionesDefault((sx.condiciones_presupuesto as string).split('\n').map((l: string) => l.replace(/^[·\-•]\s*/, '').trim()).filter(Boolean))
+          setCondicionesDefault((sx.condiciones_presupuesto as string).split('\n').map((l: string) => l.replace(/^[·\-•]\s*/, '').trim()).filter(Boolean).map(t => ({ text: t, activa: true })))
         }
       }
       if (mp) setMediosPago(mp)
@@ -524,30 +525,67 @@ export default function SettingsPage() {
   </div>
 )})()}
 
-      {activeSection === 'condiciones' && (
+      {activeSection === 'condiciones' && (() => {
+  const SUGERENCIAS = [
+    'Se requiere seña del 50% para iniciar el trabajo.',
+    'El tiempo de entrega se confirma al aprobar el presupuesto.',
+    'Los precios pueden variar si cambian los costos de materiales.',
+  ]
+  const usedTexts = condicionesDefault.map(c => c.text.toLowerCase().trim())
+  const availableSugg = SUGERENCIAS.filter(s => !usedTexts.includes(s.toLowerCase().trim()))
+  return (
   <div className="max-w-2xl">
     <h2 className="text-xl font-bold text-gray-900 mb-1">Condiciones</h2>
-    <p className="text-sm text-gray-400 mb-4">Se incluyen automáticamente en cada presupuesto nuevo.</p>
-    <div className="space-y-3 mb-4">
-      {condicionesDefault.map((cond, i) => (
-        <div key={i} className="card p-4 flex items-start gap-3">
-          <span className="text-gray-300 mt-0.5 cursor-grab">⠿</span>
-          <textarea className="flex-1 text-sm text-gray-700 bg-transparent resize-none outline-none focus:bg-gray-50 rounded p-1 -m-1 transition-colors" rows={2} value={cond}
-            onChange={e => { const arr = [...condicionesDefault]; arr[i] = e.target.value; setCondicionesDefault(arr) }} />
-          <button onClick={() => { if (!cond.trim() || confirm('¿Eliminar esta condición?')) setCondicionesDefault(condicionesDefault.filter((_, j) => j !== i)) }}
-            className="p-1 rounded hover:bg-red-50 text-gray-300 hover:text-red-500 flex-shrink-0"><X size={14} /></button>
+    <p className="text-sm text-gray-400 mb-4">Se incluyen automáticamente en cada presupuesto nuevo. Podés modificarlas en cada presupuesto individual.</p>
+
+    {condicionesDefault.length === 0 ? (
+      <div className="card p-6 text-center mb-4">
+        <p className="text-sm text-gray-500 mb-3">Todavía no agregaste condiciones. Acá tenés algunos ejemplos comunes:</p>
+        <div className="flex flex-wrap gap-2 justify-center">
+          {SUGERENCIAS.map(s => (
+            <button key={s} onClick={() => setCondicionesDefault([...condicionesDefault, { text: s, activa: true }])}
+              className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:border-purple-300 hover:text-purple-600 transition-colors text-left">{s}</button>
+          ))}
         </div>
-      ))}
-    </div>
-    <button onClick={() => setCondicionesDefault([...condicionesDefault, ''])}
+      </div>
+    ) : (
+      <div className="space-y-2 mb-4">
+        {condicionesDefault.map((cond, i) => (
+          <div key={i} className={`card p-3 flex items-start gap-3 transition-opacity ${!cond.activa ? 'opacity-50' : ''}`}>
+            <span className="text-gray-300 mt-1 cursor-grab flex-shrink-0">⠿</span>
+            <button type="button" onClick={() => { const arr = [...condicionesDefault]; arr[i] = { ...arr[i], activa: !arr[i].activa }; setCondicionesDefault(arr) }}
+              className="relative w-8 h-[18px] rounded-full transition-colors flex-shrink-0 mt-0.5" style={{ background: cond.activa ? '#22C55E' : '#D1D5DB' }}>
+              <span className="absolute top-[1px] left-[1px] w-4 h-4 rounded-full bg-white shadow transition-transform" style={{ transform: cond.activa ? 'translateX(14px)' : 'translateX(0)' }} />
+            </button>
+            <textarea className="flex-1 text-sm text-gray-700 bg-transparent resize-none outline-none focus:bg-gray-50 rounded p-1 -m-1 transition-colors" rows={1}
+              style={{ minHeight: 24, maxHeight: 72 }} value={cond.text}
+              onChange={e => { const arr = [...condicionesDefault]; arr[i] = { ...arr[i], text: e.target.value }; setCondicionesDefault(arr) }}
+              onInput={e => { const el = e.target as HTMLTextAreaElement; el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 72) + 'px' }} />
+            <button onClick={() => { if (!cond.text.trim() || confirm('¿Eliminar esta condición?')) setCondicionesDefault(condicionesDefault.filter((_, j) => j !== i)) }}
+              className="p-1 rounded hover:bg-red-50 text-gray-300 hover:text-red-500 flex-shrink-0"><X size={14} /></button>
+          </div>
+        ))}
+        {availableSugg.length > 0 && condicionesDefault.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mt-2">
+            <span className="text-[11px] text-gray-400">Sugerencias:</span>
+            {availableSugg.map(s => (
+              <button key={s} onClick={() => setCondicionesDefault([...condicionesDefault, { text: s, activa: true }])}
+                className="text-[11px] text-gray-400 hover:text-purple-600 hover:underline">{s.slice(0, 40)}...</button>
+            ))}
+          </div>
+        )}
+      </div>
+    )}
+
+    <button onClick={() => setCondicionesDefault([...condicionesDefault, { text: '', activa: true }])}
       className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700 mb-6"><Plus size={14} /> Agregar condición</button>
     <button onClick={saveWs} disabled={saveState === 'saving'}
       className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors ${saveState === 'saved' ? 'bg-green-500' : saveState === 'error' ? 'bg-red-500' : ''}`}
       style={saveState !== 'saved' && saveState !== 'error' ? { background: '#6C5CE7' } : {}}>
-      {saveState === 'saving' ? <><Loader2 size={14} className="animate-spin" /> Guardando...</> : saveState === 'saved' ? '✓ Guardado' : saveState === 'error' ? 'Error' : <><Save size={14} /> Guardar</>}
+      {saveState === 'saving' ? <><Loader2 size={14} className="animate-spin" /> Guardando...</> : saveState === 'saved' ? <><Check size={14} /> Guardado</> : saveState === 'error' ? 'Error' : <><Save size={14} /> Guardar</>}
     </button>
   </div>
-)}
+)})()}
 
       {activeSection === 'medios-pago' && (() => {
   const ajusteLabel = (m: { tipo_ajuste: string; porcentaje: number }) =>

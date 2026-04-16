@@ -427,7 +427,8 @@ export default function PresupuestoPage() {
         setValidezDias((sx.validez_dias as number) || 15)
         setAdvancePercent((sx.sena_predeterminada as number) || 50)
         if (sx.condiciones_default && Array.isArray(sx.condiciones_default)) {
-          setCondiciones(sx.condiciones_default as string[])
+          const raw = sx.condiciones_default as Array<string | { text: string; activa: boolean }>
+          setCondiciones(raw.map(c => typeof c === 'string' ? c : c.text).filter((_, i) => { const item = (sx.condiciones_default as unknown[])[i]; return typeof item === 'string' || (item as { activa: boolean }).activa !== false }))
         } else if (sx.condiciones_presupuesto && typeof sx.condiciones_presupuesto === 'string') {
           setCondiciones((sx.condiciones_presupuesto as string).split('\n').map((l: string) => l.replace(/^[·\-•]\s*/, '').trim()).filter(Boolean))
         }
