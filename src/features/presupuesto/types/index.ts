@@ -22,8 +22,8 @@ export interface DiscountTier {
   porcentaje: number
 }
 
-export type ManoDeObraModo = 'sueldo_fijo' | 'por_unidad' | 'porcentaje'
-export type ComisionBase = 'venta' | 'ganancia'
+export type ManoDeObraModo = 'ninguno' | 'sueldo_fijo' | 'por_unidad' | 'porcentaje'
+export type ComisionBase = 'venta' | 'ganancia' | 'costo'
 
 export interface ManoDeObraConfig {
   modo: ManoDeObraModo
@@ -214,6 +214,8 @@ export function computeAutoMo(
   margin: number,
 ): number {
   switch (config.modo) {
+    case 'ninguno':
+      return 0
     case 'sueldo_fijo': {
       const minutosMes = config.horas_mensuales * 60
       if (minutosMes <= 0) return 0
@@ -230,9 +232,12 @@ export function computeAutoMo(
       if (config.comision_base === 'venta') {
         const denom = 1 - m - p
         return denom > 0 ? (c0 * p) / denom : 0
+      } else if (config.comision_base === 'costo') {
+        // Percentage on production cost
+        return c0 * p
       } else {
-        const denom = 1 - m * (1 + p)
-        return denom > 0 ? (c0 * m * p) / denom : 0
+        // Legacy 'ganancia' — same as 'costo' going forward
+        return c0 * p
       }
     }
   }
@@ -240,9 +245,10 @@ export function computeAutoMo(
 
 export function getMoRuleLabel(config: ManoDeObraConfig): string {
   switch (config.modo) {
+    case 'ninguno': return 'No incluir'
     case 'sueldo_fijo': return 'Sueldo fijo'
     case 'por_unidad': return 'Por unidad'
     case 'porcentaje':
-      return config.comision_base === 'venta' ? '% s/venta' : '% s/ganancia'
+      return config.comision_base === 'venta' ? '% s/venta' : '% s/costo'
   }
 }

@@ -729,68 +729,107 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {activeSection === 'mano-obra' && (
+      {activeSection === 'mano-obra' && (() => {
+  const mo = ws.mano_de_obra
+  const costPerHour = mo.horas_mensuales > 0 ? Math.round(mo.sueldo_mensual / mo.horas_mensuales) : 0
+  const setMo = (patch: Record<string, unknown>) => setWs({ ...ws, mano_de_obra: { ...mo, ...patch } } as WorkshopSettings)
+  return (
   <div className="max-w-2xl">
     <h2 className="text-xl font-bold text-gray-900 mb-1">Mano de obra</h2>
-    <p className="text-sm text-gray-400 mb-4">Configurá los costos de tus operarios.</p>
+    <p className="text-sm text-gray-400 mb-1">Configurá los costos de tus operarios.</p>
+    <p className="text-xs text-gray-400 mb-4">Este costo se suma automáticamente a cada cotización.</p>
     <div className="card p-6 space-y-4">
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Modo de cálculo</label>
-        <select className="input-base" value={(ws as Record<string, unknown>).mano_de_obra ? ((ws as Record<string, unknown>).mano_de_obra as Record<string, unknown>).modo as string : 'por_unidad'}
-          onChange={e => setWs({ ...ws, mano_de_obra: { ...ws.mano_de_obra, modo: e.target.value as 'sueldo_fijo' | 'por_unidad' | 'porcentaje' } } as WorkshopSettings)}>
-          <option value="sueldo_fijo">Sueldo fijo</option>
+        <select className="input-base" value={mo.modo || 'por_unidad'}
+          onChange={e => setMo({ modo: e.target.value })}>
+          <option value="ninguno">No incluir</option>
           <option value="por_unidad">Fijo por trabajo</option>
+          <option value="sueldo_fijo">Sueldo fijo</option>
           <option value="porcentaje">Porcentaje</option>
         </select>
       </div>
 
-      {ws.mano_de_obra.modo === 'sueldo_fijo' && (<>
+      {mo.modo === 'ninguno' && (
+        <p className="text-sm text-gray-400">El costo de mano de obra no se incluirá en las cotizaciones. Podés activarlo en cualquier momento.</p>
+      )}
+
+      {mo.modo === 'por_unidad' && (<>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Costo total mano de obra mensual ($)</label>
-          <input type="number" className="input-base" min={0} value={ws.mano_de_obra.sueldo_mensual || ''} onChange={e => setWs({ ...ws, mano_de_obra: { ...ws.mano_de_obra, sueldo_mensual: Number(e.target.value) } } as WorkshopSettings)} />
-          <p className="text-[10px] text-gray-400 mt-1">Si tenés varios empleados, sumá todos los sueldos.</p>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Costo por unidad producida ($)</label>
+          <input type="number" className="input-base" min={0} value={mo.monto_por_unidad || ''} onChange={e => setMo({ monto_por_unidad: Number(e.target.value) })} />
+          <p className="text-[11px] text-gray-400 mt-1">Se suma por cada unidad en la cotización.</p>
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Horas productivas totales mensuales</label>
-          <input type="number" className="input-base" min={1} value={ws.mano_de_obra.horas_mensuales || ''} onChange={e => setWs({ ...ws, mano_de_obra: { ...ws.mano_de_obra, horas_mensuales: Number(e.target.value) } } as WorkshopSettings)} />
-          <p className="text-[10px] text-gray-400 mt-1">Si tenés varios empleados, sumá todas las horas.</p>
-        </div>
-        {ws.mano_de_obra.sueldo_mensual > 0 && ws.mano_de_obra.horas_mensuales > 0 && (
-          <div className="p-3 rounded-lg bg-purple-50 border border-purple-100">
-            <p className="text-xs text-purple-600 font-semibold">Costo por hora: {fmtCurrency(Math.round(ws.mano_de_obra.sueldo_mensual / ws.mano_de_obra.horas_mensuales))}/h</p>
+        {mo.monto_por_unidad > 0 && (
+          <div className="p-3 rounded-lg bg-green-50 border border-green-100 flex items-start gap-2">
+            <span className="text-base">💡</span>
+            <div>
+              <p className="text-sm font-bold text-green-700">{fmtCurrency(mo.monto_por_unidad)} por unidad producida</p>
+              <p className="text-[11px] text-gray-500 mt-0.5">Ejemplo: un pedido de 10 unidades sumará {fmtCurrency(mo.monto_por_unidad * 10)} de mano de obra.</p>
+            </div>
           </div>
         )}
       </>)}
 
-      {ws.mano_de_obra.modo === 'por_unidad' && (
+      {mo.modo === 'sueldo_fijo' && (<>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Costo por unidad producida ($)</label>
-          <input type="number" className="input-base" min={0} value={ws.mano_de_obra.monto_por_unidad || ''} onChange={e => setWs({ ...ws, mano_de_obra: { ...ws.mano_de_obra, monto_por_unidad: Number(e.target.value) } } as WorkshopSettings)} />
-          <p className="text-[10px] text-gray-400 mt-1">Monto fijo que se suma por cada unidad producida.</p>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Costo total mano de obra mensual ($)</label>
+          <input type="number" className="input-base" min={0} value={mo.sueldo_mensual || ''} onChange={e => setMo({ sueldo_mensual: Number(e.target.value) })} />
+          <p className="text-[11px] text-gray-400 mt-1">Si tenés varios empleados, sumá todos los sueldos.</p>
         </div>
-      )}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Horas productivas mensuales</label>
+          <input type="number" className="input-base" min={1} value={mo.horas_mensuales || ''} onChange={e => setMo({ horas_mensuales: Number(e.target.value) })} />
+          <p className="text-[11px] text-gray-400 mt-1">Horas que realmente se producen por mes. 160 = 8 horas/día × 20 días.</p>
+        </div>
+        {costPerHour > 0 && (
+          <div className="p-3 rounded-lg bg-green-50 border border-green-100 flex items-start gap-2">
+            <span className="text-base">💡</span>
+            <div>
+              <p className="text-sm font-bold text-green-700">{fmtCurrency(costPerHour)} por hora de trabajo</p>
+              <p className="text-[11px] text-gray-500 mt-0.5">Se calcula como sueldo mensual ÷ horas productivas. En cada cotización se suma según el tiempo de producción.</p>
+            </div>
+          </div>
+        )}
+      </>)}
 
-      {ws.mano_de_obra.modo === 'porcentaje' && (<>
+      {mo.modo === 'porcentaje' && (<>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Porcentaje (%)</label>
-          <input type="number" className="input-base" min={0} max={100} value={ws.mano_de_obra.porcentaje_comision || ''} onChange={e => setWs({ ...ws, mano_de_obra: { ...ws.mano_de_obra, porcentaje_comision: Number(e.target.value) } } as WorkshopSettings)} />
+          <input type="number" className="input-base" min={0} max={100} value={mo.porcentaje_comision || ''} onChange={e => setMo({ porcentaje_comision: Number(e.target.value) })} />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Calcular sobre</label>
-          <select className="input-base" value={ws.mano_de_obra.comision_base} onChange={e => setWs({ ...ws, mano_de_obra: { ...ws.mano_de_obra, comision_base: e.target.value as 'venta' | 'ganancia' } } as WorkshopSettings)}>
+          <select className="input-base" value={mo.comision_base === 'ganancia' ? 'costo' : mo.comision_base} onChange={e => setMo({ comision_base: e.target.value })}>
+            <option value="costo">Costo de producción</option>
             <option value="venta">Precio de venta</option>
-            <option value="ganancia">Ganancia neta</option>
           </select>
         </div>
+        {mo.porcentaje_comision > 0 && (
+          <div className="p-3 rounded-lg bg-green-50 border border-green-100 flex items-start gap-2">
+            <span className="text-base">💡</span>
+            <div>
+              <p className="text-sm font-bold text-green-700">{mo.porcentaje_comision}% sobre el {(mo.comision_base === 'ganancia' || mo.comision_base === 'costo') ? 'costo de producción' : 'precio de venta'}</p>
+              <p className="text-[11px] text-gray-500 mt-0.5">
+                {(mo.comision_base === 'ganancia' || mo.comision_base === 'costo')
+                  ? `Ejemplo: si el costo de producción es ${fmtCurrency(10000)}, se suman ${fmtCurrency(10000 * mo.porcentaje_comision / 100)} de mano de obra.`
+                  : `Ejemplo: si el precio de venta es ${fmtCurrency(20000)}, se suman ${fmtCurrency(20000 * mo.porcentaje_comision / 100)} de mano de obra.`}
+              </p>
+            </div>
+          </div>
+        )}
       </>)}
+
+      <div className="border-t border-gray-100 pt-4">
+        <button onClick={saveWs} disabled={saveState === 'saving'}
+          className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors ${saveState === 'saved' ? 'bg-green-500' : saveState === 'error' ? 'bg-red-500' : ''}`}
+          style={saveState !== 'saved' && saveState !== 'error' ? { background: '#6C5CE7' } : {}}>
+          {saveState === 'saving' ? <><Loader2 size={14} className="animate-spin" /> Guardando...</> : saveState === 'saved' ? <><Check size={14} /> Guardado</> : saveState === 'error' ? 'Error' : <><Save size={14} /> Guardar</>}
+        </button>
+      </div>
     </div>
-    <button onClick={saveWs} disabled={saveState === 'saving'}
-      className={`mt-6 flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors ${saveState === 'saved' ? 'bg-green-500' : saveState === 'error' ? 'bg-red-500' : ''}`}
-      style={saveState !== 'saved' && saveState !== 'error' ? { background: '#6C5CE7' } : {}}>
-      {saveState === 'saving' ? <><Loader2 size={14} className="animate-spin" /> Guardando...</> : saveState === 'saved' ? '✓ Guardado' : saveState === 'error' ? 'Error' : <><Save size={14} /> Guardar</>}
-    </button>
   </div>
-)}
+)})()}
 
       {activeSection === 'tecnicas' && (
         <div>
