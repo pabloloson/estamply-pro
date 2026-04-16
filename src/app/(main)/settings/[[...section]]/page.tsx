@@ -590,8 +590,20 @@ export default function SettingsPage() {
         const getTiers = (k: DiscKey) => (ws as unknown as Record<string, unknown>)[k] as import('@/features/presupuesto/types').DiscountTier[] || []
         const setTiers = (k: DiscKey, tiers: import('@/features/presupuesto/types').DiscountTier[]) => setWs({ ...ws, [k]: tiers } as WorkshopSettings)
         const addTier = (k: DiscKey) => setTiers(k, [...getTiers(k), { desde: (getTiers(k).at(-1)?.hasta || 0) + 1, hasta: 9999, porcentaje: 0 }])
-        const updateTier = (k: DiscKey, i: number, f: string, v: number) => setTiers(k, getTiers(k).map((t, j) => j === i ? { ...t, [f]: v } : t))
-        const removeTier = (k: DiscKey, i: number) => setTiers(k, getTiers(k).filter((_, j) => j !== i))
+        const updateHasta = (k: DiscKey, i: number, v: number) => {
+          const t = getTiers(k)
+          setTiers(k, t.map((tier, j) => {
+            if (j === i) return { ...tier, hasta: Math.max(v, tier.desde) }
+            if (j === i + 1) return { ...tier, desde: v + 1 }
+            return tier
+          }))
+        }
+        const updateDesde = (k: DiscKey, i: number, v: number) => setTiers(k, getTiers(k).map((t, j) => j === i ? { ...t, desde: v } : t))
+        const updatePct = (k: DiscKey, i: number, v: number) => setTiers(k, getTiers(k).map((t, j) => j === i ? { ...t, porcentaje: Math.min(1, Math.max(0, v)) } : t))
+        const removeTier = (k: DiscKey, i: number) => {
+          const remaining = getTiers(k).filter((_, j) => j !== i)
+          setTiers(k, remaining.map((t, j) => j > 0 ? { ...t, desde: remaining[j - 1].hasta + 1 } : t))
+        }
 
         const TierTable = ({ discKey }: { discKey: DiscKey }) => {
           const tiers = getTiers(discKey)
@@ -609,9 +621,9 @@ export default function SettingsPage() {
               <th className="w-8" />
             </tr></thead><tbody>
               {tiers.map((t, i) => (<tr key={i} className="border-b border-gray-50">
-                <td className="py-1.5 px-2"><input type="number" className="input-base text-sm w-16 min-w-[45px]" min={1} value={t.desde} onChange={e => updateTier(discKey, i, 'desde', Number(e.target.value))} /></td>
-                <td className="py-1.5 px-2"><input type="number" className="input-base text-sm w-16 min-w-[45px]" min={1} value={t.hasta} onChange={e => updateTier(discKey, i, 'hasta', Number(e.target.value))} /></td>
-                <td className="py-1.5 px-2"><input type="number" className="input-base text-sm w-14 min-w-[50px]" min={0} max={100} value={Math.round(t.porcentaje * 100)} onChange={e => updateTier(discKey, i, 'porcentaje', Number(e.target.value) / 100)} /></td>
+                <td className="py-1.5 px-2"><input type="number" className={`input-base text-sm w-16 min-w-[45px] ${i > 0 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : ''}`} min={1} value={t.desde} readOnly={i > 0} onChange={e => updateDesde(discKey, i, Number(e.target.value))} /></td>
+                <td className="py-1.5 px-2"><input type="number" className="input-base text-sm w-16 min-w-[45px]" min={t.desde} value={t.hasta} onChange={e => updateHasta(discKey, i, Number(e.target.value))} /></td>
+                <td className="py-1.5 px-2"><input type="number" className="input-base text-sm w-14 min-w-[50px]" min={0} max={100} value={Math.round(t.porcentaje * 100)} onChange={e => updatePct(discKey, i, Number(e.target.value) / 100)} /></td>
                 <td className="py-1.5"><button onClick={() => removeTier(discKey, i)} className="p-1 rounded hover:bg-red-50"><Trash2 size={12} className="text-gray-300 hover:text-red-500" /></button></td>
               </tr>))}
             </tbody></table>

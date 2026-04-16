@@ -26,16 +26,30 @@ const TEC_LABELS: Record<string, string> = { subli: 'Subli', dtf: 'DTF', dtf_uv:
 const TEC_COLORS: Record<string, string> = { subli: '#6C5CE7', dtf: '#E17055', dtf_uv: '#00B894', vinyl: '#E84393', serigrafia: '#FDCB6E' }
 
 function DiscountTable({ tiers, onChange }: { tiers: DiscountTier[]; onChange: (t: DiscountTier[]) => void }) {
-  const up = (i: number, f: keyof DiscountTier, v: number) => onChange(tiers.map((t, j) => j === i ? { ...t, [f]: v } : t))
+  const updateHasta = (i: number, v: number) => {
+    const updated = tiers.map((t, j) => {
+      if (j === i) return { ...t, hasta: Math.max(v, t.desde) }
+      if (j === i + 1) return { ...t, desde: v + 1 }
+      return t
+    })
+    onChange(updated)
+  }
+  const updateDesde = (i: number, v: number) => onChange(tiers.map((t, j) => j === i ? { ...t, desde: v } : t))
+  const updatePct = (i: number, v: number) => onChange(tiers.map((t, j) => j === i ? { ...t, porcentaje: Math.min(1, Math.max(0, v)) } : t))
+  const remove = (i: number) => {
+    const remaining = tiers.filter((_, j) => j !== i)
+    // Re-chain: fix 'desde' of the tier that takes the place of the removed one
+    onChange(remaining.map((t, j) => j > 0 ? { ...t, desde: remaining[j - 1].hasta + 1 } : t))
+  }
   return (<div>
     <table className="w-full"><thead><tr className="border-b border-gray-100">
       {['Desde', 'Hasta', 'Desc(%)', ''].map(h => <th key={h} className="text-left text-[10px] font-semibold text-gray-400 uppercase px-2 py-1">{h}</th>)}
     </tr></thead><tbody>
       {tiers.map((t, i) => (<tr key={i} className="border-b border-gray-50">
-        <td className="px-2 py-1"><input type="number" value={t.desde} onChange={e => up(i, 'desde', parseInt(e.target.value) || 0)} className="w-16 input-base text-xs py-0.5" /></td>
-        <td className="px-2 py-1"><input type="number" value={t.hasta} onChange={e => up(i, 'hasta', parseInt(e.target.value) || 0)} className="w-16 input-base text-xs py-0.5" /></td>
-        <td className="px-2 py-1"><input type="number" min={0} max={100} value={Math.round(t.porcentaje * 100)} onChange={e => up(i, 'porcentaje', (parseFloat(e.target.value) || 0) / 100)} className="w-16 input-base text-xs py-0.5" /></td>
-        <td className="px-2 py-1"><button onClick={() => onChange(tiers.filter((_, j) => j !== i))} className="p-0.5 rounded hover:bg-red-50"><Trash2 size={10} className="text-red-400" /></button></td>
+        <td className="px-2 py-1"><input type="number" value={t.desde} onChange={e => updateDesde(i, parseInt(e.target.value) || 0)} readOnly={i > 0} className={`w-16 input-base text-xs py-0.5 ${i > 0 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : ''}`} /></td>
+        <td className="px-2 py-1"><input type="number" value={t.hasta} min={t.desde} onChange={e => updateHasta(i, parseInt(e.target.value) || 0)} className="w-16 input-base text-xs py-0.5" /></td>
+        <td className="px-2 py-1"><input type="number" min={0} max={100} value={Math.round(t.porcentaje * 100)} onChange={e => updatePct(i, (parseFloat(e.target.value) || 0) / 100)} className="w-16 input-base text-xs py-0.5" /></td>
+        <td className="px-2 py-1"><button onClick={() => remove(i)} className="p-0.5 rounded hover:bg-red-50"><Trash2 size={10} className="text-red-400" /></button></td>
       </tr>))}
     </tbody></table>
     <button onClick={() => onChange([...tiers, { desde: (tiers.at(-1)?.hasta ?? 0) + 1, hasta: 9999, porcentaje: 0 }])} className="flex items-center gap-1 text-[10px] px-2 py-0.5 mt-1 rounded font-semibold text-purple-600 hover:bg-purple-50"><Plus size={9} /> Agregar tramo</button>
