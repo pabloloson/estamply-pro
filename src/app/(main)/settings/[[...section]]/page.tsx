@@ -83,6 +83,7 @@ export default function SettingsPage() {
   const [suppliers, setSuppliers] = useState<Array<{ id: string; name: string; whatsapp: string | null; website: string | null; notes: string | null; email: string | null; location: string | null }>>([])
   const [editingSupplier, setEditingSupplier] = useState<{ id?: string; name: string; whatsapp: string; email: string; website: string; location: string; notes: string } | null>(null)
   const [searchSupplier, setSearchSupplier] = useState('')
+  const [mpToast, setMpToast] = useState('')
   const [openDiscTecs, setOpenDiscTecs] = useState<string[]>(['descuentos_subli'])
 
 
@@ -551,7 +552,6 @@ export default function SettingsPage() {
       {activeSection === 'medios-pago' && (() => {
   const ajusteLabel = (m: { tipo_ajuste: string; porcentaje: number }) =>
     m.tipo_ajuste === 'sin_ajuste' || m.tipo_ajuste === 'ninguno' || m.porcentaje === 0 ? 'Sin ajuste' : m.porcentaje > 0 ? `Recargo +${m.porcentaje}%` : `Descuento ${Math.abs(m.porcentaje)}%`
-  const [mpToast, setMpToast] = useState('')
   const toggleActivo = async (m: { id: string; activo: boolean; nombre: string }) => {
     await supabase.from('medios_pago').update({ activo: !m.activo }).eq('id', m.id)
     setMediosPago(prev => prev.map(x => x.id === m.id ? { ...x, activo: !x.activo } : x))
