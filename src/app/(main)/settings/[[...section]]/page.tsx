@@ -80,8 +80,8 @@ export default function SettingsPage() {
   // Section from URL: /settings/perfil → 'perfil', /settings → null (menu)
   const sectionFromUrl = params.section?.[0] || null
   const activeSection = sectionFromUrl || (typeof window !== 'undefined' && window.innerWidth >= 768 ? 'perfil' : null)
-  const [suppliers, setSuppliers] = useState<Array<{ id: string; name: string; whatsapp: string | null; website: string | null; notes: string | null }>>([])
-  const [editingSupplier, setEditingSupplier] = useState<{ id?: string; name: string; whatsapp: string; website: string; notes: string } | null>(null)
+  const [suppliers, setSuppliers] = useState<Array<{ id: string; name: string; whatsapp: string | null; website: string | null; notes: string | null; email: string | null; location: string | null }>>([])
+  const [editingSupplier, setEditingSupplier] = useState<{ id?: string; name: string; whatsapp: string; email: string; website: string; location: string; notes: string } | null>(null)
   const [openDiscTecs, setOpenDiscTecs] = useState<string[]>(['descuentos_subli'])
 
 
@@ -849,29 +849,63 @@ export default function SettingsPage() {
       )}
 
       {activeSection === 'proveedores' && (
-        <div className="max-w-2xl">
-          <h2 className="text-xl font-bold text-gray-900 mb-1">Proveedores</h2>
-          <p className="text-sm text-gray-400 mb-4">Gestioná tus proveedores de materiales.</p>
-          <div className="space-y-2 mb-4">
+        <div>
+          <div className="flex items-start justify-between gap-3 mb-4">
+            <div><h2 className="text-xl font-bold text-gray-900 mb-1">Proveedores</h2>
+              <p className="text-sm text-gray-400">Gestioná tus proveedores de materiales.</p></div>
+            <button onClick={() => setEditingSupplier({ name: '', whatsapp: '', email: '', website: '', location: '', notes: '' })}
+              className="flex items-center gap-1.5 whitespace-nowrap text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={14} /> Agregar</button>
+          </div>
+          {/* Mobile cards */}
+          <div className="md:hidden space-y-2">
             {suppliers.map(s => (
-              <div key={s.id} className="card p-4 flex items-start justify-between">
-                <div>
-                  <p className="font-semibold text-gray-800">{s.name}</p>
-                  <div className="flex gap-3 mt-1 text-xs text-gray-400">
-                    {s.whatsapp && <span>📱 {s.whatsapp}</span>}
-                    {s.website && <span>🌐 {s.website}</span>}
+              <div key={s.id} className="card p-4">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="font-semibold text-gray-800">{s.name}</p>
+                    <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1 text-xs text-gray-400">
+                      {s.whatsapp && <span>📱 {s.whatsapp}</span>}
+                      {s.email && <span>✉ {s.email}</span>}
+                      {s.website && <span>🌐 {s.website}</span>}
+                      {s.location && <span>📍 {s.location}</span>}
+                    </div>
+                    {s.notes && <p className="text-xs text-gray-400 mt-1 italic">{s.notes}</p>}
                   </div>
-                  {s.notes && <p className="text-xs text-gray-400 mt-1 italic">{s.notes}</p>}
-                </div>
-                <div className="flex gap-1">
-                  <button onClick={() => setEditingSupplier({ id: s.id, name: s.name, whatsapp: s.whatsapp || '', website: s.website || '', notes: s.notes || '' })} className="p-1.5 rounded hover:bg-gray-100"><Pencil size={13} className="text-gray-400" /></button>
-                  <button onClick={async () => { if (confirm('¿Eliminar proveedor?')) { await supabase.from('suppliers').delete().eq('id', s.id); setSuppliers(prev => prev.filter(x => x.id !== s.id)) } }} className="p-1.5 rounded hover:bg-red-50"><Trash2 size={13} className="text-gray-300 hover:text-red-500" /></button>
+                  <div className="flex gap-1">
+                    <button onClick={() => setEditingSupplier({ id: s.id, name: s.name, whatsapp: s.whatsapp || '', email: s.email || '', website: s.website || '', location: s.location || '', notes: s.notes || '' })} className="p-1.5 rounded hover:bg-gray-100"><Pencil size={13} className="text-gray-400" /></button>
+                    <button onClick={async () => { if (confirm('¿Eliminar proveedor?')) { await supabase.from('suppliers').delete().eq('id', s.id); setSuppliers(prev => prev.filter(x => x.id !== s.id)) } }} className="p-1.5 rounded hover:bg-red-50"><Trash2 size={13} className="text-gray-300 hover:text-red-500" /></button>
+                  </div>
                 </div>
               </div>
             ))}
+            {suppliers.length === 0 && <div className="text-center py-12 text-gray-400 text-sm">No hay proveedores cargados.</div>}
           </div>
-          <button onClick={() => setEditingSupplier({ name: '', whatsapp: '', website: '', notes: '' })}
-            className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700"><Plus size={14} /> Agregar proveedor</button>
+          {/* Desktop table */}
+          <div className="hidden md:block card overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[600px]"><thead><tr className="border-b border-gray-100">
+                {['Nombre', 'WhatsApp', 'Email', 'Web', 'Ubicación', ''].map(h => <th key={h} className={`text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3 ${h === 'Email' || h === 'Ubicación' ? 'hidden lg:table-cell' : ''}`}>{h}</th>)}
+              </tr></thead><tbody>
+                {suppliers.map(s => (
+                  <tr key={s.id} className="border-b border-gray-50 hover:bg-gray-50">
+                    <td className="px-4 py-3">
+                      <span className="font-medium text-gray-800">{s.name}</span>
+                      {s.notes && <p className="text-[10px] text-gray-400 italic mt-0.5 truncate max-w-[200px]">{s.notes}</p>}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-500">{s.whatsapp || <span className="text-gray-300">—</span>}</td>
+                    <td className="px-4 py-3 text-sm text-gray-500 hidden lg:table-cell">{s.email || <span className="text-gray-300">—</span>}</td>
+                    <td className="px-4 py-3 text-sm text-gray-500">{s.website ? <span className="truncate max-w-[120px] block">{s.website}</span> : <span className="text-gray-300">—</span>}</td>
+                    <td className="px-4 py-3 text-sm text-gray-500 hidden lg:table-cell">{s.location || <span className="text-gray-300">—</span>}</td>
+                    <td className="px-4 py-3"><div className="flex gap-1">
+                      <button onClick={() => setEditingSupplier({ id: s.id, name: s.name, whatsapp: s.whatsapp || '', email: s.email || '', website: s.website || '', location: s.location || '', notes: s.notes || '' })} className="p-1.5 rounded-lg hover:bg-gray-100"><Pencil size={14} className="text-gray-400" /></button>
+                      <button onClick={async () => { if (confirm('¿Eliminar proveedor?')) { await supabase.from('suppliers').delete().eq('id', s.id); setSuppliers(prev => prev.filter(x => x.id !== s.id)) } }} className="p-1.5 rounded-lg hover:bg-red-50"><Trash2 size={14} className="text-red-400" /></button>
+                    </div></td>
+                  </tr>
+                ))}
+              </tbody></table>
+              {suppliers.length === 0 && <div className="text-center py-12 text-gray-400 text-sm">No hay proveedores cargados.</div>}
+            </div>
+          </div>
         </div>
       )}
 
@@ -1103,18 +1137,22 @@ export default function SettingsPage() {
             <h3 className="font-bold text-gray-900 mb-4">{editingSupplier.id ? 'Editar' : 'Nuevo'} proveedor</h3>
             <div className="space-y-4">
               <div><label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
-                <input className="input-base" value={editingSupplier.name} onChange={e => setEditingSupplier({ ...editingSupplier, name: e.target.value })} /></div>
+                <input className="input-base" value={editingSupplier.name} onChange={e => setEditingSupplier({ ...editingSupplier, name: e.target.value })} placeholder="Ej: TextilNorte" /></div>
               <div><label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp</label>
                 <input className="input-base" value={editingSupplier.whatsapp} onChange={e => setEditingSupplier({ ...editingSupplier, whatsapp: e.target.value })} placeholder="+54 11 1234-5678" /></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input type="email" className="input-base" value={editingSupplier.email} onChange={e => setEditingSupplier({ ...editingSupplier, email: e.target.value })} placeholder="proveedor@ejemplo.com" /></div>
               <div><label className="block text-sm font-medium text-gray-700 mb-1">Sitio web</label>
-                <input className="input-base" value={editingSupplier.website} onChange={e => setEditingSupplier({ ...editingSupplier, website: e.target.value })} placeholder="https://..." /></div>
+                <input className="input-base" value={editingSupplier.website} onChange={e => setEditingSupplier({ ...editingSupplier, website: e.target.value })} placeholder="Ej: www.proveedor.com" /></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Ubicación</label>
+                <input className="input-base" value={editingSupplier.location} onChange={e => setEditingSupplier({ ...editingSupplier, location: e.target.value })} placeholder="Ej: Córdoba Capital, Argentina" /></div>
               <div><label className="block text-sm font-medium text-gray-700 mb-1">Notas</label>
-                <textarea className="input-base resize-none" rows={2} value={editingSupplier.notes} onChange={e => setEditingSupplier({ ...editingSupplier, notes: e.target.value })} /></div>
+                <textarea className="input-base resize-none" rows={2} value={editingSupplier.notes} onChange={e => setEditingSupplier({ ...editingSupplier, notes: e.target.value })} placeholder="Ej: Proveedor de tintas para sublimación" /></div>
             </div>
             <div className="flex gap-3 mt-6">
               <button onClick={() => setEditingSupplier(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">Cancelar</button>
               <button disabled={!editingSupplier.name.trim()} onClick={async () => {
-                const payload = { name: editingSupplier.name.trim(), whatsapp: editingSupplier.whatsapp || null, website: editingSupplier.website || null, notes: editingSupplier.notes || null }
+                const payload = { name: editingSupplier.name.trim(), whatsapp: editingSupplier.whatsapp || null, email: editingSupplier.email || null, website: editingSupplier.website || null, location: editingSupplier.location || null, notes: editingSupplier.notes || null }
                 if (editingSupplier.id) {
                   await supabase.from('suppliers').update(payload).eq('id', editingSupplier.id)
                 } else {
