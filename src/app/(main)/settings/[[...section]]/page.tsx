@@ -251,32 +251,6 @@ export default function SettingsPage() {
           ))}
         </div>
 
-        {/* País y moneda */}
-        <div className="mt-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('country')}</label>
-              <select className="input-base" value={(ws as Record<string, unknown>).pais as string || 'AR'}
-                onChange={e => {
-                  const c = require('@/shared/lib/currency').getCountry(e.target.value)
-                  setWs({ ...ws, pais: e.target.value, moneda: c.currency, simbolo_moneda: c.symbol, idioma: c.locale } as WorkshopSettings)
-                }}>
-                {require('@/shared/lib/currency').COUNTRIES.map((c: { code: string; name: string; currency: string; symbol: string }) => (
-                  <option key={c.code} value={c.code}>{c.name} — {c.symbol} ({c.currency})</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('language')}</label>
-              <select className="input-base" value={(ws as Record<string, unknown>).idioma as string || 'es'}
-                onChange={e => setWs({ ...ws, idioma: e.target.value } as WorkshopSettings)}>
-                <option value="es">{t('spanish')}</option>
-                <option value="pt">{t('portuguese')}</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
         <button onClick={save} disabled={saveState === 'saving'}
           className={`mt-6 flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors ${saveState === 'saved' ? 'bg-green-500' : saveState === 'error' ? 'bg-red-500' : ''}`}
           style={saveState !== 'saved' && saveState !== 'error' ? { background: '#6C5CE7' } : {}}>
@@ -394,23 +368,53 @@ export default function SettingsPage() {
       </button>
       </>)}
 
-      {activeSection === 'moneda' && (
+      {activeSection === 'moneda-idioma' && (
   <div className="max-w-2xl">
-    <h2 className="text-xl font-bold text-gray-900 mb-1">Moneda</h2>
-    <p className="text-sm text-gray-400 mb-4">Configurá el tipo de cambio para tus insumos importados.</p>
+    <h2 className="text-xl font-bold text-gray-900 mb-1">{t('currencyLanguageTitle')}</h2>
+    <p className="text-sm text-gray-400 mb-4">{t('currencyLanguageSubtitle')}</p>
+
+    {/* País e idioma */}
+    <div className="card p-6 space-y-4 mb-4">
+      <h3 className="text-sm font-semibold text-gray-700">{t('countryAndLanguage')}</h3>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('country')}</label>
+          <select className="input-base" value={(ws as Record<string, unknown>).pais as string || 'AR'}
+            onChange={e => {
+              const c = require('@/shared/lib/currency').getCountry(e.target.value)
+              setWs({ ...ws, pais: e.target.value, moneda: c.currency, simbolo_moneda: c.symbol, idioma: c.locale } as WorkshopSettings)
+            }}>
+            {require('@/shared/lib/currency').COUNTRIES.map((c: { code: string; name: string; currency: string; symbol: string }) => (
+              <option key={c.code} value={c.code}>{c.name} — {c.symbol} ({c.currency})</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('language')}</label>
+          <select className="input-base" value={(ws as Record<string, unknown>).idioma as string || 'es'}
+            onChange={e => setWs({ ...ws, idioma: e.target.value } as WorkshopSettings)}>
+            <option value="es">{t('spanish')}</option>
+            <option value="pt">{t('portuguese')}</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    {/* Tipo de cambio */}
     <div className="card p-6 space-y-4">
+      <h3 className="text-sm font-semibold text-gray-700">{t('exchangeRate')}</h3>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Moneda de referencia (insumos importados)</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t('referenceCurrency')}</label>
         <select className="input-base text-sm" value={(ws as Record<string, unknown>).moneda_referencia as string || 'USD'}
           onChange={e => setWs({ ...ws, moneda_referencia: e.target.value } as WorkshopSettings)}>
           <option value="USD">USD — Dólar estadounidense</option>
           <option value="EUR">EUR — Euro</option>
           <option value="BRL">BRL — Real brasileño</option>
         </select>
-        <p className="text-[10px] text-gray-400 mt-1">La moneda en la que comprás insumos importados.</p>
+        <p className="text-[10px] text-gray-400 mt-1">{t('referenceCurrencyHint')}</p>
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de cambio</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t('exchangeRateLabel')}</label>
         <div className="flex items-center gap-3">
           <span className="text-sm font-medium text-gray-500">1 {(ws as Record<string, unknown>).moneda_referencia as string || 'USD'} =</span>
           <input type="number" className="input-base text-sm w-32" min={0.01} step={0.01}
@@ -418,18 +422,18 @@ export default function SettingsPage() {
             onChange={e => setWs({ ...ws, tipo_cambio: Math.max(Number(e.target.value), 0) } as WorkshopSettings)} />
           <span className="text-sm text-gray-500">{fmtCurrency(1).replace(/[\d.,]/g, '').trim() || '$'}</span>
         </div>
-        <p className="text-[10px] text-gray-400 mt-1">Actualizá este valor cuando cambie el tipo de cambio.</p>
+        <p className="text-[10px] text-gray-400 mt-1">{t('exchangeRateHint')}</p>
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Redondeo de precios finales</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t('priceRounding')}</label>
         <select className="input-base text-sm" value={(ws as Record<string, unknown>).redondeo_precios as string || 'none'}
           onChange={e => setWs({ ...ws, redondeo_precios: e.target.value } as WorkshopSettings)}>
-          <option value="none">Sin redondeo (decimales reales)</option>
-          <option value="integer">Sin decimales (entero más cercano)</option>
-          <option value="tens">Múltiplos de 10</option>
-          <option value="hundreds">Múltiplos de 100</option>
+          <option value="none">{t('roundNone')}</option>
+          <option value="integer">{t('roundInteger')}</option>
+          <option value="tens">{t('roundTens')}</option>
+          <option value="hundreds">{t('roundHundreds')}</option>
         </select>
-        <p className="text-[10px] text-gray-400 mt-1">Cómo se redondean los precios sugeridos en el cotizador.</p>
+        <p className="text-[10px] text-gray-400 mt-1">{t('priceRoundingHint')}</p>
       </div>
       {Number((ws as Record<string, unknown>).tipo_cambio) > 0 && (
         <div className="p-3 rounded-lg bg-blue-50 border border-blue-100">
@@ -442,7 +446,7 @@ export default function SettingsPage() {
     <button onClick={saveWs} disabled={saveState === 'saving'}
       className={`mt-6 flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors ${saveState === 'saved' ? 'bg-green-500' : saveState === 'error' ? 'bg-red-500' : ''}`}
       style={saveState !== 'saved' && saveState !== 'error' ? { background: '#6C5CE7' } : {}}>
-      {saveState === 'saving' ? <><Loader2 size={14} className="animate-spin" /> Guardando...</> : saveState === 'saved' ? '✓ Guardado' : saveState === 'error' ? 'Error' : <><Save size={14} /> Guardar</>}
+      {saveState === 'saving' ? <><Loader2 size={14} className="animate-spin" /> {t('saving')}</> : saveState === 'saved' ? <><Check size={14} /> {t('saved')}</> : saveState === 'error' ? t('saveError') : <><Save size={14} /> {t('saveBtn')}</>}
     </button>
   </div>
 )}

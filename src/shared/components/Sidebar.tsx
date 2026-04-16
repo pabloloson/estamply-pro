@@ -8,7 +8,7 @@ import { logout } from '@/app/actions/auth'
 import {
   LayoutDashboard, Calculator, FileText, ShoppingBag,
   Users, Package, BarChart3,
-  Settings, LogOut, Menu, X,
+  Settings, UserCircle, LogOut, Menu, X,
 } from 'lucide-react'
 import { usePresupuesto } from '@/features/presupuesto/context/PresupuestoContext'
 import { usePermissions } from '@/shared/context/PermissionsContext'
@@ -89,6 +89,7 @@ export function Sidebar({ workshopName = 'Mi Taller' }: SidebarProps) {
       {/* ── Sección 3: Ajustes (anclado al fondo) ── */}
       <div className="px-3 pt-3 border-t border-gray-100 space-y-0.5 pb-1">
         {(isOwner || canAccess('configuracion')) && <NavLink href="/settings" icon={Settings} label={t('settings')} />}
+        <NavLink href="/cuenta" icon={UserCircle} label={t('myAccount')} />
       </div>
 
       {/* ── Logout ── */}

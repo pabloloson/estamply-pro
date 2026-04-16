@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { ChevronRight, ArrowLeft } from 'lucide-react'
 
 const CONFIG_SECTIONS = [
-  { group: 'Mi negocio', items: [{ id: 'perfil', label: 'Perfil' }] },
+  { group: 'Mi negocio', items: [{ id: 'perfil', label: 'Perfil' }, { id: 'moneda-idioma', label: 'Moneda e idioma' }] },
   { group: 'Producción', items: [
     { id: 'productos', label: 'Productos base' },
     { id: 'insumos', label: 'Insumos' },
@@ -16,7 +16,6 @@ const CONFIG_SECTIONS = [
   ]},
   { group: 'Ventas', items: [
     { id: 'descuentos', label: 'Descuentos' },
-    { id: 'moneda', label: 'Moneda' },
     { id: 'medios-pago', label: 'Medios de pago' },
     { id: 'condiciones', label: 'Condiciones' },
   ]},
