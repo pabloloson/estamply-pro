@@ -551,9 +551,12 @@ export default function SettingsPage() {
       {activeSection === 'medios-pago' && (() => {
   const ajusteLabel = (m: { tipo_ajuste: string; porcentaje: number }) =>
     m.tipo_ajuste === 'sin_ajuste' || m.tipo_ajuste === 'ninguno' || m.porcentaje === 0 ? 'Sin ajuste' : m.porcentaje > 0 ? `Recargo +${m.porcentaje}%` : `Descuento ${Math.abs(m.porcentaje)}%`
-  const toggleActivo = async (m: { id: string; activo: boolean }) => {
+  const [mpToast, setMpToast] = useState('')
+  const toggleActivo = async (m: { id: string; activo: boolean; nombre: string }) => {
     await supabase.from('medios_pago').update({ activo: !m.activo }).eq('id', m.id)
     setMediosPago(prev => prev.map(x => x.id === m.id ? { ...x, activo: !x.activo } : x))
+    setMpToast(!m.activo ? `${m.nombre} activado` : `${m.nombre} desactivado`)
+    setTimeout(() => setMpToast(''), 2000)
   }
   return (
   <div>
@@ -567,14 +570,14 @@ export default function SettingsPage() {
     <div className="md:hidden space-y-2">
       {mediosPago.map(m => (
         <div key={m.id} className="card p-4 flex items-start justify-between">
-          <div className="flex items-start gap-3">
-            <button onClick={() => toggleActivo(m)} className={`w-2.5 h-2.5 rounded-full mt-1.5 flex-shrink-0 ${m.activo ? 'bg-green-500' : 'bg-gray-300'}`} />
-            <div>
-              <p className="font-semibold text-gray-800">{m.nombre}</p>
-              <p className={`text-xs ${m.tipo_ajuste === 'sin_ajuste' || m.porcentaje === 0 ? 'text-gray-400' : m.porcentaje > 0 ? 'text-amber-600' : 'text-green-600'}`}>{ajusteLabel(m)}</p>
-            </div>
+          <div>
+            <p className="font-semibold text-gray-800">{m.nombre}</p>
+            <p className={`text-xs ${m.tipo_ajuste === 'sin_ajuste' || m.porcentaje === 0 ? 'text-gray-400' : m.porcentaje > 0 ? 'text-amber-600' : 'text-green-600'}`}>{ajusteLabel(m)}</p>
           </div>
-          <div className="flex gap-1">
+          <div className="flex items-center gap-1.5">
+            <button type="button" onClick={() => toggleActivo(m)} className="relative w-9 h-5 rounded-full transition-colors flex-shrink-0" style={{ background: m.activo ? '#22C55E' : '#D1D5DB' }}>
+              <span className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform" style={{ transform: m.activo ? 'translateX(16px)' : 'translateX(0)' }} />
+            </button>
             <button onClick={() => setEditingMedio({ nombre: m.nombre, tipo_ajuste: m.tipo_ajuste, porcentaje: m.porcentaje, id: m.id })} className="p-1.5 rounded hover:bg-gray-100"><Pencil size={13} className="text-gray-400" /></button>
             <button onClick={async () => { if (confirm('¿Eliminar medio de pago?')) { await supabase.from('medios_pago').delete().eq('id', m.id); setMediosPago(prev => prev.filter(x => x.id !== m.id)) } }} className="p-1.5 rounded hover:bg-red-50"><Trash2 size={13} className="text-gray-300 hover:text-red-500" /></button>
           </div>
@@ -594,8 +597,8 @@ export default function SettingsPage() {
               <td className="px-4 py-3 text-sm text-gray-500">{m.tipo_ajuste === 'sin_ajuste' || m.tipo_ajuste === 'ninguno' ? 'Sin ajuste' : m.tipo_ajuste === 'recargo' ? 'Recargo' : 'Descuento'}</td>
               <td className="px-4 py-3 text-sm text-gray-500">{m.porcentaje !== 0 ? `${m.porcentaje}%` : '—'}</td>
               <td className="px-4 py-3">
-                <button onClick={() => toggleActivo(m)} className={`text-xs font-semibold px-2 py-0.5 rounded-full ${m.activo ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'}`}>
-                  {m.activo ? 'Activo' : 'Inactivo'}
+                <button type="button" onClick={() => toggleActivo(m)} className="relative w-9 h-5 rounded-full transition-colors" style={{ background: m.activo ? '#22C55E' : '#D1D5DB' }}>
+                  <span className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform" style={{ transform: m.activo ? 'translateX(16px)' : 'translateX(0)' }} />
                 </button>
               </td>
               <td className="px-4 py-3"><div className="flex gap-1">
@@ -608,6 +611,11 @@ export default function SettingsPage() {
         {mediosPago.length === 0 && <div className="text-center py-12 text-gray-400 text-sm">Todavía no configuraste medios de pago.</div>}
       </div>
     </div>
+    {mpToast && (
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-lg bg-gray-800 text-white text-sm font-medium shadow-lg">
+        {mpToast}
+      </div>
+    )}
   </div>
 )})()}
 
