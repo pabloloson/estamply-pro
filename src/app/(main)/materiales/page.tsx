@@ -214,46 +214,23 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
       {/* ══ PRODUCTOS BASE ══ */}
       {tab === 'base' && (<>
         {/* Header — matches Equipamiento layout */}
-        {hideChrome && (
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Productos base</h1>
-              <p className="text-gray-500 text-sm mt-1">Prendas, tazas, blanks y soportes.</p>
-            </div>
-            <div className="flex gap-2">
-              <select className="input-base text-sm" value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
-                <option value="">Todas las categorías ({products.length})</option>
-                {categories.map(c => <option key={c.id} value={c.id}>{c.name} ({products.filter(p => p.category_id === c.id).length})</option>)}
-                <option value="__none__">Sin categoría ({products.filter(p => !p.category_id).length})</option>
-              </select>
-              <button onClick={() => setShowCats(true)} className="flex items-center gap-1.5 whitespace-nowrap text-xs sm:text-sm px-3 py-1.5 rounded-lg font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50">
-                <FolderOpen size={14} /> Categorías
-              </button>
-              <button onClick={() => setModal({ time_subli: 0, time_dtf: 0, time_vinyl: 0, base_cost: 0 } as Partial<Product>)} className="flex items-center gap-1.5 whitespace-nowrap text-xs sm:text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={14} /> Agregar</button>
-            </div>
+        {/* Filters + actions */}
+        <div className="space-y-3 mb-4">
+          <div className="flex items-center justify-between gap-2">
+            <button onClick={() => setModal({ time_subli: 0, time_dtf: 0, time_vinyl: 0, base_cost: 0 } as Partial<Product>)} className="flex items-center gap-1.5 whitespace-nowrap text-sm px-4 py-2 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={14} /> Agregar</button>
+            <button onClick={() => setShowCats(true)} className="flex items-center gap-1.5 whitespace-nowrap text-sm px-3 py-2 rounded-lg font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50">
+              <FolderOpen size={14} /> Categorías
+            </button>
           </div>
-        )}
-        {!hideChrome && (
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
-            <div className="flex items-center gap-3 flex-wrap">
-              <select className="input-base text-sm" value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
-                <option value="">Todas las categorías ({products.length})</option>
-                {categories.map(c => <option key={c.id} value={c.id}>{c.name} ({products.filter(p => p.category_id === c.id).length})</option>)}
-                <option value="__none__">Sin categoría ({products.filter(p => !p.category_id).length})</option>
-              </select>
-            </div>
-            <div className="flex gap-2">
-              <button onClick={() => setShowCats(true)} className="flex items-center gap-1.5 whitespace-nowrap text-xs sm:text-sm px-3 py-1.5 rounded-lg font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50">
-                <FolderOpen size={14} /> Categorías
-              </button>
-              <button onClick={() => setModal({ time_subli: 0, time_dtf: 0, time_vinyl: 0, base_cost: 0 } as Partial<Product>)} className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={14} /> {tc('add')}</button>
-            </div>
+          <select className="input-base text-sm w-full sm:w-auto sm:min-w-[220px]" value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
+            <option value="">Todas las categorías ({products.length})</option>
+            {categories.map(c => <option key={c.id} value={c.id}>{c.name} ({products.filter(p => p.category_id === c.id).length})</option>)}
+            <option value="__none__">Sin categoría ({products.filter(p => !p.category_id).length})</option>
+          </select>
+          <div className="relative w-full sm:max-w-[400px]">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            <input className="input-base text-sm w-full" style={{ paddingLeft: 40 }} placeholder="Buscar producto..." value={searchProduct} onChange={e => setSearchProduct(e.target.value)} />
           </div>
-        )}
-        {/* Search */}
-        <div className="relative mb-4 max-w-[400px]">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-          <input className="input-base pl-10 text-sm" placeholder="Buscar producto..." value={searchProduct} onChange={e => setSearchProduct(e.target.value)} />
         </div>
         {/* Mobile cards */}
         <div className="md:hidden space-y-2">
@@ -354,9 +331,9 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
           <button onClick={() => openNewInsumo()} className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={14} /> {tc('add')}</button>
         </div>
         {/* Search */}
-        <div className="relative mt-4 mb-4 max-w-[400px]">
+        <div className="relative mt-4 mb-4 w-full sm:max-w-[400px]">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-          <input className="input-base pl-10 text-sm" placeholder="Buscar insumo..." value={searchInsumo} onChange={e => setSearchInsumo(e.target.value)} />
+          <input className="input-base text-sm w-full" style={{ paddingLeft: 40 }} placeholder="Buscar insumo..." value={searchInsumo} onChange={e => setSearchInsumo(e.target.value)} />
         </div>
         {/* Mobile cards */}
         <div className="md:hidden space-y-2">
