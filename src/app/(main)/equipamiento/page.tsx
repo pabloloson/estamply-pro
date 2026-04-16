@@ -38,14 +38,15 @@ const TEC_COLORS: Record<string, string> = { subli: '#6C5CE7', dtf: '#E17055', d
 const ALL_TECS = ['subli', 'dtf', 'dtf_uv', 'vinyl', 'serigrafia']
 
 // Insumos associated per equipment type
-type InsumoSlot = { key: string; label: string; filterTipos: string[] }
+type InsumoSlot = { key: string; label: string; hint?: string }
 const INSUMOS_POR_TIPO: Record<string, InsumoSlot[]> = {
-  printer_subli: [{ key: 'assigned_paper_id', label: 'Papel asignado', filterTipos: ['papel'] }, { key: 'assigned_ink_id', label: 'Tinta asignada', filterTipos: ['tinta'] }],
-  printer_dtf: [{ key: 'assigned_paper_id', label: 'Film asignado', filterTipos: ['film'] }, { key: 'assigned_ink_id', label: 'Tinta asignada', filterTipos: ['tinta'] }],
-  printer_uv: [{ key: 'assigned_paper_id', label: 'Film/Rollo asignado', filterTipos: ['film'] }, { key: 'assigned_ink_id', label: 'Tinta asignada', filterTipos: ['tinta'] }],
-  plotter_impresion: [{ key: 'assigned_paper_id', label: 'Material asignado', filterTipos: ['vinilo', 'film'] }, { key: 'assigned_ink_id', label: 'Tinta asignada', filterTipos: ['tinta'] }],
-  plotter_combo: [{ key: 'assigned_paper_id', label: 'Material asignado', filterTipos: ['vinilo', 'film'] }, { key: 'assigned_ink_id', label: 'Tinta asignada', filterTipos: ['tinta'] }],
+  printer_subli: [{ key: 'assigned_paper_id', label: 'Papel asignado' }, { key: 'assigned_ink_id', label: 'Tinta asignada' }],
+  printer_dtf: [{ key: 'assigned_paper_id', label: 'Film asignado' }, { key: 'assigned_ink_id', label: 'Tinta asignada' }],
+  printer_uv: [{ key: 'assigned_paper_id', label: 'Film/Rollo asignado' }, { key: 'assigned_ink_id', label: 'Tinta asignada' }],
+  plotter_impresion: [{ key: 'assigned_paper_id', label: 'Insumo principal', hint: 'El papel, film o material que usa este plotter para imprimir.' }, { key: 'assigned_ink_id', label: 'Tinta asignada' }],
+  plotter_combo: [{ key: 'assigned_paper_id', label: 'Insumo principal', hint: 'El papel, film o material que usa este plotter.' }, { key: 'assigned_ink_id', label: 'Tinta asignada' }],
 }
+const TIPO_LABEL_MAP: Record<string, string> = { papel: 'Papel', tinta: 'Tinta', film: 'Film', polvo: 'Polvo', vinilo: 'Vinilo', tinta_serigrafica: 'Tinta serig.', servicio_impresion: 'Serv. impr.', emulsion: 'Emulsión', otro: 'Otro' }
 
 const newEquip = (): Partial<Equipment> => ({ clasificacion: 'plancha', type: 'press_flat', cost: 0, lifespan_uses: 10000, tecnicas_slugs: [] })
 
@@ -326,10 +327,11 @@ export default function EquipamientoPage() {
                           <label className="block text-sm font-medium text-gray-700 mb-1">{slot.label}</label>
                           <select className="input-base" value={(modal as Record<string, unknown>)[slot.key] as string || ''} onChange={e => setModal({ ...modal, [slot.key]: e.target.value || null })}>
                             <option value="">Sin asignar</option>
-                            {insumosAll.filter(i => slot.filterTipos.includes(i.tipo)).map(i => (
-                              <option key={i.id} value={i.id}>{i.nombre}</option>
+                            {insumosAll.map(i => (
+                              <option key={i.id} value={i.id}>{i.nombre} ({TIPO_LABEL_MAP[i.tipo] || i.tipo})</option>
                             ))}
                           </select>
+                          {slot.hint && <p className="text-[10px] text-gray-400 mt-0.5">{slot.hint}</p>}
                         </div>
                       ))}
                     </div>
