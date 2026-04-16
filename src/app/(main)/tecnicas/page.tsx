@@ -52,6 +52,7 @@ export default function ProduccionPage() {
   const [ws, setWs] = useState<WorkshopSettings>(DEFAULT_SETTINGS)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
+  const [saved, setSaved] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState('')
   const [opModal, setOpModal] = useState<Partial<Operator> | null>(null)
 
@@ -93,7 +94,8 @@ export default function ProduccionPage() {
   async function saveTecnica(tec: Tecnica) {
     if (tec.id.startsWith('local-')) return; setSaving(tec.id)
     await supabase.from('tecnicas').update({ config: tec.config, activa: tec.activa }).eq('id', tec.id)
-    setSaving(null)
+    setSaving(null); setSaved(tec.id)
+    setTimeout(() => setSaved(s => s === tec.id ? null : s), 2000)
   }
 
   function updateConfig(tecId: string, patch: Partial<TecnicaConfig>) {
@@ -172,44 +174,69 @@ export default function ProduccionPage() {
               <div className="space-y-3">
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">1 &middot; {t('productionRules')}</p>
                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 max-w-lg">
-                  {(cfg.tipo === 'subli') && (
+                  {/* Modo por defecto — all techniques */}
+                  <div className="col-span-2 lg:col-span-3">
+                    <label className="block text-xs text-gray-500 mb-1">Modo por defecto</label>
+                    <select className="input-base text-sm max-w-xs" value={(cfg as { modo?: string }).modo || 'propia'}
+                      onChange={e => updateConfig(tec.id, { modo: e.target.value as 'tercerizado' | 'propia' })}>
+                      <option value="propia">Producción propia</option>
+                      <option value="tercerizado">Tercerizado</option>
+                    </select>
+                    <p className="text-[10px] text-gray-400 mt-0.5">Si tercerizás esta técnica, el costo se calcula como precio por unidad del proveedor.</p>
+                  </div>
+
+                  {/* Margen de seguridad — subli, dtf, vinyl */}
+                  {(cfg.tipo === 'subli' || cfg.tipo === 'dtf' || cfg.tipo === 'vinyl') && (
                     <div><label className="block text-xs text-gray-500 mb-1">Margen seguridad (cm)</label>
-                      <NumericInput className="input-base text-sm" value={(cfg as { margen_seguridad?: number }).margen_seguridad ?? 0.5}
-                        onChange={v => updateConfig(tec.id, { margen_seguridad: v })} /></div>
+                      <NumericInput className="input-base text-sm" value={(cfg as { margen_seguridad?: number }).margen_seguridad ?? (cfg.tipo === 'dtf' ? 0.3 : 0.5)}
+                        onChange={v => updateConfig(tec.id, { margen_seguridad: v })} />
+                      <p className="text-[10px] text-gray-400 mt-0.5">cm extra alrededor del diseño para corte.</p></div>
                   )}
-                  <div><label className="block text-xs text-gray-500 mb-1">{cfg.tipo === 'vinyl' ? 'Desperdicio pelado (%)' : 'Desperdicio / Merma (%)'}</label>
+
+                  {/* Desperdicio / Merma */}
+                  <div><label className="block text-xs text-gray-500 mb-1">Desperdicio / Merma (%)</label>
                     <NumericInput className="input-base text-sm"
                       value={cfg.tipo === 'vinyl' ? (cfg.desperdicio_pelado_pct ?? 15) : ((cfg as { desperdicio_pct?: number }).desperdicio_pct ?? 5)}
-                      onChange={v => updateConfig(tec.id, cfg.tipo === 'vinyl' ? { desperdicio_pelado_pct: v } : { desperdicio_pct: v })} /></div>
+                      onChange={v => updateConfig(tec.id, cfg.tipo === 'vinyl' ? { desperdicio_pelado_pct: v } : { desperdicio_pct: v })} />
+                    <p className="text-[10px] text-gray-400 mt-0.5">% de material que se pierde en el proceso.</p></div>
+
+                  {/* Pedido mínimo */}
                   <div><label className="block text-xs text-gray-500 mb-1">Pedido mínimo</label>
                     <NumericInput className="input-base text-sm" min={1}
                       value={(cfg as { pedido_minimo?: number }).pedido_minimo ?? 1}
-                      onChange={v => updateConfig(tec.id, { pedido_minimo: v })} /></div>
-                  {(cfg.tipo === 'dtf' || cfg.tipo === 'dtf_uv') && (
-                    <div className="col-span-2 lg:col-span-3"><label className="block text-xs text-gray-500 mb-1">Modo por defecto</label>
-                      <select className="input-base text-sm max-w-xs" value={(cfg as DTFConfig).modo}
-                        onChange={e => updateConfig(tec.id, { modo: e.target.value as 'tercerizado' | 'propia' })}>
-                        <option value="propia">Producción propia</option>
-                        <option value="tercerizado">Tercerizado</option>
-                      </select></div>
+                      onChange={v => updateConfig(tec.id, { pedido_minimo: v })} />
+                    <p className="text-[10px] text-gray-400 mt-0.5">Cantidad mínima para aceptar un trabajo.</p></div>
+
+                  {/* Tiempo de preparación — all techniques */}
+                  {cfg.tipo !== 'serigrafia' && (
+                    <div><label className="block text-xs text-gray-500 mb-1">Tiempo preparación (min)</label>
+                      <NumericInput className="input-base text-sm"
+                        value={(cfg as { tiempo_preparacion?: number }).tiempo_preparacion ?? 0}
+                        onChange={v => updateConfig(tec.id, { tiempo_preparacion: v })} />
+                      <p className="text-[10px] text-gray-400 mt-0.5">Tiempo fijo antes de producir (calentar plancha, etc.).</p></div>
                   )}
+
+                  {/* Serigrafía-specific fields */}
                   {cfg.tipo === 'serigrafia' && (<>
                     <div><label className="block text-xs text-gray-500 mb-1">Costo pantalla/color ($)</label>
                       <NumericInput className="input-base text-sm"
                         value={(cfg as SerigrafiaConfig).costo_pantalla_por_color ?? 5000}
-                        onChange={v => updateConfig(tec.id, { costo_pantalla_por_color: v })} /></div>
+                        onChange={v => updateConfig(tec.id, { costo_pantalla_por_color: v })} />
+                      <p className="text-[10px] text-gray-400 mt-0.5">Costo de cada pantalla de serigrafía por color.</p></div>
                     <div><label className="block text-xs text-gray-500 mb-1">Prep. pantalla (min/color)</label>
                       <NumericInput className="input-base text-sm"
                         value={Math.round(((cfg as SerigrafiaConfig).tiempo_preparacion_por_color ?? 600) / 60)}
-                        onChange={v => updateConfig(tec.id, { tiempo_preparacion_por_color: v * 60 })} /></div>
+                        onChange={v => updateConfig(tec.id, { tiempo_preparacion_por_color: v * 60 })} />
+                      <p className="text-[10px] text-gray-400 mt-0.5">Minutos de preparación por cada pantalla/color.</p></div>
                   </>)}
                 </div>
               </div>
 
               {/* Save */}
               <button onClick={() => saveTecnica(tec)} disabled={saving === tec.id || tec.id.startsWith('local-')}
-                className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: color }}>
-                <Save size={14} />{saving === tec.id ? tc('saving') : t('saveButton')}
+                className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40 transition-colors ${saved === tec.id ? 'bg-green-500' : ''}`}
+                style={saved !== tec.id ? { background: color } : {}}>
+                <Save size={14} />{saving === tec.id ? tc('saving') : saved === tec.id ? 'Guardado ✓' : t('saveButton')}
               </button>
             </div>
           </div>

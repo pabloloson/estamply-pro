@@ -67,9 +67,11 @@ export type TecnicaConfig = SubliConfig | DTFConfig | DTFUVConfig | VinylConfig 
 
 export interface SubliConfig {
   tipo: 'subli'
+  modo?: 'propia' | 'tercerizado'
   desperdicio_pct: number
   margen_seguridad: number
   pedido_minimo: number
+  tiempo_preparacion?: number // minutes
   descuento_override: boolean
   descuentos: import('@/features/presupuesto/types').DiscountTier[]
 }
@@ -80,6 +82,7 @@ export interface DTFConfig {
   margen_seguridad: number
   desperdicio_pct: number
   pedido_minimo: number
+  tiempo_preparacion?: number
   descuento_override: boolean
   descuentos: import('@/features/presupuesto/types').DiscountTier[]
 }
@@ -90,24 +93,30 @@ export interface DTFUVConfig {
   margen_seguridad: number
   desperdicio_pct: number
   pedido_minimo: number
+  tiempo_preparacion?: number
   descuento_override: boolean
   descuentos: import('@/features/presupuesto/types').DiscountTier[]
 }
 
 export interface VinylConfig {
   tipo: 'vinyl'
+  modo?: 'propia' | 'tercerizado'
+  margen_seguridad?: number
   desperdicio_pelado_pct: number
   pedido_minimo: number
+  tiempo_preparacion?: number
   descuento_override: boolean
   descuentos: import('@/features/presupuesto/types').DiscountTier[]
 }
 
 export interface SerigrafiaConfig {
   tipo: 'serigrafia'
+  modo?: 'propia' | 'tercerizado'
   costo_pantalla_por_color: number
   tiempo_preparacion_por_color: number // seconds
   desperdicio_pct: number
   pedido_minimo: number
+  tiempo_preparacion?: number
   descuento_override: boolean
   descuentos: import('@/features/presupuesto/types').DiscountTier[]
 }
