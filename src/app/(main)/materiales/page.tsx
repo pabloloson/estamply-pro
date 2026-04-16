@@ -213,16 +213,24 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
 
       {/* ══ PRODUCTOS BASE ══ */}
       {tab === 'base' && (<>
-        {/* Header — matches Equipamiento layout */}
-        {/* Filters + actions */}
-        <div className="space-y-3 mb-4">
-          <div className="flex items-center justify-between gap-2">
-            <button onClick={() => setModal({ time_subli: 0, time_dtf: 0, time_vinyl: 0, base_cost: 0 } as Partial<Product>)} className="flex items-center gap-1.5 whitespace-nowrap text-sm px-4 py-2 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={14} /> Agregar</button>
-            <button onClick={() => setShowCats(true)} className="flex items-center gap-1.5 whitespace-nowrap text-sm px-3 py-2 rounded-lg font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50">
+        {/* Header: título + acciones */}
+        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 mb-4">
+          <div>
+            {hideChrome && <h1 className="text-2xl font-bold text-gray-900">Productos base</h1>}
+            {hideChrome && <p className="text-gray-500 text-sm mt-1">Prendas, tazas, blanks y soportes.</p>}
+            {!hideChrome && <span className="font-semibold text-gray-800">{t('baseProducts')}</span>}
+            {!hideChrome && <p className="text-xs text-gray-400 mt-0.5">{t('baseSubtitle')}</p>}
+          </div>
+          <div className="flex gap-2">
+            <button onClick={() => setShowCats(true)} className="flex items-center gap-1.5 whitespace-nowrap text-xs sm:text-sm px-3 py-1.5 rounded-lg font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50">
               <FolderOpen size={14} /> Categorías
             </button>
+            <button onClick={() => setModal({ time_subli: 0, time_dtf: 0, time_vinyl: 0, base_cost: 0 } as Partial<Product>)} className="flex items-center gap-1.5 whitespace-nowrap text-xs sm:text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={14} /> Agregar</button>
           </div>
-          <select className="input-base text-sm w-full sm:w-auto sm:min-w-[220px]" value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
+        </div>
+        {/* Filtros: categoría + search */}
+        <div className="space-y-2 mb-4">
+          <select className="input-base text-sm w-full sm:w-auto sm:min-w-[220px] sm:max-w-[280px]" value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
             <option value="">Todas las categorías ({products.length})</option>
             {categories.map(c => <option key={c.id} value={c.id}>{c.name} ({products.filter(p => p.category_id === c.id).length})</option>)}
             <option value="__none__">Sin categoría ({products.filter(p => !p.category_id).length})</option>
