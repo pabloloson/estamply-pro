@@ -81,6 +81,8 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
   const [showCats, setShowCats] = useState(false)
   const [filterTecnica, setFilterTecnica] = useState('')
   const [searchInsumo, setSearchInsumo] = useState('')
+  const [searchProduct, setSearchProduct] = useState('')
+  const [filterCategory, setFilterCategory] = useState('')
 
   async function load() {
     const [{ data: p }, { data: e }, { data: c }, { data: ins }] = await Promise.all([
@@ -177,6 +179,13 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
   }
   async function deleteCat(id: string) { await supabase.from('categories').delete().eq('id', id); load() }
 
+  const filteredProducts = products.filter(p => {
+    if (filterCategory === '__none__' && p.category_id) return false
+    if (filterCategory && filterCategory !== '__none__' && p.category_id !== filterCategory) return false
+    if (searchProduct && !p.name.toLowerCase().includes(searchProduct.toLowerCase())) return false
+    return true
+  })
+
   const filteredInsumos = insumos.filter(i => {
     if (filterTecnica && !(i.tecnica_asociada === filterTecnica || (filterTecnica === 'dtf' && (i.tecnica_asociada === 'dtf' || i.tecnica_asociada === 'dtf_uv')) || i.tecnica_asociada === 'compartido')) return false
     if (searchInsumo && !i.nombre.toLowerCase().includes(searchInsumo.toLowerCase())) return false
@@ -206,12 +215,17 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
       {tab === 'base' && (<>
         {/* Header — matches Equipamiento layout */}
         {hideChrome && (
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Productos base</h1>
               <p className="text-gray-500 text-sm mt-1">Prendas, tazas, blanks y soportes.</p>
             </div>
             <div className="flex gap-2">
+              <select className="input-base text-sm" value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
+                <option value="">Todas las categorías ({products.length})</option>
+                {categories.map(c => <option key={c.id} value={c.id}>{c.name} ({products.filter(p => p.category_id === c.id).length})</option>)}
+                <option value="__none__">Sin categoría ({products.filter(p => !p.category_id).length})</option>
+              </select>
               <button onClick={() => setShowCats(true)} className="flex items-center gap-1.5 whitespace-nowrap text-xs sm:text-sm px-3 py-1.5 rounded-lg font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50">
                 <FolderOpen size={14} /> Categorías
               </button>
@@ -220,14 +234,30 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
           </div>
         )}
         {!hideChrome && (
-          <div className="p-5 border-b border-gray-100 flex items-center justify-between">
-            <div><span className="font-semibold text-gray-800">{t('baseProducts')}</span><p className="text-xs text-gray-400 mt-0.5">{t('baseSubtitle')}</p></div>
-            <button onClick={() => setModal({ time_subli: 0, time_dtf: 0, time_vinyl: 0, base_cost: 0 } as Partial<Product>)} className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={14} /> {tc('add')}</button>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+            <div className="flex items-center gap-3 flex-wrap">
+              <select className="input-base text-sm" value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
+                <option value="">Todas las categorías ({products.length})</option>
+                {categories.map(c => <option key={c.id} value={c.id}>{c.name} ({products.filter(p => p.category_id === c.id).length})</option>)}
+                <option value="__none__">Sin categoría ({products.filter(p => !p.category_id).length})</option>
+              </select>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => setShowCats(true)} className="flex items-center gap-1.5 whitespace-nowrap text-xs sm:text-sm px-3 py-1.5 rounded-lg font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50">
+                <FolderOpen size={14} /> Categorías
+              </button>
+              <button onClick={() => setModal({ time_subli: 0, time_dtf: 0, time_vinyl: 0, base_cost: 0 } as Partial<Product>)} className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={14} /> {tc('add')}</button>
+            </div>
           </div>
         )}
+        {/* Search */}
+        <div className="relative mb-4 max-w-[400px]">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" />
+          <input className="input-base pl-9 text-sm" placeholder="Buscar producto..." value={searchProduct} onChange={e => setSearchProduct(e.target.value)} />
+        </div>
         {/* Mobile cards */}
         <div className="md:hidden space-y-2">
-          {products.map(p => {
+          {filteredProducts.map(p => {
             const cat = categories.find(c => c.id === p.category_id)
             const press = equipment.find(e => e.id === p.press_equipment_id)
             return (
@@ -252,7 +282,8 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
               </div>
             )
           })}
-          {products.length === 0 && <EmptyState icon="👕" title="Cargá los productos que vendés." description="Remeras, tazas, gorras — cada producto con su costo y la plancha que necesita." actionLabel="+ Agregar" onAction={() => setModal({ time_subli: 0, time_dtf: 0, time_vinyl: 0, base_cost: 0 } as Partial<Product>)} />}
+          {filteredProducts.length === 0 && products.length === 0 && <EmptyState icon="👕" title="Cargá los productos que vendés." description="Remeras, tazas, gorras — cada producto con su costo y la plancha que necesita." actionLabel="+ Agregar" onAction={() => setModal({ time_subli: 0, time_dtf: 0, time_vinyl: 0, base_cost: 0 } as Partial<Product>)} />}
+          {filteredProducts.length === 0 && products.length > 0 && <div className="text-center py-8 text-gray-400 text-sm">No hay productos que coincidan con la búsqueda.</div>}
         </div>
 
         {/* Desktop table */}
@@ -261,7 +292,7 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
           <table className="w-full min-w-[700px]"><thead><tr className="border-b border-gray-100">
             {['Nombre', 'Costo', 'Categoría', 'Variantes', 'Plancha', ''].map(h => <th key={h} className={`text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3 ${h === 'Variantes' || h === 'Categoría' || h === 'Plancha' ? 'hidden lg:table-cell' : ''}`}>{h}</th>)}
           </tr></thead><tbody>
-            {products.map(p => {
+            {filteredProducts.map(p => {
               const cat = categories.find(c => c.id === p.category_id)
               const press = equipment.find(e => e.id === p.press_equipment_id)
               const vars = p.variant_options || []
@@ -288,7 +319,7 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
             })}
           </tbody></table>
           </div>
-          {products.length === 0 && <div className="text-center py-12 text-gray-400">No hay productos base.</div>}
+          {filteredProducts.length === 0 && <div className="text-center py-12 text-gray-400">{products.length === 0 ? 'No hay productos base.' : 'No hay productos que coincidan.'}</div>}
         </div>
       </>)}
 
@@ -323,7 +354,7 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
           <button onClick={() => openNewInsumo()} className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={14} /> {tc('add')}</button>
         </div>
         {/* Search */}
-        <div className="relative mb-4">
+        <div className="relative mb-4 max-w-[400px]">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" />
           <input className="input-base pl-9 text-sm" placeholder="Buscar insumo..." value={searchInsumo} onChange={e => setSearchInsumo(e.target.value)} />
         </div>
