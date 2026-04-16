@@ -28,7 +28,8 @@ const TECHNIQUE_COLORS: Record<Tecnica, string> = {
 interface DBClient { id: string; name: string; phone: string | null; email: string | null; whatsapp: string | null }
 interface BusinessProfile {
   business_name: string | null; business_logo_url: string | null; business_cuit: string | null
-  business_address: string | null; business_phone: string | null; business_email: string | null
+  business_address: string | null; city: string | null; province: string | null; postal_code: string | null
+  business_phone: string | null; business_email: string | null
   business_instagram: string | null; business_website: string | null; workshop_name: string | null
   facebook: string | null; tiktok: string | null; youtube: string | null
 }
@@ -301,7 +302,8 @@ export default function PresupuestoPage() {
     const condHtml = condiciones.map(c => `<div>· ${c}</div>`).join('')
 
     const bizCuit = bizProfile?.business_cuit ? `<div style="font-size:12px;color:#666">${bizProfile.business_cuit}</div>` : ''
-    const bizAddr = bizProfile?.business_address ? `<div style="font-size:12px;color:#666">${bizProfile.business_address}</div>` : ''
+    const addrParts = [bizProfile?.business_address, bizProfile?.city, bizProfile?.province, bizProfile?.postal_code].filter(Boolean)
+    const bizAddr = addrParts.length > 0 ? `<div style="font-size:12px;color:#666">${addrParts.join(', ')}</div>` : ''
     const bizPhone = bizProfile?.business_phone ? `<div style="font-size:12px;color:#666">${bizProfile.business_phone}</div>` : ''
     const bizEmail = bizProfile?.business_email ? `<div style="font-size:12px;color:#666">${bizProfile.business_email}</div>` : ''
 
@@ -409,7 +411,7 @@ export default function PresupuestoPage() {
       const { data: { user } } = await supabase.auth.getUser()
       const [{ data: cls }, { data: prof }, { data: wsData }, { data: saved }] = await Promise.all([
         supabase.from('clients').select('id, name, phone, email, whatsapp').order('name'),
-        user ? supabase.from('profiles').select('business_name,business_logo_url,business_cuit,business_address,business_phone,business_email,business_instagram,business_website,workshop_name,facebook,tiktok,youtube').eq('id', user.id).single() : Promise.resolve({ data: null }),
+        user ? supabase.from('profiles').select('business_name,business_logo_url,business_cuit,business_address,city,province,postal_code,business_phone,business_email,business_instagram,business_website,workshop_name,facebook,tiktok,youtube').eq('id', user.id).single() : Promise.resolve({ data: null }),
         supabase.from('workshop_settings').select('settings').single(),
         supabase.from('presupuestos').select('id,codigo,numero,client_name,client_id,total,origen,created_at').order('created_at', { ascending: false }).limit(20),
       ])

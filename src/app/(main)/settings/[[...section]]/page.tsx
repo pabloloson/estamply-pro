@@ -19,6 +19,9 @@ interface BusinessProfile {
   business_logo_url: string
   business_cuit: string
   business_address: string
+  city: string
+  province: string
+  postal_code: string
   business_phone: string
   business_email: string
   business_instagram: string
@@ -33,6 +36,9 @@ const EMPTY: BusinessProfile = {
   business_logo_url: '',
   business_cuit: '',
   business_address: '',
+  city: '',
+  province: '',
+  postal_code: '',
   business_phone: '',
   business_email: '',
   business_instagram: '',
@@ -42,19 +48,6 @@ const EMPTY: BusinessProfile = {
   youtube: '',
 }
 
-const TAX_ID_LABELS: Record<string, string> = {
-  AR: 'CUIT / DNI',
-  MX: 'RFC',
-  BR: 'CNPJ / CPF',
-  CL: 'RUT',
-  CO: 'NIT / CC',
-  PE: 'RUC / DNI',
-  EC: 'RUC / CI',
-  UY: 'RUT / CI',
-  PY: 'RUC / CI',
-  BO: 'NIT / CI',
-  VE: 'RIF / CI',
-}
 
 export default function SettingsPage() {
   const params = useParams<{ section?: string[] }>()
@@ -100,7 +93,7 @@ export default function SettingsPage() {
       setOwnerName(user.email || '')
       const { data } = await supabase
         .from('profiles')
-        .select('business_name,business_logo_url,business_cuit,business_address,business_phone,business_email,business_instagram,business_website,facebook,tiktok,youtube')
+        .select('business_name,business_logo_url,business_cuit,business_address,city,province,postal_code,business_phone,business_email,business_instagram,business_website,facebook,tiktok,youtube')
         .eq('id', user.id)
         .single()
       if (data) {
@@ -109,6 +102,9 @@ export default function SettingsPage() {
           business_logo_url: data.business_logo_url || '',
           business_cuit: data.business_cuit || '',
           business_address: data.business_address || '',
+          city: data.city || '',
+          province: data.province || '',
+          postal_code: data.postal_code || '',
           business_phone: data.business_phone || '',
           business_email: data.business_email || '',
           business_instagram: data.business_instagram || '',
@@ -237,44 +233,78 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Fields */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {([
-            ['business_name', t('businessName'), 'Ej: Estamply Taller'],
-            ['business_cuit', TAX_ID_LABELS[country.code] || 'Tax ID', '20-12345678-9'],
-            ['business_address', t('addressField'), 'Calle 123, Ciudad'],
-            ['business_phone', t('phoneWhatsapp'), '+54 11 1234-5678'],
-            ['business_email', t('contactEmail'), 'taller@ejemplo.com'],
-            ['business_instagram', t('instagram'), '@taller'],
-            ['business_website', t('website'), 'www.taller.com.ar'],
-          ] as [keyof BusinessProfile, string, string][]).map(([key, label, placeholder]) => (
-            <div key={key}>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">{label}</label>
-              <input
-                value={profile[key]}
-                onChange={e => setProfile(p => ({ ...p, [key]: e.target.value }))}
-                className="input-base"
-                placeholder={placeholder}
-              />
+        {/* ── DATOS DEL NEGOCIO ── */}
+        <div className="mt-8 pt-6 border-t border-gray-100">
+          <p className="text-[12px] font-medium text-gray-400 uppercase tracking-wider mb-4">{t('businessData')}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('businessName')}</label>
+              <input value={profile.business_name} onChange={e => setProfile(p => ({ ...p, business_name: e.target.value }))} className="input-base" placeholder="Ej: Estamply Taller" />
             </div>
-          ))}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('taxId')}</label>
+              <input value={profile.business_cuit} onChange={e => setProfile(p => ({ ...p, business_cuit: e.target.value }))} className="input-base" placeholder="20-12345678-9" />
+              <p className="text-[11px] text-gray-400 mt-1">{t('taxIdHint')}</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('addressField')}</label>
+              <input value={profile.business_address} onChange={e => setProfile(p => ({ ...p, business_address: e.target.value }))} className="input-base" placeholder="Calle 123" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('city')}</label>
+              <input value={profile.city} onChange={e => setProfile(p => ({ ...p, city: e.target.value }))} className="input-base" placeholder="Córdoba" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('province')}</label>
+              <input value={profile.province} onChange={e => setProfile(p => ({ ...p, province: e.target.value }))} className="input-base" placeholder="Córdoba" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('postalCode')}</label>
+              <input value={profile.postal_code} onChange={e => setProfile(p => ({ ...p, postal_code: e.target.value }))} className="input-base" placeholder="5000" />
+            </div>
+          </div>
         </div>
 
-        {/* Redes sociales */}
-        <div className="mt-6 pt-5 border-t border-gray-100">
-          <label className="block text-sm font-semibold text-gray-700 mb-1">{t('socialNetworks')}</label>
-          <p className="text-[11px] text-gray-400 mb-3">{t('socialNetworksHint')}</p>
+        {/* ── CONTACTO ── */}
+        <div className="mt-8 pt-6 border-t border-gray-100">
+          <p className="text-[12px] font-medium text-gray-400 uppercase tracking-wider mb-4">{t('contact')}</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {([
-              ['facebook', t('facebook'), 'facebook.com/tu_pagina'],
-              ['tiktok', t('tiktok'), '@tu_tiktok'],
-              ['youtube', t('youtube'), 'youtube.com/@tu_canal'],
-            ] as [keyof BusinessProfile, string, string][]).map(([key, label, placeholder]) => (
-              <div key={key}>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">{label}</label>
-                <input value={profile[key]} onChange={e => setProfile(p => ({ ...p, [key]: e.target.value }))} className="input-base" placeholder={placeholder} />
-              </div>
-            ))}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('contactEmail')}</label>
+              <input value={profile.business_email} onChange={e => setProfile(p => ({ ...p, business_email: e.target.value }))} className="input-base" placeholder="taller@ejemplo.com" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('phoneWhatsapp')}</label>
+              <input value={profile.business_phone} onChange={e => setProfile(p => ({ ...p, business_phone: e.target.value }))} className="input-base" placeholder="+54 11 1234-5678" />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('website')}</label>
+              <input value={profile.business_website} onChange={e => setProfile(p => ({ ...p, business_website: e.target.value }))} className="input-base" placeholder="www.taller.com.ar" />
+            </div>
+          </div>
+        </div>
+
+        {/* ── REDES SOCIALES ── */}
+        <div className="mt-8 pt-6 border-t border-gray-100">
+          <p className="text-[12px] font-medium text-gray-400 uppercase tracking-wider mb-1">{t('socialNetworks')}</p>
+          <p className="text-[11px] text-gray-400 mb-4">{t('socialNetworksHint')}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('instagram')}</label>
+              <input value={profile.business_instagram} onChange={e => setProfile(p => ({ ...p, business_instagram: e.target.value }))} className="input-base" placeholder="@tu_instagram" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('facebook')}</label>
+              <input value={profile.facebook} onChange={e => setProfile(p => ({ ...p, facebook: e.target.value }))} className="input-base" placeholder="facebook.com/tu_pagina" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('tiktok')}</label>
+              <input value={profile.tiktok} onChange={e => setProfile(p => ({ ...p, tiktok: e.target.value }))} className="input-base" placeholder="@tu_tiktok" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('youtube')}</label>
+              <input value={profile.youtube} onChange={e => setProfile(p => ({ ...p, youtube: e.target.value }))} className="input-base" placeholder="youtube.com/@tu_canal" />
+            </div>
           </div>
         </div>
 

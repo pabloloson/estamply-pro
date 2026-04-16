@@ -21,7 +21,7 @@ interface SizeGuide { id: string; nombre: string; columnas: string[]; filas: Arr
 interface Category { id: string; name: string }
 interface ShopInfo {
   nombre: string; logo: string | null; color: string; description: string
-  whatsapp: string; instagram: string; user_id: string; banner: string | null; direccion: string
+  whatsapp: string; instagram: string; user_id: string; banner: string | null; direccion: string; city: string
   website: string; facebook: string; tiktok: string; youtube: string
   mediosPago: Array<{ id: string; nombre: string; tipo_ajuste: string; porcentaje: number }>
   lang: string; countryCode: string
@@ -88,7 +88,7 @@ export default function PublicCatalogPage() {
       const s = match.settings as Record<string, unknown>
       const userId = match.user_id as string
       // Fetch profile for business info (phone, name, logo, instagram, address)
-      const { data: prof } = await supabase.from('profiles').select('business_name,business_phone,business_instagram,business_logo_url,business_address,business_website,facebook,tiktok,youtube').eq('id', userId).single()
+      const { data: prof } = await supabase.from('profiles').select('business_name,business_phone,business_instagram,business_logo_url,business_address,city,business_website,facebook,tiktok,youtube').eq('id', userId).single()
       const p = (prof || {}) as Record<string, string>
       setShop({
         nombre: (s.nombre_tienda as string) || (s.nombre_taller as string) || (p.business_name as string) || 'Mi Taller',
@@ -100,6 +100,7 @@ export default function PublicCatalogPage() {
         user_id: userId,
         banner: (s.banner_url as string) || null,
         direccion: (p.business_address as string) || '',
+        city: (p.city as string) || '',
         website: (p.business_website as string) || '',
         facebook: (p.facebook as string) || '',
         tiktok: (p.tiktok as string) || '',
@@ -270,7 +271,7 @@ function CatalogContent({ shop, products, categories, sizeGuides }: { shop: Shop
             <span className="font-bold text-gray-800">{shop.nombre}</span>
           </div>
           <div className="space-y-1 text-sm text-gray-500 mb-4">
-            {shop.direccion && <p>📍 {shop.direccion}</p>}
+            {(shop.city || shop.direccion) && <p>📍 {[shop.direccion, shop.city, getCountry(shop.countryCode).name].filter(Boolean).join(', ')}</p>}
             {shop.whatsapp && <p>📱 {shop.whatsapp}</p>}
             {shop.website && <p>🌐 {shop.website}</p>}
           </div>
