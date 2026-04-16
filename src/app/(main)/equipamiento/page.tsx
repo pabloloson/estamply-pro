@@ -28,7 +28,7 @@ const CLASIF_TABS = [
 
 const TYPES_BY_CLASIF: Record<string, Array<[string, string]>> = {
   impresora: [['printer_subli', 'Impresora Sublimación'], ['printer_dtf', 'Impresora DTF'], ['printer_uv', 'Impresora UV'], ['printer_other', 'Otra impresora']],
-  plotter: [['plotter', 'Plotter de corte'], ['plotter_other', 'Otro plotter']],
+  plotter: [['plotter_corte', 'Plotter de corte'], ['plotter_impresion', 'Plotter de impresión'], ['plotter_combo', 'Plotter corte + impresión'], ['plotter_other', 'Otro plotter']],
   plancha: [['press_flat', 'Plancha Plana'], ['press_mug', 'Plancha Tazas'], ['press_cap', 'Plancha Gorras'], ['press_5in1', 'Plancha 5 en 1'], ['press_pneumatic', 'Plancha Neumática'], ['press_other', 'Otra plancha']],
   pulpo: [['pulpo_manual', 'Pulpo manual'], ['pulpo_auto', 'Pulpo automático'], ['estacion', 'Estación de estampado'], ['pulpo_other', 'Otro']],
 }
@@ -36,6 +36,16 @@ const TYPES_BY_CLASIF: Record<string, Array<[string, string]>> = {
 const TEC_LABELS: Record<string, string> = { subli: 'Subli', dtf: 'DTF', dtf_uv: 'DTF UV', vinyl: 'Vinilo', serigrafia: 'Serigrafía' }
 const TEC_COLORS: Record<string, string> = { subli: '#6C5CE7', dtf: '#E17055', dtf_uv: '#00B894', vinyl: '#E84393', serigrafia: '#FDCB6E' }
 const ALL_TECS = ['subli', 'dtf', 'dtf_uv', 'vinyl', 'serigrafia']
+
+// Insumos associated per equipment type
+type InsumoSlot = { key: string; label: string; filterTipos: string[] }
+const INSUMOS_POR_TIPO: Record<string, InsumoSlot[]> = {
+  printer_subli: [{ key: 'assigned_paper_id', label: 'Papel asignado', filterTipos: ['papel'] }, { key: 'assigned_ink_id', label: 'Tinta asignada', filterTipos: ['tinta'] }],
+  printer_dtf: [{ key: 'assigned_paper_id', label: 'Film asignado', filterTipos: ['film'] }, { key: 'assigned_ink_id', label: 'Tinta asignada', filterTipos: ['tinta'] }],
+  printer_uv: [{ key: 'assigned_paper_id', label: 'Film/Rollo asignado', filterTipos: ['film'] }, { key: 'assigned_ink_id', label: 'Tinta asignada', filterTipos: ['tinta'] }],
+  plotter_impresion: [{ key: 'assigned_paper_id', label: 'Material asignado', filterTipos: ['vinilo', 'film'] }, { key: 'assigned_ink_id', label: 'Tinta asignada', filterTipos: ['tinta'] }],
+  plotter_combo: [{ key: 'assigned_paper_id', label: 'Material asignado', filterTipos: ['vinilo', 'film'] }, { key: 'assigned_ink_id', label: 'Tinta asignada', filterTipos: ['tinta'] }],
+}
 
 const newEquip = (): Partial<Equipment> => ({ clasificacion: 'plancha', type: 'press_flat', cost: 0, lifespan_uses: 10000, tecnicas_slugs: [] })
 
@@ -283,7 +293,7 @@ export default function EquipamientoPage() {
                 </div>
                 <div className="mt-3">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Fecha de compra</label>
-                  <input type="date" className="input-base" value={modal.purchase_date || ''} onChange={e => setModal({ ...modal, purchase_date: e.target.value || null })} />
+                  <input type="date" className="input-base" max={new Date().toISOString().split('T')[0]} value={modal.purchase_date || ''} onChange={e => setModal({ ...modal, purchase_date: e.target.value || null })} />
                 </div>
                 {modalAmort > 0 && (
                   <div className="mt-3 p-3 rounded-lg bg-green-50 border border-green-100 flex items-start gap-2">
@@ -296,35 +306,36 @@ export default function EquipamientoPage() {
                 )}
               </div>
 
-              {/* ── INSUMOS ASOCIADOS (impresora/plotter) ── */}
-              {(modal.clasificacion === 'impresora' || modal.clasificacion === 'plotter') && (
-                <div className="pt-4 border-t border-gray-100">
-                  <p className="text-[12px] font-medium text-gray-400 uppercase tracking-wider mb-1">Insumos asociados</p>
-                  <p className="text-[11px] text-gray-400 mb-3">Asigná los insumos que usa este equipo. El costo se calcula automáticamente.</p>
-                  {!modal.assigned_paper_id && !modal.assigned_ink_id && (
-                    <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-100 flex items-center gap-2 mb-3 text-xs text-amber-700">
-                      <AlertTriangle size={14} className="flex-shrink-0" /> Sin papel ni tinta — el cotizador no podrá calcular el costo de impresión.
+              {/* ── INSUMOS ASOCIADOS (dynamic per type) ── */}
+              {(() => {
+                const slots = INSUMOS_POR_TIPO[modal.type || ''] || []
+                if (slots.length === 0) return null
+                const hasAnyUnassigned = slots.some(s => !(modal as Record<string, unknown>)[s.key])
+                return (
+                  <div className="pt-4 border-t border-gray-100">
+                    <p className="text-[12px] font-medium text-gray-400 uppercase tracking-wider mb-1">Insumos asociados</p>
+                    <p className="text-[11px] text-gray-400 mb-3">Asigná los insumos que usa este equipo. El costo se calcula automáticamente.</p>
+                    {hasAnyUnassigned && (
+                      <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-100 flex items-center gap-2 mb-3 text-xs text-amber-700">
+                        <AlertTriangle size={14} className="flex-shrink-0" /> Faltan insumos asignados — el cotizador no podrá calcular el costo de producción.
+                      </div>
+                    )}
+                    <div className="grid grid-cols-2 gap-3">
+                      {slots.map(slot => (
+                        <div key={slot.key}>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">{slot.label}</label>
+                          <select className="input-base" value={(modal as Record<string, unknown>)[slot.key] as string || ''} onChange={e => setModal({ ...modal, [slot.key]: e.target.value || null })}>
+                            <option value="">Sin asignar</option>
+                            {insumosAll.filter(i => slot.filterTipos.includes(i.tipo)).map(i => (
+                              <option key={i.id} value={i.id}>{i.nombre}</option>
+                            ))}
+                          </select>
+                        </div>
+                      ))}
                     </div>
-                  )}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div><label className="block text-sm font-medium text-gray-700 mb-1">Papel asignado</label>
-                      <select className="input-base" value={modal.assigned_paper_id || ''} onChange={e => setModal({ ...modal, assigned_paper_id: e.target.value || null })}>
-                        <option value="">Sin papel</option>
-                        {insumosAll.filter(i => i.tipo === 'papel' || i.tipo === 'film').map(i => {
-                          const fmt = (i.config as Record<string, unknown>)?.formato === 'rollo' ? 'Rollo' : 'Hojas'
-                          return <option key={i.id} value={i.id}>{i.nombre} — {fmt}</option>
-                        })}
-                      </select></div>
-                    <div><label className="block text-sm font-medium text-gray-700 mb-1">Tinta asignada</label>
-                      <select className="input-base" value={modal.assigned_ink_id || ''} onChange={e => setModal({ ...modal, assigned_ink_id: e.target.value || null })}>
-                        <option value="">Sin tinta</option>
-                        {insumosAll.filter(i => i.tipo === 'tinta').map(i => (
-                          <option key={i.id} value={i.id}>{i.nombre}</option>
-                        ))}
-                      </select></div>
                   </div>
-                </div>
-              )}
+                )
+              })()}
 
               {/* ── OTROS ── */}
               <div className="pt-4 border-t border-gray-100">
