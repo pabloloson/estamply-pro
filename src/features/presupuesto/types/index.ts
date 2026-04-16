@@ -23,7 +23,7 @@ export interface DiscountTier {
 }
 
 export type ManoDeObraModo = 'ninguno' | 'sueldo_fijo' | 'por_unidad' | 'porcentaje'
-export type ComisionBase = 'venta' | 'ganancia' | 'costo'
+export type ComisionBase = 'costo' | 'ganancia_bruta' | 'venta' | 'ganancia' // venta+ganancia are legacy
 
 export interface ManoDeObraConfig {
   modo: ManoDeObraModo
@@ -40,7 +40,7 @@ export const DEFAULT_MO_CONFIG: ManoDeObraConfig = {
   horas_mensuales: 160,
   monto_por_unidad: 0,
   porcentaje_comision: 10,
-  comision_base: 'venta',
+  comision_base: 'costo',
 }
 
 // Legacy flat format (backward compat)
@@ -227,18 +227,18 @@ export function computeAutoMo(
       const mermaFactor = 1 + merma / 100
       const c0 = costoTotal - currentMo * mermaFactor
       if (c0 <= 0) return 0
-      const m = margin / 100
       const p = config.porcentaje_comision / 100
-      if (config.comision_base === 'venta') {
-        const denom = 1 - m - p
-        return denom > 0 ? (c0 * p) / denom : 0
-      } else if (config.comision_base === 'costo') {
-        // Percentage on production cost
-        return c0 * p
-      } else {
-        // Legacy 'ganancia' — same as 'costo' going forward
-        return c0 * p
+      const base = config.comision_base
+      if (base === 'ganancia_bruta') {
+        // % on gross profit (sale price - production cost)
+        const m = margin / 100
+        if (m <= 0) return 0
+        const precio = c0 / (1 - m)
+        const gananciaBruta = Math.max(0, precio - c0)
+        return gananciaBruta * p
       }
+      // 'costo' + legacy 'venta'/'ganancia' all map to % on production cost
+      return c0 * p
     }
   }
 }
@@ -249,6 +249,6 @@ export function getMoRuleLabel(config: ManoDeObraConfig): string {
     case 'sueldo_fijo': return 'Sueldo fijo'
     case 'por_unidad': return 'Por unidad'
     case 'porcentaje':
-      return config.comision_base === 'venta' ? '% s/venta' : '% s/costo'
+      return config.comision_base === 'ganancia_bruta' ? '% s/ganancia' : '% s/costo'
   }
 }

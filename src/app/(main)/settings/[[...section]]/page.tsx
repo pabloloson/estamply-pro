@@ -793,32 +793,41 @@ export default function SettingsPage() {
         )}
       </>)}
 
-      {mo.modo === 'porcentaje' && (<>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Porcentaje (%)</label>
-          <input type="number" className="input-base" min={0} max={100} value={mo.porcentaje_comision || ''} onChange={e => setMo({ porcentaje_comision: Number(e.target.value) })} />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Calcular sobre</label>
-          <select className="input-base" value={mo.comision_base === 'ganancia' ? 'costo' : mo.comision_base} onChange={e => setMo({ comision_base: e.target.value })}>
-            <option value="costo">Costo de producción</option>
-            <option value="venta">Precio de venta</option>
-          </select>
-        </div>
-        {mo.porcentaje_comision > 0 && (
-          <div className="p-3 rounded-lg bg-green-50 border border-green-100 flex items-start gap-2">
-            <span className="text-base">💡</span>
-            <div>
-              <p className="text-sm font-bold text-green-700">{mo.porcentaje_comision}% sobre el {(mo.comision_base === 'ganancia' || mo.comision_base === 'costo') ? 'costo de producción' : 'precio de venta'}</p>
-              <p className="text-[11px] text-gray-500 mt-0.5">
-                {(mo.comision_base === 'ganancia' || mo.comision_base === 'costo')
-                  ? `Ejemplo: si el costo de producción es ${fmtCurrency(10000)}, se suman ${fmtCurrency(10000 * mo.porcentaje_comision / 100)} de mano de obra.`
-                  : `Ejemplo: si el precio de venta es ${fmtCurrency(20000)}, se suman ${fmtCurrency(20000 * mo.porcentaje_comision / 100)} de mano de obra.`}
-              </p>
-            </div>
+      {mo.modo === 'porcentaje' && (() => {
+        // Normalize legacy values to current options
+        const effectiveBase = (mo.comision_base === 'venta' || mo.comision_base === 'ganancia') ? 'costo' : (mo.comision_base || 'costo')
+        return (<>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Porcentaje (%)</label>
+            <input type="number" className="input-base" min={0} max={100} value={mo.porcentaje_comision || ''} onChange={e => setMo({ porcentaje_comision: Number(e.target.value) })} />
           </div>
-        )}
-      </>)}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Calcular sobre</label>
+            <select className="input-base" value={effectiveBase} onChange={e => setMo({ comision_base: e.target.value })}>
+              <option value="costo">Costo de producción</option>
+              <option value="ganancia_bruta">Ganancia bruta</option>
+            </select>
+            <p className="text-[11px] text-gray-400 mt-1">
+              {effectiveBase === 'ganancia_bruta'
+                ? 'El operario gana un porcentaje de lo que queda después de cubrir los costos.'
+                : 'El operario gana en proporción al esfuerzo del trabajo.'}
+            </p>
+          </div>
+          {mo.porcentaje_comision > 0 && (
+            <div className="p-3 rounded-lg bg-green-50 border border-green-100 flex items-start gap-2">
+              <span className="text-base">💡</span>
+              <div>
+                <p className="text-sm font-bold text-green-700">{mo.porcentaje_comision}% sobre {effectiveBase === 'ganancia_bruta' ? 'la ganancia bruta' : 'el costo de producción'}</p>
+                <p className="text-[11px] text-gray-500 mt-0.5">
+                  {effectiveBase === 'ganancia_bruta'
+                    ? `Ejemplo: si vendés a ${fmtCurrency(10000)} y el costo es ${fmtCurrency(6000)}, la ganancia bruta es ${fmtCurrency(4000)}. Se suman ${fmtCurrency(4000 * mo.porcentaje_comision / 100)} de mano de obra.`
+                    : `Ejemplo: si el costo de producción es ${fmtCurrency(6000)}, se suman ${fmtCurrency(6000 * mo.porcentaje_comision / 100)} de mano de obra.`}
+                </p>
+              </div>
+            </div>
+          )}
+        </>)
+      })()}
 
       <div className="border-t border-gray-100 pt-4">
         <button onClick={saveWs} disabled={saveState === 'saving'}
