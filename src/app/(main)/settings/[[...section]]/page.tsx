@@ -415,7 +415,7 @@ export default function SettingsPage() {
         <p className="text-[13px] text-gray-400 mt-0.5">{t('exchangeRateDesc')}</p>
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">{t('referenceCurrency')}</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t('referenceCurrencyShort')}</label>
         <select className="input-base text-sm" value={(ws as Record<string, unknown>).moneda_referencia as string || 'USD'}
           onChange={e => setWs({ ...ws, moneda_referencia: e.target.value } as WorkshopSettings)}>
           <option value="USD">USD — Dólar estadounidense</option>
@@ -426,9 +426,9 @@ export default function SettingsPage() {
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">{t('exchangeRateLabel')}</label>
-        <div className="flex items-center gap-3">
-          <span className="text-sm font-medium text-gray-500">1 {(ws as Record<string, unknown>).moneda_referencia as string || 'USD'} =</span>
-          <input type="number" className="input-base text-sm w-32" min={0.01} step={0.01}
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-gray-500 whitespace-nowrap">1 {(ws as Record<string, unknown>).moneda_referencia as string || 'USD'} =</span>
+          <input type="number" className="input-base text-sm flex-1 max-w-[200px]" min={0.01} step={0.01}
             value={(ws as Record<string, unknown>).tipo_cambio as number || 1}
             onChange={e => setWs({ ...ws, tipo_cambio: Math.max(Number(e.target.value), 0) } as WorkshopSettings)} />
           <span className="text-sm text-gray-500">{fmtCurrency(1).replace(/[\d.,]/g, '').trim() || '$'}</span>
@@ -454,12 +454,14 @@ export default function SettingsPage() {
           </p>
         </div>
       )}
+      <div className="border-t border-gray-100 pt-4">
+        <button onClick={saveWs} disabled={saveState === 'saving'}
+          className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors ${saveState === 'saved' ? 'bg-green-500' : saveState === 'error' ? 'bg-red-500' : ''}`}
+          style={saveState !== 'saved' && saveState !== 'error' ? { background: '#6C5CE7' } : {}}>
+          {saveState === 'saving' ? <><Loader2 size={14} className="animate-spin" /> {t('saving')}</> : saveState === 'saved' ? <><Check size={14} /> {t('saved')}</> : saveState === 'error' ? t('saveError') : <><Save size={14} /> {t('saveBtn')}</>}
+        </button>
+      </div>
     </div>
-    <button onClick={saveWs} disabled={saveState === 'saving'}
-      className={`mt-6 flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors ${saveState === 'saved' ? 'bg-green-500' : saveState === 'error' ? 'bg-red-500' : ''}`}
-      style={saveState !== 'saved' && saveState !== 'error' ? { background: '#6C5CE7' } : {}}>
-      {saveState === 'saving' ? <><Loader2 size={14} className="animate-spin" /> {t('saving')}</> : saveState === 'saved' ? <><Check size={14} /> {t('saved')}</> : saveState === 'error' ? t('saveError') : <><Save size={14} /> {t('saveBtn')}</>}
-    </button>
   </div>
 )})()}
 
