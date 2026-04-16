@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Plus, Pencil, Trash2, X, FolderOpen } from 'lucide-react'
+import { Plus, Pencil, Trash2, X, FolderOpen, Search } from 'lucide-react'
 import type { Category, Insumo, InsumoTipo, InsumoConfig } from '@/features/taller/types'
 import CategoryModal from '@/features/taller/components/CategoryModal'
 import NumericInput from '@/shared/components/NumericInput'
@@ -47,11 +47,11 @@ function emptyConfig(tipo: InsumoTipo): InsumoConfig {
     case 'tinta': return { tipo: 'tinta', precio: 0, rendimiento: 4000, unidad_rendimiento: 'hojas' }
     case 'film': return { tipo: 'film', precio_rollo: 0, ancho: 60, largo: 100 }
     case 'polvo': return { tipo: 'polvo', precio_kg: 0, rendimiento_m2: 50 }
-    case 'vinilo': return { tipo: 'vinilo', aplicacion: 'textil', acabado: 'Liso', precio_metro: 0, ancho: 50, colores: ['Blanco', 'Negro'] }
+    case 'vinilo': return { tipo: 'vinilo', aplicacion: 'textil', acabado: 'Liso', precio_metro: 0, ancho: 50, colores: [] }
     case 'tinta_serigrafica': return { tipo: 'tinta_serigrafica', precio_kg: 0, rendimiento_estampadas_kg: 100, color: '' }
     case 'servicio_impresion': return { tipo: 'servicio_impresion', precio_metro: 0, ancho_material: 60, proveedor: '' }
     case 'emulsion': return { tipo: 'emulsion', precio_kg: 0, rendimiento_pantallas_kg: 20 }
-    case 'otro': return { tipo: 'otro', precio: 0, unidad: 'metro', rendimiento: 1, unidad_rendimiento: 'm²' }
+    case 'otro': return { tipo: 'otro', precio: 0, unidad: 'unidad', rendimiento: 1, unidad_rendimiento: 'usos', vida_util_usos: 0 }
   }
 }
 
@@ -76,8 +76,11 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
   const [inlineSupplier, setInlineSupplier] = useState<{ name: string } | null>(null)
   const [supplierCreatedHint, setSupplierCreatedHint] = useState(false)
   const [insModal, setInsModal] = useState<Partial<Insumo> | null>(null)
+  const [insSupplier, setInsSupplier] = useState<{ name: string } | null>(null)
+  const [insSupplierHint, setInsSupplierHint] = useState(false)
   const [showCats, setShowCats] = useState(false)
   const [filterTecnica, setFilterTecnica] = useState('')
+  const [searchInsumo, setSearchInsumo] = useState('')
 
   async function load() {
     const [{ data: p }, { data: e }, { data: c }, { data: ins }] = await Promise.all([
@@ -112,10 +115,21 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
   }
   async function deleteProduct(id: string) { if (confirm('¿Eliminar?')) { await supabase.from('products').delete().eq('id', id); load() } }
 
+  // Rendimiento label helper
+  function getRendimientoLabel(tipo: string, tecnica: string) {
+    if (tipo === 'tinta' && tecnica === 'subli') return 'Rendimiento (hojas)'
+    if (tipo === 'tinta' && (tecnica === 'dtf' || tecnica === 'dtf_uv')) return 'Rendimiento (m²)'
+    if (tipo === 'tinta_serigrafica') return 'Rendimiento (pantallas/kg)'
+    if (tipo === 'polvo') return 'Rendimiento (m²/kg)'
+    if (tipo === 'emulsion') return 'Rendimiento (pantallas/kg)'
+    return 'Rendimiento'
+  }
+
   // ── Insumo CRUD (with auto-vinculation) ──
   async function saveInsumo() {
     if (!insModal?.nombre) return; setSaving(true)
-    const payload = { nombre: insModal.nombre, tipo: insModal.tipo || 'otro', tecnica_asociada: insModal.tecnica_asociada || 'compartido', config: insModal.config || emptyConfig('otro'), moneda: insModal.moneda || 'local' }
+    const catFunc = insModal.tipo === 'otro' ? 'consumible' : 'directo'
+    const payload = { nombre: insModal.nombre, tipo: insModal.tipo || 'otro', tecnica_asociada: insModal.tecnica_asociada || 'compartido', config: insModal.config || emptyConfig('otro'), moneda: insModal.moneda || 'local', supplier_id: insModal.supplier_id || null, categoria_funcional: catFunc }
     const tecAsociada = payload.tecnica_asociada
     if (insModal.id) {
       const oldInsumo = insumos.find(i => i.id === insModal.id)
@@ -163,9 +177,11 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
   }
   async function deleteCat(id: string) { await supabase.from('categories').delete().eq('id', id); load() }
 
-  const filteredInsumos = filterTecnica
-    ? insumos.filter(i => i.tecnica_asociada === filterTecnica || (filterTecnica === 'dtf' && (i.tecnica_asociada === 'dtf' || i.tecnica_asociada === 'dtf_uv')) || i.tecnica_asociada === 'compartido')
-    : insumos
+  const filteredInsumos = insumos.filter(i => {
+    if (filterTecnica && !(i.tecnica_asociada === filterTecnica || (filterTecnica === 'dtf' && (i.tecnica_asociada === 'dtf' || i.tecnica_asociada === 'dtf_uv')) || i.tecnica_asociada === 'compartido')) return false
+    if (searchInsumo && !i.nombre.toLowerCase().includes(searchInsumo.toLowerCase())) return false
+    return true
+  })
 
   if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>
 
@@ -296,7 +312,7 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
           <button onClick={() => openNewInsumo()} className="flex items-center gap-1.5 whitespace-nowrap text-xs px-3 py-2 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={14} /> Agregar</button>
         </div>
         {/* Desktop: tabs + add */}
-        <div className="hidden md:flex items-center justify-between mb-4">
+        <div className="hidden md:flex items-center justify-between mb-2">
           <div className="flex gap-1.5 flex-wrap">
             {TECNICA_FILTER_TABS.map(tf => (
               <button key={tf.id} onClick={() => setFilterTecnica(tf.id)}
@@ -305,6 +321,11 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
             ))}
           </div>
           <button onClick={() => openNewInsumo()} className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={14} /> {tc('add')}</button>
+        </div>
+        {/* Search */}
+        <div className="relative mb-4">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" />
+          <input className="input-base pl-9 text-sm" placeholder="Buscar insumo..." value={searchInsumo} onChange={e => setSearchInsumo(e.target.value)} />
         </div>
         {/* Mobile cards */}
         <div className="md:hidden space-y-2">
@@ -343,28 +364,31 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
         <div className="hidden md:block card overflow-hidden">
           <div className="overflow-x-auto">
           <table className="w-full min-w-[600px]"><thead><tr className="border-b border-gray-100">
-            {['Nombre', 'Tipo', 'Técnica', 'Datos clave', ''].map(h => <th key={h} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">{h}</th>)}
+            {['Nombre', 'Tipo', 'Técnica', 'Proveedor', 'Datos clave', ''].map(h => <th key={h} className={`text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3 ${h === 'Proveedor' ? 'hidden lg:table-cell' : ''}`}>{h}</th>)}
           </tr></thead><tbody>
             {filteredInsumos.map(ins => {
               const c = ins.config as Record<string, unknown>
               const tipo = ins.tipo as InsumoTipo
+              const sup = suppliers.find(s => s.id === (ins as unknown as Record<string, unknown>).supplier_id)
               let keyData = ''
-              if (tipo === 'papel') keyData = c.formato === 'hojas' ? `${fmtCurrency(c.precio_resma as number || 0)} / ${c.hojas_resma} hojas · ${c.ancho}×${c.alto} cm` : `${fmtCurrency(c.precio_rollo as number || 0)} / ${c.rollo_ancho}cm × ${c.rollo_largo || '?'}m`
-              else if (tipo === 'tinta') keyData = `${fmtCurrency(c.precio as number || 0)} — ${c.rendimiento} ${c.unidad_rendimiento || 'hojas'}`
-              else if (tipo === 'film') keyData = `${fmtCurrency(c.precio_rollo as number || 0)} / ${c.ancho || '?'}cm × ${c.largo || '?'}m`
-              else if (tipo === 'polvo') keyData = `${fmtCurrency(c.precio_kg as number || 0)}/kg — ${c.rendimiento_m2} m²/kg`
-              else if (tipo === 'vinilo') keyData = `${fmtCurrency(c.precio_metro as number || 0)}/m — ${c.ancho}cm`
-              else if (tipo === 'tinta_serigrafica') keyData = `${fmtCurrency(c.precio_kg as number || 0)}/kg — ${c.color || '?'}`
-              else if (tipo === 'servicio_impresion') keyData = `${fmtCurrency(c.precio_metro as number || 0)}/m — ${c.ancho_material}cm`
-              else keyData = `${fmtCurrency(c.precio as number || c.precio_kg as number || 0)}`
+              if (tipo === 'papel') keyData = c.formato === 'hojas' ? `${fmtCurrency(c.precio_resma as number || 0)} por resma · ${c.hojas_resma} hojas · ${c.ancho}×${c.alto} cm` : `${fmtCurrency(c.precio_rollo as number || 0)} por rollo · ${c.rollo_ancho}cm × ${c.rollo_largo || '?'}m`
+              else if (tipo === 'tinta') keyData = `${fmtCurrency(c.precio as number || 0)} · rinde ${c.rendimiento} ${c.unidad_rendimiento || 'hojas'}`
+              else if (tipo === 'film') keyData = `${fmtCurrency(c.precio_rollo as number || 0)} por rollo · ${c.ancho || '?'}cm × ${c.largo || '?'}m`
+              else if (tipo === 'polvo') keyData = `${fmtCurrency(c.precio_kg as number || 0)}/kg · rinde ${c.rendimiento_m2} m²`
+              else if (tipo === 'vinilo') keyData = `${fmtCurrency(c.precio_metro as number || 0)}/m · ${c.ancho}cm de ancho`
+              else if (tipo === 'tinta_serigrafica') keyData = `${fmtCurrency(c.precio_kg as number || 0)}/kg · rinde ${c.rendimiento_estampadas_kg} pantallas`
+              else if (tipo === 'servicio_impresion') keyData = `${fmtCurrency(c.precio_metro as number || 0)}/m · ancho ${c.ancho_material}cm`
+              else if (tipo === 'emulsion') keyData = `${fmtCurrency(c.precio_kg as number || 0)}/kg · rinde ${c.rendimiento_pantallas_kg} pantallas`
+              else if (tipo === 'otro') keyData = `${fmtCurrency(c.precio as number || 0)} por ${c.unidad || 'unidad'}${c.vida_util_usos ? ` · ${c.vida_util_usos} usos` : ''}`
               return (
                 <tr key={ins.id} className="border-b border-gray-50 hover:bg-gray-50">
                   <td className="px-4 py-3 font-medium text-gray-800">{ins.nombre}</td>
                   <td className="px-4 py-3"><span className="text-[10px] px-2 py-0.5 rounded-full font-bold text-white" style={{ background: TIPO_COLORS[tipo] || '#636e72' }}>{TIPO_LABELS[tipo] || tipo}</span></td>
                   <td className="px-4 py-3 text-sm text-gray-500">{TECNICA_OPTS.find(o => o[0] === ins.tecnica_asociada)?.[1] || ins.tecnica_asociada}</td>
+                  <td className="px-4 py-3 text-sm text-gray-500 hidden lg:table-cell">{sup ? sup.name : <span className="text-gray-300">—</span>}</td>
                   <td className="px-4 py-3 text-sm text-gray-500">{keyData} {(ins as unknown as Record<string, unknown>).moneda === 'USD' && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600 font-bold ml-1">USD</span>}</td>
                   <td className="px-4 py-3"><div className="flex gap-1">
-                    <button onClick={() => setInsModal(ins)} className="p-1.5 rounded-lg hover:bg-gray-100"><Pencil size={14} className="text-gray-400" /></button>
+                    <button onClick={() => setInsModal(ins as Partial<Insumo>)} className="p-1.5 rounded-lg hover:bg-gray-100"><Pencil size={14} className="text-gray-400" /></button>
                     <button onClick={() => deleteInsumo(ins.id)} className="p-1.5 rounded-lg hover:bg-red-50"><Trash2 size={14} className="text-red-400" /></button>
                   </div></td>
                 </tr>
@@ -637,15 +661,15 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
               {/* Currency selector */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Moneda del costo</label>
-                <div className="flex gap-2">
+                <div className="inline-flex rounded-lg border border-gray-200 overflow-hidden">
                   {[['local', 'Moneda local'], ['USD', 'USD']].map(([v, l]) => (
                     <button key={v} type="button" onClick={() => setInsModal({ ...insModal, moneda: v as 'local' | 'USD' })}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${(insModal.moneda || 'local') === v ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-500'}`}>
+                      className={`px-4 py-1.5 text-xs font-semibold transition-all ${(insModal.moneda || 'local') === v ? 'text-white' : 'text-gray-500 hover:bg-gray-50'}`}
+                      style={(insModal.moneda || 'local') === v ? { background: '#6C5CE7' } : {}}>
                       {l}
                     </button>
                   ))}
                 </div>
-                <p className="text-[10px] text-gray-400 mt-1">¿En qué moneda comprás este insumo?</p>
               </div>
 
               {/* Type-specific fields */}
@@ -676,9 +700,10 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
                 })()}
                 {insModal.tipo === 'tinta' && (() => {
                   const c = (insModal.config || {}) as Record<string, unknown>
+                  const rendLabel = getRendimientoLabel('tinta', insModal.tecnica_asociada || 'subli')
                   return (<div className="grid grid-cols-2 gap-3">
                     <div><label className="block text-xs text-gray-500 mb-1">Precio ($)</label><NumericInput className="input-base" value={c.precio as number || 0} onChange={v => up({ precio: v })} /></div>
-                    <div><label className="block text-xs text-gray-500 mb-1">Rendimiento (hojas)</label><NumericInput className="input-base" value={c.rendimiento as number || 0} onChange={v => up({ rendimiento: v })} /></div>
+                    <div><label className="block text-xs text-gray-500 mb-1">{rendLabel}</label><NumericInput className="input-base" value={c.rendimiento as number || 0} onChange={v => up({ rendimiento: v })} /></div>
                   </div>)
                 })()}
                 {insModal.tipo === 'film' && (() => {
@@ -709,15 +734,42 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
                       <div><label className="block text-xs text-gray-500 mb-1">Ancho (cm)</label><NumericInput className="input-base" value={c.ancho as number || 50} onChange={v => up({ ancho: v })} /></div>
                     </div>
                     <div><label className="block text-xs text-gray-500 mb-1">Colores</label>
-                      <div className="flex flex-wrap gap-1.5">
-                        {colores.map((col: string, ci: number) => (
-                          <div key={ci} className="flex items-center gap-0.5 bg-gray-50 rounded px-2 py-0.5 border border-gray-100">
-                            <input type="text" className="bg-transparent outline-none text-xs w-16" value={col} onChange={e => { const a = [...colores]; a[ci] = e.target.value; up({ colores: a }) }} />
-                            <button onClick={() => up({ colores: colores.filter((_: string, j: number) => j !== ci) })} className="text-gray-300 hover:text-red-400"><X size={10} /></button>
-                          </div>
-                        ))}
-                        <button onClick={() => up({ colores: [...colores, ''] })} className="text-xs px-2 py-0.5 rounded bg-purple-50 text-purple-600 font-semibold"><Plus size={10} /></button>
+                      {colores.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mb-2">
+                          {colores.map((col: string, ci: number) => (
+                            <span key={ci} className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 text-xs font-medium">
+                              {col}
+                              <button type="button" onClick={() => up({ colores: colores.filter((_: string, j: number) => j !== ci) })} className="hover:text-red-500">×</button>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      <div className="flex gap-2">
+                        <input className="input-base text-sm flex-1" placeholder="Agregar color + Enter"
+                          onKeyDown={e => {
+                            if (e.key === 'Enter' || e.key === ',') {
+                              e.preventDefault()
+                              const v = (e.target as HTMLInputElement).value.trim().replace(/,$/, '')
+                              if (v && !colores.includes(v)) { up({ colores: [...colores, v] }); (e.target as HTMLInputElement).value = '' }
+                            }
+                          }} />
+                        <button type="button" onClick={e => {
+                          const inp = (e.target as HTMLElement).previousElementSibling as HTMLInputElement
+                          if (inp?.value.trim()) { const v = inp.value.trim(); if (!colores.includes(v)) up({ colores: [...colores, v] }); inp.value = '' }
+                        }} className="px-3 py-1.5 rounded-lg text-sm font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50">+</button>
                       </div>
+                      {(() => {
+                        const suggestions = ['Blanco', 'Negro', 'Gris', 'Rojo', 'Azul', 'Verde', 'Amarillo', 'Rosa'].filter(s => !colores.includes(s))
+                        return suggestions.length > 0 ? (
+                          <div className="mt-2">
+                            <span className="text-[11px] text-gray-400">Sugerencias: </span>
+                            {suggestions.map(s => (
+                              <button key={s} type="button" onClick={() => up({ colores: [...colores, s] })}
+                                className="text-[11px] text-gray-400 hover:text-purple-600 hover:underline mr-1">{s}</button>
+                            ))}
+                          </div>
+                        ) : null
+                      })()}
                     </div>
                   </>)
                 })()}
@@ -731,12 +783,9 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
                 })()}
                 {insModal.tipo === 'servicio_impresion' && (() => {
                   const c = (insModal.config || {}) as Record<string, unknown>
-                  return (<div className="space-y-3">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div><label className="block text-xs text-gray-500 mb-1">Precio/metro ($)</label><NumericInput className="input-base" value={c.precio_metro as number || 0} onChange={v => up({ precio_metro: v })} /></div>
-                      <div><label className="block text-xs text-gray-500 mb-1">Ancho material (cm)</label><NumericInput className="input-base" value={c.ancho_material as number || 60} onChange={v => up({ ancho_material: v })} /></div>
-                    </div>
-                    <div><label className="block text-xs text-gray-500 mb-1">Proveedor</label><input className="input-base" value={c.proveedor as string || ''} onChange={e => up({ proveedor: e.target.value })} /></div>
+                  return (<div className="grid grid-cols-2 gap-3">
+                    <div><label className="block text-xs text-gray-500 mb-1">Precio/metro ($)</label><NumericInput className="input-base" value={c.precio_metro as number || 0} onChange={v => up({ precio_metro: v })} /></div>
+                    <div><label className="block text-xs text-gray-500 mb-1">Ancho material (cm)</label><NumericInput className="input-base" value={c.ancho_material as number || 60} onChange={v => up({ ancho_material: v })} /></div>
                   </div>)
                 })()}
                 {insModal.tipo === 'emulsion' && (() => {
@@ -748,14 +797,65 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
                 })()}
                 {insModal.tipo === 'otro' && (() => {
                   const c = (insModal.config || {}) as Record<string, unknown>
-                  return (<div>
-                    <div><label className="block text-xs text-gray-500 mb-1">Precio ($)</label><NumericInput className="input-base" value={c.precio as number || 0} onChange={v => up({ precio: v })} /></div>
+                  return (<div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div><label className="block text-xs text-gray-500 mb-1">Precio ($) *</label><NumericInput className="input-base" value={c.precio as number || 0} onChange={v => up({ precio: v })} /></div>
+                      <div><label className="block text-xs text-gray-500 mb-1">Unidad de compra</label>
+                        <select className="input-base" value={c.unidad as string || 'unidad'} onChange={e => up({ unidad: e.target.value })}>
+                          {['Unidad', 'Rollo', 'Metro', 'Kilo', 'Litro', 'Caja'].map(u => <option key={u} value={u.toLowerCase()}>{u}</option>)}
+                        </select></div>
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Vida útil estimada (usos)</label>
+                      <NumericInput className="input-base" value={c.vida_util_usos as number || 0} onChange={v => up({ vida_util_usos: v })} />
+                      <p className="text-[10px] text-gray-400 mt-1">Se usa para prorratear el costo en las técnicas que lo usen.</p>
+                    </div>
                   </div>)
                 })()}
               </div>
+
+              {/* Proveedor — all insumo types */}
+              <div className="pt-3 border-t border-gray-100">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Proveedor</label>
+                <select className="input-base" value={insSupplier ? '__new__' : ((insModal as Record<string, unknown>).supplier_id as string || '')} onChange={e => {
+                  if (e.target.value === '__new__') { setInsSupplier({ name: '' }); return }
+                  setInsSupplier(null)
+                  setInsModal({ ...insModal, supplier_id: e.target.value || null } as Partial<Insumo>)
+                }}>
+                  <option value="">Sin proveedor</option>
+                  {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  <option value="__new__">+ Nuevo proveedor</option>
+                </select>
+              </div>
+              {insSupplier && (
+                <div className="p-4 rounded-xl bg-gray-50 border border-gray-200 space-y-3">
+                  <div><label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+                    <input className="input-base" placeholder="Ej: TextilNorte" value={insSupplier.name} onChange={e => setInsSupplier({ ...insSupplier, name: e.target.value })} autoFocus /></div>
+                  <div className="flex items-center gap-3">
+                    <button type="button" onClick={async () => {
+                      if (!insSupplier.name.trim()) return
+                      const { data: ownerId } = await supabase.rpc('get_team_owner_id')
+                      let userId = ownerId as string | null
+                      if (!userId) { const { data: { user } } = await supabase.auth.getUser(); userId = user?.id || null }
+                      if (!userId) return
+                      const { data, error } = await supabase.from('suppliers').insert({ name: insSupplier.name.trim(), user_id: userId }).select('id').single()
+                      if (error) { console.error('Supplier insert error:', error); return }
+                      if (data) { setInsModal({ ...insModal, supplier_id: data.id } as Partial<Insumo>); await load(); setInsSupplierHint(true); setTimeout(() => setInsSupplierHint(false), 6000) }
+                      setInsSupplier(null)
+                    }} className="px-4 py-2 rounded-lg text-xs font-semibold text-white" style={{ background: '#6C5CE7' }}>Crear proveedor</button>
+                    <button type="button" onClick={() => setInsSupplier(null)} className="text-xs font-medium text-gray-400 hover:text-gray-600">Cancelar</button>
+                  </div>
+                </div>
+              )}
+              {insSupplierHint && (
+                <div className="p-3 rounded-lg bg-green-50 border border-green-100 flex items-start gap-2 text-xs">
+                  <span className="text-green-600 font-medium flex-shrink-0">✓</span>
+                  <p className="text-green-700">Proveedor creado. Completá los datos de contacto en <a href="/settings/proveedores" target="_blank" rel="noopener" className="font-semibold text-purple-600 hover:underline">Configuración → Proveedores →</a></p>
+                </div>
+              )}
             </div>
             <div className="flex gap-3 mt-6">
-              <button onClick={() => setInsModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">{tc('cancel')}</button>
+              <button onClick={() => { setInsModal(null); setInsSupplier(null); setInsSupplierHint(false) }} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">{tc('cancel')}</button>
               <button onClick={saveInsumo} disabled={saving || !insModal.nombre?.trim()} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#6C5CE7' }}>{saving ? tc('saving') : tc('save')}</button>
             </div>
           </div>

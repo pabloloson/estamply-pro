@@ -45,6 +45,8 @@ export interface Insumo {
   tecnica_asociada: string // slug or 'compartido'
   config: InsumoConfig
   moneda?: 'local' | 'USD'  // currency of the cost prices
+  supplier_id?: string | null
+  categoria_funcional?: 'directo' | 'consumible'
   created_at: string
 }
 
@@ -57,7 +59,7 @@ export type InsumoConfig =
   | { tipo: 'tinta_serigrafica'; precio_kg: number; rendimiento_estampadas_kg: number; color: string }
   | { tipo: 'servicio_impresion'; precio_metro: number; ancho_material: number; proveedor: string }
   | { tipo: 'emulsion'; precio_kg: number; rendimiento_pantallas_kg: number }
-  | { tipo: 'otro'; precio: number; unidad: string; rendimiento: number; unidad_rendimiento: string }
+  | { tipo: 'otro'; precio: number; unidad: string; rendimiento: number; unidad_rendimiento: string; vida_util_usos?: number }
 
 // ── Technique configs (discriminated union) ──
 
