@@ -368,14 +368,19 @@ export default function SettingsPage() {
       </button>
       </>)}
 
-      {activeSection === 'moneda-idioma' && (
+      {activeSection === 'moneda-idioma' && (() => {
+  const CURRENCY_NAMES: Record<string, string> = { ARS: 'Peso argentino', MXN: 'Peso mexicano', COP: 'Peso colombiano', CLP: 'Peso chileno', PEN: 'Sol peruano', USD: 'Dólar estadounidense', UYU: 'Peso uruguayo', PYG: 'Guaraní', BOB: 'Boliviano', BRL: 'Real brasileño', VES: 'Bolívar', CRC: 'Colón', GTQ: 'Quetzal', DOP: 'Peso dominicano', EUR: 'Euro' }
+  const selectedCountry = require('@/shared/lib/currency').getCountry((ws as Record<string, unknown>).pais as string || 'AR') as { currency: string; symbol: string; thousandsSep: string; decimalSep: string; decimals: number }
+  const currencyName = CURRENCY_NAMES[selectedCountry.currency] || selectedCountry.currency
+  const exampleNum = selectedCountry.decimals > 0 ? `${selectedCountry.symbol}1${selectedCountry.thousandsSep}234${selectedCountry.thousandsSep}567${selectedCountry.decimalSep}${'0'.repeat(selectedCountry.decimals)}` : `${selectedCountry.symbol}1${selectedCountry.thousandsSep}234${selectedCountry.thousandsSep}567`
+  return (
   <div className="max-w-2xl">
     <h2 className="text-xl font-bold text-gray-900 mb-1">{t('currencyLanguageTitle')}</h2>
     <p className="text-sm text-gray-400 mb-4">{t('currencyLanguageSubtitle')}</p>
 
-    {/* País e idioma */}
+    {/* Configuración regional */}
     <div className="card p-6 space-y-4 mb-4">
-      <h3 className="text-sm font-semibold text-gray-700">{t('countryAndLanguage')}</h3>
+      <h3 className="text-sm font-semibold text-gray-700">{t('regionalConfig')}</h3>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">{t('country')}</label>
@@ -398,11 +403,17 @@ export default function SettingsPage() {
           </select>
         </div>
       </div>
+      <p className="text-[13px] text-gray-400">
+        {t('localCurrencyConfirm', { currencyName, symbol: selectedCountry.symbol, example: exampleNum })}
+      </p>
     </div>
 
     {/* Tipo de cambio */}
     <div className="card p-6 space-y-4">
-      <h3 className="text-sm font-semibold text-gray-700">{t('exchangeRate')}</h3>
+      <div>
+        <h3 className="text-sm font-semibold text-gray-700">{t('exchangeRate')}</h3>
+        <p className="text-[13px] text-gray-400 mt-0.5">{t('exchangeRateDesc')}</p>
+      </div>
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">{t('referenceCurrency')}</label>
         <select className="input-base text-sm" value={(ws as Record<string, unknown>).moneda_referencia as string || 'USD'}
@@ -411,7 +422,7 @@ export default function SettingsPage() {
           <option value="EUR">EUR — Euro</option>
           <option value="BRL">BRL — Real brasileño</option>
         </select>
-        <p className="text-[10px] text-gray-400 mt-1">{t('referenceCurrencyHint')}</p>
+        <p className="text-[13px] text-gray-400 mt-1">{t('referenceCurrencyHint')}</p>
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">{t('exchangeRateLabel')}</label>
@@ -422,7 +433,7 @@ export default function SettingsPage() {
             onChange={e => setWs({ ...ws, tipo_cambio: Math.max(Number(e.target.value), 0) } as WorkshopSettings)} />
           <span className="text-sm text-gray-500">{fmtCurrency(1).replace(/[\d.,]/g, '').trim() || '$'}</span>
         </div>
-        <p className="text-[10px] text-gray-400 mt-1">{t('exchangeRateHint')}</p>
+        <p className="text-[13px] text-gray-400 mt-1">{t('exchangeRateHint')}</p>
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">{t('priceRounding')}</label>
@@ -433,10 +444,11 @@ export default function SettingsPage() {
           <option value="tens">{t('roundTens')}</option>
           <option value="hundreds">{t('roundHundreds')}</option>
         </select>
-        <p className="text-[10px] text-gray-400 mt-1">{t('priceRoundingHint')}</p>
+        <p className="text-[13px] text-gray-400 mt-1">{t('priceRoundingHint')}</p>
       </div>
       {Number((ws as Record<string, unknown>).tipo_cambio) > 0 && (
-        <div className="p-3 rounded-lg bg-blue-50 border border-blue-100">
+        <div className="p-3 rounded-lg bg-blue-50 border border-blue-100 flex items-center gap-2">
+          <span className="text-base">💡</span>
           <p className="text-sm text-blue-700 font-medium">
             1 {(ws as Record<string, unknown>).moneda_referencia as string || 'USD'} = {fmtCurrency(Number((ws as Record<string, unknown>).tipo_cambio))}
           </p>
@@ -449,7 +461,7 @@ export default function SettingsPage() {
       {saveState === 'saving' ? <><Loader2 size={14} className="animate-spin" /> {t('saving')}</> : saveState === 'saved' ? <><Check size={14} /> {t('saved')}</> : saveState === 'error' ? t('saveError') : <><Save size={14} /> {t('saveBtn')}</>}
     </button>
   </div>
-)}
+)})()}
 
       {activeSection === 'condiciones' && (
   <div className="max-w-2xl">

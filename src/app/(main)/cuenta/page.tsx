@@ -2,8 +2,14 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Save, Loader2, Check, Upload, X, UserCircle, Lock, CreditCard } from 'lucide-react'
+import { Save, Loader2, Check, Upload, X, UserCircle, Lock, CreditCard, ArrowRight } from 'lucide-react'
 import { useTranslations } from '@/shared/hooks/useTranslations'
+
+const PLAN_NAMES: Record<string, { label: string; price: string }> = {
+  emprendedor: { label: 'Emprendedor', price: '$9 USD/mes' },
+  pro: { label: 'Pro', price: '$17 USD/mes' },
+  negocio: { label: 'Negocio', price: '$29 USD/mes' },
+}
 
 export default function CuentaPage() {
   const supabase = createClient()
@@ -20,13 +26,14 @@ export default function CuentaPage() {
 
   // Password change
   const [showPwChange, setShowPwChange] = useState(false)
+  const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [pwState, setPwState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [pwError, setPwError] = useState('')
 
   // Plan
-  const [plan, setPlan] = useState('crecimiento')
+  const [plan, setPlan] = useState('')
   const [planStatus, setPlanStatus] = useState('trial')
   const [trialEndsAt, setTrialEndsAt] = useState<string | null>(null)
 
@@ -43,7 +50,7 @@ export default function CuentaPage() {
         .single()
       if (data) {
         setFullName(data.full_name || '')
-        setPlan(data.plan || 'crecimiento')
+        setPlan(data.plan || '')
         setPlanStatus(data.plan_status || 'trial')
         setTrialEndsAt(data.trial_ends_at || null)
       }
@@ -86,17 +93,22 @@ export default function CuentaPage() {
     if (newPassword.length < 6) { setPwError(t('pwMinLength')); return }
     if (newPassword !== confirmPassword) { setPwError(t('pwMismatch')); return }
     setPwState('saving')
+    // Verify current password first
+    const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password: currentPassword })
+    if (signInErr) { setPwError(t('pwCurrentWrong')); setPwState('error'); return }
     const { error } = await supabase.auth.updateUser({ password: newPassword })
     if (error) { setPwError(error.message); setPwState('error'); return }
     setPwState('saved')
+    setCurrentPassword('')
     setNewPassword('')
     setConfirmPassword('')
     setShowPwChange(false)
-    setTimeout(() => setPwState(s => s === 'saved' ? 'idle' : s), 2000)
+    setTimeout(() => setPwState(s => s === 'saved' ? 'idle' : s), 3000)
   }
 
-  const planLabel = plan === 'crecimiento' ? 'Crecimiento' : plan === 'profesional' ? 'Profesional' : plan === 'empresa' ? 'Empresa' : plan
-  const statusLabel = planStatus === 'trial' ? t('trial') : planStatus === 'active' ? t('active') : planStatus === 'cancelled' ? t('cancelled') : planStatus
+  const planInfo = PLAN_NAMES[plan]
+  const planLabel = planInfo?.label || (plan ? plan.charAt(0).toUpperCase() + plan.slice(1) : null)
+  const planPrice = planInfo?.price || ''
 
   function trialDaysLeft() {
     if (!trialEndsAt) return 0
@@ -183,8 +195,15 @@ export default function CuentaPage() {
             </button>
           )}
         </div>
+        {!showPwChange && pwState === 'saved' && (
+          <p className="text-xs text-green-600 mt-2">{t('pwChanged')}</p>
+        )}
         {showPwChange && (
           <div className="mt-4 space-y-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('currentPassword')}</label>
+              <input type="password" className="input-base" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} placeholder="••••••••" />
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">{t('newPassword')}</label>
               <input type="password" className="input-base" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="••••••••" />
@@ -194,15 +213,14 @@ export default function CuentaPage() {
               <input type="password" className="input-base" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="••••••••" />
             </div>
             {pwError && <p className="text-xs text-red-500">{pwError}</p>}
-            {pwState === 'saved' && <p className="text-xs text-green-600">{t('pwChanged')}</p>}
             <div className="flex gap-2">
               <button onClick={changePassword} disabled={pwState === 'saving'}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white"
                 style={{ background: '#6C5CE7' }}>
                 {pwState === 'saving' ? <Loader2 size={14} className="animate-spin" /> : <Lock size={14} />}
-                {t('updatePassword')}
+                {t('savePassword')}
               </button>
-              <button onClick={() => { setShowPwChange(false); setNewPassword(''); setConfirmPassword(''); setPwError('') }}
+              <button onClick={() => { setShowPwChange(false); setCurrentPassword(''); setNewPassword(''); setConfirmPassword(''); setPwError('') }}
                 className="px-4 py-2 rounded-lg text-sm font-semibold text-gray-500 hover:bg-gray-100">
                 {t('cancel')}
               </button>
@@ -213,27 +231,66 @@ export default function CuentaPage() {
 
       {/* ── Plan y facturación ── */}
       <div className="card p-6">
-        <h2 className="text-base font-semibold text-gray-800 mb-4 flex items-center gap-2">
+        <h2 className="text-base font-semibold text-gray-800 mb-5 flex items-center gap-2">
           <CreditCard size={18} className="text-gray-400" />
           {t('planBilling')}
         </h2>
-        <div className="flex items-center gap-3 mb-3">
-          <span className="text-sm font-medium text-gray-700">{t('currentPlan')}:</span>
-          <span className="px-3 py-1 rounded-full text-sm font-bold text-white" style={{ background: '#6C5CE7' }}>
-            {planLabel}
-          </span>
-          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${planStatus === 'trial' ? 'bg-amber-100 text-amber-700' : planStatus === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-            {statusLabel}
-          </span>
-        </div>
-        {planStatus === 'trial' && trialEndsAt && (
-          <div className="p-3 rounded-lg bg-amber-50 border border-amber-100 mb-4">
-            <p className="text-sm text-amber-700">
-              {t('trialRemaining', { days: trialDaysLeft() })}
-            </p>
+
+        {/* Plan row */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-gray-500">{t('currentPlan')}</span>
+            {planLabel && planStatus !== 'trial' ? (
+              <span className="px-3 py-1 rounded-full text-sm font-bold text-white" style={{ background: '#6C5CE7' }}>
+                {planLabel}
+              </span>
+            ) : (
+              <span className="text-sm font-medium text-gray-400">—</span>
+            )}
           </div>
-        )}
-        <p className="text-xs text-gray-400">{t('planHint')}</p>
+          {planPrice && planStatus !== 'trial' && (
+            <span className="text-sm font-semibold text-gray-700">{planPrice}</span>
+          )}
+        </div>
+
+        {/* Status row */}
+        <div className="flex items-center gap-2 mb-4">
+          <span className="text-sm text-gray-500">{t('status')}</span>
+          {planStatus === 'trial' && (
+            <span className="text-sm font-medium text-amber-600">
+              {t('trial')} {trialEndsAt && <>· {t('daysLeft', { days: trialDaysLeft() })}</>}
+            </span>
+          )}
+          {planStatus === 'active' && (
+            <span className="text-sm font-medium text-green-600">{t('active')}</span>
+          )}
+          {(planStatus === 'expired' || planStatus === 'cancelled') && (
+            <span className="text-sm font-medium text-red-600">{planStatus === 'expired' ? t('expired') : t('cancelled')}</span>
+          )}
+        </div>
+
+        <div className="border-t border-gray-100 pt-4">
+          {planStatus === 'trial' && (
+            <div className="p-4 rounded-xl bg-amber-50/60 border border-amber-100">
+              <p className="text-sm text-gray-600 mb-3">{t('trialCta')}</p>
+              <button className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700">
+                {t('choosePlan')} <ArrowRight size={14} />
+              </button>
+            </div>
+          )}
+          {planStatus === 'active' && (
+            <div className="flex gap-2">
+              <button className="text-sm font-semibold text-purple-600 hover:text-purple-700">{t('changePlan')}</button>
+              <span className="text-gray-300">·</span>
+              <button className="text-sm font-semibold text-gray-400 hover:text-red-500">{t('cancelSubscription')}</button>
+            </div>
+          )}
+          {(planStatus === 'expired' || planStatus === 'cancelled') && (
+            <button className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700">
+              {t('reactivatePlan')} <ArrowRight size={14} />
+            </button>
+          )}
+        </div>
       </div>
     </div>
   )
