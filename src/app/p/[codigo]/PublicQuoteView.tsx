@@ -70,7 +70,7 @@ export default function PublicQuoteView({ presupuesto }: Props) {
                   <h2 className="font-black text-gray-900 text-lg leading-tight">{displayName || 'Taller'}</h2>
                   {biz?.business_cuit && <p className="text-xs text-gray-500 mt-0.5">CUIT: {biz.business_cuit}</p>}
                   <div className="mt-2 space-y-0.5">
-                    {biz?.business_address && <p className="text-xs text-gray-500 flex items-center gap-1.5"><MapPin size={10} />{biz.business_address}</p>}
+                    {(biz?.business_address || biz?.city) && <p className="text-xs text-gray-500 flex items-center gap-1.5"><MapPin size={10} />{[biz.business_address, biz.city, biz.province, biz.postal_code].filter(Boolean).join(', ')}</p>}
                     {biz?.business_phone && <p className="text-xs text-gray-500 flex items-center gap-1.5"><Phone size={10} />{biz.business_phone}</p>}
                     {biz?.business_email && <p className="text-xs text-gray-500 flex items-center gap-1.5"><Mail size={10} />{biz.business_email}</p>}
                     {biz?.business_instagram && <p className="text-xs text-gray-500 flex items-center gap-1.5"><AtSign size={10} />{biz.business_instagram}</p>}
@@ -150,6 +150,35 @@ export default function PublicQuoteView({ presupuesto }: Props) {
                 <div className="text-xs text-gray-500 whitespace-pre-line leading-relaxed">{condiciones}</div>
               </div>
             )}
+
+            {/* Signature lines — visible in print */}
+            <div className="px-8 py-6 border-t border-gray-100 hidden print:flex justify-between gap-12">
+              <div className="flex-1 text-center">
+                <div style={{ borderBottom: '1px solid #333', marginBottom: 8, height: 40 }} />
+                <p className="text-xs text-gray-500">Firma del taller</p>
+              </div>
+              <div className="flex-1 text-center">
+                <div style={{ borderBottom: '1px solid #333', marginBottom: 8, height: 40 }} />
+                <p className="text-xs text-gray-500">Firma del cliente</p>
+              </div>
+            </div>
+
+            {/* Social footer */}
+            {(() => {
+              const socials: Array<{ icon: string; text: string }> = []
+              if (biz?.business_website) socials.push({ icon: '🌐', text: biz.business_website })
+              if (biz?.business_instagram) socials.push({ icon: '📷', text: biz.business_instagram })
+              if (biz?.facebook) socials.push({ icon: '📘', text: biz.facebook })
+              if (biz?.tiktok) socials.push({ icon: '♪', text: biz.tiktok })
+              if (biz?.youtube) socials.push({ icon: '▶', text: biz.youtube })
+              return socials.length > 0 ? (
+                <div className="px-8 py-3 border-t border-gray-100 text-center">
+                  <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+                    {socials.map((s, i) => <span key={i} className="text-[11px] text-gray-400">{s.icon} {s.text}</span>)}
+                  </div>
+                </div>
+              ) : null
+            })()}
 
             {/* Footer */}
             <div className="px-8 py-3 flex items-center justify-center" style={{ borderTop: '1px solid #F3F4F6', background: '#FAFAFA' }}>

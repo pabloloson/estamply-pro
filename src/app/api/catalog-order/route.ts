@@ -31,7 +31,7 @@ export async function POST(req: Request) {
 
     // Fetch business profile for the presupuesto header
     const [{ data: profile }, { data: wsRow }] = await Promise.all([
-      supabase.from('profiles').select('business_name,business_cuit,business_address,business_phone,business_email,business_instagram,business_logo_url').eq('id', userId).single(),
+      supabase.from('profiles').select('business_name,business_cuit,business_address,city,province,postal_code,business_phone,business_email,business_instagram,business_website,business_logo_url,facebook,tiktok,youtube').eq('id', userId).single(),
       supabase.from('workshop_settings').select('settings').eq('user_id', userId).single(),
     ])
     const wsSettings = (wsRow?.settings || {}) as Record<string, unknown>
@@ -39,6 +39,11 @@ export async function POST(req: Request) {
       ...profile,
       business_name: (wsSettings.nombre_tienda as string) || profile?.business_name || 'Mi Taller',
     }
+    // Build condiciones from workshop settings
+    const rawCond = wsSettings.condiciones_default as Array<string | { text: string; activa: boolean }> | undefined
+    const condicionesText = rawCond
+      ? rawCond.filter(c => typeof c === 'string' || (c as { activa: boolean }).activa !== false).map(c => typeof c === 'string' ? `· ${c}` : `· ${c.text}`).join('\n')
+      : null
 
     // Create presupuesto
     const { error } = await supabase.from('presupuestos').insert({
@@ -50,6 +55,7 @@ export async function POST(req: Request) {
       })),
       total, origen: 'catalogo_web',
       notas: comentarios || null,
+      condiciones: condicionesText,
       business_profile: bizProfile || {},
       medio_pago_nombre: medioPago || null,
       ajuste_porcentaje: ajustePorcentaje || 0,
