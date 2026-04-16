@@ -186,9 +186,9 @@ export default function ProduccionPage() {
                   </div>
 
                   {/* Margen de seguridad — subli, dtf, vinyl */}
-                  {(cfg.tipo === 'subli' || cfg.tipo === 'dtf' || cfg.tipo === 'vinyl') && (
+                  {(cfg.tipo === 'subli' || cfg.tipo === 'dtf' || cfg.tipo === 'dtf_uv' || cfg.tipo === 'vinyl') && (
                     <div><label className="block text-xs text-gray-500 mb-1">Margen seguridad (cm)</label>
-                      <NumericInput className="input-base text-sm" value={(cfg as { margen_seguridad?: number }).margen_seguridad ?? (cfg.tipo === 'dtf' ? 0.3 : 0.5)}
+                      <NumericInput className="input-base text-sm" value={(cfg as { margen_seguridad?: number }).margen_seguridad ?? (cfg.tipo === 'dtf' || cfg.tipo === 'dtf_uv' ? 0.3 : 0.5)}
                         onChange={v => updateConfig(tec.id, { margen_seguridad: v })} />
                       <p className="text-[10px] text-gray-400 mt-0.5">cm extra alrededor del diseño para corte.</p></div>
                   )}
