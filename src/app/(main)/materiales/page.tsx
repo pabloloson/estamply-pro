@@ -70,6 +70,8 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [modal, setModal] = useState<Partial<Product> | null>(null)
+  const [inlineCat, setInlineCat] = useState<{ name: string; margen_sugerido: number } | null>(null)
+  const [inlinePress, setInlinePress] = useState<{ name: string } | null>(null)
   const [insModal, setInsModal] = useState<Partial<Insumo> | null>(null)
   const [showCats, setShowCats] = useState(false)
   const [filterTecnica, setFilterTecnica] = useState('')
@@ -187,7 +189,7 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
         {hideChrome && (
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Productos</h1>
+              <h1 className="text-2xl font-bold text-gray-900">Productos base</h1>
               <p className="text-gray-500 text-sm mt-1">Prendas, tazas, blanks y soportes.</p>
             </div>
             <div className="flex gap-2">
@@ -223,6 +225,9 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
                 </div>
                 <div className="mt-1.5 space-y-0.5 text-xs text-gray-400">
                   {cat && <p>Categoría: <span className="text-gray-600">{cat.name}</span></p>}
+                  {p.variant_options && p.variant_options.length > 0 && (
+                    <p>Variantes: <span className="text-gray-600">{p.variant_options.length <= 5 ? p.variant_options.join(', ') : `${p.variant_options.slice(0, 4).join(', ')} +${p.variant_options.length - 4}`}</span></p>
+                  )}
                   {press && <p>Plancha: <span className="text-gray-600">{press.name}</span></p>}
                 </div>
               </div>
@@ -234,18 +239,27 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
         {/* Desktop table */}
         <div className="hidden md:block card overflow-hidden">
           <div className="overflow-x-auto">
-          <table className="w-full min-w-[600px]"><thead><tr className="border-b border-gray-100">
-            {['Nombre', 'Costo', 'Categoría', 'Plancha', ''].map(h => <th key={h} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">{h}</th>)}
+          <table className="w-full min-w-[700px]"><thead><tr className="border-b border-gray-100">
+            {['Nombre', 'Costo', 'Categoría', 'Variantes', 'Plancha', ''].map(h => <th key={h} className={`text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3 ${h === 'Variantes' || h === 'Categoría' || h === 'Plancha' ? 'hidden lg:table-cell' : ''}`}>{h}</th>)}
           </tr></thead><tbody>
             {products.map(p => {
               const cat = categories.find(c => c.id === p.category_id)
               const press = equipment.find(e => e.id === p.press_equipment_id)
+              const vars = p.variant_options || []
               return (
                 <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50">
                   <td className="px-4 py-3 font-medium text-gray-800">{p.name}</td>
                   <td className="px-4 py-3 text-gray-600">{fmtCurrency(p.base_cost)}</td>
-                  <td className="px-4 py-3">{cat ? <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-purple-50 text-purple-600">{cat.name}</span> : <span className="text-xs text-gray-300">—</span>}</td>
-                  <td className="px-4 py-3 text-sm text-gray-500">{press?.name ?? <span className="text-gray-300">—</span>}</td>
+                  <td className="px-4 py-3 hidden lg:table-cell">{cat ? <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-purple-50 text-purple-600">{cat.name}</span> : <span className="text-xs text-gray-300">—</span>}</td>
+                  <td className="px-4 py-3 hidden lg:table-cell">{vars.length > 0 ? (
+                    <div className="flex flex-wrap gap-1">
+                      {(vars.length <= 5 ? vars : vars.slice(0, 4)).map(v => (
+                        <span key={v} className="text-[11px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 font-medium">{v}</span>
+                      ))}
+                      {vars.length > 5 && <span className="text-[11px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-400 font-medium">+{vars.length - 4}</span>}
+                    </div>
+                  ) : <span className="text-xs text-gray-300">—</span>}</td>
+                  <td className="px-4 py-3 text-sm text-gray-500 hidden lg:table-cell">{press?.name ?? <span className="text-gray-300">—</span>}</td>
                   <td className="px-4 py-3"><div className="flex gap-1">
                     <button onClick={() => setModal(p as Partial<Product>)} className="p-1.5 rounded-lg hover:bg-gray-100"><Pencil size={14} className="text-gray-400" /></button>
                     <button onClick={() => deleteProduct(p.id)} className="p-1.5 rounded-lg hover:bg-red-50"><Trash2 size={14} className="text-red-400" /></button>
@@ -374,17 +388,60 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
                 <div><label className="block text-sm font-medium text-gray-700 mb-1">Costo base ($)</label>
                   <NumericInput className="input-base" value={modal.base_cost || 0} onChange={v => setModal({ ...modal, base_cost: v })} /></div>
                 <div><label className="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
-                  <select className="input-base" value={modal.category_id || ''} onChange={e => setModal({ ...modal, category_id: e.target.value || null })}>
+                  <select className="input-base" value={modal.category_id || ''} onChange={e => {
+                    if (e.target.value === '__new__') { setInlineCat({ name: '', margen_sugerido: 50 }); return }
+                    setModal({ ...modal, category_id: e.target.value || null })
+                  }}>
                     <option value="">Sin categoría</option>
                     {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select></div>
+                    <option disabled>───────────</option>
+                    <option value="__new__">+ Nueva categoría</option>
+                  </select>
+                  {inlineCat && (
+                    <div className="mt-2 p-3 rounded-lg bg-gray-50 border border-gray-200 space-y-2">
+                      <div><label className="block text-xs text-gray-500 mb-1">Nombre de la categoría</label>
+                        <input className="input-base text-sm" placeholder="Ej: Textil" value={inlineCat.name} onChange={e => setInlineCat({ ...inlineCat, name: e.target.value })} /></div>
+                      <div><label className="block text-xs text-gray-500 mb-1">Margen sugerido (%)</label>
+                        <input type="number" className="input-base text-sm" value={inlineCat.margen_sugerido} onChange={e => setInlineCat({ ...inlineCat, margen_sugerido: Number(e.target.value) })} />
+                        <p className="text-[11px] text-gray-400 mt-0.5">Se sugiere automáticamente al cotizar productos de esta categoría.</p></div>
+                      <div className="flex gap-2">
+                        <button type="button" onClick={async () => {
+                          if (!inlineCat.name.trim()) return
+                          const { data } = await supabase.from('categories').insert({ name: inlineCat.name.trim(), margen_sugerido: inlineCat.margen_sugerido }).select('id').single()
+                          if (data) { setModal({ ...modal, category_id: data.id }); await load() }
+                          setInlineCat(null)
+                        }} className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white" style={{ background: '#6C5CE7' }}>Crear</button>
+                        <button type="button" onClick={() => setInlineCat(null)} className="px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-500 hover:bg-gray-100">Cancelar</button>
+                      </div>
+                    </div>
+                  )}</div>
               </div>
               <div>
                 <div><label className="block text-sm font-medium text-gray-700 mb-1">Plancha asignada</label>
-                  <select className="input-base" value={modal.press_equipment_id || ''} onChange={e => setModal({ ...modal, press_equipment_id: e.target.value || null })}>
+                  <select className="input-base" value={modal.press_equipment_id || ''} onChange={e => {
+                    if (e.target.value === '__new__') { setInlinePress({ name: '' }); return }
+                    setModal({ ...modal, press_equipment_id: e.target.value || null })
+                  }}>
                     <option value="">Sin plancha</option>
                     {presses.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
-                  </select></div>
+                    <option disabled>───────────</option>
+                    <option value="__new__">+ Nueva plancha</option>
+                  </select>
+                  {inlinePress && (
+                    <div className="mt-2 p-3 rounded-lg bg-gray-50 border border-gray-200 space-y-2">
+                      <div><label className="block text-xs text-gray-500 mb-1">Nombre</label>
+                        <input className="input-base text-sm" placeholder="Ej: Plancha plana 40×60" value={inlinePress.name} onChange={e => setInlinePress({ ...inlinePress, name: e.target.value })} /></div>
+                      <div className="flex gap-2">
+                        <button type="button" onClick={async () => {
+                          if (!inlinePress.name.trim()) return
+                          const { data } = await supabase.from('equipment').insert({ name: inlinePress.name.trim(), type: 'press' }).select('id').single()
+                          if (data) { setModal({ ...modal, press_equipment_id: data.id }); await load() }
+                          setInlinePress(null)
+                        }} className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white" style={{ background: '#6C5CE7' }}>Crear</button>
+                        <button type="button" onClick={() => setInlinePress(null)} className="px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-500 hover:bg-gray-100">Cancelar</button>
+                      </div>
+                    </div>
+                  )}</div>
               </div>
               <div><label className="block text-sm font-semibold text-gray-600 mb-2">Tiempos de planchado (seg/unidad)</label>
                 <div className="grid grid-cols-3 gap-2">
@@ -408,11 +465,11 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
                 <label className="block text-sm font-semibold text-gray-600 mb-2">Variantes (opcional)</label>
                 {(() => {
                   const PRESETS = [
-                    { value: 'none', label: 'Sin variantes', options: [] as string[] },
-                    { value: 'Talle', label: 'Talle', options: ['XS', 'S', 'M', 'L', 'XL', 'XXL'] },
-                    { value: 'Color', label: 'Color', options: ['Blanco', 'Negro', 'Gris', 'Rojo', 'Azul', 'Verde', 'Amarillo', 'Rosa'] },
-                    { value: 'Tamaño', label: 'Tamaño', options: ['Chico', 'Mediano', 'Grande'] },
-                    { value: 'custom', label: 'Personalizado', options: [] as string[] },
+                    { value: 'none', label: 'Sin variantes', suggestions: [] as string[] },
+                    { value: 'Talle', label: 'Talle', suggestions: ['S', 'M', 'L', 'XL', 'XXL', '2XL', '3XL'] },
+                    { value: 'Color', label: 'Color', suggestions: ['Blanco', 'Negro', 'Gris', 'Rojo', 'Azul', 'Verde', 'Amarillo', 'Rosa'] },
+                    { value: 'Tamaño', label: 'Tamaño', suggestions: ['Chico', 'Mediano', 'Grande'] },
+                    { value: 'custom', label: 'Personalizado', suggestions: [] as string[] },
                   ]
                   // null/undefined = no variants, '' = custom (user hasn't typed name yet)
                   const currentPreset = modal.variant_name === null || modal.variant_name === undefined
@@ -423,12 +480,15 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
                     if (val === 'none') { setModal({ ...modal, variant_name: null, variant_options: [] }); return }
                     if (val === 'custom') { setModal({ ...modal, variant_name: '', variant_options: [] }); return }
                     const preset = PRESETS.find(p => p.value === val)
-                    if (preset) setModal({ ...modal, variant_name: preset.value, variant_options: [...preset.options] })
+                    if (preset) setModal({ ...modal, variant_name: preset.value, variant_options: modal.variant_name === preset.value ? (modal.variant_options || []) : [] })
                   }
 
                   const addOption = (v: string) => {
                     if (v && !(modal.variant_options || []).includes(v)) setModal({ ...modal, variant_options: [...(modal.variant_options || []), v] })
                   }
+
+                  const currentSuggestions = PRESETS.find(p => p.value === currentPreset)?.suggestions || []
+                  const unusedSuggestions = currentSuggestions.filter(s => !(modal.variant_options || []).includes(s))
 
                   return (
                     <div className="space-y-3">
@@ -446,14 +506,16 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
                       {currentPreset !== 'none' && (
                         <div>
                           <label className="block text-xs text-gray-500 mb-1">Opciones</label>
-                          <div className="flex flex-wrap gap-1.5 mb-2">
-                            {(modal.variant_options || []).map((opt, i) => (
-                              <span key={i} className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 text-xs font-medium">
-                                {opt}
-                                <button type="button" onClick={() => setModal({ ...modal, variant_options: (modal.variant_options || []).filter((_, j) => j !== i) })} className="hover:text-red-500">×</button>
-                              </span>
-                            ))}
-                          </div>
+                          {(modal.variant_options || []).length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 mb-2">
+                              {(modal.variant_options || []).map((opt, i) => (
+                                <span key={i} className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 text-xs font-medium">
+                                  {opt}
+                                  <button type="button" onClick={() => setModal({ ...modal, variant_options: (modal.variant_options || []).filter((_, j) => j !== i) })} className="hover:text-red-500">×</button>
+                                </span>
+                              ))}
+                            </div>
+                          )}
                           <div className="flex gap-2">
                             <input className="input-base text-sm flex-1" placeholder="Agregar opción + Enter"
                               onKeyDown={e => {
@@ -468,7 +530,17 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
                               if (inp) { addOption(inp.value.trim()); inp.value = '' }
                             }} className="px-3 py-1.5 rounded-lg text-sm font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50">+</button>
                           </div>
-                          <p className="text-[10px] text-gray-400 mt-1">Eliminá los que no apliquen o agregá nuevos.</p>
+                          {unusedSuggestions.length > 0 && (
+                            <div className="mt-2">
+                              <span className="text-[11px] text-gray-400">Sugerencias: </span>
+                              {unusedSuggestions.map(s => (
+                                <button key={s} type="button" onClick={() => addOption(s)}
+                                  className="text-[11px] text-gray-400 hover:text-purple-600 hover:underline mr-1">
+                                  {s}
+                                </button>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>

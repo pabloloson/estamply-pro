@@ -43,7 +43,8 @@ export default function CategoryModal({ categories, onSave, onDelete, onClose }:
             <div><label className="block text-xs font-medium text-gray-500 mb-1">Nombre</label>
               <input className="input-base" value={editing.name || ''} onChange={e => setEditing({ ...editing, name: e.target.value })} placeholder="Ej: Textil" /></div>
             <div><label className="block text-xs font-medium text-gray-500 mb-1">Margen sugerido (%)</label>
-              <input type="number" className="input-base" value={editing.margen_sugerido ?? 50} onChange={e => setEditing({ ...editing, margen_sugerido: Number(e.target.value) })} /></div>
+              <input type="number" className="input-base" value={editing.margen_sugerido ?? 50} onChange={e => setEditing({ ...editing, margen_sugerido: Number(e.target.value) })} />
+              <p className="text-[11px] text-gray-400 mt-0.5">Se sugiere automáticamente al cotizar productos de esta categoría.</p></div>
             <div className="flex gap-2">
               <button onClick={() => setEditing(null)} className="flex-1 py-2 rounded-lg text-sm font-semibold text-gray-500 border border-gray-200">Cancelar</button>
               <button onClick={async () => { await onSave(editing); setEditing(null) }} className="flex-1 py-2 rounded-lg text-sm font-semibold text-white" style={{ background: '#6C5CE7' }}>Guardar</button>
