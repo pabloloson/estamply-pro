@@ -2,13 +2,18 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Plus, Pencil, Trash2, X } from 'lucide-react'
+import { Plus, Pencil, Trash2, X, Search, AlertTriangle } from 'lucide-react'
 import NumericInput from '@/shared/components/NumericInput'
 import EmptyState from '@/shared/components/EmptyState'
 import { useTranslations } from '@/shared/hooks/useTranslations'
 import { useLocale } from '@/shared/context/LocaleContext'
 
-interface Equipment { id: string; name: string; marca: string | null; type: string; clasificacion: string; cost: number; lifespan_uses: number; tecnicas_slugs: string[]; assigned_paper_id: string | null; assigned_ink_id: string | null }
+interface Equipment {
+  id: string; name: string; marca: string | null; type: string; clasificacion: string
+  cost: number; lifespan_uses: number; tecnicas_slugs: string[]
+  assigned_paper_id: string | null; assigned_ink_id: string | null
+  purchase_date: string | null; supplier_id: string | null; notes: string | null
+}
 interface InsumoRef { id: string; nombre: string; tipo: string; config: Record<string, unknown> }
 
 const CLASIF_LABELS: Record<string, string> = { impresora: 'Impresora', plotter: 'Plotter', plancha: 'Plancha', pulpo: 'Pulpo' }
@@ -27,11 +32,12 @@ const TYPES_BY_CLASIF: Record<string, Array<[string, string]>> = {
   plancha: [['press_flat', 'Plancha Plana'], ['press_mug', 'Plancha Tazas'], ['press_cap', 'Plancha Gorras'], ['press_5in1', 'Plancha 5 en 1'], ['press_pneumatic', 'Plancha Neumática'], ['press_other', 'Otra plancha']],
   pulpo: [['pulpo_manual', 'Pulpo manual'], ['pulpo_auto', 'Pulpo automático'], ['estacion', 'Estación de estampado'], ['pulpo_other', 'Otro']],
 }
-const ALL_TYPES: Record<string, string> = Object.fromEntries(Object.values(TYPES_BY_CLASIF).flat())
 
 const TEC_LABELS: Record<string, string> = { subli: 'Subli', dtf: 'DTF', dtf_uv: 'DTF UV', vinyl: 'Vinilo', serigrafia: 'Serigrafía' }
 const TEC_COLORS: Record<string, string> = { subli: '#6C5CE7', dtf: '#E17055', dtf_uv: '#00B894', vinyl: '#E84393', serigrafia: '#FDCB6E' }
 const ALL_TECS = ['subli', 'dtf', 'dtf_uv', 'vinyl', 'serigrafia']
+
+const newEquip = (): Partial<Equipment> => ({ clasificacion: 'plancha', type: 'press_flat', cost: 0, lifespan_uses: 10000, tecnicas_slugs: [] })
 
 export default function EquipamientoPage() {
   const supabase = createClient()
@@ -40,44 +46,56 @@ export default function EquipamientoPage() {
   const { fmt: fmtCurrency } = useLocale()
   const [equipment, setEquipment] = useState<Equipment[]>([])
   const [insumosAll, setInsumosAll] = useState<InsumoRef[]>([])
+  const [suppliers, setSuppliers] = useState<Array<{ id: string; name: string }>>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [modal, setModal] = useState<Partial<Equipment> | null>(null)
   const [filter, setFilter] = useState('')
+  const [searchEquip, setSearchEquip] = useState('')
   const [effectiveUserId, setEffectiveUserId] = useState<string | null>(null)
+  const [inlineSupplier, setInlineSupplier] = useState<{ name: string } | null>(null)
 
   async function load() {
-    const [{ data: eq }, { data: ins }, { data: ownerId }] = await Promise.all([
+    const [{ data: eq }, { data: ins }, { data: ownerId }, { data: sups }] = await Promise.all([
       supabase.from('equipment').select('*').order('name'),
       supabase.from('insumos').select('*').order('nombre'),
       supabase.rpc('get_team_owner_id'),
+      supabase.from('suppliers').select('id, name').order('name'),
     ])
     setEquipment((eq || []) as Equipment[])
     setInsumosAll((ins || []) as InsumoRef[])
     if (ownerId) setEffectiveUserId(ownerId as string)
+    if (sups) setSuppliers(sups)
     setLoading(false)
   }
   useEffect(() => { load() }, [])
 
   async function saveEquip() {
     if (!modal?.name) return; setSaving(true)
-    const payload = { name: modal.name, marca: modal.marca || null, type: modal.type || 'press_flat', clasificacion: modal.clasificacion || 'plancha', cost: modal.cost || 0, lifespan_uses: modal.lifespan_uses || 1000, tecnicas_slugs: modal.tecnicas_slugs || [], assigned_paper_id: modal.assigned_paper_id || null, assigned_ink_id: modal.assigned_ink_id || null }
-    // Always send user_id explicitly — fallback to auth.uid() if effectiveUserId not set
-    let userId = effectiveUserId
-    if (!userId) {
-      const { data: { user } } = await supabase.auth.getUser()
-      userId = user?.id || null
+    const payload = {
+      name: modal.name, marca: modal.marca || null, type: modal.type || 'press_flat',
+      clasificacion: modal.clasificacion || 'plancha', cost: modal.cost || 0,
+      lifespan_uses: modal.lifespan_uses || 1000, tecnicas_slugs: modal.tecnicas_slugs || [],
+      assigned_paper_id: modal.assigned_paper_id || null, assigned_ink_id: modal.assigned_ink_id || null,
+      purchase_date: modal.purchase_date || null, supplier_id: modal.supplier_id || null,
+      notes: modal.notes || null,
     }
+    let userId = effectiveUserId
+    if (!userId) { const { data: { user } } = await supabase.auth.getUser(); userId = user?.id || null }
     const { error } = modal.id
       ? await supabase.from('equipment').update(payload).eq('id', modal.id)
       : await supabase.from('equipment').insert({ ...payload, user_id: userId })
     if (error) { alert(`Error: ${error.message}`); setSaving(false); return }
-    setModal(null); setSaving(false); load()
+    setModal(null); setInlineSupplier(null); setSaving(false); load()
   }
 
   async function delEquip(id: string) { if (confirm('¿Eliminar?')) { await supabase.from('equipment').delete().eq('id', id); load() } }
 
-  const filtered = filter ? equipment.filter(e => e.clasificacion === filter) : equipment
+  const filtered = equipment.filter(e => {
+    if (filter && e.clasificacion !== filter) return false
+    if (searchEquip && !e.name.toLowerCase().includes(searchEquip.toLowerCase()) && !(e.marca || '').toLowerCase().includes(searchEquip.toLowerCase())) return false
+    return true
+  })
   const amort = (e: Equipment) => e.lifespan_uses > 0 ? Math.round(e.cost / e.lifespan_uses) : 0
   const modalAmort = modal && (modal.lifespan_uses || 0) > 0 ? Math.round((modal.cost || 0) / (modal.lifespan_uses || 1)) : 0
   const modalTypes = TYPES_BY_CLASIF[modal?.clasificacion || 'plancha'] || TYPES_BY_CLASIF.plancha
@@ -86,35 +104,43 @@ export default function EquipamientoPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between gap-3 mb-6">
+      {/* Desktop header */}
+      <div className="hidden md:flex items-start justify-between gap-3 mb-4">
         <div><h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
           <p className="text-gray-500 text-sm mt-1">{t('subtitle')}</p></div>
-        <button onClick={() => setModal({ clasificacion: 'plancha', type: 'press_flat', cost: 0, lifespan_uses: 10000, tecnicas_slugs: [] })}
-          className="hidden md:flex items-center gap-1.5 whitespace-nowrap text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}>
-          <Plus size={14} /> {t('addEquipment')}
-        </button>
-      </div>
-
-      {/* Mobile: dropdown filter + add button */}
-      <div className="flex md:hidden items-center justify-between gap-3 mb-4">
-        <select value={filter} onChange={e => setFilter(e.target.value)}
-          className="border border-gray-200 bg-white rounded-lg px-4 py-2.5 text-sm font-medium shadow-sm min-w-[150px]">
-          {CLASIF_TABS.map(tab => <option key={tab.id} value={tab.id}>{tab.label}</option>)}
-        </select>
-        <button onClick={() => setModal({ clasificacion: 'plancha', type: 'press_flat', cost: 0, lifespan_uses: 10000, tecnicas_slugs: [] })}
-          className="flex items-center gap-1.5 whitespace-nowrap text-xs px-3 py-2 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}>
+        <button onClick={() => setModal(newEquip())}
+          className="flex items-center gap-1.5 whitespace-nowrap text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}>
           <Plus size={14} /> Agregar
         </button>
       </div>
-      {/* Desktop: tabs */}
-      <div className="hidden md:flex gap-1.5 mb-4 flex-wrap">
-        {CLASIF_TABS.map(tab => (
-          <button key={tab.id} onClick={() => setFilter(tab.id)}
-            className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${filter === tab.id ? 'text-white' : 'bg-gray-100 text-gray-500'}`}
-            style={filter === tab.id ? { background: tab.color || '#374151' } : {}}>
-            {tab.label}
-          </button>
-        ))}
+      {/* Desktop tabs + search */}
+      <div className="hidden md:flex items-center justify-between mb-2">
+        <div className="flex gap-1.5 flex-wrap">
+          {CLASIF_TABS.map(tab => (
+            <button key={tab.id} onClick={() => setFilter(tab.id)}
+              className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${filter === tab.id ? 'text-white' : 'bg-gray-100 text-gray-500'}`}
+              style={filter === tab.id ? { background: tab.color || '#374151' } : {}}>
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="hidden md:block relative mt-3 mb-4 max-w-[400px]">
+        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+        <input className="input-base text-sm w-full" style={{ paddingLeft: 40 }} placeholder="Buscar equipo..." value={searchEquip} onChange={e => setSearchEquip(e.target.value)} />
+      </div>
+
+      {/* Mobile: compact single row */}
+      <div className="flex md:hidden items-center gap-2 mb-4">
+        <select value={filter} onChange={e => setFilter(e.target.value)}
+          className="input-base text-sm min-w-[110px] max-w-[140px] flex-shrink-0">
+          {CLASIF_TABS.map(tab => <option key={tab.id} value={tab.id}>{tab.label}</option>)}
+        </select>
+        <div className="relative flex-1">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+          <input className="input-base text-sm w-full" style={{ paddingLeft: 40 }} placeholder="Buscar..." value={searchEquip} onChange={e => setSearchEquip(e.target.value)} />
+        </div>
+        <button onClick={() => setModal(newEquip())} className="h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 text-white" style={{ background: '#6C5CE7' }}><Plus size={18} /></button>
       </div>
 
       {/* Mobile cards */}
@@ -123,7 +149,10 @@ export default function EquipamientoPage() {
           <div key={e.id} className="card p-4">
             <div className="flex items-start justify-between">
               <div>
-                <p className="font-semibold text-gray-800">{e.name}</p>
+                <div className="flex items-center gap-2">
+                  <p className="font-semibold text-gray-800">{e.name}</p>
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full text-white" style={{ background: CLASIF_COLORS[e.clasificacion] || '#636e72' }}>{CLASIF_LABELS[e.clasificacion]}</span>
+                </div>
                 {e.marca && <p className="text-xs text-gray-400">{e.marca}</p>}
               </div>
               <div className="flex gap-1">
@@ -137,34 +166,34 @@ export default function EquipamientoPage() {
               ))}
             </div>
             <div className="mt-1.5 text-xs text-gray-400">
-              {fmtCurrency(e.cost)} · {e.lifespan_uses.toLocaleString()} usos · <span className="font-semibold text-green-600">{fmtCurrency(amort(e))}/uso</span>
+              {fmtCurrency(e.cost)} · <span className="font-semibold text-green-600">{fmtCurrency(amort(e))}/uso</span>
             </div>
           </div>
         ))}
-        {filtered.length === 0 && <EmptyState icon="🖨" title="Cargá tus máquinas." description="Impresora, plancha, plotter — para calcular amortización." actionLabel="+ Agregar equipo" onAction={() => setModal({ clasificacion: 'plancha', type: 'press_flat', cost: 0, lifespan_uses: 10000, tecnicas_slugs: [] })} />}
+        {filtered.length === 0 && equipment.length === 0 && <EmptyState icon="🖨" title="Cargá tus máquinas." description="Impresora, plancha, plotter — para calcular amortización." actionLabel="+ Agregar" onAction={() => setModal(newEquip())} />}
+        {filtered.length === 0 && equipment.length > 0 && <div className="text-center py-8 text-gray-400 text-sm">No hay equipos que coincidan.</div>}
       </div>
 
-      {/* Desktop table */}
+      {/* Desktop table — 5 columns: Nombre (with badge), Técnicas, Valor, $/uso, actions */}
       <div className="hidden md:block card overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[600px]">
+          <table className="w-full min-w-[500px]">
             <thead><tr className="border-b border-gray-100">
-              {['Nombre', 'Clasificación', 'Tipo', 'Técnicas', 'Valor', 'Vida útil', '$/uso', ''].map(h =>
+              {['Nombre', 'Técnicas', 'Valor', '$/uso', ''].map(h =>
                 <th key={h} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">{h}</th>)}
             </tr></thead>
             <tbody>
               {filtered.map(e => (
                 <tr key={e.id} className="border-b border-gray-50 hover:bg-gray-50">
                   <td className="px-4 py-3">
-                    <span className="font-medium text-gray-800">{e.name}</span>
-                    {e.marca && <span className="text-xs text-gray-400 ml-1.5">{e.marca}</span>}
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-gray-800">{e.name}</span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-white" style={{ background: CLASIF_COLORS[e.clasificacion] || '#636e72' }}>
+                        {CLASIF_LABELS[e.clasificacion] || e.clasificacion}
+                      </span>
+                    </div>
+                    {e.marca && <p className="text-xs text-gray-400 mt-0.5">{e.marca}</p>}
                   </td>
-                  <td className="px-4 py-3">
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-white" style={{ background: CLASIF_COLORS[e.clasificacion] || '#636e72' }}>
-                      {CLASIF_LABELS[e.clasificacion] || e.clasificacion}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-500">{ALL_TYPES[e.type] || e.type}</td>
                   <td className="px-4 py-3">
                     <div className="flex gap-1 flex-wrap">
                       {(e.tecnicas_slugs || []).map(s => (
@@ -175,7 +204,6 @@ export default function EquipamientoPage() {
                     </div>
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-600">{fmtCurrency(e.cost)}</td>
-                  <td className="px-4 py-3 text-sm text-gray-500">{e.lifespan_uses.toLocaleString('es-AR')}</td>
                   <td className="px-4 py-3 text-sm text-green-600 font-semibold">{fmtCurrency(amort(e))}/uso</td>
                   <td className="px-4 py-3">
                     <div className="flex gap-1">
@@ -187,25 +215,30 @@ export default function EquipamientoPage() {
               ))}
             </tbody>
           </table>
-          {filtered.length === 0 && (equipment.length === 0 ? <EmptyState icon="🖨" title="Cargá tus máquinas: impresora, plancha, plotter." description="Con el valor de compra y la vida útil, Estamply calcula automáticamente el costo de amortización por cada trabajo." actionLabel="+ Agregar equipo" onAction={() => setModal({ clasificacion: 'plancha', type: 'press_flat', cost: 0, lifespan_uses: 10000, tecnicas_slugs: [] })} /> : <div className="text-center py-12 text-gray-400">Sin equipos en esta categoría.</div>)}
+          {filtered.length === 0 && (equipment.length === 0
+            ? <EmptyState icon="🖨" title="Cargá tus máquinas: impresora, plancha, plotter." description="Con el valor de compra y la vida útil, Estamply calcula automáticamente el costo de amortización por cada trabajo." actionLabel="+ Agregar" onAction={() => setModal(newEquip())} />
+            : <div className="text-center py-12 text-gray-400">No hay equipos que coincidan.</div>)}
         </div>
       </div>
 
       {/* Modal */}
       {modal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)' }}>
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl max-h-[90dvh] overflow-y-auto">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl max-h-[90dvh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
-              <h3 className="font-bold text-gray-900">{modal.id ? tc('edit') : t('addEquipment')}</h3>
-              <button onClick={() => setModal(null)} className="p-2 rounded-lg hover:bg-gray-100"><X size={16} /></button>
+              <h3 className="font-bold text-gray-900">{modal.id ? 'Editar equipo' : 'Nuevo equipo'}</h3>
+              <button onClick={() => { setModal(null); setInlineSupplier(null) }} className="p-2 rounded-lg hover:bg-gray-100"><X size={16} /></button>
             </div>
             <div className="space-y-4">
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
-                <input className="input-base" value={modal.name || ''} onChange={e => setModal({ ...modal, name: e.target.value })} placeholder="Ej: Impresora Epson EcoTank" /></div>
 
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">Marca / Modelo</label>
-                <input className="input-base" value={modal.marca || ''} onChange={e => setModal({ ...modal, marca: e.target.value })} placeholder="Ej: Epson L8050" /></div>
-
+              {/* ── DATOS BÁSICOS ── */}
+              <p className="text-[12px] font-medium text-gray-400 uppercase tracking-wider">Datos básicos</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+                  <input className="input-base" value={modal.name || ''} onChange={e => setModal({ ...modal, name: e.target.value })} placeholder="Ej: Impresora Epson" /></div>
+                <div><label className="block text-sm font-medium text-gray-700 mb-1">Marca / Modelo</label>
+                  <input className="input-base" value={modal.marca || ''} onChange={e => setModal({ ...modal, marca: e.target.value })} placeholder="Ej: Epson L8050" /></div>
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <div><label className="block text-sm font-medium text-gray-700 mb-1">Clasificación *</label>
                   <select className="input-base" value={modal.clasificacion || 'plancha'} onChange={e => {
@@ -221,60 +254,120 @@ export default function EquipamientoPage() {
                   </select></div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Técnicas que lo usan *</label>
-                <div className="flex gap-3 flex-wrap">
+              {/* ── TÉCNICAS ── */}
+              <div className="pt-4 border-t border-gray-100">
+                <p className="text-[12px] font-medium text-gray-400 uppercase tracking-wider mb-3">Técnicas que lo usan</p>
+                <div className="flex gap-2 flex-wrap">
                   {ALL_TECS.map(slug => {
                     const checked = (modal.tecnicas_slugs || []).includes(slug)
                     return (
-                      <label key={slug} className="flex items-center gap-1.5 cursor-pointer">
-                        <input type="checkbox" checked={checked} className="rounded border-gray-300"
-                          style={{ accentColor: TEC_COLORS[slug] }}
-                          onChange={() => setModal({ ...modal, tecnicas_slugs: checked ? (modal.tecnicas_slugs || []).filter(s => s !== slug) : [...(modal.tecnicas_slugs || []), slug] })} />
-                        <span className="text-sm text-gray-700">{TEC_LABELS[slug]}</span>
-                      </label>
+                      <button key={slug} type="button" onClick={() => setModal({ ...modal, tecnicas_slugs: checked ? (modal.tecnicas_slugs || []).filter(s => s !== slug) : [...(modal.tecnicas_slugs || []), slug] })}
+                        className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${checked ? 'text-white' : 'bg-gray-100 text-gray-500'}`}
+                        style={checked ? { background: TEC_COLORS[slug] } : {}}>
+                        {checked ? '✓ ' : ''}{TEC_LABELS[slug]}
+                      </button>
                     )
                   })}
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">Valor de compra ($) *</label>
-                  <NumericInput className="input-base" value={modal.cost || 0} onChange={v => setModal({ ...modal, cost: v })} /></div>
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">Vida útil (usos) *</label>
-                  <NumericInput className="input-base" min={1} value={modal.lifespan_uses || 10000} onChange={v => setModal({ ...modal, lifespan_uses: v })} />
-                  <p className="text-[10px] text-gray-400 mt-0.5">Usos estimados antes de reemplazar</p></div>
+              {/* ── COSTO Y AMORTIZACIÓN ── */}
+              <div className="pt-4 border-t border-gray-100">
+                <p className="text-[12px] font-medium text-gray-400 uppercase tracking-wider mb-3">Costo y amortización</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div><label className="block text-sm font-medium text-gray-700 mb-1">Valor de compra ($) *</label>
+                    <NumericInput className="input-base" value={modal.cost || 0} onChange={v => setModal({ ...modal, cost: v })} /></div>
+                  <div><label className="block text-sm font-medium text-gray-700 mb-1">Vida útil (usos) *</label>
+                    <NumericInput className="input-base" min={1} value={modal.lifespan_uses || 10000} onChange={v => setModal({ ...modal, lifespan_uses: v })} />
+                    <p className="text-[10px] text-gray-400 mt-0.5">Usos estimados antes de reemplazar</p></div>
+                </div>
+                <div className="mt-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Fecha de compra</label>
+                  <input type="date" className="input-base" value={modal.purchase_date || ''} onChange={e => setModal({ ...modal, purchase_date: e.target.value || null })} />
+                </div>
+                {modalAmort > 0 && (
+                  <div className="mt-3 p-3 rounded-lg bg-green-50 border border-green-100 flex items-start gap-2">
+                    <span className="text-base">💡</span>
+                    <div>
+                      <p className="text-sm font-bold text-green-700">{fmtCurrency(modalAmort)} por uso</p>
+                      <p className="text-[11px] text-gray-500 mt-0.5">Se suma automáticamente al costo en el cotizador.</p>
+                    </div>
+                  </div>
+                )}
               </div>
 
+              {/* ── INSUMOS ASOCIADOS (impresora/plotter) ── */}
               {(modal.clasificacion === 'impresora' || modal.clasificacion === 'plotter') && (
-                <div className="grid grid-cols-2 gap-3">
-                  <div><label className="block text-sm font-medium text-gray-700 mb-1">Papel asignado</label>
-                    <select className="input-base" value={modal.assigned_paper_id || ''} onChange={e => setModal({ ...modal, assigned_paper_id: e.target.value || null })}>
-                      <option value="">Sin papel</option>
-                      {insumosAll.filter(i => i.tipo === 'papel' || i.tipo === 'film').map(i => {
-                        const fmt = (i.config as Record<string, unknown>)?.formato === 'rollo' ? 'Rollo' : 'Hojas'
-                        return <option key={i.id} value={i.id}>{i.nombre} — {fmt}</option>
-                      })}
-                    </select></div>
-                  <div><label className="block text-sm font-medium text-gray-700 mb-1">Tinta asignada</label>
-                    <select className="input-base" value={modal.assigned_ink_id || ''} onChange={e => setModal({ ...modal, assigned_ink_id: e.target.value || null })}>
-                      <option value="">Sin tinta</option>
-                      {insumosAll.filter(i => i.tipo === 'tinta').map(i => (
-                        <option key={i.id} value={i.id}>{i.nombre}</option>
-                      ))}
-                    </select></div>
+                <div className="pt-4 border-t border-gray-100">
+                  <p className="text-[12px] font-medium text-gray-400 uppercase tracking-wider mb-1">Insumos asociados</p>
+                  <p className="text-[11px] text-gray-400 mb-3">Asigná los insumos que usa este equipo. El costo se calcula automáticamente.</p>
+                  {!modal.assigned_paper_id && !modal.assigned_ink_id && (
+                    <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-100 flex items-center gap-2 mb-3 text-xs text-amber-700">
+                      <AlertTriangle size={14} className="flex-shrink-0" /> Sin papel ni tinta — el cotizador no podrá calcular el costo de impresión.
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><label className="block text-sm font-medium text-gray-700 mb-1">Papel asignado</label>
+                      <select className="input-base" value={modal.assigned_paper_id || ''} onChange={e => setModal({ ...modal, assigned_paper_id: e.target.value || null })}>
+                        <option value="">Sin papel</option>
+                        {insumosAll.filter(i => i.tipo === 'papel' || i.tipo === 'film').map(i => {
+                          const fmt = (i.config as Record<string, unknown>)?.formato === 'rollo' ? 'Rollo' : 'Hojas'
+                          return <option key={i.id} value={i.id}>{i.nombre} — {fmt}</option>
+                        })}
+                      </select></div>
+                    <div><label className="block text-sm font-medium text-gray-700 mb-1">Tinta asignada</label>
+                      <select className="input-base" value={modal.assigned_ink_id || ''} onChange={e => setModal({ ...modal, assigned_ink_id: e.target.value || null })}>
+                        <option value="">Sin tinta</option>
+                        {insumosAll.filter(i => i.tipo === 'tinta').map(i => (
+                          <option key={i.id} value={i.id}>{i.nombre}</option>
+                        ))}
+                      </select></div>
+                  </div>
                 </div>
               )}
 
-              {modalAmort > 0 && (
-                <div className="p-3 rounded-lg bg-green-50 border border-green-100 text-center">
-                  <p className="text-xs text-gray-500">Amortización</p>
-                  <p className="text-lg font-black text-green-600">{fmtCurrency(modalAmort)} <span className="text-sm font-medium">por uso</span></p>
+              {/* ── OTROS ── */}
+              <div className="pt-4 border-t border-gray-100">
+                <p className="text-[12px] font-medium text-gray-400 uppercase tracking-wider mb-3">Otros</p>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Proveedor</label>
+                  <select className="input-base" value={inlineSupplier ? '__new__' : (modal.supplier_id || '')} onChange={e => {
+                    if (e.target.value === '__new__') { setInlineSupplier({ name: '' }); return }
+                    setInlineSupplier(null)
+                    setModal({ ...modal, supplier_id: e.target.value || null })
+                  }}>
+                    <option value="">Sin proveedor</option>
+                    {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    <option value="__new__">+ Nuevo proveedor</option>
+                  </select>
                 </div>
-              )}
+                {inlineSupplier && (
+                  <div className="mt-2 p-4 rounded-xl bg-gray-50 border border-gray-200 space-y-3">
+                    <div><label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+                      <input className="input-base" placeholder="Ej: TextilNorte" value={inlineSupplier.name} onChange={e => setInlineSupplier({ ...inlineSupplier, name: e.target.value })} autoFocus /></div>
+                    <div className="flex items-center gap-3">
+                      <button type="button" onClick={async () => {
+                        if (!inlineSupplier.name.trim()) return
+                        let userId = effectiveUserId
+                        if (!userId) { const { data: { user } } = await supabase.auth.getUser(); userId = user?.id || null }
+                        if (!userId) return
+                        const { data } = await supabase.from('suppliers').insert({ name: inlineSupplier.name.trim(), user_id: userId }).select('id').single()
+                        if (data) { setModal({ ...modal, supplier_id: data.id }); await load() }
+                        setInlineSupplier(null)
+                      }} className="px-4 py-2 rounded-lg text-xs font-semibold text-white" style={{ background: '#6C5CE7' }}>Crear proveedor</button>
+                      <button type="button" onClick={() => setInlineSupplier(null)} className="text-xs font-medium text-gray-400 hover:text-gray-600">Cancelar</button>
+                    </div>
+                  </div>
+                )}
+                <div className="mt-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Notas</label>
+                  <textarea className="input-base text-sm" rows={3} value={modal.notes || ''} onChange={e => setModal({ ...modal, notes: e.target.value })} placeholder="Garantía, detalles de uso, mantenimiento, etc." />
+                </div>
+              </div>
+
             </div>
             <div className="flex gap-3 mt-6">
-              <button onClick={() => setModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">{tc('cancel')}</button>
+              <button onClick={() => { setModal(null); setInlineSupplier(null) }} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">{tc('cancel')}</button>
               <button onClick={saveEquip} disabled={saving || !modal.name?.trim()} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#6C5CE7' }}>{saving ? tc('saving') : tc('save')}</button>
             </div>
           </div>
