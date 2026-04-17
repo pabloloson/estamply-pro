@@ -178,22 +178,25 @@ function CatalogContent({ shop, products, categories, sizeGuides }: { shop: Shop
       )}
 
       {/* Header */}
-      <div className="relative text-white" style={shop.banner ? {} : { background: color }}>
-        {shop.banner && (<>
+      <div className="relative text-white overflow-hidden" style={shop.banner ? {} : { background: `linear-gradient(135deg, ${color}, ${color}dd)` }}>
+        {shop.banner ? (<>
           <img src={shop.banner} alt="" className="absolute inset-0 w-full h-full object-cover" />
-          <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.5), rgba(0,0,0,0.7))' }} />
-        </>)}
-        <div className="relative px-4 py-6">
-        <div className="max-w-5xl mx-auto">
-          <div className="flex items-center gap-3">
-            {shop.logo && <img src={shop.logo} alt="" className="w-12 h-12 rounded-xl object-cover bg-white/20" />}
-            <div>
-              <h1 className="text-xl font-bold">{shop.nombre}</h1>
-              {shop.description && <p className="text-sm opacity-80 mt-0.5">{shop.description}</p>}
+          <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.35) 100%)' }} />
+        </>) : (
+          <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 20% 80%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
+        )}
+        <div className="relative px-4 py-8 sm:py-6" style={{ minHeight: shop.banner ? undefined : 'auto' }}>
+          {/* Mobile: taller aspect for banner images */}
+          {shop.banner && <div className="sm:hidden" style={{ paddingTop: '20%' }} />}
+          <div className="max-w-5xl mx-auto">
+            <div className="flex items-center gap-3">
+              {shop.logo && <img src={shop.logo} alt="" className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl object-cover bg-white/20 flex-shrink-0" />}
+              <div>
+                <h1 className="text-lg sm:text-xl font-bold drop-shadow-sm">{shop.nombre}</h1>
+                {shop.description && <p className="text-xs sm:text-sm opacity-80 mt-0.5 drop-shadow-sm">{shop.description}</p>}
+              </div>
             </div>
           </div>
-          {/* Contact info moved to footer */}
-        </div>
         </div>
       </div>
 

@@ -320,8 +320,10 @@ export default function SettingsPage() {
       </>)}
 
       {activeSection === 'catalogo' && (<>
-      {/* Catálogo web */}
-      <div className="card p-6 max-w-2xl mt-6">
+      <div className="flex gap-6">
+      {/* Form column */}
+      <div className="flex-1 max-w-2xl">
+      <div className="card p-6">
         <h3 className="font-semibold text-gray-800 mb-1">{t('webCatalog')}</h3>
         <p className="text-xs text-gray-400 mb-4">{t('webCatalogSubtitle')}</p>
         <div className="space-y-4">
@@ -426,6 +428,73 @@ export default function SettingsPage() {
         style={saveState !== 'saved' && saveState !== 'error' ? { background: '#6C5CE7' } : {}}>
         {saveState === 'saving' ? <><Loader2 size={14} className="animate-spin" /> Guardando...</> : saveState === 'saved' ? <><Check size={14} /> Guardado</> : saveState === 'error' ? 'Error al guardar' : <><Save size={14} /> Guardar</>}
       </button>
+      {/* Mobile: preview link */}
+      {!!(ws as Record<string, unknown>).catalog_slug && (
+        <a href={`/catalogo/${(ws as Record<string, unknown>).catalog_slug}`} target="_blank" rel="noopener"
+          className="mt-3 md:hidden flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-purple-600 border border-purple-200 hover:bg-purple-50">
+          Vista previa →
+        </a>
+      )}
+      </div>{/* close form column */}
+      {/* Desktop preview */}
+      {(() => {
+        const previewColor = (ws as Record<string, unknown>).brand_color as string || '#6C5CE7'
+        const previewBanner = (ws as Record<string, unknown>).banner_url as string || ''
+        const previewName = (ws as Record<string, unknown>).nombre_tienda as string || profile.business_name || 'Mi Taller'
+        const previewDesc = (ws as Record<string, unknown>).descripcion_tienda as string || ''
+        const previewAnuncio = !!(ws as Record<string, unknown>).anuncio_activo
+        const previewAnuncioText = (ws as Record<string, unknown>).anuncio_texto as string || ''
+        const previewAnuncioBg = (ws as Record<string, unknown>).anuncio_color_fondo as string || previewColor
+        const previewAnuncioTxt = (ws as Record<string, unknown>).anuncio_color_texto as string || '#fff'
+        return (
+          <div className="hidden lg:block w-[320px] flex-shrink-0">
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Vista previa</p>
+            <div className="rounded-2xl border border-gray-200 overflow-hidden bg-white shadow-sm" style={{ height: 480 }}>
+              {/* Announcement */}
+              {previewAnuncio && previewAnuncioText && (
+                <div className="px-3 py-1.5 text-center text-[10px] font-semibold" style={{ background: previewAnuncioBg, color: previewAnuncioTxt }}>{previewAnuncioText}</div>
+              )}
+              {/* Header */}
+              <div className="relative text-white overflow-hidden" style={previewBanner ? {} : { background: `linear-gradient(135deg, ${previewColor}, ${previewColor}dd)` }}>
+                {previewBanner && (<>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={previewBanner} alt="" className="absolute inset-0 w-full h-full object-cover" />
+                  <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.6), rgba(0,0,0,0.2))' }} />
+                </>)}
+                <div className="relative px-4 py-5">
+                  <div className="flex items-center gap-2">
+                    {profile.business_logo_url && <img src={profile.business_logo_url} alt="" className="w-8 h-8 rounded-lg object-cover bg-white/20" />}
+                    <div>
+                      <p className="text-sm font-bold drop-shadow-sm">{previewName}</p>
+                      {previewDesc && <p className="text-[10px] opacity-80">{previewDesc}</p>}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {/* Fake search */}
+              <div className="px-3 pt-2">
+                <div className="h-8 rounded-lg border border-gray-200 bg-gray-50 flex items-center px-2 gap-1.5">
+                  <div className="w-3 h-3 rounded-full bg-gray-300" />
+                  <span className="text-[10px] text-gray-300">Buscar productos...</span>
+                </div>
+              </div>
+              {/* Fake product grid */}
+              <div className="grid grid-cols-2 gap-2 p-3">
+                {[1,2,3,4].map(i => (
+                  <div key={i} className="rounded-lg border border-gray-100 overflow-hidden">
+                    <div className="bg-gray-100 h-20" />
+                    <div className="p-2 space-y-1">
+                      <div className="h-2 bg-gray-200 rounded w-3/4" />
+                      <div className="h-2 rounded w-1/2" style={{ background: `${previewColor}40` }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )
+      })()}
+      </div>
       </>)}
 
       {activeSection === 'moneda-idioma' && (() => {
