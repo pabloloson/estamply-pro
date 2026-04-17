@@ -5,10 +5,10 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { ShoppingCart, Plus, Minus, X, MessageCircle, ArrowLeft, ChevronLeft, ChevronRight, Check, Share2 } from 'lucide-react'
-import esMsg from '../../../../../../messages/es.json'
-import ptMsg from '../../../../../../messages/pt.json'
+import esMsg from '../../../../../messages/es.json'
+import ptMsg from '../../../../../messages/pt.json'
 import { formatCurrency, getCountry } from '@/shared/lib/currency'
-import { CartCtx } from '../../layout'
+import { CartCtx } from '../layout'
 
 interface Product {
   id: string; name: string; description: string | null; photos: string[]
@@ -25,7 +25,8 @@ function fmt(n: number) { return formatCurrency(n, _cc) }
 function tc(ns: string, key: string) { return _m[ns]?.[key] || key }
 
 export default function ProductPageClient() {
-  const { slug, productId } = useParams<{ slug: string; productId: string }>()
+  const { slug, productSlug } = useParams<{ slug: string; productSlug: string }>()
+  const productId = productSlug // will be resolved by slug or UUID lookup
   const supabase = createClient()
   const { add, items, total } = useContext(CartCtx)
   const [product, setProduct] = useState<Product | null>(null)
@@ -63,15 +64,17 @@ export default function ProductPageClient() {
         waMensaje: (s.wa_mensaje as string) || '',
       })
 
-      const [{ data: prod }, { data: sg }, { data: promos }] = await Promise.all([
-        supabase.from('catalog_products').select('id,name,description,photos,selling_price,manage_stock,current_stock,sizes,colors,estimated_delivery,precio_anterior,guia_talles_id').eq('id', productId).single(),
+      const [{ data: sg }, { data: promos }] = await Promise.all([
         supabase.from('guias_talles').select('id,nombre,columnas,filas,imagen_referencia').eq('user_id', userId),
         supabase.from('promotions').select('product_ids,discount_type,discount_value').eq('user_id', userId).eq('status', 'active'),
       ])
+      // Lookup by slug first, fallback to UUID
+      let { data: prod } = await supabase.from('catalog_products').select('id,name,description,photos,selling_price,manage_stock,current_stock,sizes,colors,estimated_delivery,precio_anterior,guia_talles_id').eq('slug', productSlug).single()
+      if (!prod) { const r = await supabase.from('catalog_products').select('id,name,description,photos,selling_price,manage_stock,current_stock,sizes,colors,estimated_delivery,precio_anterior,guia_talles_id').eq('id', productSlug).single(); prod = r.data }
       if (prod) setProduct(prod as Product)
       if (sg) setSizeGuides(sg as SizeGuide[])
-      if (promos) {
-        const pr = (promos as Array<{ product_ids: string[]; discount_type: string; discount_value: number }>).find(p => p.product_ids.includes(productId))
+      if (promos && prod) {
+        const pr = (promos as Array<{ product_ids: string[]; discount_type: string; discount_value: number }>).find(p => p.product_ids.includes(prod!.id))
         if (pr && prod) {
           setPromoPrice(pr.discount_type === 'percentage' ? Math.round((prod as Product).selling_price * (1 - pr.discount_value / 100)) : Math.max(0, (prod as Product).selling_price - pr.discount_value))
         }
@@ -79,7 +82,7 @@ export default function ProductPageClient() {
       setLoading(false)
     }
     load()
-  }, [slug, productId])
+  }, [slug, productSlug])
 
   if (loading) return <div className="flex items-center justify-center min-h-screen"><div className="w-8 h-8 border-2 border-gray-200 border-t-gray-600 rounded-full animate-spin" /></div>
   if (!product || !shop) return <div className="flex items-center justify-center min-h-screen text-gray-500">Producto no encontrado</div>

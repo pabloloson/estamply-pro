@@ -17,7 +17,7 @@ interface CatalogProduct {
   category_id: string | null; visible_in_catalog: boolean
   sizes: string[] | null; colors: Array<{ name: string; hex: string }> | null
   estimated_delivery: string | null; precio_anterior: number | null
-  guia_talles_id: string | null; featured: boolean; sort_order: number
+  guia_talles_id: string | null; featured: boolean; sort_order: number; slug: string | null
 }
 interface SizeGuide { id: string; nombre: string; columnas: string[]; filas: Array<Record<string, string>>; imagen_referencia: string | null }
 interface Category { id: string; name: string }
@@ -93,7 +93,7 @@ export default function PublicCatalogPage() {
       _countryConfig = getCountry((s.pais as string) || 'AR')
       _msgs = ((s.idioma as string) === 'pt' ? ptMsg : esMsg) as unknown as Record<string, Record<string, string>>
       const [{ data: prods }, { data: cats }, { data: mp }, { data: sg }, { data: promos }] = await Promise.all([
-        supabase.from('catalog_products').select('id,name,description,photos,selling_price,manage_stock,current_stock,category_id,visible_in_catalog,sizes,colors,estimated_delivery,precio_anterior,guia_talles_id,featured,sort_order').eq('user_id', userId).eq('visible_in_catalog', true).gt('selling_price', 0).order('sort_order').order('name'),
+        supabase.from('catalog_products').select('id,name,description,photos,selling_price,manage_stock,current_stock,category_id,visible_in_catalog,sizes,colors,estimated_delivery,precio_anterior,guia_talles_id,featured,sort_order,slug').eq('user_id', userId).eq('visible_in_catalog', true).gt('selling_price', 0).order('sort_order').order('name'),
         supabase.from('categories').select('id,name').eq('user_id', userId),
         supabase.from('medios_pago').select('id,nombre,tipo_ajuste,porcentaje').eq('user_id', userId).eq('activo', true).order('orden'),
         supabase.from('guias_talles').select('id,nombre,columnas,filas,imagen_referencia').eq('user_id', userId),
@@ -237,7 +237,7 @@ function CatalogContent({ shop, products, categories, sizeGuides, activePromos }
             {featuredProducts.map(p => {
               const photo = (p.photos || [])[0]
               return (
-                <Link key={p.id} href={`/catalogo/${slug}/producto/${p.id}`} className="flex-shrink-0 w-36 bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition-shadow">
+                <Link key={p.id} href={`/catalogo/${slug}/${p.slug || p.id}`} className="flex-shrink-0 w-36 bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition-shadow">
                   <div className="aspect-square bg-gray-100">
                     {photo ? <img src={photo} alt={p.name} className="w-full h-full object-cover" loading="lazy" /> : <div className="w-full h-full flex items-center justify-center text-gray-300 text-2xl">📷</div>}
                   </div>
@@ -262,7 +262,7 @@ function CatalogContent({ shop, products, categories, sizeGuides, activePromos }
             const promoPrice = promo ? getPromoPrice(p) : null
             const hasManualDiscount = !promo && (p.precio_anterior || 0) > p.selling_price
             return (
-              <Link key={p.id} href={`/catalogo/${slug}/producto/${p.id}`} className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition-shadow block">
+              <Link key={p.id} href={`/catalogo/${slug}/${p.slug || p.id}`} className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition-shadow block">
                 <div className="relative aspect-square bg-gray-100">
                   {photo ? <img src={photo} alt={p.name} className="w-full h-full object-cover" loading="lazy" /> : <div className="w-full h-full flex items-center justify-center text-gray-300 text-3xl">📷</div>}
                   {status === 'soldout' && <div className="absolute inset-0 bg-black/40 flex items-center justify-center"><span className="text-white font-bold text-sm bg-black/60 px-3 py-1 rounded-full">{tc('webCatalog', 'outOfStock')}</span></div>}

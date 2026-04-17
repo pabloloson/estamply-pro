@@ -18,11 +18,14 @@ interface CatalogProduct {
   manage_stock: boolean; current_stock: number; min_stock: number; visible_in_catalog: boolean
   sizes: string[] | null; colors: Array<{ name: string; hex: string }> | null; estimated_delivery: string | null
   precio_anterior: number | null; guia_talles_id: string | null
-  featured: boolean; sort_order: number
+  featured: boolean; sort_order: number; slug: string | null
 }
 interface StockMovement { id: string; product_id: string; type: string; quantity: number; note: string | null; created_at: string }
 
 function marginColor(m: number) { return m >= 40 ? 'text-green-600' : m >= 20 ? 'text-amber-600' : 'text-red-500' }
+function generateSlug(name: string): string {
+  return name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[×]/g, 'x').replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
+}
 
 export default function CatalogoPage() {
   const supabase = createClient()
@@ -83,6 +86,7 @@ export default function CatalogoPage() {
   // Catalog product CRUD
   async function saveCatalogProduct() {
     if (!catModal?.name) return; setSaving(true)
+    const slug = catModal.slug || generateSlug(catModal.name)
     const payload = {
       name: catModal.name, description: catModal.description || null,
       category_id: catModal.category_id || null, photos: catModal.photos || [],
@@ -98,6 +102,7 @@ export default function CatalogoPage() {
       estimated_delivery: catModal.estimated_delivery || null,
       precio_anterior: catModal.precio_anterior || null,
       guia_talles_id: catModal.guia_talles_id || null,
+      slug,
     }
     if (catModal.id) await supabase.from('catalog_products').update(payload).eq('id', catModal.id)
     else await supabase.from('catalog_products').insert(payload)
