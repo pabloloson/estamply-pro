@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, createContext, useContext, useCallback } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { ShoppingCart, X, Plus, Minus, Trash2, MessageCircle, ArrowLeft, ChevronLeft, ChevronRight, Check, Share2, Copy, Link2 } from 'lucide-react'
 import esMsg from '../../../../messages/es.json'
@@ -152,8 +152,12 @@ export default function PublicCatalogPage() {
 // ── Catalog Content ──
 type PromoInfo = { product_ids: string[]; discount_type: string; discount_value: number; ends_at: string; show_countdown: boolean }
 function CatalogContent({ shop, products, categories, sizeGuides, activePromos }: { shop: ShopInfo; products: CatalogProduct[]; categories: Category[]; sizeGuides: SizeGuide[]; activePromos: PromoInfo[] }) {
+  const searchParams = useSearchParams()
   const [selectedCat, setSelectedCat] = useState<string | null>(null)
-  const [detail, setDetail] = useState<CatalogProduct | null>(null)
+  const [detail, setDetail] = useState<CatalogProduct | null>(() => {
+    const pid = searchParams.get('product')
+    return pid ? products.find(p => p.id === pid) || null : null
+  })
   const [showCart, setShowCart] = useState(false)
   const [annDismissed, setAnnDismissed] = useState(false)
   const [search, setSearch] = useState('')
