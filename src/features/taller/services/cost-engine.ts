@@ -44,6 +44,7 @@ export interface ComputeInput {
   discountTiers: DiscountTier[]
   tipoCambio?: number  // exchange rate: 1 USD = X local. Default 1 (no conversion)
   redondeo_precios?: 'none' | 'integer' | 'tens' | 'hundreds'
+  pricingMode?: 'margin' | 'markup'
   vinylSelections?: Array<{ materialIdx: number; colorIdx: number; ancho: number; alto: number }>
   // Zones for subli/dtf (multiple stamping areas per unit)
   zones?: Array<{ ancho: number; alto: number; ubicacion?: string }>
@@ -166,7 +167,9 @@ function calcSubliZone(dw: number, dh: number, qty: number, config: SubliConfig,
   let costoTinta = 0
   if (tinta) {
     const refArea = ((pc.ancho as number) || 21) * ((pc.alto as number) || 29.7)
-    costoTinta = (dw * dh / (Math.max((tc.rendimiento as number) || 1, 1) * refArea)) * ((tc.precio as number) || 0)
+    const gap = config.margen_seguridad ?? PRINTER_MARGIN
+    const printedArea = (dw + gap * 2) * (dh + gap * 2)
+    costoTinta = (printedArea / (Math.max((tc.rendimiento as number) || 1, 1) * refArea)) * ((tc.precio as number) || 0)
   }
   return { papelTinta: costoPapel + costoTinta, costoPapel, costoTinta, perSheet, sheetsNeeded, sheetRotated, sheetCols, sheetRows, isRollo, rollW, rollCols, rollRows, rollRotated, metrosLineales }
 }
@@ -245,7 +248,7 @@ function computeSubli(input: ComputeInput, config: SubliConfig): CostResult {
       costoPapel: zr ? zr.costoPapel : 0, costoTinta: zr ? zr.costoTinta : 0,
     }
   })
-  const r = buildResult(lines, costoTotal, margin, quantity, discountTiers, timeMinutes, nesting)
+  const r = buildResult(lines, costoTotal, margin, quantity, discountTiers, timeMinutes, nesting, input.pricingMode)
   r.zoneNesting = zoneNesting
   return r
 }
@@ -341,7 +344,7 @@ function computeDTF(input: ComputeInput, config: DTFConfig | DTFUVConfig): CostR
   if (dfn) {
     dtfNesting = { type: 'roll', cols: dfn.nesting.cols, rows: dfn.nesting.rows, rotated: dfn.nesting.rotated, metrosLineales: dfn.metrosLineales, anchoRollo: dfn.rollW, quantity }
   }
-  const result = buildResult(lines, costoTotal, margin, quantity, discountTiers, timeMinutes, dtfNesting)
+  const result = buildResult(lines, costoTotal, margin, quantity, discountTiers, timeMinutes, dtfNesting, input.pricingMode)
   if (noInsumos) result.missingInsumosWarning = `Vinculá insumos en Técnicas → ${slug === 'dtf_uv' ? 'DTF UV' : 'DTF Textil'} para calcular correctamente`
   return result
 }
@@ -380,7 +383,7 @@ function computeVinyl(input: ComputeInput, config: VinylConfig): CostResult {
   if (mo > 0) lines.push({ label: 'Mano de obra', value: mo })
   if (otrosGastos > 0) lines.push({ label: 'Otros gastos', value: otrosGastos / Math.max(quantity, 1) })
 
-  const r = { ...buildResult(lines, costoTotal, margin, quantity, discountTiers, setupMin + (((product.time_vinyl as number) || 0) / 60) * quantity), vinylNesting }
+  const r = { ...buildResult(lines, costoTotal, margin, quantity, discountTiers, setupMin + (((product.time_vinyl as number) || 0) / 60) * quantity, undefined, input.pricingMode), vinylNesting }
   if (vinylInsumos.length === 0) r.missingInsumosWarning = 'Vinculá materiales de vinilo en Técnicas → Vinilo para calcular correctamente'
   return r
 }
@@ -445,13 +448,13 @@ function computeSerigrafia(input: ComputeInput, config: SerigrafiaConfig): CostR
   const timeProdPerUnit = ((product.time_serigrafia as number) || 15) / 60 * numColors
   const timeMinutes = setupMin + timeSetupMin + timeProdPerUnit * quantity
 
-  return { ...buildResult(lines, costoTotal, margin, quantity, discountTiers, timeMinutes), costoSetupTotal }
+  return { ...buildResult(lines, costoTotal, margin, quantity, discountTiers, timeMinutes, undefined, input.pricingMode), costoSetupTotal }
 }
 
 // ── Builder ──
 
-function buildResult(lines: { label: string; value: number }[], costoTotal: number, margin: number, qty: number, tiers: DiscountTier[], timeMin: number, nesting?: CostResult['nesting']): CostResult {
-  const precio = calcSuggestedPrice(costoTotal, margin)
+function buildResult(lines: { label: string; value: number }[], costoTotal: number, margin: number, qty: number, tiers: DiscountTier[], timeMin: number, nesting?: CostResult['nesting'], pricingMode: 'margin' | 'markup' = 'margin'): CostResult {
+  const precio = calcSuggestedPrice(costoTotal, margin, pricingMode)
   const desc = getDiscount(tiers, qty)
   const conDesc = precio * (1 - desc)
   const sub = conDesc * qty

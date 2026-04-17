@@ -110,6 +110,7 @@ export type WorkshopSettings = {
   redondeo_precios: 'none' | 'integer' | 'tens' | 'hundreds'
   // Strategy
   margen_sugerido: number
+  pricing_mode: 'margin' | 'markup'
   descuento_global_enabled: boolean
   descuentos_global: DiscountTier[]
   // Discounts (per-technique)
@@ -167,6 +168,7 @@ export const DEFAULT_SETTINGS: WorkshopSettings = {
   redondeo_precios: 'none' as const,
   // Strategy
   margen_sugerido: 50,
+  pricing_mode: 'margin' as const,
   descuento_global_enabled: false,
   descuentos_global: [
     { desde: 1, hasta: 9, porcentaje: 0 },
@@ -200,8 +202,9 @@ export function getDiscount(tiers: DiscountTier[], qty: number): number {
   return tier ? tier.porcentaje : (tiers[tiers.length - 1]?.porcentaje ?? 0)
 }
 
-export function calcSuggestedPrice(cost: number, marginPct: number): number {
+export function calcSuggestedPrice(cost: number, marginPct: number, mode: 'margin' | 'markup' = 'margin'): number {
   const m = marginPct / 100
+  if (mode === 'markup') return cost * (1 + m)
   return m < 1 ? cost / (1 - m) : cost * 2
 }
 

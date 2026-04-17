@@ -150,13 +150,14 @@ export function useCostEngine(
       insumos: linkedInsumos,
       quantity, designWidth, designHeight, numColors,
       margin, mo, otrosGastos,
-      setupMin: settings.setup_min ?? 15,
+      setupMin: (effectiveConfig as unknown as Record<string, unknown>).tiempo_preparacion as number || 0,
       discountTiers: effectiveDiscountTiers,
       zones: isZonable && numZones > 1 ? zones.slice(0, numZones) : undefined,
       vinylSelections: technique.slug === 'vinyl' ? vinylSelections.slice(0, numColors) : undefined,
       overrideMerma, overrideAmortPrint, overrideAmortPress, overrideCostoPantalla,
       tipoCambio: (settings as Record<string, unknown>).tipo_cambio as number || 1,
       redondeo_precios: ((settings as Record<string, unknown>).redondeo_precios as string || 'none') as 'none' | 'integer' | 'tens' | 'hundreds',
+      pricingMode: ((settings as Record<string, unknown>).pricing_mode as 'margin' | 'markup') || 'margin',
     })
   }, [technique, product, equipment, linkedInsumos, settings, quantity, designWidth, designHeight, numColors, numZones, zones, margin, mo, otrosGastos, vinylSelections, discountTiers, overrideMerma, overrideAmortPrint, overrideAmortPress, overrideCostoPantalla, overrideDiscountPct, overridePrinterId, overridePressId, overrideDtfMode])
 
