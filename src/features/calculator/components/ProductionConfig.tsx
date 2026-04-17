@@ -91,7 +91,8 @@ export default function ProductionConfig({
               <select className="input-base text-sm" value={selectedPapelId} onChange={e => onPapelChange(e.target.value)}>
                 {papelInsumos.map(ins => {
                   const cfg = ins.config as Record<string, unknown>
-                  const fmtStr = cfg.formato === 'rollo' ? 'Rollo' : 'Hojas'
+                  const isRoll = cfg.formato === 'rollo' || (ins.tipo === 'film' && (cfg.largo as number) > 0)
+                  const fmtStr = isRoll ? 'Rollo' : 'Hojas'
                   return <option key={ins.id} value={ins.id}>{ins.nombre} — {fmtStr}</option>
                 })}
               </select>
