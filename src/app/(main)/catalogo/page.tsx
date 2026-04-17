@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Plus, Pencil, Trash2, X, Eye, EyeOff, AlertTriangle, Upload, Image as ImageIcon, FolderOpen } from 'lucide-react'
+import { Plus, Pencil, Trash2, X, Eye, EyeOff, AlertTriangle, Upload, Image as ImageIcon, FolderOpen, Star } from 'lucide-react'
 import EmptyState from '@/shared/components/EmptyState'
 import type { Category } from '@/features/taller/types'
 import CategoryModal from '@/features/taller/components/CategoryModal'
@@ -18,6 +18,7 @@ interface CatalogProduct {
   manage_stock: boolean; current_stock: number; min_stock: number; visible_in_catalog: boolean
   sizes: string[] | null; colors: Array<{ name: string; hex: string }> | null; estimated_delivery: string | null
   precio_anterior: number | null; guia_talles_id: string | null
+  featured: boolean; sort_order: number
 }
 interface StockMovement { id: string; product_id: string; type: string; quantity: number; note: string | null; created_at: string }
 
@@ -44,7 +45,7 @@ export default function CatalogoPage() {
 
   async function load() {
     const [{ data: cp }, { data: c }, { data: gt }] = await Promise.all([
-      supabase.from('catalog_products').select('*').order('name'),
+      supabase.from('catalog_products').select('*').order('sort_order').order('name'),
       supabase.from('categories').select('*').order('name'),
       supabase.from('guias_talles').select('id,nombre').order('orden'),
     ])
@@ -127,11 +128,18 @@ export default function CatalogoPage() {
   }
   async function deleteCat(id: string) { await supabase.from('categories').delete().eq('id', id); load() }
 
+  async function toggleFeatured(p: CatalogProduct) {
+    const newVal = !p.featured
+    await supabase.from('catalog_products').update({ featured: newVal }).eq('id', p.id)
+    setCatalogProducts(prev => prev.map(x => x.id === p.id ? { ...x, featured: newVal } : x))
+  }
+
   const filtered = catalogProducts.filter(p => {
     if (catFilter === 'stock') return p.manage_stock && p.current_stock > 0
     if (catFilter === 'ondemand') return !p.manage_stock
     if (catFilter === 'visible') return p.visible_in_catalog
     if (catFilter === 'hidden') return !p.visible_in_catalog
+    if (catFilter === 'featured') return p.featured
     return true
   })
 
@@ -156,7 +164,7 @@ export default function CatalogoPage() {
 
       {/* Filters */}
       <div className="flex gap-1.5 mb-4 flex-wrap">
-        {[['all', t('allProducts')], ['stock', t('withStock')], ['ondemand', t('onDemand')], ['visible', t('visible')], ['hidden', t('hidden')]].map(([id, label]) => (
+        {[['all', t('allProducts')], ['featured', 'Destacados'], ['stock', t('withStock')], ['ondemand', t('onDemand')], ['visible', t('visible')], ['hidden', t('hidden')]].map(([id, label]) => (
           <button key={id} onClick={() => setCatFilter(id)}
             className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${catFilter === id ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-500'}`}>{label}</button>
         ))}
@@ -182,7 +190,10 @@ export default function CatalogoPage() {
                     <p className="text-xs text-gray-400">{catName || 'Sin categoría'}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <button onClick={e => { e.stopPropagation(); toggleFeatured(p) }} className="p-1">
+                    <Star size={14} className={p.featured ? 'text-amber-400 fill-amber-400' : 'text-gray-300'} />
+                  </button>
                   {p.visible_in_catalog
                     ? <Eye size={14} className="text-green-500" />
                     : <EyeOff size={14} className="text-gray-300" />}
@@ -276,6 +287,9 @@ export default function CatalogoPage() {
                   </td>
                   <td className="px-3 py-3">{p.visible_in_catalog ? <Eye size={14} className="text-green-500" /> : <EyeOff size={14} className="text-gray-300" />}</td>
                   <td className="px-3 py-3"><div className="flex gap-1">
+                    <button onClick={() => toggleFeatured(p)} className="p-1.5 rounded-lg hover:bg-amber-50" title={p.featured ? 'Quitar destacado' : 'Destacar'}>
+                      <Star size={14} className={p.featured ? 'text-amber-400 fill-amber-400' : 'text-gray-300'} />
+                    </button>
                     <button onClick={() => setCatModal(p)} className="p-1.5 rounded-lg hover:bg-gray-100"><Pencil size={14} className="text-gray-400" /></button>
                     <button onClick={() => deleteCatalogProduct(p.id)} className="p-1.5 rounded-lg hover:bg-red-50"><Trash2 size={14} className="text-red-400" /></button>
                   </div></td>

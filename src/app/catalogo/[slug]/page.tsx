@@ -15,7 +15,7 @@ interface CatalogProduct {
   category_id: string | null; visible_in_catalog: boolean
   sizes: string[] | null; colors: Array<{ name: string; hex: string }> | null
   estimated_delivery: string | null; precio_anterior: number | null
-  guia_talles_id: string | null
+  guia_talles_id: string | null; featured: boolean; sort_order: number
 }
 interface SizeGuide { id: string; nombre: string; columnas: string[]; filas: Array<Record<string, string>>; imagen_referencia: string | null }
 interface Category { id: string; name: string }
@@ -122,7 +122,7 @@ export default function PublicCatalogPage() {
       _countryConfig = getCountry((s.pais as string) || 'AR')
       _msgs = ((s.idioma as string) === 'pt' ? ptMsg : esMsg) as unknown as Record<string, Record<string, string>>
       const [{ data: prods }, { data: cats }, { data: mp }, { data: sg }] = await Promise.all([
-        supabase.from('catalog_products').select('id,name,description,photos,selling_price,manage_stock,current_stock,category_id,visible_in_catalog,sizes,colors,estimated_delivery,precio_anterior,guia_talles_id').eq('user_id', userId).eq('visible_in_catalog', true).gt('selling_price', 0),
+        supabase.from('catalog_products').select('id,name,description,photos,selling_price,manage_stock,current_stock,category_id,visible_in_catalog,sizes,colors,estimated_delivery,precio_anterior,guia_talles_id,featured,sort_order').eq('user_id', userId).eq('visible_in_catalog', true).gt('selling_price', 0).order('sort_order').order('name'),
         supabase.from('categories').select('id,name').eq('user_id', userId),
         supabase.from('medios_pago').select('id,nombre,tipo_ajuste,porcentaje').eq('user_id', userId).eq('activo', true).order('orden'),
         supabase.from('guias_talles').select('id,nombre,columnas,filas,imagen_referencia').eq('user_id', userId),
@@ -162,6 +162,8 @@ function CatalogContent({ shop, products, categories, sizeGuides }: { shop: Shop
   if (sortBy === 'price_asc') filtered = [...filtered].sort((a, b) => a.selling_price - b.selling_price)
   else if (sortBy === 'price_desc') filtered = [...filtered].sort((a, b) => b.selling_price - a.selling_price)
   else if (sortBy === 'newest') filtered = [...filtered].reverse()
+  else filtered = [...filtered].sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0) || a.sort_order - b.sort_order)
+  const featuredProducts = products.filter(p => p.featured)
   const usedCats = categories.filter(c => products.some(p => p.category_id === c.id))
   const itemCount = items.reduce((s, i) => s + i.quantity, 0)
 
@@ -234,6 +236,30 @@ function CatalogContent({ shop, products, categories, sizeGuides }: { shop: Shop
           <option value="newest">{tc('webCatalog', 'newest')}</option>
         </select>
       </div>
+
+      {/* Featured section */}
+      {featuredProducts.length > 0 && sortBy === 'default' && !search && !selectedCat && (
+        <div className="max-w-5xl mx-auto px-4 pt-4 pb-2">
+          <p className="text-sm font-bold mb-2" style={{ color }}>{tc('webCatalog', 'featured')}</p>
+          <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4" style={{ scrollbarWidth: 'none' }}>
+            {featuredProducts.map(p => {
+              const photo = (p.photos || [])[0]
+              return (
+                <div key={p.id} className="flex-shrink-0 w-36 bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition-shadow"
+                  onClick={() => setDetail(p)}>
+                  <div className="aspect-square bg-gray-100">
+                    {photo ? <img src={photo} alt={p.name} className="w-full h-full object-cover" loading="lazy" /> : <div className="w-full h-full flex items-center justify-center text-gray-300 text-2xl">📷</div>}
+                  </div>
+                  <div className="p-2">
+                    <p className="font-semibold text-gray-800 text-xs leading-tight truncate">{p.name}</p>
+                    <p className="font-bold text-gray-900 text-sm mt-0.5">{fmt(p.selling_price)}</p>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Product Grid */}
       <div className="max-w-5xl mx-auto px-4 py-4">
