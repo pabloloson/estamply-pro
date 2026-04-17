@@ -1153,7 +1153,7 @@ export default function SettingsPage() {
               ))}
             </div>
             {/* Desktop table */}
-            <div className="hidden md:block card overflow-hidden">
+            <div className="hidden md:block card" style={{ overflow: 'visible' }}>
               <table className="w-full"><thead><tr className="border-b border-gray-100">
                 {['Nombre', 'Talles', 'Medidas', ''].map(h => <th key={h} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">{h}</th>)}
               </tr></thead><tbody>
