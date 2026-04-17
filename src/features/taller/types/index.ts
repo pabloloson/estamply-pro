@@ -132,6 +132,7 @@ export interface CostResult {
   subtotal: number
   ganancia: number
   timeMinutes: number
+  timeBreakdown?: { prepMin: number; printMin: number; pressMin: number }
   profitPerHour: number
   nesting?: {
     type: 'sheet' | 'roll'

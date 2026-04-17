@@ -33,6 +33,9 @@ interface AuditTicketProps {
   consumibles?: Array<{ name: string; costPerUse: number }>
   tipoCambio?: number
   monedaReferencia?: string
+  pricingMode?: 'margin' | 'markup'
+  onPricingModeChange?: (mode: 'margin' | 'markup') => void
+  timeBreakdown?: { prepMin: number; printMin: number; pressMin: number }
 }
 
 const COLORS: Record<string, string> = { subli: '#6C5CE7', dtf: '#E17055', dtf_uv: '#00B894', vinyl: '#E84393', serigrafia: '#FDCB6E' }
@@ -109,6 +112,7 @@ export default function AuditTicket(props: AuditTicketProps) {
     hasOverrides, onResetOverrides, onDiscountChange,
     consumibles = [],
     tipoCambio, monedaReferencia,
+    pricingMode = 'margin', onPricingModeChange, timeBreakdown,
   } = props
 
   const color = COLORS[technique] || '#6C5CE7'
@@ -281,10 +285,20 @@ export default function AuditTicket(props: AuditTicketProps) {
 
           {/* 2. Precio Sugerido */}
           {showCosts && <div className="pb-4 pt-3 border-t border-dashed border-gray-200">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">2 &middot; Precio sugerido</p>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">2 &middot; Precio sugerido</p>
+              {onPricingModeChange && (
+                <div className="inline-flex rounded-md border border-gray-200 overflow-hidden">
+                  {[['margin', 'Margen'], ['markup', 'Markup']].map(([v, l]) => (
+                    <button key={v} type="button" onClick={() => onPricingModeChange(v as 'margin' | 'markup')}
+                      className={`px-2 py-0.5 text-[10px] font-semibold ${pricingMode === v ? 'bg-purple-600 text-white' : 'text-gray-400 hover:bg-gray-50'}`}>{l}</button>
+                  ))}
+                </div>
+              )}
+            </div>
             <div className={`flex justify-between items-center py-1.5 px-2 -mx-2 rounded-md cursor-pointer transition-colors ${editingMargin ? 'bg-purple-50' : 'hover:bg-gray-50'}`}
               onClick={() => { if (!editingMargin) { setTempVal(String(margin)); setEditingMargin(true) } }}>
-              <span className="text-sm text-gray-500">Margen de ganancia (+{editingMargin ? '' : margin}%{editingMargin ? '' : ')'}
+              <span className="text-sm text-gray-500">{pricingMode === 'markup' ? 'Markup' : 'Margen de ganancia'} (+{editingMargin ? '' : margin}%{editingMargin ? '' : ')'}
                 {editingMargin && (
                   <input type="number" className="no-spinner w-10 text-center text-sm font-medium bg-white border-b-2 border-purple-400 outline-none mx-0.5"
                     autoFocus value={tempVal} onChange={e => setTempVal(e.target.value)}
@@ -350,6 +364,13 @@ export default function AuditTicket(props: AuditTicketProps) {
               <div className="rounded-xl p-3.5 bg-gray-50 border border-gray-100">
                 <div className="flex items-center gap-1.5 mb-1.5"><Clock size={13} className="text-gray-400" /><span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Tiempo total</span></div>
                 <p className="text-xl font-black text-gray-800">{fmtTime(timeMinutes)}</p>
+                {timeBreakdown && (timeBreakdown.prepMin > 0 || timeBreakdown.printMin > 0) && (
+                  <div className="text-[10px] text-gray-400 mt-1 space-y-0.5">
+                    {timeBreakdown.prepMin > 0 && <p>Preparación: {Math.round(timeBreakdown.prepMin)} min</p>}
+                    {timeBreakdown.printMin > 0 && <p>Impresión: {Math.round(timeBreakdown.printMin * 10) / 10} min</p>}
+                    {timeBreakdown.pressMin > 0 && <p>Planchado: {Math.round(timeBreakdown.pressMin * 10) / 10} min</p>}
+                  </div>
+                )}
                 <p className="text-xs font-semibold text-gray-400 mt-0.5">{fmt(profitPerHour)}/h</p>
               </div>
             </div>

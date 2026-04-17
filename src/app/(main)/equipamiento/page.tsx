@@ -13,6 +13,7 @@ interface Equipment {
   cost: number; lifespan_uses: number; tecnicas_slugs: string[]
   assigned_paper_id: string | null; assigned_ink_id: string | null
   purchase_date: string | null; supplier_id: string | null; notes: string | null
+  print_time_sec: number
 }
 interface InsumoRef { id: string; nombre: string; tipo: string; config: Record<string, unknown> }
 
@@ -89,7 +90,7 @@ export default function EquipamientoPage() {
       lifespan_uses: modal.lifespan_uses || 1000, tecnicas_slugs: modal.tecnicas_slugs || [],
       assigned_paper_id: modal.assigned_paper_id || null, assigned_ink_id: modal.assigned_ink_id || null,
       purchase_date: modal.purchase_date || null, supplier_id: modal.supplier_id || null,
-      notes: modal.notes || null,
+      notes: modal.notes || null, print_time_sec: modal.print_time_sec || 0,
     }
     let userId = effectiveUserId
     if (!userId) { const { data: { user } } = await supabase.auth.getUser(); userId = user?.id || null }
@@ -292,9 +293,18 @@ export default function EquipamientoPage() {
                     <NumericInput className="input-base" min={1} value={modal.lifespan_uses || 10000} onChange={v => setModal({ ...modal, lifespan_uses: v })} />
                     <p className="text-[10px] text-gray-400 mt-0.5">Usos estimados antes de reemplazar</p></div>
                 </div>
-                <div className="mt-3">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Fecha de compra</label>
-                  <input type="date" className="input-base" max={new Date().toISOString().split('T')[0]} value={modal.purchase_date || ''} onChange={e => setModal({ ...modal, purchase_date: e.target.value || null })} />
+                <div className="grid grid-cols-2 gap-3 mt-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Fecha de compra</label>
+                    <input type="date" className="input-base" max={new Date().toISOString().split('T')[0]} value={modal.purchase_date || ''} onChange={e => setModal({ ...modal, purchase_date: e.target.value || null })} />
+                  </div>
+                  {(modal.clasificacion === 'impresora' || modal.clasificacion === 'plotter') && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">{modal.clasificacion === 'plotter' ? 'Tiempo por metro (seg)' : 'Tiempo por hoja (seg)'}</label>
+                      <NumericInput className="input-base" value={modal.print_time_sec || 0} onChange={v => setModal({ ...modal, print_time_sec: v })} />
+                      <p className="text-[10px] text-gray-400 mt-0.5">{modal.clasificacion === 'plotter' ? 'Seg. por metro lineal impreso.' : 'Seg. por hoja impresa.'}</p>
+                    </div>
+                  )}
                 </div>
                 {modalAmort > 0 && (
                   <div className="mt-3 p-3 rounded-lg bg-green-50 border border-green-100 flex items-start gap-2">

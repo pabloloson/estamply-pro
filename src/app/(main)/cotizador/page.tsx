@@ -644,6 +644,12 @@ export default function CotizadorPage() {
                     const rend = (c.rendimiento as number) || 1
                     return { name: ins.nombre, costPerUse: Math.round(price / rend) }
                   })}
+                pricingMode={((settings as Record<string, unknown>).pricing_mode as 'margin' | 'markup') || 'margin'}
+                onPricingModeChange={async (mode) => {
+                  const updated = { ...settings, pricing_mode: mode }
+                  await supabase.from('workshop_settings').upsert({ id: 1, settings: updated }, { onConflict: 'id' })
+                }}
+                timeBreakdown={result?.timeBreakdown}
               />
             ) : (
               <div className="rounded-2xl flex flex-col items-center justify-center min-h-[300px] gap-3 border-2 border-dashed border-amber-200 bg-amber-50">

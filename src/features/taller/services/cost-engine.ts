@@ -30,7 +30,7 @@ export function calcRollNesting(dw: number, dh: number, rollW: number, qty: numb
 export interface ComputeInput {
   config: TecnicaConfig
   product: { base_cost: number; press_equipment_id?: string | null; moneda?: string; [k: string]: unknown }
-  equipment: Array<{ id: string; type: string; clasificacion: string; cost: number; lifespan_uses: number; tecnicas_slugs?: string[]; moneda?: string }>
+  equipment: Array<{ id: string; type: string; clasificacion: string; cost: number; lifespan_uses: number; tecnicas_slugs?: string[]; moneda?: string; print_time_sec?: number }>
   techniqueEquipmentIds: string[]
   insumos: Insumo[]
   quantity: number
@@ -227,7 +227,12 @@ function computeSubli(input: ComputeInput, config: SubliConfig): CostResult {
   if (otrosGastos > 0) lines.push({ label: 'Otros gastos', value: otrosGastos / Math.max(quantity, 1) })
 
   const costoTotal = costoProducto + totalPapelTinta + totalAmortPress + amortEquip + costoDesp + moAdjusted + otrosGastos / Math.max(quantity, 1)
-  const timeMinutes = setupMin + (((product.time_subli as number) || 0) / 60) * numZones * quantity
+  // Time: prep + print + press
+  const printer = equipment.find(e => techniqueEquipmentIds.includes(e.id) && (e.type?.startsWith('printer') || e.clasificacion === 'impresora'))
+  const printTimeSec = printer?.print_time_sec || 0
+  const printTimeMin = printTimeSec > 0 ? (printTimeSec * totalHojas) / 60 : 0
+  const pressTimeMin = (((product.time_subli as number) || 0) / 60) * numZones * quantity
+  const timeMinutes = setupMin + printTimeMin + pressTimeMin
 
   const fn = zoneResults.length > 0 ? zoneResults[0] : undefined
   let nesting: CostResult['nesting'] = undefined
@@ -249,6 +254,7 @@ function computeSubli(input: ComputeInput, config: SubliConfig): CostResult {
     }
   })
   const r = buildResult(lines, costoTotal, margin, quantity, discountTiers, timeMinutes, nesting, input.pricingMode)
+  r.timeBreakdown = { prepMin: setupMin, printMin: printTimeMin, pressMin: pressTimeMin }
   r.zoneNesting = zoneNesting
   return r
 }
@@ -336,7 +342,12 @@ function computeDTF(input: ComputeInput, config: DTFConfig | DTFUVConfig): CostR
   const costoTotal = costoProducto + totalImpresion + totalAmortPress + costoDesp + moAdjusted + otrosGastos / Math.max(quantity, 1)
 
   const timeKey = slug === 'dtf_uv' ? 'time_dtf_uv' : 'time_dtf'
-  const timeMinutes = setupMin + ((product[timeKey] as number || 0) / 60) * numZones * quantity
+  const dtfPrinter = equipment.find(e => techniqueEquipmentIds.includes(e.id) && (e.type?.startsWith('printer') || e.clasificacion === 'impresora'))
+  const dtfPrintTimeSec = dtfPrinter?.print_time_sec || 0
+  const totalMetrosDTF = dtfZoneResults.reduce((s, z) => s + z.metrosLineales, 0)
+  const dtfPrintTimeMin = dtfPrintTimeSec > 0 ? (dtfPrintTimeSec * totalMetrosDTF) / 60 : 0
+  const dtfPressTimeMin = ((product[timeKey] as number || 0) / 60) * numZones * quantity
+  const timeMinutes = setupMin + dtfPrintTimeMin + dtfPressTimeMin
   const noInsumos = insumos.length === 0
 
   const dfn = dtfZoneResults.length > 0 ? dtfZoneResults[0] : undefined
@@ -345,6 +356,7 @@ function computeDTF(input: ComputeInput, config: DTFConfig | DTFUVConfig): CostR
     dtfNesting = { type: 'roll', cols: dfn.nesting.cols, rows: dfn.nesting.rows, rotated: dfn.nesting.rotated, metrosLineales: dfn.metrosLineales, anchoRollo: dfn.rollW, quantity }
   }
   const result = buildResult(lines, costoTotal, margin, quantity, discountTiers, timeMinutes, dtfNesting, input.pricingMode)
+  result.timeBreakdown = { prepMin: setupMin, printMin: dtfPrintTimeMin, pressMin: dtfPressTimeMin }
   if (noInsumos) result.missingInsumosWarning = `Vinculá insumos en Técnicas → ${slug === 'dtf_uv' ? 'DTF UV' : 'DTF Textil'} para calcular correctamente`
   return result
 }
