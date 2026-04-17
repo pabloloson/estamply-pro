@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, lazy, Suspense } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { Save, User, Upload, Loader2, X, Plus, Trash2, QrCode, Check, Pencil, Search, MoreHorizontal } from 'lucide-react'
+import { Save, User, Upload, Loader2, X, Plus, Trash2, QrCode, Check, Pencil, Search, MoreHorizontal, Copy } from 'lucide-react'
 import { QRCodeCanvas } from 'qrcode.react'
 import { DEFAULT_SETTINGS, type WorkshopSettings, type DiscountTier, type ManoDeObraModo, type ComisionBase, DEFAULT_MO_CONFIG } from '@/features/presupuesto/types'
 import { useTranslations } from '@/shared/hooks/useTranslations'
@@ -85,6 +85,7 @@ export default function SettingsPage() {
   const [searchSupplier, setSearchSupplier] = useState('')
   const [mpToast, setMpToast] = useState('')
   const [guiaMenu, setGuiaMenu] = useState<string | null>(null)
+  const [userMenu, setUserMenu] = useState<string | null>(null)
   const [openDiscTecs, setOpenDiscTecs] = useState<string[]>(['descuentos_subli'])
 
 
@@ -864,37 +865,84 @@ export default function SettingsPage() {
         )
       })()}
 
-      {activeSection === 'usuarios' && (<>
-      {/* Usuarios */}
-      <div className="card p-6 max-w-2xl mt-6">
-        <h3 className="font-semibold text-gray-800 mb-1">{t('usersPermissions')}</h3>
-        <p className="text-xs text-gray-400 mb-4">{t('usersSubtitle')}</p>
-        <div className="space-y-2 mb-4">
-          <div className="flex items-center gap-3 p-3 rounded-lg bg-purple-50">
-            <span className="font-medium text-sm text-gray-800 flex-1">{ownerName || t('owner')}</span>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-purple-200 text-purple-700 font-bold">👑 {t('owner')}</span>
-            <span className="text-xs text-green-600">● Activo</span>
+      {activeSection === 'usuarios' && (() => {
+        const editMember = async (m: typeof teamMembers[0]) => {
+          const { data } = await supabase.from('team_members').select('permisos').eq('id', m.id).single()
+          const p = (data?.permisos || {}) as Record<string, unknown>
+          setInviteModal({ id: m.id, nombre: m.nombre, email: m.email, password: '', nivel: (p.nivel_visibilidad as string) || 'solo_precios', secciones: (p.secciones as Record<string, boolean>) || {} })
+        }
+        const deleteMember = async (m: typeof teamMembers[0]) => {
+          if (!confirm(`¿Eliminar a ${m.nombre}? Perderá acceso al taller.`)) return
+          await supabase.from('team_members').delete().eq('id', m.id)
+          setTeamMembers(prev => prev.filter(x => x.id !== m.id))
+          setUserMenu(null)
+        }
+        return (<>
+      <div>
+        <div className="flex items-start justify-between gap-3 mb-4">
+          <div><h2 className="text-xl font-bold text-gray-900 mb-1">{t('usersPermissions')}</h2>
+            <p className="text-sm text-gray-400">{t('usersSubtitle')}</p></div>
+          <button onClick={() => setInviteModal({ nombre: '', email: '', password: '', nivel: 'solo_precios', secciones: {} })}
+            className="flex items-center gap-1.5 whitespace-nowrap text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={14} /> Invitar</button>
+        </div>
+
+        {/* Mobile cards */}
+        <div className="md:hidden space-y-2">
+          <div className="card p-4 flex items-center justify-between">
+            <div><p className="font-semibold text-gray-800">{ownerName || 'Dueño'}</p></div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">👑 Dueño</span>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700">Activo</span>
+            </div>
           </div>
           {teamMembers.map(m => (
-            <div key={m.id} className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 hover:bg-gray-50">
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-800">{m.nombre}</p>
-                <p className="text-xs text-gray-400">{m.email}</p>
+            <div key={m.id} className="card p-4">
+              <div className="flex items-start justify-between">
+                <div><p className="font-semibold text-gray-800">{m.nombre}</p><p className="text-xs text-gray-400">{m.email}</p></div>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${m.estado === 'activo' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>{m.estado === 'activo' ? 'Activo' : 'Pendiente'}</span>
               </div>
-              <span className={`text-xs ${m.estado === 'activo' ? 'text-green-600' : 'text-gray-400'}`}>● {m.estado === 'activo' ? 'Activo' : 'Invitado'}</span>
-              <button onClick={async () => {
-                const { data } = await supabase.from('team_members').select('permisos').eq('id', m.id).single()
-                const p = (data?.permisos || {}) as Record<string, unknown>
-                setInviteModal({ id: m.id, nombre: m.nombre, email: m.email, password: '', nivel: (p.nivel_visibilidad as string) || 'solo_precios', secciones: (p.secciones as Record<string, boolean>) || {} })
-              }} className="text-xs text-gray-400 hover:text-gray-600">✏️</button>
-              <button onClick={async () => { if (confirm('¿Eliminar usuario?')) { await supabase.from('team_members').delete().eq('id', m.id); setTeamMembers(prev => prev.filter(x => x.id !== m.id)) } }} className="text-xs text-red-400 hover:text-red-600">🗑️</button>
+              <div className="flex gap-1 mt-2">
+                <button onClick={() => editMember(m)} className="p-1.5 rounded hover:bg-gray-100"><Pencil size={13} className="text-gray-400" /></button>
+                <button onClick={() => deleteMember(m)} className="p-1.5 rounded hover:bg-red-50"><Trash2 size={13} className="text-red-400" /></button>
+              </div>
             </div>
           ))}
         </div>
-        <button onClick={() => setInviteModal({ nombre: '', email: '', password: '', nivel: 'solo_precios', secciones: {} })}
-          className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700"><Plus size={14} /> {t('inviteUser')}</button>
+
+        {/* Desktop table */}
+        <div className="hidden md:block card" style={{ overflow: 'visible' }}>
+          <table className="w-full"><thead><tr className="border-b border-gray-100">
+            {['Usuario', 'Rol', 'Estado', ''].map(h => <th key={h} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">{h}</th>)}
+          </tr></thead><tbody>
+            <tr className="border-b border-gray-50 bg-purple-50/30">
+              <td className="px-4 py-3"><span className="font-medium text-gray-800">{ownerName || 'Dueño'}</span></td>
+              <td className="px-4 py-3"><span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">👑 Dueño</span></td>
+              <td className="px-4 py-3"><span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700">Activo</span></td>
+              <td className="px-4 py-3"></td>
+            </tr>
+            {teamMembers.map(m => (
+              <tr key={m.id} className="border-b border-gray-50 hover:bg-gray-50">
+                <td className="px-4 py-3"><p className="font-medium text-gray-800">{m.nombre}</p><p className="text-xs text-gray-400">{m.email}</p></td>
+                <td className="px-4 py-3 text-sm text-gray-500">Colaborador</td>
+                <td className="px-4 py-3"><span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${m.estado === 'activo' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>{m.estado === 'activo' ? 'Activo' : 'Pendiente'}</span></td>
+                <td className="px-4 py-3"><div className="flex gap-1 relative">
+                  <button onClick={() => editMember(m)} className="p-1.5 rounded-lg hover:bg-gray-100"><Pencil size={14} className="text-gray-400" /></button>
+                  <button onClick={e => { e.stopPropagation(); setUserMenu(userMenu === m.id ? null : m.id) }} className="p-1.5 rounded-lg hover:bg-gray-100"><MoreHorizontal size={14} className="text-gray-400" /></button>
+                  {userMenu === m.id && (<>
+                    <div className="fixed inset-0 z-40" onClick={() => setUserMenu(null)} />
+                    <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-lg shadow-lg border border-gray-100 z-50 py-1">
+                      <button onClick={() => { deleteMember(m); setUserMenu(null) }} className="w-full text-left px-3 py-1.5 text-sm text-red-500 hover:bg-red-50">Eliminar</button>
+                    </div>
+                  </>)}
+                </div></td>
+              </tr>
+            ))}
+          </tbody></table>
+          {teamMembers.length === 0 && <div className="text-center py-8 text-gray-400 text-sm">No hay colaboradores. Invitá al primero.</div>}
+        </div>
       </div>
-      </>)}
+      </>)
+      })()}
 
       {activeSection === 'productos' && (
         <Suspense fallback={<div className="flex items-center justify-center h-32"><div className="w-6 h-6 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>}>
@@ -1197,7 +1245,14 @@ export default function SettingsPage() {
                 <div><label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
                   <input className="input-base" type="email" value={inviteModal.email} onChange={e => setInviteModal({ ...inviteModal, email: e.target.value })} /></div>
                 <div><label className="block text-sm font-medium text-gray-700 mb-1">{tp('temporaryPassword')}</label>
-                  <input className="input-base" type="text" value={inviteModal.password} onChange={e => setInviteModal({ ...inviteModal, password: e.target.value })} /></div>
+                  <div className="flex gap-2">
+                    <input className="input-base flex-1" type="text" value={inviteModal.password} onChange={e => setInviteModal({ ...inviteModal, password: e.target.value })} />
+                    <button type="button" onClick={() => { const words = ['taller', 'estampa', 'color', 'diseño', 'prensa', 'plotter']; setInviteModal({ ...inviteModal, password: `${words[Math.floor(Math.random() * words.length)]}-${Math.floor(1000 + Math.random() * 9000)}` }) }}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50 whitespace-nowrap">Generar</button>
+                    {inviteModal.password && <button type="button" onClick={() => { navigator.clipboard.writeText(inviteModal.password) }}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50"><Copy size={12} /></button>}
+                  </div>
+                  <p className="text-[10px] text-gray-400 mt-1">Compartí esta contraseña con tu colaborador. Podrá cambiarla después desde Mi cuenta.</p></div>
               </>)}
 
               {/* Visibility level */}
@@ -1222,7 +1277,7 @@ export default function SettingsPage() {
               <div className="border-t border-gray-100 pt-4">
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">{tp('sections')}</p>
                 <div className="grid grid-cols-2 gap-1.5">
-                  {[['inicio', 'Inicio'], ['cotizador', 'Cotizador'], ['presupuestos', 'Presupuestos'], ['pedidos', 'Pedidos'], ['clientes', 'Clientes'], ['catalogo', 'Catálogo'], ['estadisticas', 'Estadísticas'], ['materiales', 'Materiales'], ['equipamiento', 'Equipamiento'], ['produccion', 'Producción'], ['configuracion', 'Configuración']].map(([k, l]) => (
+                  {[['inicio', 'Inicio'], ['cotizador', 'Cotizador'], ['presupuestos', 'Presupuestos'], ['pedidos', 'Pedidos'], ['clientes', 'Clientes'], ['catalogo', 'Catálogo'], ['promociones', 'Promociones'], ['estadisticas', 'Estadísticas'], ['configuracion', 'Configuración']].map(([k, l]) => (
                     <label key={k} className="flex items-center gap-2 cursor-pointer py-1">
                       <input type="checkbox" checked={!!inviteModal.secciones[k]} onChange={() => toggleSection(k)} className="rounded border-gray-300 text-purple-600" />
                       <span className="text-sm text-gray-700">{l}</span>
