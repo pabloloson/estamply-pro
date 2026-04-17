@@ -89,7 +89,7 @@ export function useCostEngine(
     setVinylSelections(prev => prev.map((s, j) => j === i ? { ...s, ...patch } : s))
   }
 
-  // Get insumos linked to current technique (by insumo_ids OR tecnica_asociada), with overrides
+  // Get insumos for current technique by tecnica_asociada (primary) + insumo_ids filtered by tecnica
   const linkedInsumos = useMemo(() => {
     if (!technique) return []
     const slug = technique.slug
@@ -97,10 +97,10 @@ export function useCostEngine(
       const ta = ins.tecnica_asociada
       return ta === slug || ta === 'compartido' || (slug === 'dtf' && ta === 'dtf_uv') || (slug === 'dtf_uv' && ta === 'dtf')
     }
-    // Combine: explicitly linked by ID + matching by tecnica_asociada
+    // Primary: filter by tecnica_asociada. Secondary: insumo_ids but ONLY if they also match the technique
     let linked = [...new Map([
-      ...insumos.filter(ins => technique.insumo_ids.includes(ins.id)),
       ...insumos.filter(ins => matchesTec(ins)),
+      ...insumos.filter(ins => technique.insumo_ids.includes(ins.id) && matchesTec(ins)),
     ].map(i => [i.id, i])).values()]
     if (overridePapelId) {
       const overridePapel = insumos.find(ins => ins.id === overridePapelId)
