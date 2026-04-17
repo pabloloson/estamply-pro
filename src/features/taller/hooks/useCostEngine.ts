@@ -102,8 +102,10 @@ export function useCostEngine(
       ...insumos.filter(ins => matchesTec(ins)),
       ...insumos.filter(ins => technique.insumo_ids.includes(ins.id) && matchesTec(ins)),
     ].map(i => [i.id, i])).values()]
+    if (typeof window !== 'undefined') console.log('[LINKED-PRE]', JSON.stringify({ slug, overridePapelId, linkedCount: linked.length, linked: linked.map(i => `${i.nombre}|${i.tipo}|${i.tecnica_asociada}`), allInsumosCount: insumos.length, allFilms: insumos.filter(i => i.tipo === 'film').map(i => `${i.nombre}|${i.id}|ta=${i.tecnica_asociada}`) }))
     if (overridePapelId) {
       const overridePapel = insumos.find(ins => ins.id === overridePapelId)
+      if (typeof window !== 'undefined') console.log('[OVERRIDE]', JSON.stringify({ overridePapelId, found: !!overridePapel, nombre: overridePapel?.nombre, tipo: overridePapel?.tipo }))
       if (overridePapel) {
         linked = linked.filter(ins => ins.tipo !== 'papel' && ins.tipo !== 'film')
         linked.unshift(overridePapel)
