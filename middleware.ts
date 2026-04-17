@@ -35,7 +35,7 @@ export async function middleware(request: NextRequest) {
     // Redirect auth/app routes to app subdomain
     const appRedirectRoutes = ['/login', '/signup', '/register', '/admin', '/dashboard',
       '/cotizador', '/presupuesto', '/orders', '/clients', '/materiales',
-      '/equipamiento', '/tecnicas', '/settings', '/estadisticas', '/onboarding']
+      '/equipamiento', '/tecnicas', '/settings', '/estadisticas', '/promociones', '/onboarding']
     const shouldRedirectToApp = appRedirectRoutes.some(r => pathname === r || pathname.startsWith(r + '/'))
 
     if (shouldRedirectToApp) {

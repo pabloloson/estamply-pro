@@ -74,6 +74,7 @@ export default function PublicCatalogPage() {
   const [products, setProducts] = useState<CatalogProduct[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [sizeGuides, setSizeGuides] = useState<SizeGuide[]>([])
+  const [activePromos, setActivePromos] = useState<Array<{ product_ids: string[]; discount_type: string; discount_value: number; ends_at: string; show_countdown: boolean }>>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -121,14 +122,16 @@ export default function PublicCatalogPage() {
       // Set module-level formatting
       _countryConfig = getCountry((s.pais as string) || 'AR')
       _msgs = ((s.idioma as string) === 'pt' ? ptMsg : esMsg) as unknown as Record<string, Record<string, string>>
-      const [{ data: prods }, { data: cats }, { data: mp }, { data: sg }] = await Promise.all([
+      const [{ data: prods }, { data: cats }, { data: mp }, { data: sg }, { data: promos }] = await Promise.all([
         supabase.from('catalog_products').select('id,name,description,photos,selling_price,manage_stock,current_stock,category_id,visible_in_catalog,sizes,colors,estimated_delivery,precio_anterior,guia_talles_id,featured,sort_order').eq('user_id', userId).eq('visible_in_catalog', true).gt('selling_price', 0).order('sort_order').order('name'),
         supabase.from('categories').select('id,name').eq('user_id', userId),
         supabase.from('medios_pago').select('id,nombre,tipo_ajuste,porcentaje').eq('user_id', userId).eq('activo', true).order('orden'),
         supabase.from('guias_talles').select('id,nombre,columnas,filas,imagen_referencia').eq('user_id', userId),
+        supabase.from('promotions').select('product_ids,discount_type,discount_value,ends_at,show_countdown').eq('user_id', userId).eq('status', 'active'),
       ])
       if (mp?.length) setShop(prev => prev ? { ...prev, mediosPago: mp as ShopInfo['mediosPago'] } : prev)
       if (sg) setSizeGuides(sg as SizeGuide[])
+      if (promos) setActivePromos(promos as typeof activePromos)
       setProducts((prods || []) as CatalogProduct[])
       setCategories((cats || []) as Category[])
       setLoading(false)
@@ -141,13 +144,14 @@ export default function PublicCatalogPage() {
 
   return (
     <CartProvider slug={slug}>
-      <CatalogContent shop={shop} products={products} categories={categories} sizeGuides={sizeGuides} />
+      <CatalogContent shop={shop} products={products} categories={categories} sizeGuides={sizeGuides} activePromos={activePromos} />
     </CartProvider>
   )
 }
 
 // ── Catalog Content ──
-function CatalogContent({ shop, products, categories, sizeGuides }: { shop: ShopInfo; products: CatalogProduct[]; categories: Category[]; sizeGuides: SizeGuide[] }) {
+type PromoInfo = { product_ids: string[]; discount_type: string; discount_value: number; ends_at: string; show_countdown: boolean }
+function CatalogContent({ shop, products, categories, sizeGuides, activePromos }: { shop: ShopInfo; products: CatalogProduct[]; categories: Category[]; sizeGuides: SizeGuide[]; activePromos: PromoInfo[] }) {
   const [selectedCat, setSelectedCat] = useState<string | null>(null)
   const [detail, setDetail] = useState<CatalogProduct | null>(null)
   const [showCart, setShowCart] = useState(false)
@@ -157,7 +161,20 @@ function CatalogContent({ shop, products, categories, sizeGuides }: { shop: Shop
   const { items } = useContext(CartCtx)
   const color = shop.color
   const searchLower = search.toLowerCase()
-  let filtered = selectedCat ? products.filter(p => p.category_id === selectedCat) : products
+
+  // Promo helpers
+  function getPromo(productId: string) {
+    for (const pr of activePromos) { if (pr.product_ids.includes(productId)) return pr }
+    return null
+  }
+  function getPromoPrice(p: CatalogProduct) {
+    const pr = getPromo(p.id)
+    if (!pr) return p.selling_price
+    return pr.discount_type === 'percentage' ? Math.round(p.selling_price * (1 - pr.discount_value / 100)) : Math.max(0, p.selling_price - pr.discount_value)
+  }
+  const hasActivePromos = activePromos.length > 0 && products.some(p => getPromo(p.id))
+
+  let filtered = selectedCat === '__promo__' ? products.filter(p => getPromo(p.id)) : selectedCat ? products.filter(p => p.category_id === selectedCat) : products
   if (search) filtered = filtered.filter(p => p.name.toLowerCase().includes(searchLower) || (p.description || '').toLowerCase().includes(searchLower))
   if (sortBy === 'price_asc') filtered = [...filtered].sort((a, b) => a.selling_price - b.selling_price)
   else if (sortBy === 'price_desc') filtered = [...filtered].sort((a, b) => b.selling_price - a.selling_price)
@@ -206,12 +223,17 @@ function CatalogContent({ shop, products, categories, sizeGuides }: { shop: Shop
       </div>
 
       {/* Categories */}
-      {usedCats.length > 1 && (
+      {(usedCats.length > 1 || hasActivePromos) && (
         <div className="px-4 py-3 overflow-x-auto whitespace-nowrap border-b border-gray-100 bg-white sticky top-0 z-10">
           <div className="max-w-5xl mx-auto flex gap-2">
             <button onClick={() => setSelectedCat(null)}
               className="px-3 py-1.5 rounded-full text-sm font-semibold transition-all flex-shrink-0"
               style={!selectedCat ? { background: color, color: '#fff' } : { background: '#F1F1F1', color: '#666' }}>Todo</button>
+            {hasActivePromos && (
+              <button onClick={() => setSelectedCat('__promo__')}
+                className="px-3 py-1.5 rounded-full text-sm font-semibold transition-all flex-shrink-0"
+                style={selectedCat === '__promo__' ? { background: color, color: '#fff' } : { background: '#FEF2F2', color: '#EF4444' }}>🏷️ Promociones</button>
+            )}
             {usedCats.map(c => (
               <button key={c.id} onClick={() => setSelectedCat(c.id)}
                 className="px-3 py-1.5 rounded-full text-sm font-semibold transition-all flex-shrink-0"
@@ -267,21 +289,30 @@ function CatalogContent({ shop, products, categories, sizeGuides }: { shop: Shop
           {filtered.map(p => {
             const status = stockStatus(p)
             const photo = (p.photos || [])[0]
+            const promo = getPromo(p.id)
+            const promoPrice = promo ? getPromoPrice(p) : null
+            const hasManualDiscount = !promo && (p.precio_anterior || 0) > p.selling_price
             return (
               <div key={p.id} className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition-shadow"
                 onClick={() => setDetail(p)}>
                 <div className="relative aspect-square bg-gray-100">
                   {photo ? <img src={photo} alt={p.name} className="w-full h-full object-cover" loading="lazy" /> : <div className="w-full h-full flex items-center justify-center text-gray-300 text-3xl">📷</div>}
                   {status === 'soldout' && <div className="absolute inset-0 bg-black/40 flex items-center justify-center"><span className="text-white font-bold text-sm bg-black/60 px-3 py-1 rounded-full">{tc('webCatalog', 'outOfStock')}</span></div>}
-                  {(p.precio_anterior || 0) > p.selling_price && (
+                  {promo && (
+                    <span className="absolute top-2 left-2 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md" style={{ background: color }}>
+                      {promo.discount_type === 'percentage' ? `-${promo.discount_value}%` : 'PROMO'}
+                    </span>
+                  )}
+                  {hasManualDiscount && (
                     <span className="absolute top-2 left-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md">-{Math.round((1 - p.selling_price / (p.precio_anterior || 1)) * 100)}%</span>
                   )}
                 </div>
                 <div className="p-3">
                   <p className="font-semibold text-gray-800 text-sm leading-tight" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{p.name}</p>
                   <div className="mt-1">
-                    {(p.precio_anterior || 0) > p.selling_price && <span className="text-xs text-gray-400 line-through mr-1.5">{fmt(p.precio_anterior!)}</span>}
-                    <span className="font-bold text-gray-900">{status === 'ondemand' && <span className="text-xs font-normal text-gray-400">desde </span>}{fmt(p.selling_price)}</span>
+                    {promo && <span className="text-xs text-gray-400 line-through mr-1.5">{fmt(p.selling_price)}</span>}
+                    {hasManualDiscount && <span className="text-xs text-gray-400 line-through mr-1.5">{fmt(p.precio_anterior!)}</span>}
+                    <span className={`font-bold ${promo ? 'text-green-600' : 'text-gray-900'}`}>{status === 'ondemand' && <span className="text-xs font-normal text-gray-400">desde </span>}{fmt(promoPrice ?? p.selling_price)}</span>
                   </div>
                   <p className={`text-xs mt-0.5 ${status === 'instock' ? 'text-green-600' : status === 'soldout' ? 'text-red-500' : 'text-gray-400'}`}>
                     {status === 'instock' ? tc('webCatalog', 'inStock') : status === 'soldout' ? tc('webCatalog', 'soldOut') : tc('webCatalog', 'madeToOrder')}
@@ -346,7 +377,7 @@ function CatalogContent({ shop, products, categories, sizeGuides }: { shop: Shop
       )}
 
       {/* Product Detail */}
-      {detail && <ProductDetail product={detail} shop={shop} sizeGuides={sizeGuides} onClose={() => setDetail(null)} />}
+      {detail && <ProductDetail product={detail} shop={shop} sizeGuides={sizeGuides} onClose={() => setDetail(null)} promoPrice={getPromo(detail.id) ? getPromoPrice(detail) : null} />}
 
       {/* Cart Screen */}
       {showCart && <CartScreen shop={shop} onClose={() => setShowCart(false)} />}
@@ -355,7 +386,7 @@ function CatalogContent({ shop, products, categories, sizeGuides }: { shop: Shop
 }
 
 // ── Product Detail ──
-function ProductDetail({ product, shop, sizeGuides, onClose }: { product: CatalogProduct; shop: ShopInfo; sizeGuides: SizeGuide[]; onClose: () => void }) {
+function ProductDetail({ product, shop, sizeGuides, onClose, promoPrice }: { product: CatalogProduct; shop: ShopInfo; sizeGuides: SizeGuide[]; onClose: () => void; promoPrice: number | null }) {
   const { add } = useContext(CartCtx)
   const [qty, setQty] = useState(1)
   const [photoIdx, setPhotoIdx] = useState(0)
@@ -371,12 +402,14 @@ function ProductDetail({ product, shop, sizeGuides, onClose }: { product: Catalo
   const colors = product.colors || []
   const status = !product.manage_stock ? 'ondemand' : product.current_stock > 0 ? 'instock' : 'soldout'
   const canAdd = status === 'instock'
-  const hasDiscount = (product.precio_anterior || 0) > product.selling_price
+  const effectivePrice = promoPrice ?? product.selling_price
+  const hasDiscount = promoPrice !== null || (product.precio_anterior || 0) > product.selling_price
 
   function handleAdd() {
     if (sizes.length && !selSize) { setSizeError(true); return }
     const parts = [selSize, selColor].filter(Boolean)
-    add(product, qty, parts.join(', '))
+    const productWithPromo = promoPrice !== null ? { ...product, selling_price: effectivePrice } : product
+    add(productWithPromo, qty, parts.join(', '))
     setQty(1)
     setJustAdded(true)
     setAddToast(true)
@@ -412,8 +445,12 @@ function ProductDetail({ product, shop, sizeGuides, onClose }: { product: Catalo
           <h2 className="text-xl font-bold text-gray-900">{product.name}</h2>
           <div className="mt-1">
             {hasDiscount && <p className="text-sm text-gray-400 line-through">{fmt(product.precio_anterior!)}</p>}
-            <p className="text-2xl font-black text-gray-900">{status === 'ondemand' && <span className="text-sm font-normal text-gray-400">desde </span>}{fmt(product.selling_price)}
-              {hasDiscount && <span className="ml-2 text-sm font-bold text-red-500">-{Math.round((1 - product.selling_price / (product.precio_anterior || 1)) * 100)}%</span>}
+            <p className="text-2xl font-black text-gray-900">
+              {promoPrice !== null && <span className="text-base text-gray-400 line-through mr-2 font-medium">{fmt(product.selling_price)}</span>}
+              {status === 'ondemand' && <span className="text-sm font-normal text-gray-400">desde </span>}
+              <span className={promoPrice !== null ? 'text-green-600' : ''}>{fmt(effectivePrice)}</span>
+              {promoPrice !== null && <span className="ml-2 text-sm font-bold px-1.5 py-0.5 rounded-md text-white" style={{ background: shop.color }}>PROMO</span>}
+              {!promoPrice && hasDiscount && <span className="ml-2 text-sm font-bold text-red-500">-{Math.round((1 - product.selling_price / (product.precio_anterior || 1)) * 100)}%</span>}
             </p>
           </div>
           <p className={`text-sm mt-1 ${status === 'instock' ? 'text-green-600' : status === 'soldout' ? 'text-red-500' : 'text-gray-400'}`}>
@@ -472,7 +509,7 @@ function ProductDetail({ product, shop, sizeGuides, onClose }: { product: Catalo
               <button onClick={handleAdd}
                 className={`w-full py-3.5 rounded-xl font-bold text-white text-sm flex items-center justify-center gap-2 transition-all ${justAdded ? 'scale-95' : ''}`}
                 style={{ background: justAdded ? '#22C55E' : shop.color }}>
-                {justAdded ? <><Check size={16} /> Agregado</> : <><ShoppingCart size={16} /> {tc('webCatalog', 'addToOrder')} — {fmt(product.selling_price * qty)}</>}
+                {justAdded ? <><Check size={16} /> Agregado</> : <><ShoppingCart size={16} /> {tc('webCatalog', 'addToOrder')} — {fmt(effectivePrice * qty)}</>}
               </button>
               {addToast && (
                 <div className="fixed bottom-20 left-4 right-4 z-50 max-w-lg mx-auto">

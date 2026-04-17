@@ -7,7 +7,7 @@ import { usePathname } from 'next/navigation'
 import { logout } from '@/app/actions/auth'
 import {
   LayoutDashboard, Calculator, FileText, ShoppingBag,
-  Users, Package, BarChart3,
+  Users, Package, Tag, BarChart3,
   Settings, UserCircle, LogOut, Menu, X,
 } from 'lucide-react'
 import { usePresupuesto } from '@/features/presupuesto/context/PresupuestoContext'
@@ -80,6 +80,7 @@ export function Sidebar({ workshopName = 'Mi Taller' }: SidebarProps) {
         {canAccess('pedidos') && <NavLink href="/orders" icon={ShoppingBag} label={t('orders')} />}
         {canAccess('clientes') && <NavLink href="/clients" icon={Users} label={t('clients')} />}
         {canAccess('catalogo') && <NavLink href="/catalogo" icon={Package} label={t('catalog')} />}
+        {canAccess('catalogo') && <NavLink href="/promociones" icon={Tag} label={t('promotions')} />}
         {canAccess('estadisticas') && <NavLink href="/estadisticas" icon={BarChart3} label={t('statistics')} />}
       </nav>
 
