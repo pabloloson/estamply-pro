@@ -420,6 +420,30 @@ export default function SettingsPage() {
             </>)}
           </div>
 
+          {/* WhatsApp */}
+          <div className="border-t border-gray-100 pt-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium text-gray-700">WhatsApp en catálogo</label>
+              <button type="button" onClick={() => setWs({ ...ws, wa_boton_visible: !(ws as Record<string, unknown>).wa_boton_visible === false ? false : true } as WorkshopSettings)}
+                className="relative w-9 h-5 rounded-full transition-colors" style={{ background: (ws as Record<string, unknown>).wa_boton_visible !== false ? '#22C55E' : '#D1D5DB' }}>
+                <span className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform" style={{ transform: (ws as Record<string, unknown>).wa_boton_visible !== false ? 'translateX(16px)' : 'translateX(0)' }} />
+              </button>
+            </div>
+            {!profile.business_phone && (
+              <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-100 text-xs text-amber-700">
+                Configurá tu número de WhatsApp en Perfil para activar el botón en tu catálogo.
+              </div>
+            )}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Mensaje predeterminado</label>
+              <textarea className="input-base text-sm" rows={3} maxLength={500}
+                value={(ws as Record<string, unknown>).wa_mensaje as string || ''}
+                onChange={e => setWs({ ...ws, wa_mensaje: e.target.value } as WorkshopSettings)}
+                placeholder="Ej: Hola, vi tu catálogo y quiero consultar sobre..." />
+              <p className="text-[10px] text-gray-400 mt-0.5">Este mensaje aparece pre-cargado cuando un cliente toca el botón de WhatsApp. Si está vacío, se usa un mensaje genérico.</p>
+            </div>
+          </div>
+
         </div>
       </div>
 

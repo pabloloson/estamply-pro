@@ -26,6 +26,7 @@ interface ShopInfo {
   mediosPago: Array<{ id: string; nombre: string; tipo_ajuste: string; porcentaje: number }>
   lang: string; countryCode: string
   anuncio: { activo: boolean; texto: string; bgColor: string; textColor: string }
+  waBotonVisible: boolean; waMensaje: string
 }
 interface CartItem { productId: string; name: string; price: number; quantity: number; photo: string; variant: string }
 
@@ -114,6 +115,8 @@ export default function PublicCatalogPage() {
         mediosPago: [],
         lang: (s.idioma as string) || 'es',
         countryCode: (s.pais as string) || 'AR',
+        waBotonVisible: s.wa_boton_visible !== false,
+        waMensaje: (s.wa_mensaje as string) || '',
       })
       // Set module-level formatting
       _countryConfig = getCountry((s.pais as string) || 'AR')
@@ -298,9 +301,9 @@ function CatalogContent({ shop, products, categories, sizeGuides }: { shop: Shop
         </div>
       </div>
 
-      {/* WhatsApp floating button — z-50 to stay above detail/cart overlays (z-40) */}
-      {shop.whatsapp && !showCart && (
-        <a href={`https://wa.me/${shop.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer"
+      {/* WhatsApp floating button */}
+      {shop.whatsapp && shop.waBotonVisible && !showCart && (
+        <a href={`https://wa.me/${shop.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(shop.waMensaje || `Hola, vi tu catálogo en ${shop.nombre} y quiero hacer una consulta.`)}`} target="_blank" rel="noopener noreferrer"
           className="fixed right-5 z-50 w-14 h-14 rounded-full flex items-center justify-center text-white shadow-lg hover:shadow-xl transition-all"
           style={{ background: '#25D366', bottom: (itemCount > 0 && !detail) ? '88px' : '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
           <MessageCircle size={24} />
@@ -452,6 +455,12 @@ function ProductDetail({ product, shop, sizeGuides, onClose }: { product: Catalo
                     <button onClick={() => { setAddToast(false); onClose() }} className="text-xs font-semibold text-purple-300 hover:text-white ml-3 whitespace-nowrap">Ver pedido →</button>
                   </div>
                 </div>
+              )}
+              {shop.whatsapp && (
+                <a href={consultUrl} target="_blank" rel="noopener noreferrer"
+                  className="w-full mt-2 py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 border border-gray-200 text-gray-600 hover:bg-gray-50">
+                  <MessageCircle size={14} /> {tc('webCatalog', 'consultWhatsapp')}
+                </a>
               )}
             </div>
           ) : (
