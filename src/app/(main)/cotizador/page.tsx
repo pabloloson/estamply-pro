@@ -197,11 +197,12 @@ export default function CotizadorPage() {
   useEffect(() => { engine.setOverridePressId(selectedPressId || null) }, [selectedPressId])
   const dtfSlug = resolvedSlug === 'dtf' || resolvedSlug === 'dtf_uv'
   useEffect(() => { engine.setOverrideDtfMode(dtfSlug ? cotizadorDtfMode : null) }, [cotizadorDtfMode, dtfSlug])
-  // Set default DTF mode from technique config
+  // Set default mode from technique config (applies to all techniques with modo)
   useEffect(() => {
-    if (dtfSlug && technique) {
+    if (technique) {
       const cfg = technique.config as unknown as Record<string, unknown>
       if (cfg.modo) setCotizadorDtfMode(cfg.modo as 'propia' | 'tercerizado')
+      else setCotizadorDtfMode('propia')
     }
   }, [technique?.id])
 
@@ -645,9 +646,9 @@ export default function CotizadorPage() {
                     return { name: ins.nombre, costPerUse: Math.round(price / rend) }
                   })}
                 pricingMode={((settings as Record<string, unknown>).pricing_mode as 'margin' | 'markup') || 'margin'}
-                onPricingModeChange={async (mode) => {
-                  const updated = { ...settings, pricing_mode: mode }
-                  await supabase.from('workshop_settings').upsert({ id: 1, settings: updated }, { onConflict: 'id' })
+                onPricingModeChange={(mode) => {
+                  setSettings(prev => ({ ...prev, pricing_mode: mode } as WorkshopSettings))
+                  supabase.from('workshop_settings').upsert({ id: 1, settings: { ...settings, pricing_mode: mode } }, { onConflict: 'id' })
                 }}
                 timeBreakdown={result?.timeBreakdown}
               />

@@ -173,8 +173,9 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
 
   // Categories
   async function saveCat(cat: Partial<Category>) {
-    if (cat.id) await supabase.from('categories').update({ name: cat.name, margen_sugerido: cat.margen_sugerido }).eq('id', cat.id)
-    else await supabase.from('categories').insert({ name: cat.name, margen_sugerido: cat.margen_sugerido })
+    const payload = { name: cat.name, margen_sugerido: cat.margen_sugerido, pricing_mode: cat.pricing_mode || 'margin' }
+    if (cat.id) await supabase.from('categories').update(payload).eq('id', cat.id)
+    else await supabase.from('categories').insert(payload)
     load()
   }
   async function deleteCat(id: string) { await supabase.from('categories').delete().eq('id', id); load() }

@@ -302,7 +302,7 @@ export default function EquipamientoPage() {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">{modal.clasificacion === 'plotter' ? 'Tiempo por metro (seg)' : 'Tiempo por hoja (seg)'}</label>
                       <NumericInput className="input-base" value={modal.print_time_sec || 0} onChange={v => setModal({ ...modal, print_time_sec: v })} />
-                      <p className="text-[10px] text-gray-400 mt-0.5">{modal.clasificacion === 'plotter' ? 'Seg. por metro lineal impreso.' : 'Seg. por hoja impresa.'}</p>
+                      <p className="text-[10px] text-gray-400 mt-0.5">{modal.type === 'plotter_corte' ? 'Seg. por metro lineal de corte.' : modal.clasificacion === 'plotter' ? 'Seg. por metro lineal impreso.' : 'Seg. por hoja impresa.'}</p>
                     </div>
                   )}
                 </div>

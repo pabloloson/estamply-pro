@@ -5,6 +5,7 @@ export interface Category {
   user_id: string
   name: string
   margen_sugerido: number
+  pricing_mode?: 'margin' | 'markup'
   created_at: string
 }
 

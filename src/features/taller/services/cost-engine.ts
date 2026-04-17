@@ -179,9 +179,32 @@ function calcSubliZone(dw: number, dh: number, qty: number, config: SubliConfig,
 function computeSubli(input: ComputeInput, config: SubliConfig): CostResult {
   const { product, equipment, insumos, quantity, designWidth, designHeight, margin, mo, otrosGastos, setupMin, discountTiers, techniqueEquipmentIds, zones } = input
   const desperdicio = input.overrideMerma ?? config.desperdicio_pct ?? 5
-  const amortEquip = input.overrideAmortPrint ?? getAmort(equipment, techniqueEquipmentIds)
   const amortPress = input.overrideAmortPress ?? getPressAmort(product, equipment, 'subli')
   const costoProducto = Number(product.base_cost)
+
+  // Tercerizado mode — simplified
+  if (config.modo === 'tercerizado') {
+    const servicioIns = findInsumo(insumos, 'servicio_impresion', 'otro')
+    const sc = servicioIns ? insCfg(servicioIns) : null
+    const costoTerc = sc ? ((sc.precio_metro as number) || (sc.precio as number) || 0) : 0
+    const costoDesp = costoTerc * (desperdicio / 100)
+    const lines: { label: string; value: number }[] = [
+      { label: 'Producto base', value: costoProducto },
+      { label: 'Impresión tercerizada', value: costoTerc },
+    ]
+    if (amortPress > 0) lines.push({ label: 'Amort. plancha', value: amortPress })
+    if (costoDesp > 0) lines.push({ label: `Desperdicio (${desperdicio}%)`, value: costoDesp })
+    if (mo > 0) lines.push({ label: 'Mano de obra', value: mo })
+    if (otrosGastos > 0) lines.push({ label: 'Otros gastos', value: otrosGastos / Math.max(quantity, 1) })
+    const costoTotal = costoProducto + costoTerc + amortPress + costoDesp + mo + otrosGastos / Math.max(quantity, 1)
+    const pressTimeMin = (((product.time_subli as number) || 0) / 60) * quantity
+    const timeMinutes = setupMin + pressTimeMin
+    const r = buildResult(lines, costoTotal, margin, quantity, discountTiers, timeMinutes, undefined, input.pricingMode)
+    r.timeBreakdown = { prepMin: setupMin, printMin: 0, pressMin: pressTimeMin }
+    return r
+  }
+
+  const amortEquip = input.overrideAmortPrint ?? getAmort(equipment, techniqueEquipmentIds)
 
   const effectiveZones = (zones && zones.length > 1) ? zones : [{ ancho: designWidth, alto: designHeight }]
   const numZones = effectiveZones.length

@@ -130,8 +130,8 @@ export function useCostEngine(
       ? [{ desde: 1, hasta: 999999, porcentaje: overrideDiscountPct / 100 }]
       : discountTiers
 
-    // Override DTF mode if user changed it in production config
-    const effectiveConfig = (overrideDtfMode && (technique.config.tipo === 'dtf' || technique.config.tipo === 'dtf_uv'))
+    // Override mode if user changed it in production config (applies to all techniques)
+    const effectiveConfig = overrideDtfMode
       ? { ...technique.config, modo: overrideDtfMode } as TecnicaConfig
       : technique.config
     const isZonable = ['subli', 'dtf', 'dtf_uv'].includes(technique.slug)
