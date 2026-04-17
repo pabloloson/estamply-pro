@@ -19,8 +19,7 @@ export function SheetVisual({ sheetW, sheetH, designW, designH, cols, rows, rota
   const dW = rotated ? designH : designW
   const dH = rotated ? designW : designH
 
-  const SVG_PX_W = 160
-  const SVG_PX_H = Math.round(SVG_PX_W * (sheetH / sheetW))
+  const containerMaxH = Math.max(Math.min(Math.round(200 * (sheetH / sheetW)), 400), 80)
 
   const rects: { x: number; y: number }[] = []
   for (let r = 0; r < rows; r++) {
@@ -35,11 +34,9 @@ export function SheetVisual({ sheetW, sheetH, designW, designH, cols, rows, rota
   return (
     <div className="flex flex-col items-center gap-2">
       <svg
-        width={SVG_PX_W}
-        height={SVG_PX_H}
         viewBox={`0 0 ${sheetW} ${sheetH}`}
         preserveAspectRatio="xMidYMid meet"
-        style={{ borderRadius: 5, display: 'block', overflow: 'hidden' }}
+        style={{ width: '100%', maxWidth: 220, maxHeight: containerMaxH, borderRadius: 5, display: 'block', overflow: 'hidden' }}
       >
         {/* Sheet background */}
         <rect x={0} y={0} width={sheetW} height={sheetH} fill="#F8F8FC" stroke="#E0DCF8" strokeWidth={sw * 1.5} rx={sheetW * 0.02} />

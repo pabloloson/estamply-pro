@@ -1,7 +1,7 @@
 'use client'
 
-const ROLL_MARGIN = 1 // cm — must match hook
-const DESIGN_GAP = 1  // cm — must match hook
+const ROLL_MARGIN = 1 // cm — must match engine
+const DESIGN_GAP = 1  // cm — must match engine
 
 interface RollVisualProps {
   rollWidth: number   // cm
@@ -24,18 +24,17 @@ export function RollVisual({ rollWidth, designW, designH, cols, rows, quantity, 
   const cellW = rotated ? designH : designW
   const cellH = rotated ? designW : designH
 
-  // Actual length consumed in cm (matches engine calculation)
-  const usedLengthCm = ROLL_MARGIN * 2 + rows * cellH + Math.max(rows - 1, 0) * DESIGN_GAP
-  const displayLengthCm = Math.max(Math.ceil(usedLengthCm / 10) * 10, rollWidth * 0.5)
+  const consumoCm = metrosLineales * 100
+  // Display length: at least the consumed length, minimum half the roll width for visual balance
+  const displayLengthCm = Math.max(consumoCm + 2, rollWidth * 0.4)
 
-  // Use viewBox in real cm so everything scales proportionally
-  const LABEL_AREA = rollWidth * 0.2
-  const vbW = rollWidth + LABEL_AREA
+  // viewBox is exactly the roll dimensions in cm — no label area inside SVG
+  const vbW = rollWidth
   const vbH = displayLengthCm
 
-  // SVG pixel dimensions — fixed width, height proportional
-  const SVG_W = 200
-  const SVG_H = Math.max(Math.min(Math.round(SVG_W * vbH / vbW), 500), 60)
+  // Clamp pixel height: min 100px, max 450px
+  const aspect = vbH / vbW
+  const containerMaxH = Math.max(Math.min(Math.round(aspect * 300), 450), 100)
 
   // Meter markers
   const meterMarkers: { y: number; label: string }[] = []
@@ -55,47 +54,50 @@ export function RollVisual({ rollWidth, designW, designH, cols, rows, quantity, 
     }
   }
 
-  const consumoCm = metrosLineales * 100
-  const strokeW = Math.max(rollWidth * 0.005, 0.2)
+  const sw = Math.max(rollWidth * 0.004, 0.15)
 
   return (
     <div className="flex flex-col items-center gap-2.5 w-full">
-      <svg
-        width={SVG_W}
-        height={SVG_H}
-        viewBox={`0 0 ${vbW} ${vbH}`}
-        preserveAspectRatio="xMinYMin meet"
-        style={{ display: 'block' }}
-      >
-        {/* Full roll body */}
-        <rect x={0} y={0} width={rollWidth} height={displayLengthCm} rx={rollWidth * 0.02}
-          fill="#FFFBF9" stroke="#DFC4B6" strokeWidth={strokeW} />
+      <div style={{ width: '100%', maxWidth: 280 }}>
+        <svg
+          viewBox={`0 0 ${vbW} ${vbH}`}
+          preserveAspectRatio="xMidYMin meet"
+          style={{ width: '100%', maxHeight: containerMaxH, display: 'block' }}
+        >
+          {/* Roll background */}
+          <rect x={0} y={0} width={vbW} height={vbH} rx={vbW * 0.015}
+            fill="#FFFBF9" stroke="#DFC4B6" strokeWidth={sw} />
 
-        {/* Design cells */}
-        {rects.map((r, i) => (
-          <rect key={i}
-            x={r.x} y={r.y}
-            width={Math.max(cellW, 0.5)} height={Math.max(cellH, 0.5)}
-            fill={r.active ? `${color}2E` : `${color}0A`}
-            stroke={r.active ? color : `${color}25`}
-            strokeWidth={r.active ? strokeW : strokeW * 0.5}
-            strokeDasharray={r.active ? 'none' : `${cellW * 0.15} ${cellW * 0.1}`}
-            rx={Math.min(cellW, cellH) * 0.05}
-          />
-        ))}
+          {/* Design cells */}
+          {rects.map((r, i) => (
+            <rect key={i}
+              x={r.x} y={r.y}
+              width={cellW} height={cellH}
+              fill={r.active ? `${color}2E` : `${color}0A`}
+              stroke={r.active ? color : `${color}25`}
+              strokeWidth={r.active ? sw : sw * 0.4}
+              strokeDasharray={r.active ? 'none' : `${cellW * 0.12} ${cellW * 0.08}`}
+              rx={Math.min(cellW, cellH) * 0.04}
+            />
+          ))}
 
-        {/* Meter markers */}
-        {meterMarkers.map((m, i) => (
-          <g key={i}>
-            <line x1={0} y1={m.y} x2={rollWidth} y2={m.y}
-              stroke={color} strokeWidth={strokeW * 0.7} strokeDasharray={`${rollWidth * 0.03} ${rollWidth * 0.02}`} opacity={0.3} />
-            <text x={rollWidth + LABEL_AREA * 0.5} y={m.y + vbH * 0.01}
-              textAnchor="middle" fontSize={vbH * 0.04} fontWeight={700} fill={color} opacity={0.6}>
-              {m.label}
-            </text>
-          </g>
-        ))}
-      </svg>
+          {/* Meter markers */}
+          {meterMarkers.map((m, i) => (
+            <g key={i}>
+              <line x1={0} y1={m.y} x2={vbW} y2={m.y}
+                stroke={color} strokeWidth={sw * 0.6} strokeDasharray={`${vbW * 0.025} ${vbW * 0.015}`} opacity={0.3} />
+              <text x={vbW - 1} y={m.y - 0.5}
+                textAnchor="end" fontSize={Math.max(vbW * 0.04, 1.5)} fontWeight={700} fill={color} opacity={0.5}>
+                {m.label}
+              </text>
+            </g>
+          ))}
+
+          {/* Consumo line */}
+          <line x1={0} y1={consumoCm} x2={vbW} y2={consumoCm}
+            stroke={color} strokeWidth={sw} opacity={0.5} />
+        </svg>
+      </div>
 
       <div className="text-center leading-tight">
         <p className="text-sm font-bold text-gray-700">
