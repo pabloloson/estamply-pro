@@ -193,9 +193,15 @@ export default function CotizadorPage() {
     }
   }, [selectedPrinterId])
 
-  // Fallbacks if no auto-selection happened
+  // Auto-select first insumo with actual pricing data, fallback to first available
   useEffect(() => {
-    if (!selectedPapelId && papelInsumos.length) setSelectedPapelId(papelInsumos[0].id)
+    if (!selectedPapelId && papelInsumos.length) {
+      const withPrice = papelInsumos.find(ins => {
+        const c = ins.config as Record<string, unknown>
+        return ((c.precio_rollo as number) || 0) > 0 || ((c.precio_resma as number) || 0) > 0
+      })
+      setSelectedPapelId((withPrice || papelInsumos[0]).id)
+    }
   }, [papelInsumos.length, selectedPapelId])
   useEffect(() => {
     if (!selectedTintaId && tintaInsumos.length) setSelectedTintaId(tintaInsumos[0].id)

@@ -43,7 +43,9 @@ export default function ProductionConfig({
 
   // Auto-open when paper is missing so user sees the warning
   const [open, setOpen] = useState(showPapelEmpty)
-  const showTinta = (isSubli || isDTF) && !isTercerizado && tintaInsumos.length > 0
+  const needsTinta = (isSubli || isDTF) && !isTercerizado
+  const showTinta = needsTinta && tintaInsumos.length > 0
+  const showTintaEmpty = needsTinta && tintaInsumos.length === 0
   const showPrinter = (isSubli || isVinyl || isDTF) && !isTercerizado && printers.length > 0
   const showPress = presses.length > 0 && slug !== 'serigrafia'
 
@@ -111,6 +113,14 @@ export default function ProductionConfig({
               <select className="input-base text-sm" value={selectedTintaId} onChange={e => onTintaChange(e.target.value)}>
                 {tintaInsumos.map(ins => <option key={ins.id} value={ins.id}>{ins.nombre}</option>)}
               </select>
+            </div>
+          )}
+          {showTintaEmpty && (
+            <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200">
+              <p className="text-[10px] font-medium text-amber-700">
+                No hay tinta vinculada a esta técnica.{' '}
+                <Link href="/settings/insumos" className="underline font-bold hover:text-amber-900">Configurar en Insumos</Link>
+              </p>
             </div>
           )}
 
