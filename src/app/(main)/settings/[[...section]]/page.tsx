@@ -331,19 +331,20 @@ export default function SettingsPage() {
           {!!(ws as Record<string, unknown>).catalog_slug && (
             <div className="p-3 rounded-xl bg-purple-50 border border-purple-100">
               <p className="text-xs text-gray-500 mb-1">Tu catálogo:</p>
-              <div className="flex items-center gap-2">
-                <p className="text-sm font-semibold text-purple-700 flex-1 truncate">estamply.app/catalogo/{(ws as Record<string, unknown>).catalog_slug as string}</p>
+              <p className="text-sm font-semibold text-purple-700 truncate mb-2">estamply.app/catalogo/{(ws as Record<string, unknown>).catalog_slug as string}</p>
+              <div className="flex gap-2 flex-wrap">
                 <button onClick={() => { navigator.clipboard.writeText(`https://www.estamply.app/catalogo/${(ws as Record<string, unknown>).catalog_slug}`); alert('Link copiado') }}
-                  className="text-xs px-2 py-1 rounded-lg font-semibold text-purple-600 bg-purple-100 hover:bg-purple-200">Copiar</button>
-                <a href={`/catalogo/${(ws as Record<string, unknown>).catalog_slug}`} target="_blank" className="text-xs px-2 py-1 rounded-lg font-semibold text-purple-600 bg-purple-100 hover:bg-purple-200">Ver</a>
-                <button onClick={() => setShowQR(true)} className="text-xs px-2 py-1 rounded-lg font-semibold text-purple-600 bg-purple-100 hover:bg-purple-200 flex items-center gap-1"><QrCode size={12} />QR</button>
+                  className="text-xs px-2.5 py-1 rounded-lg font-semibold text-purple-600 bg-purple-100 hover:bg-purple-200">Copiar</button>
+                <a href={`/catalogo/${(ws as Record<string, unknown>).catalog_slug}`} target="_blank" className="text-xs px-2.5 py-1 rounded-lg font-semibold text-purple-600 bg-purple-100 hover:bg-purple-200">Ver</a>
+                <button onClick={() => setShowQR(true)} className="text-xs px-2.5 py-1 rounded-lg font-semibold text-purple-600 bg-purple-100 hover:bg-purple-200 flex items-center gap-1"><QrCode size={12} />QR</button>
               </div>
             </div>
           )}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">{t('catalogSlug')}</label>
+            <p className="text-xs text-gray-400 mb-1 sm:hidden">estamply.app/catalogo/</p>
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-400">estamply.app/catalogo/</span>
+              <span className="text-sm text-gray-400 hidden sm:inline">estamply.app/catalogo/</span>
               <input className="input-base flex-1" value={(ws as Record<string, unknown>).catalog_slug as string || ''} placeholder="mi-taller"
                 onChange={e => setWs({ ...ws, catalog_slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') } as WorkshopSettings)} />
             </div>
@@ -1152,7 +1153,7 @@ export default function SettingsPage() {
               ))}
             </div>
             {/* Desktop table */}
-            <div className="hidden md:block card overflow-hidden" onClick={() => guiaMenu && setGuiaMenu(null)}>
+            <div className="hidden md:block card overflow-hidden">
               <table className="w-full"><thead><tr className="border-b border-gray-100">
                 {['Nombre', 'Talles', 'Medidas', ''].map(h => <th key={h} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">{h}</th>)}
               </tr></thead><tbody>
@@ -1164,12 +1165,13 @@ export default function SettingsPage() {
                     <td className="px-4 py-3"><div className="flex gap-1 relative">
                       <button onClick={() => openGuia(g)} className="p-1.5 rounded-lg hover:bg-gray-100"><Pencil size={14} className="text-gray-400" /></button>
                       <button onClick={e => { e.stopPropagation(); setGuiaMenu(guiaMenu === g.id ? null : g.id) }} className="p-1.5 rounded-lg hover:bg-gray-100"><MoreHorizontal size={14} className="text-gray-400" /></button>
-                      {guiaMenu === g.id && (
+                      {guiaMenu === g.id && (<>
+                        <div className="fixed inset-0 z-40" onClick={() => setGuiaMenu(null)} />
                         <div className="absolute right-0 top-full mt-1 w-36 bg-white rounded-lg shadow-lg border border-gray-100 z-50 py-1">
                           <button onClick={() => { duplicateGuia(g); setGuiaMenu(null) }} className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50">Duplicar</button>
                           <button onClick={() => { deleteGuia(g); setGuiaMenu(null) }} className="w-full text-left px-3 py-1.5 text-sm text-red-500 hover:bg-red-50">Eliminar</button>
                         </div>
-                      )}
+                      </>)}
                     </div></td>
                   </tr>
                 ))}
