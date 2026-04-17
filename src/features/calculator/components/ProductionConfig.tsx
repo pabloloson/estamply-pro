@@ -100,7 +100,7 @@ export default function ProductionConfig({
             <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200">
               <p className="text-[10px] font-medium text-amber-700">
                 No hay {papelLabel.toLowerCase()} vinculado a esta técnica.{' '}
-                <Link href="/materiales" className="underline font-bold hover:text-amber-900">Configurar en Materiales</Link>
+                <Link href="/settings/insumos" className="underline font-bold hover:text-amber-900">Configurar en Insumos</Link>
               </p>
             </div>
           )}
