@@ -116,10 +116,13 @@ export default function CotizadorPage() {
   const engine = useCostEngine(activeTecnicasForEngine, products, equipment, insumos, settings)
   const { technique, product, result } = engine
 
-  // Sync engine selection with cotizador tab
+  // Sync engine selection with cotizador tab — reset insumo selections when technique changes
   useEffect(() => {
     if (resolvedTec && engine.selectedTechniqueId !== resolvedTec.id) {
       engine.setSelectedTechniqueId(resolvedTec.id)
+      setSelectedPapelId('')
+      setSelectedTintaId('')
+      setSelectedPrinterId('')
     }
   }, [resolvedSlug, resolvedTec?.id])
 
