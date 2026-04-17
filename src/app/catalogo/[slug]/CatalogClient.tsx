@@ -1,12 +1,14 @@
 'use client'
 
-import { useState, useEffect, createContext, useContext, useCallback } from 'react'
+import { useState, useEffect, useContext, useCallback } from 'react'
 import { useParams } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { ShoppingCart, X, Plus, Minus, Trash2, MessageCircle, ArrowLeft, ChevronLeft, ChevronRight, Check, Share2, Copy, Link2 } from 'lucide-react'
 import esMsg from '../../../../messages/es.json'
 import ptMsg from '../../../../messages/pt.json'
 import { formatCurrency, getCountry } from '@/shared/lib/currency'
+import { CartCtx } from './layout'
 
 // ── Types ──
 interface CatalogProduct {
@@ -28,38 +30,6 @@ interface ShopInfo {
   anuncio: { activo: boolean; texto: string; bgColor: string; textColor: string }
   waBotonVisible: boolean; waMensaje: string
 }
-interface CartItem { productId: string; name: string; price: number; quantity: number; photo: string; variant: string }
-
-// ── Cart Context ──
-const CartCtx = createContext<{
-  items: CartItem[]; add: (p: CatalogProduct, qty: number, variant: string) => void
-  update: (key: string, qty: number) => void; remove: (key: string) => void; total: number
-}>({ items: [], add: () => {}, update: () => {}, remove: () => {}, total: 0 })
-
-function CartProvider({ children, slug }: { children: React.ReactNode; slug: string }) {
-  const [items, setItems] = useState<CartItem[]>(() => {
-    if (typeof window === 'undefined') return []
-    try { return JSON.parse(localStorage.getItem(`cart-${slug}`) || '[]') } catch { return [] }
-  })
-  useEffect(() => { localStorage.setItem(`cart-${slug}`, JSON.stringify(items)) }, [items, slug])
-  const add = useCallback((p: CatalogProduct, qty: number, variant: string) => {
-    const key = variant ? `${p.id}::${variant}` : p.id
-    setItems(prev => {
-      const existing = prev.find(i => (i.variant ? `${i.productId}::${i.variant}` : i.productId) === key)
-      if (existing) return prev.map(i => (i.variant ? `${i.productId}::${i.variant}` : i.productId) === key ? { ...i, quantity: i.quantity + qty } : i)
-      return [...prev, { productId: p.id, name: p.name, price: p.selling_price, quantity: qty, photo: (p.photos || [])[0] || '', variant }]
-    })
-  }, [])
-  const itemKey = (i: CartItem) => i.variant ? `${i.productId}::${i.variant}` : i.productId
-  const update = useCallback((key: string, qty: number) => {
-    if (qty <= 0) setItems(prev => prev.filter(i => itemKey(i) !== key))
-    else setItems(prev => prev.map(i => itemKey(i) === key ? { ...i, quantity: qty } : i))
-  }, [])
-  const remove = useCallback((key: string) => setItems(prev => prev.filter(i => itemKey(i) !== key)), [])
-  const total = items.reduce((s, i) => s + i.price * i.quantity, 0)
-  return <CartCtx.Provider value={{ items, add, update, remove, total }}>{children}</CartCtx.Provider>
-}
-
 // Currency formatting — set when shop loads
 let _countryConfig = getCountry('AR')
 let _msgs = esMsg as unknown as Record<string, Record<string, string>>
@@ -142,28 +112,15 @@ export default function PublicCatalogPage() {
   if (loading) return <div className="flex items-center justify-center min-h-screen"><div className="w-8 h-8 border-2 border-gray-200 border-t-gray-600 rounded-full animate-spin" /></div>
   if (error || !shop) return <div className="flex items-center justify-center min-h-screen text-gray-500">{error || 'No encontrado'}</div>
 
-  return (
-    <CartProvider slug={slug}>
-      <CatalogContent shop={shop} products={products} categories={categories} sizeGuides={sizeGuides} activePromos={activePromos} />
-    </CartProvider>
-  )
+  return <CatalogContent shop={shop} products={products} categories={categories} sizeGuides={sizeGuides} activePromos={activePromos} />
 }
 
 // ── Catalog Content ──
 type PromoInfo = { product_ids: string[]; discount_type: string; discount_value: number; ends_at: string; show_countdown: boolean }
 function CatalogContent({ shop, products, categories, sizeGuides, activePromos }: { shop: ShopInfo; products: CatalogProduct[]; categories: Category[]; sizeGuides: SizeGuide[]; activePromos: PromoInfo[] }) {
+  const { slug } = useParams<{ slug: string }>()
   const [selectedCat, setSelectedCat] = useState<string | null>(null)
   const [detail, setDetail] = useState<CatalogProduct | null>(null)
-
-  // Auto-open product from URL query param (?product=ID)
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    const pid = params.get('product')
-    if (pid && products.length > 0) {
-      const found = products.find(p => p.id === pid)
-      if (found) setDetail(found)
-    }
-  }, [products])
   const [showCart, setShowCart] = useState(false)
   const [annDismissed, setAnnDismissed] = useState(false)
   const [search, setSearch] = useState('')
@@ -280,8 +237,7 @@ function CatalogContent({ shop, products, categories, sizeGuides, activePromos }
             {featuredProducts.map(p => {
               const photo = (p.photos || [])[0]
               return (
-                <div key={p.id} className="flex-shrink-0 w-36 bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition-shadow"
-                  onClick={() => setDetail(p)}>
+                <Link key={p.id} href={`/catalogo/${slug}/producto/${p.id}`} className="flex-shrink-0 w-36 bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition-shadow">
                   <div className="aspect-square bg-gray-100">
                     {photo ? <img src={photo} alt={p.name} className="w-full h-full object-cover" loading="lazy" /> : <div className="w-full h-full flex items-center justify-center text-gray-300 text-2xl">📷</div>}
                   </div>
@@ -289,7 +245,7 @@ function CatalogContent({ shop, products, categories, sizeGuides, activePromos }
                     <p className="font-semibold text-gray-800 text-xs leading-tight truncate">{p.name}</p>
                     <p className="font-bold text-gray-900 text-sm mt-0.5">{fmt(p.selling_price)}</p>
                   </div>
-                </div>
+                </Link>
               )
             })}
           </div>
@@ -306,8 +262,7 @@ function CatalogContent({ shop, products, categories, sizeGuides, activePromos }
             const promoPrice = promo ? getPromoPrice(p) : null
             const hasManualDiscount = !promo && (p.precio_anterior || 0) > p.selling_price
             return (
-              <div key={p.id} className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition-shadow"
-                onClick={() => setDetail(p)}>
+              <Link key={p.id} href={`/catalogo/${slug}/producto/${p.id}`} className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition-shadow block">
                 <div className="relative aspect-square bg-gray-100">
                   {photo ? <img src={photo} alt={p.name} className="w-full h-full object-cover" loading="lazy" /> : <div className="w-full h-full flex items-center justify-center text-gray-300 text-3xl">📷</div>}
                   {status === 'soldout' && <div className="absolute inset-0 bg-black/40 flex items-center justify-center"><span className="text-white font-bold text-sm bg-black/60 px-3 py-1 rounded-full">{tc('webCatalog', 'outOfStock')}</span></div>}
@@ -332,7 +287,7 @@ function CatalogContent({ shop, products, categories, sizeGuides, activePromos }
                     {p.estimated_delivery && status === 'ondemand' && <span className="text-gray-400"> · {p.estimated_delivery}</span>}
                   </p>
                 </div>
-              </div>
+              </Link>
             )
           })}
         </div>
@@ -381,7 +336,7 @@ function CatalogContent({ shop, products, categories, sizeGuides, activePromos }
       )}
 
       {/* Cart bar */}
-      {itemCount > 0 && !showCart && !detail && (
+      {itemCount > 0 && !showCart && (
         <button onClick={() => setShowCart(true)}
           className="fixed bottom-4 left-4 right-4 py-3.5 rounded-2xl text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg z-30 max-w-lg mx-auto"
           style={{ background: color }}>
@@ -390,7 +345,7 @@ function CatalogContent({ shop, products, categories, sizeGuides, activePromos }
       )}
 
       {/* Product Detail */}
-      {detail && <ProductDetail product={detail} shop={shop} sizeGuides={sizeGuides} onClose={() => setDetail(null)} promoPrice={getPromo(detail.id) ? getPromoPrice(detail) : null} />}
+      {/* Product detail is now a separate route: /catalogo/[slug]/producto/[productId] */}
 
       {/* Cart Screen */}
       {showCart && <CartScreen shop={shop} onClose={() => setShowCart(false)} />}
@@ -630,7 +585,7 @@ function CartScreen({ shop, onClose }: { shop: ShopInfo; onClose: () => void }) 
     setValidatingCoupon(false)
   }
 
-  const itemKey = (i: CartItem) => i.variant ? `${i.productId}::${i.variant}` : i.productId
+  const itemKey = (i: { productId: string; variant: string }) => i.variant ? `${i.productId}::${i.variant}` : i.productId
 
   async function sendOrder() {
     if (!nombre.trim() || !whatsapp.trim()) return
