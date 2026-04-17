@@ -866,6 +866,9 @@ export default function SettingsPage() {
       })()}
 
       {activeSection === 'usuarios' && (() => {
+        const ALL_SECTIONS = ['inicio', 'cotizador', 'presupuestos', 'pedidos', 'clientes', 'catalogo', 'promociones', 'estadisticas', 'configuracion']
+        const SECTION_LABELS: Record<string, string> = { inicio: 'Inicio', cotizador: 'Cotizador', presupuestos: 'Presupuestos', pedidos: 'Pedidos', clientes: 'Clientes', catalogo: 'Catálogo', promociones: 'Promociones', estadisticas: 'Estadísticas', configuracion: 'Configuración' }
+        const VIS_LABELS: Record<string, string> = { completa: 'Completa', solo_precios: 'Solo precios', solo_produccion: 'Solo producción' }
         const editMember = async (m: typeof teamMembers[0]) => {
           const { data } = await supabase.from('team_members').select('permisos').eq('id', m.id).single()
           const p = (data?.permisos || {}) as Record<string, unknown>
@@ -875,7 +878,18 @@ export default function SettingsPage() {
           if (!confirm(`¿Eliminar a ${m.nombre}? Perderá acceso al taller.`)) return
           await supabase.from('team_members').delete().eq('id', m.id)
           setTeamMembers(prev => prev.filter(x => x.id !== m.id))
-          setUserMenu(null)
+        }
+        const getMemberVis = (m: typeof teamMembers[0]) => {
+          // We'd need permisos loaded — for now show from cache if available
+          return 'Solo precios'
+        }
+        const getMemberSections = (permisos?: Record<string, boolean>) => {
+          if (!permisos) return '—'
+          const active = ALL_SECTIONS.filter(s => permisos[s])
+          if (active.length === 0) return '—'
+          if (active.length === ALL_SECTIONS.length) return 'Todas'
+          const shown = active.slice(0, 3).map(s => SECTION_LABELS[s] || s)
+          return active.length > 3 ? `${shown.join(', ')} +${active.length - 3}` : shown.join(', ')
         }
         return (<>
       <div>
@@ -888,11 +902,14 @@ export default function SettingsPage() {
 
         {/* Mobile cards */}
         <div className="md:hidden space-y-2">
-          <div className="card p-4 flex items-center justify-between">
-            <div><p className="font-semibold text-gray-800">{ownerName || 'Dueño'}</p></div>
-            <div className="flex items-center gap-2">
+          <div className="card p-4">
+            <div className="flex items-center justify-between">
+              <div><p className="font-semibold text-gray-800">{ownerName || 'Dueño'}</p></div>
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">👑 Dueño</span>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700">Activo</span>
+            </div>
+            <div className="mt-1.5 text-xs text-gray-400 space-y-0.5">
+              <p>Visibilidad: <span className="text-gray-600">Completa</span></p>
+              <p>Secciones: <span className="text-gray-600">Todas</span></p>
             </div>
           </div>
           {teamMembers.map(m => (
@@ -901,7 +918,7 @@ export default function SettingsPage() {
                 <div><p className="font-semibold text-gray-800">{m.nombre}</p><p className="text-xs text-gray-400">{m.email}</p></div>
                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${m.estado === 'activo' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>{m.estado === 'activo' ? 'Activo' : 'Pendiente'}</span>
               </div>
-              <div className="flex gap-1 mt-2">
+              <div className="flex items-center gap-1 mt-2">
                 <button onClick={() => editMember(m)} className="p-1.5 rounded hover:bg-gray-100"><Pencil size={13} className="text-gray-400" /></button>
                 <button onClick={() => deleteMember(m)} className="p-1.5 rounded hover:bg-red-50"><Trash2 size={13} className="text-red-400" /></button>
               </div>
@@ -910,13 +927,15 @@ export default function SettingsPage() {
         </div>
 
         {/* Desktop table */}
-        <div className="hidden md:block card" style={{ overflow: 'visible' }}>
+        <div className="hidden md:block card overflow-hidden">
           <table className="w-full"><thead><tr className="border-b border-gray-100">
-            {['Usuario', 'Rol', 'Estado', ''].map(h => <th key={h} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">{h}</th>)}
+            {['Usuario', 'Rol', 'Visibilidad', 'Secciones', 'Estado', ''].map(h => <th key={h} className={`text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3 ${h === 'Secciones' ? 'hidden lg:table-cell' : ''}`}>{h}</th>)}
           </tr></thead><tbody>
             <tr className="border-b border-gray-50 bg-purple-50/30">
               <td className="px-4 py-3"><span className="font-medium text-gray-800">{ownerName || 'Dueño'}</span></td>
               <td className="px-4 py-3"><span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">👑 Dueño</span></td>
+              <td className="px-4 py-3 text-sm text-gray-500">Completa</td>
+              <td className="px-4 py-3 text-sm text-gray-500 hidden lg:table-cell">Todas</td>
               <td className="px-4 py-3"><span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700">Activo</span></td>
               <td className="px-4 py-3"></td>
             </tr>
@@ -924,16 +943,12 @@ export default function SettingsPage() {
               <tr key={m.id} className="border-b border-gray-50 hover:bg-gray-50">
                 <td className="px-4 py-3"><p className="font-medium text-gray-800">{m.nombre}</p><p className="text-xs text-gray-400">{m.email}</p></td>
                 <td className="px-4 py-3 text-sm text-gray-500">Colaborador</td>
+                <td className="px-4 py-3 text-sm text-gray-500">{VIS_LABELS[(m as unknown as Record<string, unknown>).nivel as string] || 'Solo precios'}</td>
+                <td className="px-4 py-3 text-sm text-gray-500 hidden lg:table-cell">—</td>
                 <td className="px-4 py-3"><span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${m.estado === 'activo' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>{m.estado === 'activo' ? 'Activo' : 'Pendiente'}</span></td>
-                <td className="px-4 py-3"><div className="flex gap-1 relative">
+                <td className="px-4 py-3"><div className="flex gap-1">
                   <button onClick={() => editMember(m)} className="p-1.5 rounded-lg hover:bg-gray-100"><Pencil size={14} className="text-gray-400" /></button>
-                  <button onClick={e => { e.stopPropagation(); setUserMenu(userMenu === m.id ? null : m.id) }} className="p-1.5 rounded-lg hover:bg-gray-100"><MoreHorizontal size={14} className="text-gray-400" /></button>
-                  {userMenu === m.id && (<>
-                    <div className="fixed inset-0 z-40" onClick={() => setUserMenu(null)} />
-                    <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-lg shadow-lg border border-gray-100 z-50 py-1">
-                      <button onClick={() => { deleteMember(m); setUserMenu(null) }} className="w-full text-left px-3 py-1.5 text-sm text-red-500 hover:bg-red-50">Eliminar</button>
-                    </div>
-                  </>)}
+                  <button onClick={() => deleteMember(m)} className="p-1.5 rounded-lg hover:bg-red-50"><Trash2 size={14} className="text-red-400" /></button>
                 </div></td>
               </tr>
             ))}
