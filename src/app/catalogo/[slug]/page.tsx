@@ -541,7 +541,7 @@ function ProductDetail({ product, shop, sizeGuides, onClose, promoPrice }: { pro
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" style={{ background: 'rgba(0,0,0,0.4)' }} onClick={() => setShowGuide(false)}>
           <div className="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl p-5 max-h-[80vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-gray-900">Guía de talles — {guide.nombre}</h3>
+              <h3 className="font-bold text-gray-900">Guía de talles{guide.nombre.toLowerCase().startsWith('guía de talles') || guide.nombre.toLowerCase().startsWith('guia de talles') ? '' : ` — ${guide.nombre}`}</h3>
               <button onClick={() => setShowGuide(false)} className="p-1 hover:bg-gray-100 rounded"><X size={16} /></button>
             </div>
             {guide.imagen_referencia && (
@@ -560,6 +560,7 @@ function ProductDetail({ product, shop, sizeGuides, onClose, promoPrice }: { pro
                     </tr>
                   ))}
                 </tbody></table>
+                <p className="text-[10px] text-gray-400 mt-2 text-right">Todas las medidas están en centímetros.</p>
               </div>
             )}
             {!guide.imagen_referencia && (!guide.filas.length || !guide.columnas.length) && (

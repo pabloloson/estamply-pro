@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, lazy, Suspense } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { Save, User, Upload, Loader2, X, Plus, Trash2, QrCode, Check, Pencil, Search } from 'lucide-react'
+import { Save, User, Upload, Loader2, X, Plus, Trash2, QrCode, Check, Pencil, Search, MoreHorizontal } from 'lucide-react'
 import { QRCodeCanvas } from 'qrcode.react'
 import { DEFAULT_SETTINGS, type WorkshopSettings, type DiscountTier, type ManoDeObraModo, type ComisionBase, DEFAULT_MO_CONFIG } from '@/features/presupuesto/types'
 import { useTranslations } from '@/shared/hooks/useTranslations'
@@ -84,6 +84,7 @@ export default function SettingsPage() {
   const [editingSupplier, setEditingSupplier] = useState<{ id?: string; name: string; whatsapp: string; email: string; website: string; location: string; notes: string } | null>(null)
   const [searchSupplier, setSearchSupplier] = useState('')
   const [mpToast, setMpToast] = useState('')
+  const [guiaMenu, setGuiaMenu] = useState<string | null>(null)
   const [openDiscTecs, setOpenDiscTecs] = useState<string[]>(['descuentos_subli'])
 
 
@@ -1115,28 +1116,68 @@ export default function SettingsPage() {
         </div>
       )})()}
 
-      {activeSection === 'guia-talles' && (
+      {activeSection === 'guia-talles' && (() => {
+        const openGuia = (g: typeof guiasTalles[0]) => setEditingGuia({ id: g.id, nombre: g.nombre, columnas: g.columnas, filas: g.filas, imagen_referencia: (g as Record<string, unknown>).imagen_referencia as string || null })
+        const duplicateGuia = (g: typeof guiasTalles[0]) => setEditingGuia({ nombre: `${g.nombre} (copia)`, columnas: [...g.columnas], filas: g.filas.map(f => ({ ...f })), imagen_referencia: (g as Record<string, unknown>).imagen_referencia as string || null })
+        const deleteGuia = async (g: typeof guiasTalles[0]) => {
+          if (!confirm('¿Eliminar esta guía de talles?')) return
+          await supabase.from('guias_talles').delete().eq('id', g.id); setGuiasTalles(prev => prev.filter(x => x.id !== g.id))
+        }
+        const newGuia = () => setEditingGuia({ nombre: '', columnas: ['Ancho', 'Largo'], filas: [{ talle: 'S', Ancho: '', Largo: '' }, { talle: 'M', Ancho: '', Largo: '' }, { talle: 'L', Ancho: '', Largo: '' }] })
+        return (
         <div>
-          <h2 className="text-xl font-bold text-gray-900 mb-1">Guía de talles</h2>
-          <p className="text-sm text-gray-400 mb-4">Tablas de medidas para tus clientes.</p>
-          <div className="space-y-3">
-            {guiasTalles.map(g => (
-              <div key={g.id} className="flex items-center justify-between p-3 rounded-lg border border-gray-100 hover:bg-gray-50">
-                <div>
-                  <span className="font-medium text-sm text-gray-800">{g.nombre}</span>
-                  <p className="text-xs text-gray-400">{g.columnas.length} medidas · {g.filas.length} talles</p>
-                </div>
-                <div className="flex gap-1">
-                  <button onClick={() => setEditingGuia({ id: g.id, nombre: g.nombre, columnas: g.columnas, filas: g.filas, imagen_referencia: (g as Record<string, unknown>).imagen_referencia as string || null })} className="text-xs text-gray-400 hover:text-gray-600 p-1">✎</button>
-                  <button onClick={async () => { if (confirm('¿Eliminar?')) { await supabase.from('guias_talles').delete().eq('id', g.id); setGuiasTalles(prev => prev.filter(x => x.id !== g.id)) } }} className="text-xs text-red-400 hover:text-red-600 p-1">✕</button>
-                </div>
-              </div>
-            ))}
+          <div className="flex items-start justify-between gap-3 mb-4">
+            <div><h2 className="text-xl font-bold text-gray-900 mb-1">Guía de talles</h2>
+              <p className="text-sm text-gray-400">Tablas de medidas para tus clientes.</p></div>
+            <button onClick={newGuia} className="flex items-center gap-1.5 whitespace-nowrap text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={14} /> Nueva tabla</button>
           </div>
-          <button onClick={() => setEditingGuia({ nombre: '', columnas: ['Ancho', 'Largo'], filas: [{ talle: 'S', Ancho: '', Largo: '' }, { talle: 'M', Ancho: '', Largo: '' }, { talle: 'L', Ancho: '', Largo: '' }] })}
-            className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700 mt-4"><Plus size={14} /> {t('newSizeTable')}</button>
+
+          {guiasTalles.length === 0 ? (
+            <div className="card p-12 text-center"><p className="text-4xl mb-3 opacity-50">📏</p><p className="text-gray-500 text-sm">Todavía no creaste guías de talles.</p><p className="text-gray-400 text-xs mt-1">Creá la primera para que tus clientes elijan el talle correcto.</p></div>
+          ) : (<>
+            {/* Mobile cards */}
+            <div className="md:hidden space-y-2">
+              {guiasTalles.map(g => (
+                <div key={g.id} className="card p-4">
+                  <div className="flex items-start justify-between">
+                    <div><p className="font-semibold text-gray-800">{g.nombre}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">{g.filas.map(f => f.talle).filter(Boolean).join(', ')}</p>
+                      <p className="text-xs text-gray-400">{g.columnas.join(', ')}</p></div>
+                    <div className="flex gap-1">
+                      <button onClick={() => openGuia(g)} className="p-1.5 rounded hover:bg-gray-100"><Pencil size={13} className="text-gray-400" /></button>
+                      <button onClick={() => deleteGuia(g)} className="p-1.5 rounded hover:bg-red-50"><Trash2 size={13} className="text-red-400" /></button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* Desktop table */}
+            <div className="hidden md:block card overflow-hidden" onClick={() => guiaMenu && setGuiaMenu(null)}>
+              <table className="w-full"><thead><tr className="border-b border-gray-100">
+                {['Nombre', 'Talles', 'Medidas', ''].map(h => <th key={h} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">{h}</th>)}
+              </tr></thead><tbody>
+                {guiasTalles.map(g => (
+                  <tr key={g.id} className="border-b border-gray-50 hover:bg-gray-50">
+                    <td className="px-4 py-3 font-medium text-gray-800">{g.nombre}</td>
+                    <td className="px-4 py-3 text-sm text-gray-500">{g.filas.map(f => f.talle).filter(Boolean).join(', ')}</td>
+                    <td className="px-4 py-3 text-sm text-gray-500">{g.columnas.join(', ')}</td>
+                    <td className="px-4 py-3"><div className="flex gap-1 relative">
+                      <button onClick={() => openGuia(g)} className="p-1.5 rounded-lg hover:bg-gray-100"><Pencil size={14} className="text-gray-400" /></button>
+                      <button onClick={e => { e.stopPropagation(); setGuiaMenu(guiaMenu === g.id ? null : g.id) }} className="p-1.5 rounded-lg hover:bg-gray-100"><MoreHorizontal size={14} className="text-gray-400" /></button>
+                      {guiaMenu === g.id && (
+                        <div className="absolute right-0 top-full mt-1 w-36 bg-white rounded-lg shadow-lg border border-gray-100 z-50 py-1">
+                          <button onClick={() => { duplicateGuia(g); setGuiaMenu(null) }} className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50">Duplicar</button>
+                          <button onClick={() => { deleteGuia(g); setGuiaMenu(null) }} className="w-full text-left px-3 py-1.5 text-sm text-red-500 hover:bg-red-50">Eliminar</button>
+                        </div>
+                      )}
+                    </div></td>
+                  </tr>
+                ))}
+              </tbody></table>
+            </div>
+          </>)}
         </div>
-      )}
+      )})()}
 
       {/* Invite/Edit user modal */}
       {inviteModal && (() => {
@@ -1221,24 +1262,30 @@ export default function SettingsPage() {
               <div><label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
                 <input className="input-base" value={editingGuia.nombre} placeholder="Ej: Remeras Hombre/Unisex" onChange={e => setEditingGuia({ ...editingGuia, nombre: e.target.value })} /></div>
 
-              {/* Image upload */}
+              {/* Image upload - styled dropzone */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Imagen de referencia <span className="font-normal text-gray-400">(opcional)</span></label>
                 {editingGuia.imagen_referencia ? (
-                  <div className="relative rounded-lg overflow-hidden mb-2 border border-gray-200">
+                  <div className="relative rounded-xl overflow-hidden mb-2 border border-gray-200">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={editingGuia.imagen_referencia} alt="" className="w-full max-h-48 object-contain bg-gray-50" />
-                    <button onClick={() => setEditingGuia({ ...editingGuia, imagen_referencia: null })} className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/50 flex items-center justify-center text-white hover:bg-black/70"><X size={12} /></button>
+                    <button onClick={() => setEditingGuia({ ...editingGuia, imagen_referencia: null })} className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/50 flex items-center justify-center text-white hover:bg-black/70"><X size={12} /></button>
                   </div>
-                ) : null}
-                <input type="file" accept="image/*" className="text-xs" onChange={async e => {
-                  const file = e.target.files?.[0]; if (!file) return
-                  const { data: { user } } = await supabase.auth.getUser()
-                  const path = `${user?.id}/guia-${Date.now()}.${file.name.split('.').pop()}`
-                  await supabase.storage.from('product-photos').upload(path, file)
-                  const { data: { publicUrl } } = supabase.storage.from('product-photos').getPublicUrl(path)
-                  setEditingGuia(prev => prev ? { ...prev, imagen_referencia: publicUrl } : prev)
-                }} />
-                <p className="text-[10px] text-gray-400 mt-1">Diagrama de la prenda con medidas señaladas.</p>
+                ) : (
+                  <label className="flex flex-col items-center justify-center py-6 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-purple-300 transition-colors">
+                    <Upload size={24} className="text-gray-300 mb-2" />
+                    <span className="text-sm text-gray-500">Arrastrá o hacé clic para subir</span>
+                    <span className="text-xs text-gray-400 mt-1">Diagrama de la prenda con medidas señaladas</span>
+                    <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={async e => {
+                      const file = e.target.files?.[0]; if (!file) return
+                      const { data: { user } } = await supabase.auth.getUser()
+                      const path = `${user?.id}/guia-${Date.now()}.${file.name.split('.').pop()}`
+                      await supabase.storage.from('product-photos').upload(path, file)
+                      const { data: { publicUrl } } = supabase.storage.from('product-photos').getPublicUrl(path)
+                      setEditingGuia(prev => prev ? { ...prev, imagen_referencia: publicUrl } : prev)
+                    }} />
+                  </label>
+                )}
               </div>
 
               <div>
@@ -1254,7 +1301,10 @@ export default function SettingsPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Talles y valores</label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-sm font-medium text-gray-700">Talles y valores</label>
+                  <span className="text-[10px] text-gray-400">Valores en cm</span>
+                </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs"><thead><tr>
                     <th className="text-left px-1.5 py-1 text-gray-500 font-semibold">Talle</th>
