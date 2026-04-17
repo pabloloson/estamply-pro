@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
-import { notFound, redirect } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
+import { RedirectToProduct } from './RedirectClient'
 
 interface Props { params: Promise<{ slug: string; productId: string }> }
 
@@ -72,7 +73,6 @@ export default async function ProductPage({ params }: Props) {
   const { slug, productId } = await params
   const supabase = await createClient()
 
-  // Verify the product and slug exist
   const { data: match } = await supabase
     .from('workshop_settings')
     .select('settings')
@@ -89,6 +89,6 @@ export default async function ProductPage({ params }: Props) {
 
   if (!product) notFound()
 
-  // Redirect to the catalog with a hash that the client component will pick up
-  redirect(`/catalogo/${slug}?product=${productId}`)
+  // Render page with OG tags in HTML (for scrapers), then client-side redirect for users
+  return <RedirectToProduct slug={slug} productId={productId} />
 }
