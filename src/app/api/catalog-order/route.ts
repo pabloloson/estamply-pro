@@ -9,7 +9,7 @@ const supabase = createClient(
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const { userId, nombre, whatsapp, comentarios, items, total, medioPago, ajustePorcentaje, ajusteMonto } = body
+    const { userId, nombre, whatsapp, comentarios, items, total, medioPago, ajustePorcentaje, ajusteMonto, couponCode, couponDiscount } = body
 
     if (!userId || !nombre || !whatsapp || !items?.length) {
       return NextResponse.json({ error: 'Faltan datos obligatorios' }, { status: 400 })
@@ -66,6 +66,16 @@ export async function POST(req: Request) {
     if (error) {
       console.error('Presupuesto insert error:', error)
       return NextResponse.json({ codigo, warning: 'Presupuesto no se pudo crear' })
+    }
+
+    // Increment coupon used_count if applicable
+    if (couponCode) {
+      const { data: coupon } = await supabase.from('coupons').select('id, used_count, used_by_clients').eq('user_id', userId).eq('code', couponCode.toUpperCase()).single()
+      if (coupon) {
+        const usedBy = [...(coupon.used_by_clients || []), whatsapp].filter(Boolean)
+        const newCount = (coupon.used_count || 0) + 1
+        await supabase.from('coupons').update({ used_count: newCount, used_by_clients: usedBy }).eq('id', coupon.id)
+      }
     }
 
     return NextResponse.json({ codigo, clientId })

@@ -1,14 +1,19 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Plus, Pencil, Trash2, X, Pause, Play, Check, Search, Copy } from 'lucide-react'
+import { Plus, Pencil, Trash2, X, Check, Search, Copy, MoreHorizontal, Share2 } from 'lucide-react'
 import { useLocale } from '@/shared/context/LocaleContext'
 
 interface Promotion {
   id: string; name: string; discount_type: 'percentage' | 'fixed'; discount_value: number
   product_ids: string[]; starts_at: string; ends_at: string; show_countdown: boolean
   status: 'scheduled' | 'active' | 'paused' | 'finished'; created_at: string
+}
+interface Coupon {
+  id: string; code: string; discount_type: 'percentage' | 'fixed'; discount_value: number
+  max_uses: number | null; used_count: number; one_per_client: boolean
+  min_amount: number; expires_at: string | null; status: string; created_at: string
 }
 interface CatProduct { id: string; name: string; category_id: string | null; selling_price: number; photos: string[] }
 
@@ -17,249 +22,286 @@ const STATUS_LABELS: Record<string, { label: string; color: string; bg: string }
   active: { label: 'Activa', color: '#22C55E', bg: '#F0FDF4' },
   paused: { label: 'Pausada', color: '#EAB308', bg: '#FEFCE8' },
   finished: { label: 'Finalizada', color: '#9CA3AF', bg: '#F3F4F6' },
+  exhausted: { label: 'Agotado', color: '#9CA3AF', bg: '#F3F4F6' },
+  expired: { label: 'Vencido', color: '#9CA3AF', bg: '#F3F4F6' },
 }
 
 export default function PromocionesPage() {
   const supabase = createClient()
   const { fmt: fmtCurrency } = useLocale()
+  const [tab, setTab] = useState<'promos' | 'cupones'>('promos')
   const [promos, setPromos] = useState<Promotion[]>([])
+  const [coupons, setCoupons] = useState<Coupon[]>([])
   const [products, setProducts] = useState<CatProduct[]>([])
   const [loading, setLoading] = useState(true)
-  const [modal, setModal] = useState<Partial<Promotion> | null>(null)
+  const [promoModal, setPromoModal] = useState<Partial<Promotion> | null>(null)
+  const [couponModal, setCouponModal] = useState<Partial<Coupon> | null>(null)
   const [searchProd, setSearchProd] = useState('')
   const [toast, setToast] = useState('')
+  const [openMenu, setOpenMenu] = useState<string | null>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
 
   async function load() {
-    const [{ data: p }, { data: cp }] = await Promise.all([
+    const [{ data: p }, { data: cp }, { data: cu }] = await Promise.all([
       supabase.from('promotions').select('*').order('created_at', { ascending: false }),
       supabase.from('catalog_products').select('id,name,category_id,selling_price,photos').order('name'),
+      supabase.from('coupons').select('*').order('created_at', { ascending: false }),
     ])
-    // Auto-update statuses
     const now = new Date()
-    const updated = ((p || []) as Promotion[]).map(promo => {
-      if (promo.status === 'scheduled' && new Date(promo.starts_at) <= now && new Date(promo.ends_at) > now) return { ...promo, status: 'active' as const }
-      if ((promo.status === 'active' || promo.status === 'scheduled') && new Date(promo.ends_at) <= now) return { ...promo, status: 'finished' as const }
-      return promo
+    const updated = ((p || []) as Promotion[]).map(pr => {
+      if (pr.status === 'scheduled' && new Date(pr.starts_at) <= now && new Date(pr.ends_at) > now) return { ...pr, status: 'active' as const }
+      if ((pr.status === 'active' || pr.status === 'scheduled') && new Date(pr.ends_at) <= now) return { ...pr, status: 'finished' as const }
+      return pr
     })
-    // Persist status changes
-    for (const promo of updated) {
-      const orig = (p as Promotion[]).find(x => x.id === promo.id)
-      if (orig && orig.status !== promo.status) await supabase.from('promotions').update({ status: promo.status }).eq('id', promo.id)
+    for (const pr of updated) {
+      const orig = (p as Promotion[]).find(x => x.id === pr.id)
+      if (orig && orig.status !== pr.status) await supabase.from('promotions').update({ status: pr.status }).eq('id', pr.id)
     }
     setPromos(updated)
     setProducts((cp || []) as CatProduct[])
+    setCoupons((cu || []) as Coupon[])
     setLoading(false)
   }
   useEffect(() => { load() }, [])
+  useEffect(() => { const h = (e: MouseEvent) => { if (menuRef.current && !menuRef.current.contains(e.target as Node)) setOpenMenu(null) }; document.addEventListener('click', h); return () => document.removeEventListener('click', h) }, [])
 
   function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(''), 2500) }
 
+  // ── Promo CRUD ──
   async function savePromo() {
-    if (!modal?.name || !modal.discount_value || !(modal.product_ids?.length) || !modal.ends_at) return
-    const payload = {
-      name: modal.name, discount_type: modal.discount_type || 'percentage',
-      discount_value: modal.discount_value, product_ids: modal.product_ids,
-      starts_at: modal.starts_at || new Date().toISOString(),
-      ends_at: modal.ends_at, show_countdown: modal.show_countdown || false,
-      status: new Date(modal.starts_at || Date.now()) <= new Date() ? 'active' : 'scheduled',
-    }
-    if (modal.id) {
-      await supabase.from('promotions').update(payload).eq('id', modal.id)
-    } else {
-      const { data: ownerId } = await supabase.rpc('get_team_owner_id')
-      let userId = ownerId as string | null
-      if (!userId) { const { data: { user } } = await supabase.auth.getUser(); userId = user?.id || null }
-      await supabase.from('promotions').insert({ ...payload, user_id: userId })
-    }
-    setModal(null); load(); showToast(modal.id ? 'Promoción actualizada' : 'Promoción creada')
+    if (!promoModal?.name || !promoModal.discount_value || !(promoModal.product_ids?.length) || !promoModal.ends_at) return
+    const payload = { name: promoModal.name, discount_type: promoModal.discount_type || 'percentage', discount_value: promoModal.discount_value, product_ids: promoModal.product_ids, starts_at: promoModal.starts_at || new Date().toISOString(), ends_at: promoModal.ends_at, show_countdown: promoModal.show_countdown || false, status: new Date(promoModal.starts_at || Date.now()) <= new Date() ? 'active' : 'scheduled' }
+    if (promoModal.id) { await supabase.from('promotions').update(payload).eq('id', promoModal.id) }
+    else { const { data: oid } = await supabase.rpc('get_team_owner_id'); let uid = oid as string | null; if (!uid) { const { data: { user } } = await supabase.auth.getUser(); uid = user?.id || null }; await supabase.from('promotions').insert({ ...payload, user_id: uid }) }
+    setPromoModal(null); load(); showToast(promoModal.id ? 'Promoción actualizada' : 'Promoción creada')
   }
+  async function togglePromo(p: Promotion) {
+    const ns = p.status === 'paused' ? (new Date(p.starts_at) <= new Date() ? 'active' : 'scheduled') : 'paused'
+    await supabase.from('promotions').update({ status: ns }).eq('id', p.id); load(); showToast(ns === 'paused' ? 'Promoción pausada' : 'Promoción reanudada')
+  }
+  async function finishPromo(id: string) { await supabase.from('promotions').update({ status: 'finished', ends_at: new Date().toISOString() }).eq('id', id); load(); showToast('Promoción finalizada'); setOpenMenu(null) }
+  async function deletePromo(id: string) { if (!confirm('¿Eliminar esta promoción?')) return; await supabase.from('promotions').delete().eq('id', id); load(); showToast('Eliminada'); setOpenMenu(null) }
+  function duplicatePromo(p: Promotion) { setPromoModal({ name: `${p.name} (copia)`, discount_type: p.discount_type, discount_value: p.discount_value, product_ids: [...p.product_ids], show_countdown: p.show_countdown, starts_at: '', ends_at: '' }); setOpenMenu(null) }
 
-  async function deletePromo(id: string) {
-    if (!confirm('¿Eliminar esta promoción? Los precios volverán a la normalidad.')) return
-    await supabase.from('promotions').delete().eq('id', id); load(); showToast('Promoción eliminada')
+  // ── Coupon CRUD ──
+  async function saveCoupon() {
+    if (!couponModal?.code || !couponModal.discount_value) return
+    const payload = { code: couponModal.code.toUpperCase().trim(), discount_type: couponModal.discount_type || 'percentage', discount_value: couponModal.discount_value, max_uses: couponModal.max_uses || null, one_per_client: couponModal.one_per_client || false, min_amount: couponModal.min_amount || 0, expires_at: couponModal.expires_at || null, status: 'active' }
+    if (couponModal.id) { await supabase.from('coupons').update(payload).eq('id', couponModal.id) }
+    else { const { data: oid } = await supabase.rpc('get_team_owner_id'); let uid = oid as string | null; if (!uid) { const { data: { user } } = await supabase.auth.getUser(); uid = user?.id || null }; await supabase.from('coupons').insert({ ...payload, user_id: uid }) }
+    setCouponModal(null); load(); showToast(couponModal.id ? 'Cupón actualizado' : 'Cupón creado')
   }
+  async function toggleCoupon(c: Coupon) {
+    const ns = c.status === 'paused' ? 'active' : 'paused'
+    await supabase.from('coupons').update({ status: ns }).eq('id', c.id); load(); showToast(ns === 'paused' ? 'Cupón pausado' : 'Cupón activado')
+  }
+  async function deleteCoupon(id: string) { if (!confirm('¿Eliminar este cupón?')) return; await supabase.from('coupons').delete().eq('id', id); load(); showToast('Cupón eliminado'); setOpenMenu(null) }
 
-  async function togglePause(p: Promotion) {
-    const newStatus = p.status === 'paused' ? (new Date(p.starts_at) <= new Date() ? 'active' : 'scheduled') : 'paused'
-    await supabase.from('promotions').update({ status: newStatus }).eq('id', p.id)
-    load(); showToast(newStatus === 'paused' ? 'Promoción pausada' : 'Promoción reanudada')
-  }
-
-  async function finishEarly(p: Promotion) {
-    await supabase.from('promotions').update({ status: 'finished', ends_at: new Date().toISOString() }).eq('id', p.id)
-    load(); showToast('Promoción finalizada')
-  }
-
-  function duplicatePromo(p: Promotion) {
-    setModal({ name: `${p.name} (copia)`, discount_type: p.discount_type, discount_value: p.discount_value, product_ids: [...p.product_ids], show_countdown: p.show_countdown, starts_at: '', ends_at: '' })
-  }
-
-  const fmtDate = (d: string) => new Date(d).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })
-  const toggleProduct = (id: string) => {
-    const ids = modal?.product_ids || []
-    setModal({ ...modal, product_ids: ids.includes(id) ? ids.filter(x => x !== id) : [...ids, id] })
-  }
+  const fmtDate = (d: string) => new Date(d).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })
+  const toggleProduct = (id: string) => { const ids = promoModal?.product_ids || []; setPromoModal({ ...promoModal, product_ids: ids.includes(id) ? ids.filter(x => x !== id) : [...ids, id] }) }
+  const genCode = () => `EST-${Math.random().toString(36).substring(2, 6).toUpperCase()}`
 
   if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>
 
   return (
-    <div>
-      <div className="flex items-start justify-between gap-3 mb-6">
+    <div onClick={() => openMenu && setOpenMenu(null)}>
+      <div className="flex items-start justify-between gap-3 mb-4">
         <div><h1 className="text-2xl font-bold text-gray-900">Promociones</h1>
-          <p className="text-gray-500 text-sm mt-1">Descuentos temporales para tu catálogo web.</p></div>
-        <button onClick={() => setModal({ discount_type: 'percentage', discount_value: 0, product_ids: [], show_countdown: false, starts_at: new Date().toISOString().slice(0, 16), ends_at: '' })}
-          className="flex items-center gap-1.5 whitespace-nowrap text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={14} /> Crear promoción</button>
+          <p className="text-gray-500 text-sm mt-1">Descuentos y cupones para tu catálogo web.</p></div>
+        <button onClick={() => tab === 'promos' ? setPromoModal({ discount_type: 'percentage', discount_value: 0, product_ids: [], show_countdown: false, starts_at: new Date().toISOString().slice(0, 16), ends_at: '' }) : setCouponModal({ discount_type: 'percentage', discount_value: 0, code: '' })}
+          className="flex items-center gap-1.5 whitespace-nowrap text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={14} /> {tab === 'promos' ? 'Crear promoción' : 'Crear cupón'}</button>
       </div>
 
-      {promos.length === 0 ? (
-        <div className="card p-12 text-center">
-          <p className="text-4xl mb-3 opacity-50">🏷️</p>
-          <p className="text-gray-500 text-sm">Todavía no creaste promociones.</p>
-          <p className="text-gray-400 text-xs mt-1">Creá la primera para ofrecer descuentos temporales en tu catálogo.</p>
-        </div>
-      ) : (<>
-        {/* Mobile cards */}
-        <div className="md:hidden space-y-2">
-          {promos.map(p => {
-            const st = STATUS_LABELS[p.status]
-            return (
+      {/* Tabs */}
+      <div className="flex gap-1 mb-6">
+        <button onClick={() => setTab('promos')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'promos' ? 'text-white shadow-md' : 'bg-gray-100 text-gray-600'}`} style={tab === 'promos' ? { background: '#6C5CE7' } : {}}>Promociones</button>
+        <button onClick={() => setTab('cupones')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'cupones' ? 'text-white shadow-md' : 'bg-gray-100 text-gray-600'}`} style={tab === 'cupones' ? { background: '#6C5CE7' } : {}}>Cupones</button>
+      </div>
+
+      {/* ══ PROMOTIONS TAB ══ */}
+      {tab === 'promos' && (<>
+        {promos.length === 0 ? (
+          <div className="card p-12 text-center"><p className="text-4xl mb-3 opacity-50">🏷️</p><p className="text-gray-500 text-sm">Todavía no creaste promociones.</p></div>
+        ) : (<>
+          {/* Mobile */}
+          <div className="md:hidden space-y-2">
+            {promos.map(p => { const st = STATUS_LABELS[p.status]; return (
               <div key={p.id} className="card p-4">
                 <div className="flex items-start justify-between">
-                  <div>
-                    <p className="font-semibold text-gray-800">{p.name}</p>
-                    <p className="text-sm font-bold mt-0.5" style={{ color: '#6C5CE7' }}>
-                      {p.discount_type === 'percentage' ? `-${p.discount_value}%` : `-${fmtCurrency(p.discount_value)}`}
-                      <span className="text-xs text-gray-400 font-normal ml-2">{p.product_ids.length} productos</span>
-                    </p>
-                  </div>
+                  <div><p className="font-semibold text-gray-800">{p.name}</p>
+                    <p className="text-sm font-bold mt-0.5" style={{ color: '#6C5CE7' }}>{p.discount_type === 'percentage' ? `-${p.discount_value}%` : `-${fmtCurrency(p.discount_value)}`} <span className="text-xs text-gray-400 font-normal ml-1">{p.product_ids.length} prod.</span></p>
+                    <p className="text-xs text-gray-400 mt-1">{fmtDate(p.starts_at)} → {fmtDate(p.ends_at)}</p></div>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ color: st.color, background: st.bg }}>{st.label}</span>
                 </div>
-                <p className="text-xs text-gray-400 mt-1.5">{fmtDate(p.starts_at)} → {fmtDate(p.ends_at)}</p>
-                <div className="flex gap-1 mt-2">
-                  {(p.status === 'active' || p.status === 'paused') && <button onClick={() => togglePause(p)} className="p-1.5 rounded hover:bg-gray-100">{p.status === 'paused' ? <Play size={13} className="text-green-500" /> : <Pause size={13} className="text-amber-500" />}</button>}
-                  {p.status === 'active' && <button onClick={() => finishEarly(p)} className="p-1.5 rounded hover:bg-gray-100"><Check size={13} className="text-gray-400" /></button>}
-                  <button onClick={() => duplicatePromo(p)} className="p-1.5 rounded hover:bg-gray-100"><Copy size={13} className="text-gray-400" /></button>
-                  <button onClick={() => setModal(p)} className="p-1.5 rounded hover:bg-gray-100"><Pencil size={13} className="text-gray-400" /></button>
-                  <button onClick={() => deletePromo(p.id)} className="p-1.5 rounded hover:bg-red-50"><Trash2 size={13} className="text-red-400" /></button>
+                <div className="flex items-center gap-2 mt-2">
+                  {(p.status === 'active' || p.status === 'paused' || p.status === 'scheduled') && (
+                    <button type="button" onClick={() => togglePromo(p)} className="relative w-9 h-5 rounded-full transition-colors" style={{ background: p.status !== 'paused' ? '#22C55E' : '#D1D5DB' }}>
+                      <span className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform" style={{ transform: p.status !== 'paused' ? 'translateX(16px)' : 'translateX(0)' }} /></button>
+                  )}
+                  <button onClick={() => setPromoModal(p)} className="p-1.5 rounded hover:bg-gray-100"><Pencil size={13} className="text-gray-400" /></button>
+                  <div className="relative ml-auto" ref={menuRef}><button onClick={e => { e.stopPropagation(); setOpenMenu(openMenu === p.id ? null : p.id) }} className="p-1.5 rounded hover:bg-gray-100"><MoreHorizontal size={14} className="text-gray-400" /></button>
+                    {openMenu === p.id && (<div className="absolute right-0 top-full mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-100 z-50 py-1">
+                      {p.status === 'active' && <button onClick={() => finishPromo(p.id)} className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50">Finalizar</button>}
+                      <button onClick={() => duplicatePromo(p)} className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50">Duplicar</button>
+                      <button onClick={() => deletePromo(p.id)} className="w-full text-left px-3 py-1.5 text-sm text-red-500 hover:bg-red-50">Eliminar</button>
+                    </div>)}</div>
                 </div>
               </div>
-            )
-          })}
-        </div>
-
-        {/* Desktop table */}
-        <div className="hidden md:block card overflow-hidden">
-          <table className="w-full"><thead><tr className="border-b border-gray-100">
-            {['Nombre', 'Descuento', 'Productos', 'Inicio', 'Fin', 'Estado', ''].map(h => <th key={h} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">{h}</th>)}
-          </tr></thead><tbody>
-            {promos.map(p => {
-              const st = STATUS_LABELS[p.status]
-              return (
+            )})}
+          </div>
+          {/* Desktop */}
+          <div className="hidden md:block card overflow-hidden">
+            <table className="w-full"><thead><tr className="border-b border-gray-100">
+              {['Nombre', 'Descuento', 'Productos', 'Período', 'Estado', ''].map(h => <th key={h} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">{h}</th>)}
+            </tr></thead><tbody>
+              {promos.map(p => { const st = STATUS_LABELS[p.status]; return (
                 <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50">
                   <td className="px-4 py-3 font-medium text-gray-800">{p.name}</td>
                   <td className="px-4 py-3 text-sm font-bold" style={{ color: '#6C5CE7' }}>{p.discount_type === 'percentage' ? `-${p.discount_value}%` : `-${fmtCurrency(p.discount_value)}`}</td>
                   <td className="px-4 py-3 text-sm text-gray-500">{p.product_ids.length}</td>
-                  <td className="px-4 py-3 text-sm text-gray-500">{fmtDate(p.starts_at)}</td>
-                  <td className="px-4 py-3 text-sm text-gray-500">{fmtDate(p.ends_at)}</td>
+                  <td className="px-4 py-3 text-xs text-gray-500">{fmtDate(p.starts_at)} → {fmtDate(p.ends_at)}</td>
                   <td className="px-4 py-3"><span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ color: st.color, background: st.bg }}>{st.label}</span></td>
-                  <td className="px-4 py-3"><div className="flex gap-1">
-                    {(p.status === 'active' || p.status === 'paused') && <button onClick={() => togglePause(p)} className="p-1.5 rounded-lg hover:bg-gray-100" title={p.status === 'paused' ? 'Reanudar' : 'Pausar'}>{p.status === 'paused' ? <Play size={14} className="text-green-500" /> : <Pause size={14} className="text-amber-500" />}</button>}
-                    {p.status === 'active' && <button onClick={() => finishEarly(p)} className="p-1.5 rounded-lg hover:bg-gray-100" title="Finalizar"><Check size={14} className="text-gray-400" /></button>}
-                    <button onClick={() => duplicatePromo(p)} className="p-1.5 rounded-lg hover:bg-gray-100" title="Duplicar"><Copy size={14} className="text-gray-400" /></button>
-                    <button onClick={() => setModal(p)} className="p-1.5 rounded-lg hover:bg-gray-100"><Pencil size={14} className="text-gray-400" /></button>
-                    <button onClick={() => deletePromo(p.id)} className="p-1.5 rounded-lg hover:bg-red-50"><Trash2 size={14} className="text-red-400" /></button>
+                  <td className="px-4 py-3"><div className="flex items-center gap-1.5">
+                    {(p.status === 'active' || p.status === 'paused' || p.status === 'scheduled') && (
+                      <button type="button" onClick={() => togglePromo(p)} className="relative w-9 h-5 rounded-full transition-colors" style={{ background: p.status !== 'paused' ? '#22C55E' : '#D1D5DB' }}>
+                        <span className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform" style={{ transform: p.status !== 'paused' ? 'translateX(16px)' : 'translateX(0)' }} /></button>
+                    )}
+                    <button onClick={() => setPromoModal(p)} className="p-1.5 rounded-lg hover:bg-gray-100"><Pencil size={14} className="text-gray-400" /></button>
+                    <div className="relative" ref={menuRef}><button onClick={e => { e.stopPropagation(); setOpenMenu(openMenu === `p-${p.id}` ? null : `p-${p.id}`) }} className="p-1.5 rounded-lg hover:bg-gray-100"><MoreHorizontal size={14} className="text-gray-400" /></button>
+                      {openMenu === `p-${p.id}` && (<div className="absolute right-0 top-full mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-100 z-50 py-1">
+                        {p.status === 'active' && <button onClick={() => finishPromo(p.id)} className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50">Finalizar</button>}
+                        <button onClick={() => duplicatePromo(p)} className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50">Duplicar</button>
+                        <button onClick={() => deletePromo(p.id)} className="w-full text-left px-3 py-1.5 text-sm text-red-500 hover:bg-red-50">Eliminar</button>
+                      </div>)}</div>
                   </div></td>
                 </tr>
-              )
-            })}
-          </tbody></table>
-        </div>
+              )})}
+            </tbody></table>
+          </div>
+        </>)}
       </>)}
 
-      {/* Tip */}
-      {promos.some(p => p.status === 'active') && (
-        <div className="mt-4 p-3 rounded-lg bg-blue-50 border border-blue-100 text-xs text-blue-700">
-          💡 Tip: Activá la barra de anuncio en Tienda online para promocionar tu descuento.
-        </div>
-      )}
+      {/* ══ COUPONS TAB ══ */}
+      {tab === 'cupones' && (<>
+        {coupons.length === 0 ? (
+          <div className="card p-12 text-center"><p className="text-4xl mb-3 opacity-50">🎟️</p><p className="text-gray-500 text-sm">Todavía no creaste cupones.</p><p className="text-gray-400 text-xs mt-1">Creá códigos de descuento para compartir con tus clientes.</p></div>
+        ) : (<>
+          {/* Mobile */}
+          <div className="md:hidden space-y-2">
+            {coupons.map(c => { const st = STATUS_LABELS[c.status] || STATUS_LABELS.active; return (
+              <div key={c.id} className="card p-4">
+                <div className="flex items-start justify-between">
+                  <div><p className="font-mono font-bold text-gray-800">{c.code}</p>
+                    <p className="text-sm font-bold mt-0.5" style={{ color: '#6C5CE7' }}>{c.discount_type === 'percentage' ? `-${c.discount_value}%` : `-${fmtCurrency(c.discount_value)}`}</p>
+                    <p className="text-xs text-gray-400 mt-1">{c.used_count}/{c.max_uses || '∞'} usos{c.expires_at ? ` · vence ${fmtDate(c.expires_at)}` : ''}</p></div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ color: st.color, background: st.bg }}>{st.label}</span>
+                </div>
+                <div className="flex items-center gap-2 mt-2">
+                  {c.status !== 'exhausted' && c.status !== 'expired' && (
+                    <button type="button" onClick={() => toggleCoupon(c)} className="relative w-9 h-5 rounded-full transition-colors" style={{ background: c.status === 'active' ? '#22C55E' : '#D1D5DB' }}>
+                      <span className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform" style={{ transform: c.status === 'active' ? 'translateX(16px)' : 'translateX(0)' }} /></button>
+                  )}
+                  <button onClick={() => setCouponModal(c)} className="p-1.5 rounded hover:bg-gray-100"><Pencil size={13} className="text-gray-400" /></button>
+                  <div className="relative ml-auto" ref={menuRef}><button onClick={e => { e.stopPropagation(); setOpenMenu(openMenu === c.id ? null : c.id) }} className="p-1.5 rounded hover:bg-gray-100"><MoreHorizontal size={14} className="text-gray-400" /></button>
+                    {openMenu === c.id && (<div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-lg shadow-lg border border-gray-100 z-50 py-1">
+                      <button onClick={() => { navigator.clipboard.writeText(c.code); showToast('Código copiado'); setOpenMenu(null) }} className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 flex items-center gap-2"><Copy size={12} /> Copiar código</button>
+                      <button onClick={() => deleteCoupon(c.id)} className="w-full text-left px-3 py-1.5 text-sm text-red-500 hover:bg-red-50 flex items-center gap-2"><Trash2 size={12} /> Eliminar</button>
+                    </div>)}</div>
+                </div>
+              </div>
+            )})}
+          </div>
+          {/* Desktop */}
+          <div className="hidden md:block card overflow-hidden">
+            <table className="w-full"><thead><tr className="border-b border-gray-100">
+              {['Código', 'Descuento', 'Usos', 'Monto mín.', 'Vencimiento', 'Estado', ''].map(h => <th key={h} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">{h}</th>)}
+            </tr></thead><tbody>
+              {coupons.map(c => { const st = STATUS_LABELS[c.status] || STATUS_LABELS.active; return (
+                <tr key={c.id} className="border-b border-gray-50 hover:bg-gray-50">
+                  <td className="px-4 py-3 font-mono font-bold text-gray-800">{c.code}</td>
+                  <td className="px-4 py-3 text-sm font-bold" style={{ color: '#6C5CE7' }}>{c.discount_type === 'percentage' ? `-${c.discount_value}%` : `-${fmtCurrency(c.discount_value)}`}</td>
+                  <td className="px-4 py-3 text-sm text-gray-500">{c.used_count}/{c.max_uses || '∞'}</td>
+                  <td className="px-4 py-3 text-sm text-gray-500">{c.min_amount > 0 ? fmtCurrency(c.min_amount) : '—'}</td>
+                  <td className="px-4 py-3 text-sm text-gray-500">{c.expires_at ? fmtDate(c.expires_at) : 'Sin vencimiento'}</td>
+                  <td className="px-4 py-3"><span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ color: st.color, background: st.bg }}>{st.label}</span></td>
+                  <td className="px-4 py-3"><div className="flex items-center gap-1.5">
+                    {c.status !== 'exhausted' && c.status !== 'expired' && (
+                      <button type="button" onClick={() => toggleCoupon(c)} className="relative w-9 h-5 rounded-full transition-colors" style={{ background: c.status === 'active' ? '#22C55E' : '#D1D5DB' }}>
+                        <span className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform" style={{ transform: c.status === 'active' ? 'translateX(16px)' : 'translateX(0)' }} /></button>
+                    )}
+                    <button onClick={() => setCouponModal(c)} className="p-1.5 rounded-lg hover:bg-gray-100"><Pencil size={14} className="text-gray-400" /></button>
+                    <div className="relative" ref={menuRef}><button onClick={e => { e.stopPropagation(); setOpenMenu(openMenu === `c-${c.id}` ? null : `c-${c.id}`) }} className="p-1.5 rounded-lg hover:bg-gray-100"><MoreHorizontal size={14} className="text-gray-400" /></button>
+                      {openMenu === `c-${c.id}` && (<div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-lg shadow-lg border border-gray-100 z-50 py-1">
+                        <button onClick={() => { navigator.clipboard.writeText(c.code); showToast('Código copiado'); setOpenMenu(null) }} className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 flex items-center gap-2"><Copy size={12} /> Copiar código</button>
+                        <button onClick={() => deleteCoupon(c.id)} className="w-full text-left px-3 py-1.5 text-sm text-red-500 hover:bg-red-50 flex items-center gap-2"><Trash2 size={12} /> Eliminar</button>
+                      </div>)}</div>
+                  </div></td>
+                </tr>
+              )})}
+            </tbody></table>
+          </div>
+        </>)}
+      </>)}
 
-      {/* Modal */}
-      {modal && (
+      {/* ── Promo Modal ── */}
+      {promoModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)' }}>
           <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl max-h-[90dvh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="font-bold text-gray-900">{modal.id ? 'Editar' : 'Nueva'} promoción</h3>
-              <button onClick={() => setModal(null)} className="p-2 rounded-lg hover:bg-gray-100"><X size={16} /></button>
-            </div>
+            <div className="flex items-center justify-between mb-5"><h3 className="font-bold text-gray-900">{promoModal.id ? 'Editar' : 'Nueva'} promoción</h3><button onClick={() => setPromoModal(null)} className="p-2 rounded-lg hover:bg-gray-100"><X size={16} /></button></div>
             <div className="space-y-4">
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
-                <input className="input-base" value={modal.name || ''} onChange={e => setModal({ ...modal, name: e.target.value })} placeholder="Ej: Promo Día de la Madre, Hot Sale..." /></div>
-
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label><input className="input-base" value={promoModal.name || ''} onChange={e => setPromoModal({ ...promoModal, name: e.target.value })} placeholder="Ej: Promo Día de la Madre, Hot Sale..." /></div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">Tipo de descuento</label>
-                  <div className="inline-flex rounded-lg border border-gray-200 overflow-hidden">
-                    {[['percentage', '% Porcentaje'], ['fixed', '$ Monto fijo']].map(([v, l]) => (
-                      <button key={v} type="button" onClick={() => setModal({ ...modal, discount_type: v as 'percentage' | 'fixed' })}
-                        className={`px-3 py-1.5 text-xs font-semibold transition-all ${modal.discount_type === v ? 'text-white' : 'text-gray-500'}`}
-                        style={modal.discount_type === v ? { background: '#6C5CE7' } : {}}>{l}</button>
-                    ))}
-                  </div></div>
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">Valor *</label>
-                  <input type="number" className="input-base" min={1} max={modal.discount_type === 'percentage' ? 99 : undefined}
-                    value={modal.discount_value || ''} onChange={e => setModal({ ...modal, discount_value: Number(e.target.value) })} /></div>
+                <div><label className="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
+                  <div className="inline-flex rounded-lg border border-gray-200 overflow-hidden">{[['percentage', '%'], ['fixed', '$']].map(([v, l]) => (<button key={v} type="button" onClick={() => setPromoModal({ ...promoModal, discount_type: v as 'percentage' | 'fixed' })} className={`px-4 py-1.5 text-xs font-semibold ${promoModal.discount_type === v ? 'text-white' : 'text-gray-500'}`} style={promoModal.discount_type === v ? { background: '#6C5CE7' } : {}}>{l}</button>))}</div></div>
+                <div><label className="block text-sm font-medium text-gray-700 mb-1">Valor *</label><input type="number" className="input-base" min={1} max={promoModal.discount_type === 'percentage' ? 99 : undefined} value={promoModal.discount_value || ''} onChange={e => setPromoModal({ ...promoModal, discount_value: Number(e.target.value) })} /></div>
               </div>
-
               <div className="grid grid-cols-2 gap-3">
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">Fecha inicio *</label>
-                  <input type="datetime-local" className="input-base text-sm" value={(modal.starts_at || '').slice(0, 16)} onChange={e => setModal({ ...modal, starts_at: new Date(e.target.value).toISOString() })} /></div>
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">Fecha fin *</label>
-                  <input type="datetime-local" className="input-base text-sm" value={(modal.ends_at || '').slice(0, 16)} onChange={e => setModal({ ...modal, ends_at: new Date(e.target.value).toISOString() })} /></div>
+                <div><label className="block text-sm font-medium text-gray-700 mb-1">Inicio *</label><input type="datetime-local" className="input-base text-sm" value={(promoModal.starts_at || '').slice(0, 16)} onChange={e => setPromoModal({ ...promoModal, starts_at: new Date(e.target.value).toISOString() })} /></div>
+                <div><label className="block text-sm font-medium text-gray-700 mb-1">Fin *</label><input type="datetime-local" className="input-base text-sm" value={(promoModal.ends_at || '').slice(0, 16)} onChange={e => setPromoModal({ ...promoModal, ends_at: new Date(e.target.value).toISOString() })} /></div>
               </div>
-
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-gray-700">Contador regresivo</label>
-                <button type="button" onClick={() => setModal({ ...modal, show_countdown: !modal.show_countdown })}
-                  className="relative w-9 h-5 rounded-full transition-colors" style={{ background: modal.show_countdown ? '#6C5CE7' : '#D1D5DB' }}>
-                  <span className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform" style={{ transform: modal.show_countdown ? 'translateX(16px)' : 'translateX(0)' }} />
-                </button>
-              </div>
-
-              {/* Product selector */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Productos *
-                  <span className="text-xs text-gray-400 ml-2">{(modal.product_ids || []).length} seleccionados</span>
-                </label>
-                <div className="relative mb-2">
-                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                  <input className="input-base text-sm w-full" style={{ paddingLeft: 36 }} placeholder="Buscar producto..." value={searchProd} onChange={e => setSearchProd(e.target.value)} />
-                </div>
-                <div className="border border-gray-200 rounded-lg max-h-48 overflow-y-auto">
-                  {products.filter(p => !searchProd || p.name.toLowerCase().includes(searchProd.toLowerCase())).map(p => (
-                    <label key={p.id} className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-0">
-                      <input type="checkbox" checked={(modal.product_ids || []).includes(p.id)} onChange={() => toggleProduct(p.id)}
-                        className="rounded border-gray-300" style={{ accentColor: '#6C5CE7' }} />
-                      <span className="text-sm text-gray-700 flex-1 truncate">{p.name}</span>
-                      <span className="text-xs text-gray-400">{fmtCurrency(p.selling_price)}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
+              <div className="flex items-center justify-between"><label className="text-sm font-medium text-gray-700">Contador regresivo</label>
+                <button type="button" onClick={() => setPromoModal({ ...promoModal, show_countdown: !promoModal.show_countdown })} className="relative w-9 h-5 rounded-full transition-colors" style={{ background: promoModal.show_countdown ? '#6C5CE7' : '#D1D5DB' }}><span className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform" style={{ transform: promoModal.show_countdown ? 'translateX(16px)' : 'translateX(0)' }} /></button></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Productos * <span className="text-xs text-gray-400 ml-1">{(promoModal.product_ids || []).length} seleccionados</span></label>
+                <div className="relative mb-2"><Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" /><input className="input-base text-sm w-full" style={{ paddingLeft: 36 }} placeholder="Buscar..." value={searchProd} onChange={e => setSearchProd(e.target.value)} /></div>
+                <div className="border border-gray-200 rounded-lg max-h-48 overflow-y-auto">{products.filter(p => !searchProd || p.name.toLowerCase().includes(searchProd.toLowerCase())).map(p => (
+                  <label key={p.id} className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-0"><input type="checkbox" checked={(promoModal.product_ids || []).includes(p.id)} onChange={() => toggleProduct(p.id)} className="rounded border-gray-300" style={{ accentColor: '#6C5CE7' }} /><span className="text-sm text-gray-700 flex-1 truncate">{p.name}</span><span className="text-xs text-gray-400">{fmtCurrency(p.selling_price)}</span></label>
+                ))}</div></div>
             </div>
-            <div className="flex gap-3 mt-6">
-              <button onClick={() => setModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">Cancelar</button>
-              <button onClick={savePromo} disabled={!modal.name?.trim() || !modal.discount_value || !(modal.product_ids?.length) || !modal.ends_at}
-                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#6C5CE7' }}>Guardar</button>
-            </div>
+            <div className="flex gap-3 mt-6"><button onClick={() => setPromoModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">Cancelar</button><button onClick={savePromo} disabled={!promoModal.name?.trim() || !promoModal.discount_value || !(promoModal.product_ids?.length) || !promoModal.ends_at} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#6C5CE7' }}>Guardar</button></div>
           </div>
         </div>
       )}
 
-      {/* Toast */}
-      {toast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-lg bg-gray-800 text-white text-sm font-medium shadow-lg">
-          {toast}
+      {/* ── Coupon Modal ── */}
+      {couponModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)' }}>
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl max-h-[90dvh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-5"><h3 className="font-bold text-gray-900">{couponModal.id ? 'Editar' : 'Nuevo'} cupón</h3><button onClick={() => setCouponModal(null)} className="p-2 rounded-lg hover:bg-gray-100"><X size={16} /></button></div>
+            <div className="space-y-4">
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Código *</label>
+                <div className="flex gap-2"><input className="input-base flex-1 uppercase font-mono" value={couponModal.code || ''} onChange={e => setCouponModal({ ...couponModal, code: e.target.value.toUpperCase().replace(/\s/g, '') })} placeholder="Ej: PRIMERA10" />
+                  <button type="button" onClick={() => setCouponModal({ ...couponModal, code: genCode() })} className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50 whitespace-nowrap">Generar</button></div>
+                <p className="text-[10px] text-gray-400 mt-0.5">Este código lo ingresa el cliente en el checkout.</p></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
+                  <div className="inline-flex rounded-lg border border-gray-200 overflow-hidden">{[['percentage', '%'], ['fixed', '$']].map(([v, l]) => (<button key={v} type="button" onClick={() => setCouponModal({ ...couponModal, discount_type: v as 'percentage' | 'fixed' })} className={`px-4 py-1.5 text-xs font-semibold ${couponModal.discount_type === v ? 'text-white' : 'text-gray-500'}`} style={couponModal.discount_type === v ? { background: '#6C5CE7' } : {}}>{l}</button>))}</div></div>
+                <div><label className="block text-sm font-medium text-gray-700 mb-1">Valor *</label><input type="number" className="input-base" min={1} value={couponModal.discount_value || ''} onChange={e => setCouponModal({ ...couponModal, discount_value: Number(e.target.value) })} /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className="block text-sm font-medium text-gray-700 mb-1">Usos máximos</label><input type="number" className="input-base" min={1} value={couponModal.max_uses || ''} onChange={e => setCouponModal({ ...couponModal, max_uses: Number(e.target.value) || null })} placeholder="Ilimitado" /></div>
+                <div><label className="block text-sm font-medium text-gray-700 mb-1">Monto mínimo ($)</label><input type="number" className="input-base" min={0} value={couponModal.min_amount || ''} onChange={e => setCouponModal({ ...couponModal, min_amount: Number(e.target.value) })} placeholder="Sin mínimo" /></div>
+              </div>
+              <div className="flex items-center justify-between"><label className="text-sm font-medium text-gray-700">Un uso por cliente</label>
+                <button type="button" onClick={() => setCouponModal({ ...couponModal, one_per_client: !couponModal.one_per_client })} className="relative w-9 h-5 rounded-full transition-colors" style={{ background: couponModal.one_per_client ? '#6C5CE7' : '#D1D5DB' }}><span className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform" style={{ transform: couponModal.one_per_client ? 'translateX(16px)' : 'translateX(0)' }} /></button></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Vencimiento</label><input type="date" className="input-base" value={couponModal.expires_at?.slice(0, 10) || ''} onChange={e => setCouponModal({ ...couponModal, expires_at: e.target.value ? new Date(e.target.value).toISOString() : null })} />
+                <p className="text-[10px] text-gray-400 mt-0.5">Dejalo vacío si no querés que venza.</p></div>
+            </div>
+            <div className="flex gap-3 mt-6"><button onClick={() => setCouponModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">Cancelar</button><button onClick={saveCoupon} disabled={!couponModal.code?.trim() || !couponModal.discount_value} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#6C5CE7' }}>Guardar</button></div>
+          </div>
         </div>
       )}
+
+      {toast && <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-lg bg-gray-800 text-white text-sm font-medium shadow-lg">{toast}</div>}
     </div>
   )
 }

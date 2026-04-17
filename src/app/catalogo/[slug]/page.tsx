@@ -581,11 +581,30 @@ function CartScreen({ shop, onClose }: { shop: ShopInfo; onClose: () => void }) 
   const [sending, setSending] = useState(false)
   const [orderResult, setOrderResult] = useState<{ codigo: string; waUrl: string } | null>(null)
   const [selectedMedioPago, setSelectedMedioPago] = useState(shop.mediosPago[0]?.id || '')
+  const [couponCode, setCouponCode] = useState('')
+  const [couponApplied, setCouponApplied] = useState<{ code: string; discount_type: string; discount_value: number } | null>(null)
+  const [couponError, setCouponError] = useState('')
+  const [validatingCoupon, setValidatingCoupon] = useState(false)
 
   const medio = shop.mediosPago.find(m => m.id === selectedMedioPago)
   const ajustePct = medio ? (medio.tipo_ajuste === 'descuento' ? -medio.porcentaje : medio.tipo_ajuste === 'recargo' ? medio.porcentaje : 0) : 0
-  const ajusteMonto = Math.round(total * ajustePct / 100)
-  const totalFinal = total + ajusteMonto
+  const couponDiscount = couponApplied ? (couponApplied.discount_type === 'percentage' ? Math.round(total * couponApplied.discount_value / 100) : Math.min(couponApplied.discount_value, total)) : 0
+  const subtotalAfterCoupon = total - couponDiscount
+  const ajusteMonto = Math.round(subtotalAfterCoupon * ajustePct / 100)
+  const totalFinal = subtotalAfterCoupon + ajusteMonto
+
+  async function applyCoupon() {
+    if (!couponCode.trim()) return
+    setCouponError(''); setValidatingCoupon(true)
+    try {
+      const res = await fetch('/api/validate-coupon', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: couponCode, userId: shop.user_id, clientWhatsapp: whatsapp, subtotal: total }) })
+      const data = await res.json()
+      if (!res.ok) { setCouponError(data.error || 'Código inválido'); setValidatingCoupon(false); return }
+      setCouponApplied({ code: data.code, discount_type: data.discount_type, discount_value: data.discount_value })
+      setCouponError('')
+    } catch { setCouponError('Error al validar el cupón') }
+    setValidatingCoupon(false)
+  }
 
   const itemKey = (i: CartItem) => i.variant ? `${i.productId}::${i.variant}` : i.productId
 
@@ -596,7 +615,7 @@ function CartScreen({ shop, onClose }: { shop: ShopInfo; onClose: () => void }) 
     try {
       const res = await fetch('/api/catalog-order', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: shop.user_id, nombre, whatsapp, comentarios, items: items.map(i => ({ name: i.name, variant: i.variant, quantity: i.quantity, price: i.price })), total: totalFinal, medioPago: medio?.nombre || null, ajustePorcentaje: ajustePct, ajusteMonto }),
+        body: JSON.stringify({ userId: shop.user_id, nombre, whatsapp, comentarios, items: items.map(i => ({ name: i.name, variant: i.variant, quantity: i.quantity, price: i.price })), total: totalFinal, medioPago: medio?.nombre || null, ajustePorcentaje: ajustePct, ajusteMonto, couponCode: couponApplied?.code || null, couponDiscount }),
       })
       const data = await res.json()
       codigo = data.codigo || ''
@@ -702,12 +721,40 @@ function CartScreen({ shop, onClose }: { shop: ShopInfo; onClose: () => void }) 
               </div>
             )}
 
+            {/* Coupon */}
+            <div className="mb-4">
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Código de descuento</p>
+              {couponApplied ? (
+                <div className="flex items-center justify-between p-3 rounded-lg bg-green-50 border border-green-100">
+                  <div><p className="text-sm font-semibold text-green-700">Cupón {couponApplied.code} aplicado</p>
+                    <p className="text-xs text-green-600">{couponApplied.discount_type === 'percentage' ? `-${couponApplied.discount_value}%` : `-${fmt(couponApplied.discount_value)}`}</p></div>
+                  <button onClick={() => { setCouponApplied(null); setCouponCode('') }} className="text-xs font-semibold text-gray-400 hover:text-gray-600">Quitar</button>
+                </div>
+              ) : (
+                <div>
+                  <div className="flex gap-2">
+                    <input className="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm uppercase font-mono" placeholder="Código" value={couponCode} onChange={e => { setCouponCode(e.target.value.toUpperCase()); setCouponError('') }} />
+                    <button onClick={applyCoupon} disabled={!couponCode.trim() || validatingCoupon}
+                      className="px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-40" style={{ background: shop.color }}>
+                      {validatingCoupon ? '...' : 'Aplicar'}
+                    </button>
+                  </div>
+                  {couponError && <p className="text-xs text-red-500 mt-1">{couponError}</p>}
+                </div>
+              )}
+            </div>
+
             {/* Total */}
             <div className="mb-4 space-y-1">
-              {ajustePct !== 0 && (<>
+              {(couponDiscount > 0 || ajustePct !== 0) && (
                 <div className="flex justify-between text-sm text-gray-500"><span>Subtotal</span><span>{fmt(total)}</span></div>
+              )}
+              {couponDiscount > 0 && (
+                <div className="flex justify-between text-sm text-green-600"><span>Cupón {couponApplied?.code}</span><span>-{fmt(couponDiscount)}</span></div>
+              )}
+              {ajustePct !== 0 && (
                 <div className="flex justify-between text-sm"><span className={ajustePct < 0 ? 'text-green-600' : 'text-red-500'}>{medio?.nombre} ({ajustePct > 0 ? '+' : ''}{ajustePct}%)</span><span className={ajustePct < 0 ? 'text-green-600' : 'text-red-500'}>{ajusteMonto > 0 ? '+' : ''}{fmt(ajusteMonto)}</span></div>
-              </>)}
+              )}
               <div className="flex justify-between items-center pt-1">
                 <span className="text-sm font-semibold text-gray-800">Total</span>
                 <span className="text-xl font-black text-gray-900">{fmt(totalFinal)}</span>
