@@ -1,0 +1,63 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - img "Estamply" [ref=e6]
+          - generic [ref=e7]:
+            - generic [ref=e8]: Estamply
+            - generic [ref=e9]: Mi Taller
+        - navigation [ref=e10]:
+          - link "Inicio" [ref=e11] [cursor=pointer]:
+            - /url: /
+            - img [ref=e12]
+            - generic [ref=e17]: Inicio
+          - link "Cotizador" [ref=e18] [cursor=pointer]:
+            - /url: /cotizador
+            - img [ref=e19]
+            - generic [ref=e21]: Cotizador
+          - link "Presupuestos" [ref=e22] [cursor=pointer]:
+            - /url: /presupuesto
+            - img [ref=e23]
+            - generic [ref=e26]: Presupuestos
+          - link "Pedidos" [ref=e27] [cursor=pointer]:
+            - /url: /orders
+            - img [ref=e28]
+            - generic [ref=e31]: Pedidos
+          - link "Clientes" [ref=e32] [cursor=pointer]:
+            - /url: /clients
+            - img [ref=e33]
+            - generic [ref=e38]: Clientes
+          - link "Catálogo" [ref=e39] [cursor=pointer]:
+            - /url: /catalogo
+            - img [ref=e40]
+            - generic [ref=e44]: Catálogo
+          - link "Estadísticas" [ref=e45] [cursor=pointer]:
+            - /url: /estadisticas
+            - img [ref=e46]
+            - generic [ref=e48]: Estadísticas
+        - generic [ref=e50]:
+          - paragraph [ref=e51]: MI TALLER
+          - link "Materiales" [ref=e52] [cursor=pointer]:
+            - /url: /materiales
+            - img [ref=e53]
+            - generic [ref=e56]: Materiales
+          - link "Equipamiento" [ref=e57] [cursor=pointer]:
+            - /url: /equipamiento
+            - img [ref=e58]
+            - generic [ref=e61]: Equipamiento
+          - link "Producción" [ref=e62] [cursor=pointer]:
+            - /url: /tecnicas
+            - img [ref=e63]
+            - generic [ref=e69]: Producción
+        - link "Configuración" [ref=e72] [cursor=pointer]:
+          - /url: /settings
+          - img [ref=e73]
+          - generic [ref=e76]: Configuración
+        - button "Cerrar sesión" [ref=e79] [cursor=pointer]:
+          - img [ref=e80]
+          - text: Cerrar sesión
+    - main [ref=e84]
+  - button "Open Next.js Dev Tools" [ref=e92] [cursor=pointer]:
+    - img [ref=e93]
+  - alert [ref=e96]

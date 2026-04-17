@@ -1,0 +1,314 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - navigation [ref=e3]:
+      - generic [ref=e4]:
+        - link "E Estamply" [ref=e5] [cursor=pointer]:
+          - /url: /
+          - generic [ref=e7]: E
+          - generic [ref=e8]: Estamply
+        - generic [ref=e9]:
+          - link "Funciones" [ref=e10] [cursor=pointer]:
+            - /url: "#features"
+          - link "Precios" [ref=e11] [cursor=pointer]:
+            - /url: "#pricing"
+          - generic [ref=e12]:
+            - button "ES" [ref=e13] [cursor=pointer]
+            - button "PT" [ref=e14] [cursor=pointer]
+          - link "Iniciar sesión" [ref=e15] [cursor=pointer]:
+            - /url: /login
+          - link "Probá gratis →" [ref=e16] [cursor=pointer]:
+            - /url: /signup
+    - generic [ref=e18]:
+      - heading "Gestioná tu taller de estampado como un profesional" [level=1] [ref=e19]
+      - paragraph [ref=e20]: Cotizá en segundos, armá presupuestos que impresionan, gestioná pedidos sin que se te escape nada, y sabé exactamente cuánto ganás. Todo en un solo lugar.
+      - generic [ref=e21]:
+        - link "Probá gratis 14 días" [ref=e22] [cursor=pointer]:
+          - /url: /signup
+        - paragraph [ref=e23]: Sin tarjeta de crédito. Cancelá cuando quieras.
+      - generic [ref=e24]:
+        - generic [ref=e25]: Sublimación
+        - generic [ref=e26]: DTF
+        - generic [ref=e27]: Vinilo
+        - generic [ref=e28]: Serigrafía
+        - generic [ref=e29]: UV
+    - generic [ref=e31]:
+      - heading "¿Te suena familiar?" [level=2] [ref=e32]
+      - generic [ref=e33]:
+        - generic [ref=e34]:
+          - generic [ref=e35]: 📱
+          - paragraph [ref=e36]: Cotizás con la calculadora del celular y siempre te olvidás de algún costo
+        - generic [ref=e37]:
+          - generic [ref=e38]: 📋
+          - paragraph [ref=e39]: Mandás presupuestos por WhatsApp como un mensaje de texto más
+        - generic [ref=e40]:
+          - generic [ref=e41]: 🤯
+          - paragraph [ref=e42]: No sabés si estás ganando o perdiendo plata en cada pedido
+        - generic [ref=e43]:
+          - generic [ref=e44]: 📦
+          - paragraph [ref=e45]: Se te pierden pedidos porque no tenés un sistema para seguirlos
+        - generic [ref=e46]:
+          - generic [ref=e47]: 💸
+          - paragraph [ref=e48]: Entregás trabajos y te olvidás de cobrar el saldo
+        - generic [ref=e49]:
+          - generic [ref=e50]: 🛒
+          - paragraph [ref=e51]: No tenés un catálogo online para mostrar lo que hacés
+      - paragraph [ref=e52]: Si te identificás con al menos 2 de estos puntos, Estamply es para vos.
+    - generic [ref=e54]:
+      - generic [ref=e55]:
+        - heading "Todo lo que necesitás para gestionar tu taller en un solo lugar" [level=2] [ref=e56]
+        - paragraph [ref=e57]: Estamply es el primer software diseñado específicamente para talleres de estampado en Latinoamérica.
+      - generic [ref=e58]:
+        - generic [ref=e59]:
+          - generic [ref=e60]:
+            - generic [ref=e61]:
+              - img [ref=e63]
+              - heading "Cotizador inteligente" [level=3] [ref=e65]
+            - paragraph [ref=e66]: Cotizá cualquier producto en menos de 30 segundos. Estamply calcula automáticamente el costo de materiales, tintas, papel, amortización de equipos y hasta el desperdicio. Vos elegís tu margen y listo.
+          - generic [ref=e69]:
+            - img [ref=e70]
+            - paragraph [ref=e72]: Screenshot del cotizador inteligente
+        - generic [ref=e73]:
+          - generic [ref=e74]:
+            - generic [ref=e75]:
+              - img [ref=e77]
+              - heading "Presupuestos profesionales" [level=3] [ref=e80]
+            - paragraph [ref=e81]: Generá presupuestos profesionales con tu logo y datos. Compartilos por WhatsApp o con un link. Tu cliente recibe un documento que genera confianza.
+          - generic [ref=e84]:
+            - img [ref=e85]
+            - paragraph [ref=e88]: Screenshot del presupuestos profesionales
+        - generic [ref=e89]:
+          - generic [ref=e90]:
+            - generic [ref=e91]:
+              - img [ref=e93]
+              - heading "Gestión de pedidos" [level=3] [ref=e98]
+            - paragraph [ref=e99]: Seguí cada pedido desde que entra hasta que se entrega. Un tablero Kanban te muestra qué está pendiente, en producción y listo. Nunca más pierdas un pedido.
+          - generic [ref=e102]:
+            - img [ref=e103]
+            - paragraph [ref=e108]: Screenshot del gestión de pedidos
+        - generic [ref=e109]:
+          - generic [ref=e110]:
+            - generic [ref=e111]:
+              - img [ref=e113]
+              - heading "Tu catálogo web propio" [level=3] [ref=e117]
+            - paragraph [ref=e118]: Tenés tu propia tienda online en minutos. Tus clientes ven tus productos, eligen talle y color, y te hacen pedidos directo por WhatsApp. Sin comisiones.
+          - generic [ref=e121]:
+            - img [ref=e122]
+            - paragraph [ref=e126]: Screenshot del tu catálogo web propio
+        - generic [ref=e127]:
+          - generic [ref=e128]:
+            - generic [ref=e129]:
+              - img [ref=e131]
+              - heading "Sabé cuánto ganás" [level=3] [ref=e133]
+            - paragraph [ref=e134]: "Ves tu rentabilidad real: margen por producto, por cliente, por técnica. Sabés exactamente qué te conviene producir y qué no vale la pena."
+          - generic [ref=e137]:
+            - img [ref=e138]
+            - paragraph [ref=e140]: Screenshot del sabé cuánto ganás
+        - generic [ref=e141]:
+          - generic [ref=e142]:
+            - generic [ref=e143]:
+              - img [ref=e145]
+              - heading "Tu equipo, bajo control" [level=3] [ref=e150]
+            - paragraph [ref=e151]: Agregá empleados con permisos específicos. Tu vendedor cotiza sin ver tus costos. Tu operario ve qué producir sin ver precios. Vos tenés visibilidad total.
+          - generic [ref=e154]:
+            - img [ref=e155]
+            - paragraph [ref=e160]: Screenshot del tu equipo, bajo control
+    - generic [ref=e163]:
+      - generic [ref=e164]:
+        - heading "Tu catálogo web en 5 minutos. Pedidos por WhatsApp las 24hs." [level=2] [ref=e165]
+        - paragraph [ref=e166]: Compartí el link en tus redes sociales o mandalo por WhatsApp. Tus clientes ven tus productos, eligen talle, color y cantidad, y te hacen un pedido organizado.
+        - list [ref=e167]:
+          - listitem [ref=e168]:
+            - img [ref=e169]
+            - text: Funciona en celular y computadora
+          - listitem [ref=e171]:
+            - img [ref=e172]
+            - text: Tus clientes compran a cualquier hora
+          - listitem [ref=e174]:
+            - img [ref=e175]
+            - text: Cada pedido queda registrado en tu sistema
+          - listitem [ref=e177]:
+            - img [ref=e178]
+            - text: Con tu marca, tus colores y tu logo
+          - listitem [ref=e180]:
+            - img [ref=e181]
+            - text: Medios de pago configurables
+        - link "Ver catálogo de ejemplo →" [ref=e183] [cursor=pointer]:
+          - /url: https://www.estamply.app/catalogo/sublishop
+          - text: Ver catálogo de ejemplo →
+          - img [ref=e184]
+      - generic [ref=e188]:
+        - img [ref=e189]
+        - paragraph [ref=e191]: Mockup catálogo mobile
+    - generic [ref=e193]:
+      - heading "Estamply es para vos si..." [level=2] [ref=e194]
+      - generic [ref=e195]:
+        - generic [ref=e196]:
+          - generic [ref=e197]: 🏠
+          - heading "Recién empezás" [level=3] [ref=e198]
+          - paragraph [ref=e199]: Tenés una prensa, una impresora y muchas ganas. Necesitás saber cuánto cobrar y tener un catálogo para mostrar lo que hacés. Estamply te profesionaliza desde el día uno.
+        - generic [ref=e200]:
+          - generic [ref=e201]: 📈
+          - heading "Tu taller está creciendo" [level=3] [ref=e202]
+          - paragraph [ref=e203]: Ya tenés clientes fijos, hacés varios pedidos por semana, y no das abasto con WhatsApp y Excel. Necesitás orden, control y saber si ganás plata.
+        - generic [ref=e204]:
+          - generic [ref=e205]: 🏭
+          - heading "Vivís de tu taller" [level=3] [ref=e206]
+          - paragraph [ref=e207]: Tenés empleados, múltiples técnicas, clientes corporativos. Necesitás delegar sin perder el control y saber tu rentabilidad real.
+    - generic [ref=e209]:
+      - heading "Funciona con tu técnica" [level=2] [ref=e210]
+      - paragraph [ref=e211]: Cada técnica tiene su propio cotizador con los costos específicos. Configurá tu taller una vez y cotizá cualquier producto al instante.
+      - generic [ref=e212]:
+        - generic [ref=e213]:
+          - generic [ref=e214]: 🔥
+          - generic [ref=e215]: Sublimación
+        - generic [ref=e216]:
+          - generic [ref=e217]: 🖨️
+          - generic [ref=e218]: DTF Textil
+        - generic [ref=e219]:
+          - generic [ref=e220]: ✨
+          - generic [ref=e221]: DTF UV
+        - generic [ref=e222]:
+          - generic [ref=e223]: ✂️
+          - generic [ref=e224]: Vinilo
+        - generic [ref=e225]:
+          - generic [ref=e226]: 🎨
+          - generic [ref=e227]: Serigrafía
+    - generic [ref=e229]:
+      - generic [ref=e230]:
+        - heading "Precios simples. Sin sorpresas." [level=2] [ref=e231]
+        - paragraph [ref=e232]: Elegí el plan que se ajuste a la etapa de tu taller. Podés cambiar en cualquier momento.
+        - generic [ref=e233]:
+          - button "Mensual" [ref=e234] [cursor=pointer]
+          - button "Anual — Ahorrá 3 meses" [ref=e235] [cursor=pointer]
+      - generic [ref=e236]:
+        - generic [ref=e237]:
+          - heading "Emprendedor" [level=3] [ref=e238]
+          - generic [ref=e239]:
+            - generic [ref=e240]: $9
+            - generic [ref=e241]: /mes
+          - list [ref=e242]:
+            - listitem [ref=e243]:
+              - img [ref=e244]
+              - text: Cotizador con todas las técnicas
+            - listitem [ref=e246]:
+              - img [ref=e247]
+              - text: Presupuestos profesionales
+            - listitem [ref=e249]:
+              - img [ref=e250]
+              - text: Gestión de pedidos (Kanban)
+            - listitem [ref=e252]:
+              - img [ref=e253]
+              - text: Catálogo web (25 productos)
+            - listitem [ref=e255]:
+              - img [ref=e256]
+              - text: Clientes ilimitados
+            - listitem [ref=e258]:
+              - img [ref=e259]
+              - text: Estadísticas del mes
+            - listitem [ref=e261]:
+              - img [ref=e262]
+              - text: 1 usuario
+            - listitem [ref=e264]:
+              - img [ref=e265]
+              - text: Soporte por email
+          - link "Empezar gratis 14 días" [ref=e267] [cursor=pointer]:
+            - /url: /signup
+        - generic [ref=e268]:
+          - generic [ref=e269]: Más popular
+          - heading "Pro" [level=3] [ref=e270]
+          - generic [ref=e271]:
+            - generic [ref=e272]: $17
+            - generic [ref=e273]: /mes
+          - list [ref=e274]:
+            - listitem [ref=e275]:
+              - img [ref=e276]
+              - text: Todo lo de Emprendedor
+            - listitem [ref=e278]:
+              - img [ref=e279]
+              - text: Catálogo web ilimitado
+            - listitem [ref=e281]:
+              - img [ref=e282]
+              - text: Estadísticas completas
+            - listitem [ref=e284]:
+              - img [ref=e285]
+              - text: Rentabilidad por producto
+            - listitem [ref=e287]:
+              - img [ref=e288]
+              - text: Hasta 3 usuarios con permisos
+            - listitem [ref=e290]:
+              - img [ref=e291]
+              - text: Descuentos en catálogo
+            - listitem [ref=e293]:
+              - img [ref=e294]
+              - text: Soporte email + WhatsApp
+          - link "Empezar gratis 14 días" [ref=e296] [cursor=pointer]:
+            - /url: /signup
+        - generic [ref=e297]:
+          - heading "Negocio" [level=3] [ref=e298]
+          - generic [ref=e299]:
+            - generic [ref=e300]: $29
+            - generic [ref=e301]: /mes
+          - list [ref=e302]:
+            - listitem [ref=e303]:
+              - img [ref=e304]
+              - text: Todo lo de Pro
+            - listitem [ref=e306]:
+              - img [ref=e307]
+              - text: Hasta 10 usuarios
+            - listitem [ref=e309]:
+              - img [ref=e310]
+              - text: Exportar Excel/PDF
+            - listitem [ref=e312]:
+              - img [ref=e313]
+              - text: Ocultar "Powered by Estamply"
+            - listitem [ref=e315]:
+              - img [ref=e316]
+              - text: Soporte prioritario
+          - link "Empezar gratis 14 días" [ref=e318] [cursor=pointer]:
+            - /url: /signup
+      - paragraph [ref=e319]: Todos los planes incluyen 14 días gratis del plan Pro. Sin tarjeta de crédito.
+      - generic [ref=e320]:
+        - button "¿Puedo cambiar de plan después?" [ref=e322] [cursor=pointer]:
+          - generic [ref=e323]: ¿Puedo cambiar de plan después?
+          - img [ref=e324]
+        - button "¿Qué pasa cuando terminan los 14 días?" [ref=e327] [cursor=pointer]:
+          - generic [ref=e328]: ¿Qué pasa cuando terminan los 14 días?
+          - img [ref=e329]
+        - button "¿Puedo pagar en pesos/reales?" [ref=e332] [cursor=pointer]:
+          - generic [ref=e333]: ¿Puedo pagar en pesos/reales?
+          - img [ref=e334]
+        - button "¿Puedo cancelar cuando quiera?" [ref=e337] [cursor=pointer]:
+          - generic [ref=e338]: ¿Puedo cancelar cuando quiera?
+          - img [ref=e339]
+    - generic [ref=e342]:
+      - generic [ref=e343]: “
+      - blockquote [ref=e344]: Construido por un dueño de taller de estampado. Sé lo que necesitás porque tengo los mismos problemas que vos.
+      - generic [ref=e345]:
+        - paragraph [ref=e346]: Pablo Loson
+        - paragraph [ref=e347]: Fundador de Estamply y dueño de Sublishop
+    - generic [ref=e349]:
+      - heading "Tu taller merece un sistema profesional" [level=2] [ref=e350]
+      - paragraph [ref=e351]: Empezá hoy. En 5 minutos tenés tu catálogo web andando y tu primer presupuesto listo.
+      - link "Probá gratis 14 días — Sin tarjeta de crédito" [ref=e352] [cursor=pointer]:
+        - /url: /signup
+      - paragraph [ref=e353]: Únite a los talleres que dejaron de gestionar con WhatsApp y una calculadora.
+    - contentinfo [ref=e354]:
+      - generic [ref=e355]:
+        - generic [ref=e356]:
+          - generic [ref=e357]:
+            - generic [ref=e359]: E
+            - generic [ref=e360]: Estamply
+          - generic [ref=e361]:
+            - link "Planes" [ref=e362] [cursor=pointer]:
+              - /url: "#pricing"
+            - link "Soporte" [ref=e363] [cursor=pointer]:
+              - /url: mailto:hola@estamply.app
+            - link "Contacto" [ref=e364] [cursor=pointer]:
+              - /url: mailto:hola@estamply.app
+          - generic [ref=e365]:
+            - button "ES" [ref=e366] [cursor=pointer]
+            - button "PT" [ref=e367] [cursor=pointer]
+        - paragraph [ref=e368]: © 2026 Estamply. Hecho en Córdoba, Argentina 🇦🇷 para todo el mundo.
+  - button "Open Next.js Dev Tools" [ref=e374] [cursor=pointer]:
+    - img [ref=e375]
+  - alert [ref=e378]

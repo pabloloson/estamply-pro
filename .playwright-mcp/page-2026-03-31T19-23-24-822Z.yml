@@ -1,0 +1,69 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - img [ref=e7]
+          - generic [ref=e11]:
+            - generic [ref=e12]: Estamply
+            - generic [ref=e13]: Taller Demo Estamply
+        - navigation [ref=e14]:
+          - link "Inicio" [ref=e15] [cursor=pointer]:
+            - /url: /
+            - img [ref=e16]
+            - text: Inicio
+          - link "Calculadora" [ref=e21] [cursor=pointer]:
+            - /url: /calculator
+            - img [ref=e22]
+            - text: Calculadora
+          - link "Pedidos" [ref=e24] [cursor=pointer]:
+            - /url: /orders
+            - img [ref=e25]
+            - text: Pedidos
+          - link "Configuración" [ref=e28] [cursor=pointer]:
+            - /url: /settings
+            - img [ref=e29]
+            - text: Configuración
+        - button "Cerrar sesión" [ref=e34] [cursor=pointer]:
+          - img [ref=e35]
+          - text: Cerrar sesión
+    - main [ref=e38]:
+      - generic [ref=e39]:
+        - generic [ref=e40]:
+          - heading "Hola, Demo 👋" [level=1] [ref=e41]
+          - paragraph [ref=e42]: Resumen de Taller Demo Estamply
+        - generic [ref=e43]:
+          - generic [ref=e44]:
+            - generic [ref=e45]:
+              - generic [ref=e46]: Pedidos activos
+              - img [ref=e48]
+            - paragraph [ref=e51]: "3"
+          - generic [ref=e52]:
+            - generic [ref=e53]:
+              - generic [ref=e54]: Ingresos totales
+              - img [ref=e56]
+            - paragraph [ref=e59]: $588.000
+          - generic [ref=e60]:
+            - generic [ref=e61]:
+              - generic [ref=e62]: Ganancia neta
+              - img [ref=e64]
+            - paragraph [ref=e67]: $229.500
+          - generic [ref=e68]:
+            - generic [ref=e69]:
+              - generic [ref=e70]: Productos
+              - img [ref=e72]
+            - paragraph [ref=e76]: "5"
+        - generic [ref=e77]:
+          - link "Nueva cotización Calculá precios de Subli, DTF o Vinilo" [ref=e78] [cursor=pointer]:
+            - /url: /calculator
+            - img [ref=e80]
+            - generic [ref=e82]:
+              - heading "Nueva cotización" [level=3] [ref=e83]
+              - paragraph [ref=e84]: Calculá precios de Subli, DTF o Vinilo
+          - link "Ver pedidos 3 pedidos activos de 5 clientes" [ref=e85] [cursor=pointer]:
+            - /url: /orders
+            - img [ref=e87]
+            - generic [ref=e90]:
+              - heading "Ver pedidos" [level=3] [ref=e91]
+              - paragraph [ref=e92]: 3 pedidos activos de 5 clientes
+  - alert [ref=e93]

@@ -1,0 +1,163 @@
+- generic [active] [ref=e1]:
+  - alert [ref=e46]
+  - generic [ref=e47]:
+    - complementary [ref=e48]:
+      - generic [ref=e49]:
+        - generic [ref=e50]:
+          - img [ref=e52]
+          - generic [ref=e56]:
+            - generic [ref=e57]: Estamply
+            - generic [ref=e58]: Taller Demo Estamply
+        - navigation [ref=e59]:
+          - link "Inicio" [ref=e60] [cursor=pointer]:
+            - /url: /
+            - img [ref=e61]
+            - generic [ref=e66]: Inicio
+          - link "Cotizador" [ref=e67] [cursor=pointer]:
+            - /url: /calculator
+            - img [ref=e68]
+            - generic [ref=e70]: Cotizador
+          - link "Presupuestos" [ref=e71] [cursor=pointer]:
+            - /url: /presupuesto
+            - img [ref=e72]
+            - generic [ref=e75]: Presupuestos
+          - link "Pedidos" [ref=e76] [cursor=pointer]:
+            - /url: /orders
+            - img [ref=e77]
+            - generic [ref=e80]: Pedidos
+          - link "Clientes" [ref=e81] [cursor=pointer]:
+            - /url: /clients
+            - img [ref=e82]
+            - generic [ref=e87]: Clientes
+        - generic [ref=e89]:
+          - paragraph [ref=e90]: Mi taller
+          - link "Productos" [ref=e91] [cursor=pointer]:
+            - /url: /catalogo
+            - img [ref=e92]
+            - generic [ref=e96]: Productos
+          - link "Insumos" [ref=e97] [cursor=pointer]:
+            - /url: /insumos
+            - img [ref=e98]
+            - generic [ref=e101]: Insumos
+          - link "Equipamiento" [ref=e102] [cursor=pointer]:
+            - /url: /equipamiento
+            - img [ref=e103]
+            - generic [ref=e106]: Equipamiento
+          - link "Técnicas" [ref=e107] [cursor=pointer]:
+            - /url: /tecnicas
+            - img [ref=e108]
+            - generic [ref=e114]: Técnicas
+        - link "Configuración" [ref=e117] [cursor=pointer]:
+          - /url: /settings
+          - img [ref=e118]
+          - generic [ref=e121]: Configuración
+        - button "Cerrar sesión" [ref=e124] [cursor=pointer]:
+          - img [ref=e125]
+          - text: Cerrar sesión
+    - main [ref=e128]:
+      - generic [ref=e129]:
+        - generic [ref=e130]:
+          - heading "Hola, Demo 👋" [level=1] [ref=e131]
+          - paragraph [ref=e132]: Juan Perez · Domingo, 5 de abril de 2026
+        - generic [ref=e133]:
+          - generic [ref=e134]:
+            - generic [ref=e135]:
+              - generic [ref=e136]: Pedidos activos
+              - img [ref=e138]
+            - paragraph [ref=e141]: "3"
+            - paragraph [ref=e142]: 1 pendientes · 2 en prod. · 0 listos
+          - generic [ref=e143]:
+            - generic [ref=e144]:
+              - generic [ref=e145]: Ingresos del mes
+              - img [ref=e147]
+            - paragraph [ref=e150]: $189.527
+            - paragraph [ref=e151]:
+              - img [ref=e152]
+              - text: "-67% vs mes anterior"
+          - generic [ref=e155]:
+            - generic [ref=e156]:
+              - generic [ref=e157]: Ganancia del mes
+              - img [ref=e159]
+            - paragraph [ref=e161]: $89.776
+            - paragraph [ref=e162]: "Margen: 47%"
+          - generic [ref=e163]:
+            - generic [ref=e164]:
+              - generic [ref=e165]: Por cobrar
+              - img [ref=e167]
+            - paragraph [ref=e169]: $319.763
+            - paragraph [ref=e170]: 3 pedidos con saldo
+        - generic [ref=e171]:
+          - generic [ref=e172]:
+            - paragraph [ref=e173]: Atención requerida
+            - generic [ref=e174]:
+              - link "María González $45.000 En producción vencido hace 0 días" [ref=e175] [cursor=pointer]:
+                - /url: /orders
+                - img [ref=e176]
+                - generic [ref=e178]:
+                  - generic [ref=e179]:
+                    - generic [ref=e180]: María González
+                    - generic [ref=e181]: $45.000
+                  - generic [ref=e182]:
+                    - generic [ref=e183]: En producción
+                    - generic [ref=e184]:
+                      - img [ref=e185]
+                      - text: vencido hace 0 días
+              - link "Empresa Ropa Feliz $180.000 Pendiente vencido hace 2 días" [ref=e187] [cursor=pointer]:
+                - /url: /orders
+                - img [ref=e188]
+                - generic [ref=e190]:
+                  - generic [ref=e191]:
+                    - generic [ref=e192]: Empresa Ropa Feliz
+                    - generic [ref=e193]: $180.000
+                  - generic [ref=e194]:
+                    - generic [ref=e195]: Pendiente
+                    - generic [ref=e196]:
+                      - img [ref=e197]
+                      - text: vencido hace 2 días
+          - generic [ref=e199]:
+            - link "Nueva cotización" [ref=e200] [cursor=pointer]:
+              - /url: /calculator
+              - img [ref=e202]
+              - generic [ref=e204]: Nueva cotización
+            - link "Ver pedidos" [ref=e205] [cursor=pointer]:
+              - /url: /orders
+              - img [ref=e207]
+              - generic [ref=e210]: Ver pedidos
+            - link "Ver clientes" [ref=e211] [cursor=pointer]:
+              - /url: /clients
+              - img [ref=e213]
+              - generic [ref=e218]: Ver clientes
+        - generic [ref=e219]:
+          - generic [ref=e220]:
+            - paragraph [ref=e221]: Ingresos mensuales
+            - generic [ref=e222]:
+              - generic [ref=e226]: Nov
+              - generic [ref=e230]: Dic
+              - generic [ref=e234]: Ene
+              - generic [ref=e238]: Feb
+              - generic [ref=e242]: Mar
+              - generic [ref=e246]: Abr
+          - generic [ref=e247]:
+            - paragraph [ref=e248]: Más vendidos del mes
+            - generic [ref=e249]:
+              - generic [ref=e250]:
+                - paragraph [ref=e251]: Por producto
+                - generic [ref=e252]:
+                  - generic [ref=e253]:
+                    - generic [ref=e254]: "1."
+                    - text: Buzo Canguro
+                  - generic [ref=e255]: 10 u.
+              - generic [ref=e256]:
+                - paragraph [ref=e257]: Por técnica
+                - generic [ref=e258]:
+                  - generic [ref=e259]:
+                    - generic [ref=e260]: "1."
+                    - text: Sublimación
+                  - generic [ref=e261]: $189.527
+              - generic [ref=e262]:
+                - paragraph [ref=e263]: Top clientes
+                - generic [ref=e264]:
+                  - generic [ref=e265]:
+                    - generic [ref=e266]: "1."
+                    - text: Pablo Loson
+                  - generic [ref=e267]: $189.527

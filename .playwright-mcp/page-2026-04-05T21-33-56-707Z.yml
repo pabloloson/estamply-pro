@@ -1,0 +1,169 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - img [ref=e7]
+          - generic [ref=e11]:
+            - generic [ref=e12]: Estamply
+            - generic [ref=e13]: Taller Demo Estamply
+        - navigation [ref=e14]:
+          - link "Inicio" [ref=e15] [cursor=pointer]:
+            - /url: /
+            - img [ref=e16]
+            - generic [ref=e21]: Inicio
+          - link "Cotizador" [ref=e22] [cursor=pointer]:
+            - /url: /calculator
+            - img [ref=e23]
+            - generic [ref=e25]: Cotizador
+          - link "Presupuestos" [ref=e26] [cursor=pointer]:
+            - /url: /presupuesto
+            - img [ref=e27]
+            - generic [ref=e30]: Presupuestos
+          - link "Pedidos" [ref=e31] [cursor=pointer]:
+            - /url: /orders
+            - img [ref=e32]
+            - generic [ref=e35]: Pedidos
+          - link "Clientes" [ref=e36] [cursor=pointer]:
+            - /url: /clients
+            - img [ref=e37]
+            - generic [ref=e42]: Clientes
+        - generic [ref=e44]:
+          - paragraph [ref=e45]: Mi taller
+          - link "Productos" [ref=e46] [cursor=pointer]:
+            - /url: /catalogo
+            - img [ref=e47]
+            - generic [ref=e51]: Productos
+          - link "Insumos" [ref=e52] [cursor=pointer]:
+            - /url: /insumos
+            - img [ref=e53]
+            - generic [ref=e56]: Insumos
+          - link "Equipamiento" [ref=e57] [cursor=pointer]:
+            - /url: /equipamiento
+            - img [ref=e58]
+            - generic [ref=e61]: Equipamiento
+          - link "Técnicas" [ref=e62] [cursor=pointer]:
+            - /url: /tecnicas
+            - img [ref=e63]
+            - generic [ref=e69]: Técnicas
+        - link "Configuración" [ref=e72] [cursor=pointer]:
+          - /url: /settings
+          - img [ref=e73]
+          - generic [ref=e76]: Configuración
+        - button "Cerrar sesión" [ref=e79] [cursor=pointer]:
+          - img [ref=e80]
+          - text: Cerrar sesión
+    - main [ref=e83]:
+      - generic [ref=e84]:
+        - generic [ref=e85]:
+          - generic [ref=e86]:
+            - heading "Cotizador" [level=1] [ref=e87]
+            - paragraph [ref=e88]: Nueva cotización
+          - link "Presupuesto" [ref=e89] [cursor=pointer]:
+            - /url: /presupuesto
+            - img [ref=e90]
+            - text: Presupuesto
+        - generic [ref=e94]:
+          - button "Sublimación" [ref=e107] [cursor=pointer]
+          - button "DTF" [active] [ref=e108] [cursor=pointer]
+          - button "Vinilo" [ref=e109] [cursor=pointer]
+          - button "Serigrafía" [ref=e110] [cursor=pointer]
+        - generic [ref=e221]:
+          - button "DTF Textil" [ref=e222] [cursor=pointer]
+          - button "DTF UV" [ref=e223] [cursor=pointer]
+        - generic [ref=e95]:
+          - generic [ref=e96]:
+            - generic [ref=e111]:
+              - generic [ref=e112]:
+                - generic [ref=e113]: Producto
+                - generic [ref=e115]:
+                  - img [ref=e116]
+                  - textbox "Buscar producto..." [ref=e119]: Buzo Canguro
+                  - img [ref=e120]
+              - generic [ref=e122]:
+                - generic [ref=e123]: Cantidad
+                - spinbutton [ref=e124]: "10"
+              - generic [ref=e125]:
+                - generic [ref=e126]: Zonas de estampado
+                - generic [ref=e127]:
+                  - button "1" [ref=e128] [cursor=pointer]
+                  - button "2" [ref=e129] [cursor=pointer]
+                  - button "3" [ref=e130] [cursor=pointer]
+                  - button "4" [ref=e131] [cursor=pointer]
+              - generic [ref=e132]:
+                - generic [ref=e133]: Tamaño diseño (cm)
+                - generic [ref=e134]:
+                  - generic [ref=e135]:
+                    - paragraph [ref=e136]: Ancho
+                    - spinbutton [ref=e137]: "15"
+                  - generic [ref=e138]: ×
+                  - generic [ref=e139]:
+                    - paragraph [ref=e140]: Alto
+                    - spinbutton [ref=e141]: "20"
+            - generic [ref=e149]:
+              - generic [ref=e150]: Notas del ítem (opcional)
+              - textbox "Instrucciones de producción, detalles del diseño..." [ref=e151]
+            - button "Agregar al Presupuesto" [ref=e152] [cursor=pointer]:
+              - img [ref=e153]
+              - text: Agregar al Presupuesto
+          - generic [ref=e160]:
+            - generic [ref=e161]:
+              - paragraph [ref=e162]: 1 · Desglose de costos
+              - generic [ref=e163]:
+                - generic [ref=e164] [cursor=pointer]:
+                  - generic [ref=e165]: Producto base
+                  - generic [ref=e166]: $9.800
+                - generic [ref=e167] [cursor=pointer]:
+                  - generic [ref=e168]: Impresión tercerizada
+                  - generic [ref=e169]: $1.215
+                - generic [ref=e170] [cursor=pointer]:
+                  - generic [ref=e171]: Amort. plancha
+                  - generic [ref=e172]: $8
+                - generic [ref=e173] [cursor=pointer]:
+                  - generic [ref=e174]: Desperdicio (10%)
+                  - generic [ref=e175]: $122
+              - button "Agregar costo" [ref=e176] [cursor=pointer]:
+                - img [ref=e177]
+                - text: Agregar costo
+              - generic [ref=e178]:
+                - generic [ref=e179]: Costo Total
+                - generic [ref=e180]: $11.145
+            - generic [ref=e181]:
+              - paragraph [ref=e182]: 2 · Precio sugerido
+              - generic [ref=e183] [cursor=pointer]:
+                - generic [ref=e184]: Margen de ganancia (+50%)
+                - generic [ref=e185]: +$11.145
+              - generic [ref=e186]:
+                - generic [ref=e187]: Precio Base
+                - generic [ref=e188]: $22.289
+            - generic [ref=e189]:
+              - paragraph [ref=e190]: 3 · Descuento por volumen
+              - generic [ref=e191] [cursor=pointer]:
+                - generic [ref=e192]: Desc. volumen (-5%)
+                - generic [ref=e193]: "-$1.114"
+            - generic [ref=e194]:
+              - paragraph [ref=e195]: 4 · Precio final
+              - paragraph [ref=e196]: $22.289
+              - paragraph [ref=e197]: $21.175
+              - paragraph [ref=e198]: por unidad
+              - generic [ref=e199]:
+                - generic [ref=e200]: Total (10 u.)
+                - generic [ref=e201]: $211.746
+            - generic [ref=e202]:
+              - paragraph [ref=e203]: 5 · Rentabilidad
+              - generic [ref=e204]:
+                - generic [ref=e205]:
+                  - generic [ref=e206]:
+                    - img [ref=e207]
+                    - generic [ref=e210]: Ganancia neta
+                  - paragraph [ref=e211]: $100.301
+                  - paragraph [ref=e212]: 47% del total
+                - generic [ref=e213]:
+                  - generic [ref=e214]:
+                    - img [ref=e215]
+                    - generic [ref=e218]: Tiempo total
+                  - paragraph [ref=e219]: 15 min
+                  - paragraph [ref=e220]: $396.793/h
+  - button "Open Next.js Dev Tools" [ref=e102] [cursor=pointer]:
+    - img [ref=e103]
+  - alert [ref=e106]
