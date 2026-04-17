@@ -308,6 +308,7 @@ function computeDTFZone(dw: number, dh: number, qty: number, config: DTFConfig |
     const fc = insCfg(film), tc2 = insCfg(tinta), poc = insCfg(polvo)
     const filmArea = ((fc.ancho as number || 60) / 100) * ((fc.largo as number) || 100)
     costoFilm = filmArea > 0 ? ((consumedArea / filmArea) * ((fc.precio_rollo as number) || 0)) / Math.max(qty, 1) : 0
+    if (typeof window !== 'undefined') console.log('[DTF-FILM]', { filmFound: !!film, filmTipo: film?.tipo, filmNombre: (film as unknown as Record<string,string>)?.nombre, fc, filmArea, consumedArea, costoFilm, allInsumos: insumos.map(i => ({ nombre: (i as unknown as Record<string,string>).nombre, tipo: i.tipo, ta: i.tecnica_asociada })) })
     costoTintaDTF = ((tc2.rendimiento as number) || 1) > 0 ? ((consumedArea / (tc2.rendimiento as number || 1)) * ((tc2.precio as number) || 0)) / Math.max(qty, 1) : 0
     costoPolvo = ((poc.rendimiento_m2 as number) || 1) > 0 ? ((consumedArea / (poc.rendimiento_m2 as number || 1)) * ((poc.precio_kg as number) || 0)) / Math.max(qty, 1) : 0
     costoAmortPrint = overrideAmortPrint ?? getAmort(equipment, techniqueEquipmentIds)
