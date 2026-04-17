@@ -202,7 +202,7 @@ export default function CotizadorPage() {
   useEffect(() => { engine.setOverridePrinterId(selectedPrinterId || null) }, [selectedPrinterId])
   useEffect(() => { engine.setOverridePressId(selectedPressId || null) }, [selectedPressId])
   const dtfSlug = resolvedSlug === 'dtf' || resolvedSlug === 'dtf_uv'
-  useEffect(() => { engine.setOverrideDtfMode(dtfSlug ? cotizadorDtfMode : null) }, [cotizadorDtfMode, dtfSlug])
+  useEffect(() => { engine.setOverrideDtfMode(cotizadorDtfMode) }, [cotizadorDtfMode])
   // Set default mode from technique config (applies to all techniques with modo)
   useEffect(() => {
     if (technique) {

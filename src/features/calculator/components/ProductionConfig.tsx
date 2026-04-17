@@ -33,17 +33,18 @@ export default function ProductionConfig({
   const isDTF = slug === 'dtf' || slug === 'dtf_uv'
   const isSubli = slug === 'subli'
   const isVinyl = slug === 'vinyl'
-  const isTercerizado = isDTF && dtfMode === 'tercerizado'
+  const isTercerizado = dtfMode === 'tercerizado'
 
-  const showMode = isDTF
-  const needsPapel = isSubli || (isDTF && !isTercerizado)
+  // Show mode dropdown for techniques that support tercerizado
+  const showMode = isDTF || isSubli || isVinyl || slug === 'serigrafia'
+  const needsPapel = (isSubli || isDTF) && !isTercerizado
   const showPapel = needsPapel && papelInsumos.length > 0
   const showPapelEmpty = needsPapel && papelInsumos.length === 0
 
   // Auto-open when paper is missing so user sees the warning
   const [open, setOpen] = useState(showPapelEmpty)
-  const showTinta = (isSubli || (isDTF && !isTercerizado)) && tintaInsumos.length > 0
-  const showPrinter = (isSubli || isVinyl || (isDTF && !isTercerizado)) && printers.length > 0
+  const showTinta = (isSubli || isDTF) && !isTercerizado && tintaInsumos.length > 0
+  const showPrinter = (isSubli || isVinyl || isDTF) && !isTercerizado && printers.length > 0
   const showPress = presses.length > 0 && slug !== 'serigrafia'
 
   if (!showMode && !showPapel && !showPapelEmpty && !showPrinter && !showPress) return null
