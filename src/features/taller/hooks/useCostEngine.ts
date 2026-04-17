@@ -44,6 +44,7 @@ export function useCostEngine(
   const [overridePapelId, setOverridePapelId] = useState<string | null>(null)
   const [overrideDtfMode, setOverrideDtfMode] = useState<'propia' | 'tercerizado' | null>(null)
   const [overrideTintaId, setOverrideTintaId] = useState<string | null>(null)
+  const [overridePricingMode, setOverridePricingMode] = useState<'margin' | 'markup' | null>(null)
   // Zones for subli/dtf
   const [numZones, setNumZones] = useState(1)
   const [zones, setZones] = useState<Array<{ ancho: number; alto: number; ubicacion: string }>>([
@@ -157,9 +158,9 @@ export function useCostEngine(
       overrideMerma, overrideAmortPrint, overrideAmortPress, overrideCostoPantalla,
       tipoCambio: (settings as Record<string, unknown>).tipo_cambio as number || 1,
       redondeo_precios: ((settings as Record<string, unknown>).redondeo_precios as string || 'none') as 'none' | 'integer' | 'tens' | 'hundreds',
-      pricingMode: ((settings as Record<string, unknown>).pricing_mode as 'margin' | 'markup') || 'margin',
+      pricingMode: overridePricingMode || ((settings as Record<string, unknown>).pricing_mode as 'margin' | 'markup') || 'margin',
     })
-  }, [technique, product, equipment, linkedInsumos, settings, quantity, designWidth, designHeight, numColors, numZones, zones, margin, mo, otrosGastos, vinylSelections, discountTiers, overrideMerma, overrideAmortPrint, overrideAmortPress, overrideCostoPantalla, overrideDiscountPct, overridePrinterId, overridePressId, overrideDtfMode])
+  }, [technique, product, equipment, linkedInsumos, settings, quantity, designWidth, designHeight, numColors, numZones, zones, margin, mo, otrosGastos, vinylSelections, discountTiers, overrideMerma, overrideAmortPrint, overrideAmortPress, overrideCostoPantalla, overrideDiscountPct, overridePrinterId, overridePressId, overrideDtfMode, overridePricingMode])
 
   // Compute default values for overrides display
   const defaultMerma = useMemo(() => {
@@ -206,6 +207,7 @@ export function useCostEngine(
     overridePapelId, setOverridePapelId,
     overrideTintaId, setOverrideTintaId,
     overrideDtfMode, setOverrideDtfMode,
+    overridePricingMode, setOverridePricingMode,
     resetOverrides, hasOverrides,
   }
 }

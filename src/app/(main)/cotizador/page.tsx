@@ -50,6 +50,7 @@ export default function CotizadorPage() {
   const [selectedPrinterId, setSelectedPrinterId] = useState('')
   const [selectedPressId, setSelectedPressId] = useState('')
   const [cotizadorDtfMode, setCotizadorDtfMode] = useState<'propia' | 'tercerizado'>('propia')
+  const [pricingMode, setPricingMode] = useState<'margin' | 'markup'>('margin')
   const [userOverrodePapel, setUserOverrodePapel] = useState(false)
 
   const loadedRef = useRef(false)
@@ -82,6 +83,7 @@ export default function CotizadorPage() {
     if (ws?.settings) {
       const saved = ws.settings as Record<string, unknown>
       setSettings({ ...DEFAULT_SETTINGS, ...saved, mano_de_obra: { ...DEFAULT_MO_CONFIG, ...((saved.mano_de_obra as Record<string, unknown>) ?? {}) } } as WorkshopSettings)
+      if (saved.pricing_mode) setPricingMode(saved.pricing_mode as 'margin' | 'markup')
     }
     setLoading(false)
   }
@@ -121,11 +123,15 @@ export default function CotizadorPage() {
     }
   }, [resolvedSlug, resolvedTec?.id])
 
-  // Category margin
+  // Category margin + pricing mode
   useEffect(() => {
     if (product?.category_id && categories.length) {
       const cat = categories.find(c => c.id === product.category_id)
-      if (cat) engine.setMargin(cat.margen_sugerido)
+      if (cat) {
+        engine.setMargin(cat.margen_sugerido)
+        const catMode = cat.pricing_mode
+        if (catMode) { setPricingMode(catMode); engine.setOverridePricingMode(catMode) }
+      }
     }
   }, [product?.id, product?.category_id, categories])
 
@@ -645,10 +651,10 @@ export default function CotizadorPage() {
                     const rend = (c.rendimiento as number) || 1
                     return { name: ins.nombre, costPerUse: Math.round(price / rend) }
                   })}
-                pricingMode={((settings as Record<string, unknown>).pricing_mode as 'margin' | 'markup') || 'margin'}
+                pricingMode={pricingMode}
                 onPricingModeChange={(mode) => {
-                  setSettings(prev => ({ ...prev, pricing_mode: mode } as WorkshopSettings))
-                  supabase.from('workshop_settings').upsert({ id: 1, settings: { ...settings, pricing_mode: mode } }, { onConflict: 'id' })
+                  setPricingMode(mode)
+                  engine.setOverridePricingMode(mode)
                 }}
                 timeBreakdown={result?.timeBreakdown}
               />
