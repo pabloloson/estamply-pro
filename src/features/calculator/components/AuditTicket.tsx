@@ -354,7 +354,7 @@ export default function AuditTicket(props: AuditTicketProps) {
             <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">{stepNum.metrics} &middot; Rentabilidad</p>
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-xl p-3.5" style={{ background: ganancia > 0 ? 'rgba(0,184,148,0.06)' : 'rgba(255,71,87,0.06)', border: `1px solid ${ganancia > 0 ? 'rgba(0,184,148,0.12)' : 'rgba(255,71,87,0.12)'}` }}>
-                <div className="flex items-center gap-1.5 mb-1.5"><TrendingUp size={13} style={{ color: ganancia > 0 ? '#00B894' : '#FF4757' }} /><span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Ganancia neta</span></div>
+                <div className="flex items-center gap-1.5 mb-1.5"><TrendingUp size={13} style={{ color: ganancia > 0 ? '#00B894' : '#FF4757' }} /><span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Ganancia</span></div>
                 <p className="text-xl font-black" style={{ color: ganancia > 0 ? '#00B894' : '#FF4757' }}>{fmt(ganancia)}</p>
                 <p className="text-xs font-semibold mt-0.5" style={{ color: ganancia > 0 ? '#00B89499' : '#FF475799' }}>
                   {gananciaPercent}% del total

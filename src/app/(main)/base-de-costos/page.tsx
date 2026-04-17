@@ -630,7 +630,7 @@ export default function BaseDeCostosPage() {
                         onChange={e => setWs({ ...ws, mano_de_obra: { ...(ws.mano_de_obra ?? DEFAULT_MO_CONFIG), comision_base: e.target.value as ComisionBase } })}
                       >
                         <option value="venta">Sobre el Precio de Venta</option>
-                        <option value="ganancia">Sobre la Ganancia neta</option>
+                        <option value="ganancia">Sobre la Ganancia</option>
                       </select>
                     </div>
                   </div>

@@ -187,7 +187,7 @@ function computeSubli(input: ComputeInput, config: SubliConfig): CostResult {
     const servicioIns = findInsumo(insumos, 'servicio_impresion', 'otro')
     const sc = servicioIns ? insCfg(servicioIns) : null
     const costoTerc = sc ? ((sc.precio_metro as number) || (sc.precio as number) || 0) : 0
-    const costoDesp = costoTerc * (desperdicio / 100)
+    const costoDesp = (costoProducto + costoTerc + amortPress) * (desperdicio / 100)
     const lines: { label: string; value: number }[] = [
       { label: 'Producto base', value: costoProducto },
       { label: 'Impresión tercerizada', value: costoTerc },
@@ -229,8 +229,8 @@ function computeSubli(input: ComputeInput, config: SubliConfig): CostResult {
 
   // Resource-based desglose (NOT zone-based)
   const totalAmortPress = amortPress * numZones
-  const costoInsumosBase = totalPapelTinta + amortEquip
-  const costoDesp = costoInsumosBase * (desperdicio / 100)
+  const subtotalPreDesp = costoProducto + totalPapelTinta + totalAmortPress + amortEquip
+  const costoDesp = subtotalPreDesp * (desperdicio / 100)
   const moAdjusted = mo * numZones
 
   const lines: { label: string; value: number }[] = [{ label: 'Producto base', value: costoProducto }]
@@ -339,8 +339,8 @@ function computeDTF(input: ComputeInput, config: DTFConfig | DTFUVConfig): CostR
   })
 
   const totalMetros = dtfZoneResults.reduce((s, z) => s + z.metrosLineales, 0)
-  const costoInsBase = totalImpresion
-  const costoDesp = costoInsBase * (desperdicio / 100)
+  const subtotalPreDespDTF = costoProducto + totalImpresion + totalAmortPress
+  const costoDesp = subtotalPreDespDTF * (desperdicio / 100)
   const moAdjusted = mo * numZones
   const metrosStr = `${totalMetros.toFixed(2)}m`
 
@@ -404,15 +404,15 @@ function computeVinyl(input: ComputeInput, config: VinylConfig): CostResult {
   })
 
   const costoViniloRaw = vinylNesting.reduce((s, n) => s + n.costoColor, 0) / Math.max(quantity, 1)
-  const costoDesp = costoViniloRaw * (desperdicio / 100)
   const costoProducto = Number(product.base_cost)
   const amortPlotter = input.overrideAmortPrint ?? getAmort(equipment, techniqueEquipmentIds)
   const amortPress = input.overrideAmortPress ?? getPressAmort(product, equipment, 'vinyl')
+  const costoDesp = (costoProducto + costoViniloRaw + amortPlotter + amortPress) * (desperdicio / 100)
   const costoTotal = costoProducto + costoViniloRaw + costoDesp + amortPlotter + amortPress + mo + otrosGastos / Math.max(quantity, 1)
 
   const totalMetrosVinyl = vinylNesting.reduce((s, n) => s + n.metrosLineales, 0)
   const lines = [{ label: 'Producto base', value: costoProducto }, { label: `Vinilo (${totalMetrosVinyl.toFixed(2)}m)`, value: costoViniloRaw }]
-  if (costoDesp > 0) lines.push({ label: `Desperdicio pelado (${desperdicio}%)`, value: costoDesp })
+  if (costoDesp > 0) lines.push({ label: `Desperdicio (${desperdicio}%)`, value: costoDesp })
   if (amortPlotter > 0) lines.push({ label: 'Amort. plotter', value: amortPlotter })
   if (amortPress > 0) lines.push({ label: 'Amort. plancha', value: amortPress })
   if (mo > 0) lines.push({ label: 'Mano de obra', value: mo })
@@ -464,7 +464,7 @@ function computeSerigrafia(input: ComputeInput, config: SerigrafiaConfig): CostR
   const amortPress = input.overrideAmortPress ?? getPressAmort(product, equipment, 'serigrafia')
 
   const costoBase = costoSetupPerUnit + costoTintaPerUnit + amortEquip + amortPress
-  const costoDesp = costoBase * (desperdicio / 100)
+  const costoDesp = (costoProducto + costoBase) * (desperdicio / 100)
   const costoTotal = costoProducto + costoBase + costoDesp + mo + otrosGastos / Math.max(quantity, 1)
 
   const lines = [
