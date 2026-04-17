@@ -139,18 +139,16 @@ export default function CotizadorPage() {
 
   // Production config: filtered equipment lists
   // Production config: insumo and equipment lists for dropdowns
-  // Show linked insumos first, then all available of same type (so user can always select one)
+  // Filter by tecnica_asociada matching the current technique slug, or 'compartido'
+  const matchesTecnica = (ins: Insumo) => {
+    const ta = ins.tecnica_asociada
+    return ta === resolvedSlug || ta === 'compartido' || (resolvedSlug === 'dtf' && ta === 'dtf_uv') || (resolvedSlug === 'dtf_uv' && ta === 'dtf')
+  }
   const papelInsumos = technique
-    ? [...new Map([
-        ...insumos.filter(ins => technique.insumo_ids.includes(ins.id) && (ins.tipo === 'papel' || ins.tipo === 'film')),
-        ...insumos.filter(ins => ins.tipo === 'papel' || ins.tipo === 'film'),
-      ].map(i => [i.id, i])).values()]
+    ? insumos.filter(ins => (ins.tipo === 'papel' || ins.tipo === 'film') && matchesTecnica(ins))
     : []
   const tintaInsumos = technique
-    ? [...new Map([
-        ...insumos.filter(ins => technique.insumo_ids.includes(ins.id) && ins.tipo === 'tinta'),
-        ...insumos.filter(ins => ins.tipo === 'tinta'),
-      ].map(i => [i.id, i])).values()]
+    ? insumos.filter(ins => ins.tipo === 'tinta' && matchesTecnica(ins))
     : []
   // Filter equipment by technique compatibility
   const printers = equipment.filter((e: Record<string, unknown>) => {
