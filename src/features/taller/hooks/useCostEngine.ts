@@ -95,7 +95,7 @@ export function useCostEngine(
     const slug = technique.slug
     const matchesTec = (ins: Insumo) => {
       const ta = ins.tecnica_asociada
-      return ta === slug || ta === 'compartido' || (slug === 'dtf' && ta === 'dtf_uv') || (slug === 'dtf_uv' && ta === 'dtf')
+      return ta === slug || ta === 'compartido'
     }
     // Primary: filter by tecnica_asociada. Secondary: insumo_ids but ONLY if they also match the technique
     let linked = [...new Map([

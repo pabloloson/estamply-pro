@@ -308,7 +308,15 @@ function computeDTFZone(dw: number, dh: number, qty: number, config: DTFConfig |
     const fc = insCfg(film), tc2 = insCfg(tinta), poc = insCfg(polvo)
     const filmArea = ((fc.ancho as number || 60) / 100) * ((fc.largo as number) || 100)
     costoFilm = filmArea > 0 ? ((consumedArea / filmArea) * ((fc.precio_rollo as number) || 0)) / Math.max(qty, 1) : 0
-    costoTintaDTF = ((tc2.rendimiento as number) || 1) > 0 ? ((consumedArea / (tc2.rendimiento as number || 1)) * ((tc2.precio as number) || 0)) / Math.max(qty, 1) : 0
+    // Tinta: if rendimiento is in hojas, use 1 hoja per design (qty); if in m², use consumedArea
+    const tintaRend = (tc2.rendimiento as number) || 1
+    const tintaUnit = (tc2.unidad_rendimiento as string) || 'hojas'
+    if (tintaUnit === 'm2' || tintaUnit === 'm²') {
+      costoTintaDTF = tintaRend > 0 ? ((consumedArea / tintaRend) * ((tc2.precio as number) || 0)) / Math.max(qty, 1) : 0
+    } else {
+      // hojas-based: each print run = 1 sheet equivalent per unit produced
+      costoTintaDTF = tintaRend > 0 ? ((tc2.precio as number) || 0) / tintaRend : 0
+    }
     costoPolvo = ((poc.rendimiento_m2 as number) || 1) > 0 ? ((consumedArea / (poc.rendimiento_m2 as number || 1)) * ((poc.precio_kg as number) || 0)) / Math.max(qty, 1) : 0
     costoAmortPrint = overrideAmortPrint ?? getAmort(equipment, techniqueEquipmentIds)
     costoImpresion = costoFilm + costoTintaDTF + costoPolvo + costoAmortPrint
