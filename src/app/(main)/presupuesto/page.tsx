@@ -305,7 +305,7 @@ export default function PresupuestoPage() {
 
     const clientHtml = printClientName ? `
       <div style="margin-bottom:24px;padding:12px 16px;background:#f9fafb;border-radius:6px">
-        <div style="font-size:11px;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Cliente</div>
+        <div style="font-size:11px;color:#666;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;font-weight:700">Cliente</div>
         <div style="font-size:15px;font-weight:600">${printClientName}</div>
         ${printClientContact ? `<div style="font-size:13px;color:#666">${printClientContact}</div>` : ''}
       </div>` : ''
@@ -325,7 +325,7 @@ export default function PresupuestoPage() {
       table{width:100%;border-collapse:collapse}
       thead tr{border-bottom:2px solid #e5e7eb}
       tbody tr{border-bottom:1px solid #f3f4f6}
-      th{font-size:11px;text-transform:uppercase;color:#999;font-weight:600;padding:10px 8px;text-align:left}
+      th{font-size:11px;text-transform:uppercase;color:#555;font-weight:700;padding:10px 8px;text-align:left}
       @page{size:A4;margin:0}
     </style></head><body>
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #333">
@@ -355,7 +355,7 @@ export default function PresupuestoPage() {
         </div>
       </div>
       <div style="padding:16px;background:#f9fafb;border-radius:6px;font-size:12px;color:#666;margin-bottom:32px">
-        <div style="font-weight:600;margin-bottom:8px;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#999">Condiciones</div>
+        <div style="font-weight:700;margin-bottom:8px;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#666">Condiciones</div>
         ${condHtml}
       </div>
       <div style="display:flex;justify-content:space-between;margin:48px 32px 32px;gap:48px">

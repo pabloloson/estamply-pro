@@ -208,6 +208,10 @@ body {
   /* Hide the action sidebar panel */
   .lg\:w-72 { display: none !important; }
 
+  /* Darken text for print legibility */
+  th, .text-gray-400 { color: #555 !important; }
+  .text-gray-500 { color: #444 !important; }
+
   /* Force desktop table layout on print (even from mobile viewport) */
   .hidden.md\:block { display: block !important; }
   .md\:hidden { display: none !important; }
