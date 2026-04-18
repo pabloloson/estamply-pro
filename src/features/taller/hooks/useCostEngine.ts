@@ -146,9 +146,13 @@ export function useCostEngine(
       : technique.config
     const isZonable = ['subli', 'dtf', 'dtf_uv'].includes(technique.slug)
     // Use overridden equipment if user changed in production config
+    // If technique has no equipment_ids, auto-detect by tecnicas_slugs
+    const baseEquipIds = technique.equipment_ids.length > 0
+      ? technique.equipment_ids
+      : equipment.filter((e: { tecnicas_slugs?: string[] }) => (e.tecnicas_slugs || []).includes(technique.slug)).map((e: { id: string }) => e.id)
     const effectiveEquipIds = overridePrinterId
-      ? [...technique.equipment_ids.filter((id: string) => !equipment.some((e: { id: string; type: string }) => e.id === id && e.type.startsWith('printer'))), overridePrinterId]
-      : technique.equipment_ids
+      ? [...baseEquipIds.filter((id: string) => !equipment.some((e: { id: string; type: string }) => e.id === id && e.type.startsWith('printer'))), overridePrinterId]
+      : baseEquipIds
     const effectiveProduct = overridePressId
       ? { ...product, press_equipment_id: overridePressId }
       : product

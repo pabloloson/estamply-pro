@@ -47,7 +47,7 @@ export default function ProductionConfig({
   const showTinta = needsTinta && tintaInsumos.length > 0
   const showTintaEmpty = needsTinta && tintaInsumos.length === 0
   const showPrinter = (isSubli || isVinyl || isDTF) && !isTercerizado && printers.length > 0
-  const showPress = presses.length > 0 && slug !== 'serigrafia'
+  const showPress = presses.length > 0 && slug !== 'serigrafia' && slug !== 'dtf_uv'
 
   if (!showMode && !showPapel && !showPapelEmpty && !showPrinter && !showPress) return null
 

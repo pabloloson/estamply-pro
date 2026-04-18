@@ -328,7 +328,8 @@ function computeDTF(input: ComputeInput, config: DTFConfig | DTFUVConfig): CostR
   const { product, equipment, insumos, quantity, designWidth, designHeight, margin, mo, otrosGastos, setupMin, discountTiers, techniqueEquipmentIds, zones } = input
   const desperdicio = input.overrideMerma ?? config.desperdicio_pct ?? 10
   const slug = config.tipo
-  const amortPress = input.overrideAmortPress ?? getPressAmort(product, equipment, slug)
+  // DTF UV prints directly on object — no press/plancha needed
+  const amortPress = slug === 'dtf_uv' ? 0 : (input.overrideAmortPress ?? getPressAmort(product, equipment, slug))
   const costoProducto = Number(product.base_cost)
 
   const effectiveZones = (zones && zones.length > 1) ? zones : [{ ancho: designWidth, alto: designHeight }]
@@ -372,7 +373,7 @@ function computeDTF(input: ComputeInput, config: DTFConfig | DTFUVConfig): CostR
 
   const costoTotal = costoProducto + totalImpresion + totalAmortPress + costoDesp + moAdjusted + otrosGastos / Math.max(quantity, 1)
 
-  const timeKey = slug === 'dtf_uv' ? 'time_dtf_uv' : 'time_dtf'
+  const timeKey = 'time_dtf' // DTF UV uses same product handling time as DTF Textil
   const dtfPrinter = equipment.find(e => techniqueEquipmentIds.includes(e.id) && (e.type?.startsWith('printer') || e.clasificacion === 'impresora'))
   const dtfPrintTimeSec = dtfPrinter?.print_time_sec || 0
   const totalMetrosDTF = dtfZoneResults.reduce((s, z) => s + z.metrosLineales, 0)
