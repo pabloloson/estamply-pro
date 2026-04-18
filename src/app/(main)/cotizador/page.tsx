@@ -464,15 +464,17 @@ export default function CotizadorPage() {
                       <div key={zi} className="rounded-xl p-3 border border-gray-100 bg-white shadow-sm space-y-2">
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Zona {zi + 1}</span>
-                          <select className="text-xs text-gray-500 bg-transparent border-none outline-none cursor-pointer" value={zone.ubicacion} onChange={e => engine.updateZone(zi, { ubicacion: e.target.value })}>
-                            <option value="">Ubicación...</option>
-                            <option value="Pecho">Pecho</option>
-                            <option value="Espalda">Espalda</option>
-                            <option value="Manga izq.">Manga izq.</option>
-                            <option value="Manga der.">Manga der.</option>
-                            <option value="Cuello / Nuca">Cuello / Nuca</option>
-                            <option value="Otro">Otro</option>
-                          </select>
+                          {resolvedSlug !== 'dtf_uv' && (
+                            <select className="text-xs text-gray-500 bg-transparent border-none outline-none cursor-pointer" value={zone.ubicacion} onChange={e => engine.updateZone(zi, { ubicacion: e.target.value })}>
+                              <option value="">Ubicación...</option>
+                              <option value="Pecho">Pecho</option>
+                              <option value="Espalda">Espalda</option>
+                              <option value="Manga izq.">Manga izq.</option>
+                              <option value="Manga der.">Manga der.</option>
+                              <option value="Cuello / Nuca">Cuello / Nuca</option>
+                              <option value="Otro">Otro</option>
+                            </select>
+                          )}
                         </div>
                         <div>
                           <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">{t('designSize')}</label>
