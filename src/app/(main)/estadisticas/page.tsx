@@ -78,14 +78,36 @@ export default function EstadisticasPage() {
   const facturacion = curOrders.reduce((s, o) => s + (o.total_price as number || 0), 0)
   const facPrev = prevOrders.reduce((s, o) => s + (o.total_price as number || 0), 0)
   const pedidos = curOrders.length, pedPrev = prevOrders.length
+  const pedidosCompleted = curOrders.filter(o => o.status === 'delivered').length
+  const pedidosInProcess = curOrders.filter(o => o.status === 'production').length
   const ticket = pedidos > 0 ? Math.round(facturacion / pedidos) : 0
   const ticketPrev = pedPrev > 0 ? Math.round(facPrev / pedPrev) : 0
+  const ticketMin = pedidos > 0 ? Math.min(...curOrders.map(o => o.total_price as number || 0)) : 0
+  const ticketMax = pedidos > 0 ? Math.max(...curOrders.map(o => o.total_price as number || 0)) : 0
   const presCount = curPres.length, presPrev = prevPres.length
 
-  // Status counts
+  // Status counts + amounts
   const statusCounts: Record<string, number> = {}
-  curOrders.forEach(o => { const s = o.status as string; statusCounts[s] = (statusCounts[s] || 0) + 1 })
+  const statusAmounts: Record<string, number> = {}
+  curOrders.forEach(o => { const s = o.status as string; statusCounts[s] = (statusCounts[s] || 0) + 1; statusAmounts[s] = (statusAmounts[s] || 0) + (o.total_price as number || 0) })
   const totalStatus = Object.values(statusCounts).reduce((a, b) => a + b, 0)
+
+  // Payment methods
+  const payMethodMap = new Map<string, number>()
+  payments.filter(p => {
+    const orderId = p.order_id as string
+    return curOrders.some(o => o.id === orderId)
+  }).forEach(p => {
+    const method = (p.metodo as string) || 'Sin especificar'
+    payMethodMap.set(method, (payMethodMap.get(method) || 0) + (p.monto as number || 0))
+  })
+  const payMethodData = [...payMethodMap.entries()].map(([name, value]) => ({ name: name.charAt(0).toUpperCase() + name.slice(1), value })).sort((a, b) => b.value - a.value)
+  const payMethodTotal = payMethodData.reduce((s, d) => s + d.value, 0)
+
+  // Production stats
+  const totalUnits = curOrders.reduce((s, o) => ((o.items || []) as Array<Record<string, unknown>>).reduce((sum, i) => sum + ((i.cantidad as number) || 1), s), 0)
+  const daysInPeriod = Math.max(Math.round((end.getTime() - start.getTime()) / 86400000), 1)
+  const ordersPerDay = (pedidos / daysInPeriod).toFixed(1)
 
   // Chart data
   const chartData = useMemo(() => {
@@ -260,10 +282,10 @@ export default function EstadisticasPage() {
       {/* Summary cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         {[
-          { label: t('revenue'), value: fmt(facturacion), change: pct(facturacion, facPrev), icon: DollarSign, color: '#6C5CE7' },
-          { label: t('orders'), value: String(pedidos), change: pct(pedidos, pedPrev), icon: ShoppingBag, color: '#E17055' },
-          { label: t('avgTicket'), value: fmt(ticket), change: pct(ticket, ticketPrev), icon: BarChart3, color: '#00B894' },
-          { label: t('quotesCount'), value: String(presCount), change: pct(presCount, presPrev), icon: FileText, color: '#E84393' },
+          { label: t('revenue'), value: fmt(facturacion), change: pct(facturacion, facPrev), hasPrev: facPrev > 0, icon: DollarSign, color: '#6C5CE7', sub: facPrev > 0 ? `vs ${fmt(facPrev)} anterior` : '' },
+          { label: t('orders'), value: String(pedidos), change: pct(pedidos, pedPrev), hasPrev: pedPrev > 0, icon: ShoppingBag, color: '#E17055', sub: `${pedidosCompleted} completados${pedidosInProcess > 0 ? `, ${pedidosInProcess} en proceso` : ''}` },
+          { label: t('avgTicket'), value: fmt(ticket), change: pct(ticket, ticketPrev), hasPrev: ticketPrev > 0, icon: BarChart3, color: '#00B894', sub: pedidos > 0 ? `Mín: ${fmt(ticketMin)} — Máx: ${fmt(ticketMax)}` : '' },
+          { label: t('quotesCount'), value: String(presCount), change: pct(presCount, presPrev), hasPrev: presPrev > 0, icon: FileText, color: '#E84393', sub: `${convertedCount} convertidos (${convRate}%)` },
         ].map(c => (
           <div key={c.label} className="card p-4">
             <div className="flex items-center gap-2 mb-2">
@@ -271,10 +293,13 @@ export default function EstadisticasPage() {
               <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{c.label}</span>
             </div>
             <p className="text-xl font-black text-gray-900">{c.value}</p>
-            <div className="flex items-center gap-1 mt-1">
-              {c.change >= 0 ? <TrendingUp size={12} className="text-green-500" /> : <TrendingDown size={12} className="text-red-500" />}
-              <span className={`text-xs font-medium ${c.change >= 0 ? 'text-green-600' : 'text-red-500'}`}>{c.change > 0 ? '+' : ''}{c.change}%</span>
-            </div>
+            {c.hasPrev ? (
+              <div className="flex items-center gap-1 mt-1">
+                {c.change >= 0 ? <TrendingUp size={12} className="text-green-500" /> : <TrendingDown size={12} className="text-red-500" />}
+                <span className={`text-xs font-medium ${c.change >= 0 ? 'text-green-600' : 'text-red-500'}`}>{c.change > 0 ? '+' : ''}{c.change}%</span>
+              </div>
+            ) : <p className="text-[10px] text-gray-300 mt-1">Sin datos previos</p>}
+            {c.sub && <p className="text-[10px] text-gray-400 mt-0.5">{c.sub}</p>}
           </div>
         ))}
       </div>
@@ -283,7 +308,7 @@ export default function EstadisticasPage() {
       <div className="card p-5 mb-6">
         <h2 className="font-bold text-gray-800 mb-3">{t('ordersByStatus')}</h2>
         <div className="flex gap-4 mb-3 flex-wrap">
-          {Object.entries(SL).map(([k, v]) => <div key={k} className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full" style={{ background: SC[k] }} /><span className="text-sm text-gray-600">{v}: <span className="font-bold">{statusCounts[k] || 0}</span></span></div>)}
+          {Object.entries(SL).map(([k, v]) => <div key={k} className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full" style={{ background: SC[k] }} /><span className="text-sm text-gray-600">{v}: <span className="font-bold">{statusCounts[k] || 0}</span>{(statusAmounts[k] || 0) > 0 && <span className="text-gray-400 ml-1">({fmt(statusAmounts[k])})</span>}</span></div>)}
         </div>
         {totalStatus > 0 && <div className="flex h-4 rounded-full overflow-hidden bg-gray-100">{Object.keys(SL).map(k => { const p = ((statusCounts[k] || 0) / totalStatus) * 100; return p > 0 ? <div key={k} style={{ width: `${p}%`, background: SC[k] }} /> : null })}</div>}
       </div>
@@ -366,7 +391,7 @@ export default function EstadisticasPage() {
                 return (
                   <tr key={n} className="border-b border-gray-50">
                     <td className="px-2 py-2 text-gray-400 font-bold">{i + 1}</td>
-                    <td className="px-2 py-2 font-medium text-gray-800">{n}</td>
+                    <td className="px-2 py-2 font-medium text-gray-800">{n === 'Sin cliente' ? <span className="text-amber-600 flex items-center gap-1">⚠ Sin cliente</span> : n}</td>
                     <td className="px-2 py-2 text-gray-600">{v.pedidos}</td>
                     <td className="px-2 py-2 font-semibold text-gray-800">{fmt(v.revenue)}</td>
                     {showCosts && <td className="px-2 py-2">{m !== null ? <span className={m >= 40 ? 'text-green-600' : m >= 20 ? 'text-amber-600' : 'text-red-500'}>{m}%</span> : <span className="text-gray-300">—</span>}</td>}
@@ -395,6 +420,26 @@ export default function EstadisticasPage() {
           </div>
         )}
         <div className="flex gap-4 text-xs text-gray-500 mt-2"><span>■ {t('converted')} {convRate}%</span><span className="text-gray-300">□ {100 - Math.min(convRate, 100)}%</span></div>
+        {convertedCount > 0 && <p className="text-xs text-gray-400 mt-2">Convertidos: {convertedCount} ({fmt(curPres.filter(p => p.estado === 'aceptado').reduce((s, p) => s + ((p.total as number) || 0), 0))} de {fmt(curPres.reduce((s, p) => s + ((p.total as number) || 0), 0))} presupuestados)</p>}
+      </div>
+
+      {/* Payment methods + Production */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        {payMethodData.length > 0 && (
+          <div className="card p-5">
+            <h2 className="font-bold text-gray-800 mb-3">Facturación por método de pago</h2>
+            <ResponsiveContainer width="100%" height={160}><PieChart><Pie data={payMethodData} dataKey="value" cx="50%" cy="50%" innerRadius={40} outerRadius={65}>{payMethodData.map((_, i) => <Cell key={i} fill={DONUT_COLORS[i % DONUT_COLORS.length]} />)}</Pie></PieChart></ResponsiveContainer>
+            <div className="space-y-1 mt-2">{payMethodData.map((d, i) => <div key={d.name} className="flex items-center gap-2 text-xs"><span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: DONUT_COLORS[i % DONUT_COLORS.length] }} /><span className="flex-1 text-gray-600">{d.name}</span><span className="font-semibold text-gray-800">{payMethodTotal > 0 ? Math.round(d.value / payMethodTotal * 100) : 0}%</span><span className="text-gray-400">{fmt(d.value)}</span></div>)}</div>
+          </div>
+        )}
+        <div className="card p-5">
+          <h2 className="font-bold text-gray-800 mb-3">Producción del período</h2>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="p-3 rounded-lg bg-gray-50"><p className="text-[10px] text-gray-500 uppercase font-semibold">Unidades</p><p className="text-lg font-black text-gray-900">{totalUnits.toLocaleString('es-AR')}</p></div>
+            <div className="p-3 rounded-lg bg-gray-50"><p className="text-[10px] text-gray-500 uppercase font-semibold">Pedidos/día</p><p className="text-lg font-black text-gray-900">{ordersPerDay}</p></div>
+            <div className="p-3 rounded-lg bg-gray-50"><p className="text-[10px] text-gray-500 uppercase font-semibold">Completados</p><p className="text-lg font-black text-gray-900">{pedidosCompleted}</p></div>
+          </div>
+        </div>
       </div>
 
       {/* Evolution */}
