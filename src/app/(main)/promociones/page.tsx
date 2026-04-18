@@ -152,7 +152,7 @@ export default function PromocionesPage() {
             )})}
           </div>
           {/* Desktop */}
-          <div className="hidden md:block card overflow-hidden">
+          <div className="hidden md:block card" style={{ overflow: 'visible' }}>
             <table className="w-full"><thead><tr className="border-b border-gray-100">
               {['Nombre', 'Descuento', 'Productos', 'Período', 'Estado', ''].map(h => <th key={h} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">{h}</th>)}
             </tr></thead><tbody>
@@ -214,7 +214,7 @@ export default function PromocionesPage() {
             )})}
           </div>
           {/* Desktop */}
-          <div className="hidden md:block card overflow-hidden">
+          <div className="hidden md:block card" style={{ overflow: 'visible' }}>
             <table className="w-full"><thead><tr className="border-b border-gray-100">
               {['Código', 'Descuento', 'Usos', 'Monto mín.', 'Vencimiento', 'Estado', ''].map(h => <th key={h} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">{h}</th>)}
             </tr></thead><tbody>
