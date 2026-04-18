@@ -22,6 +22,10 @@ interface ProductionConfigProps {
   // DTF mode
   dtfMode?: 'propia' | 'tercerizado'
   onDtfModeChange?: (mode: 'propia' | 'tercerizado') => void
+  // Horno (DTF Textil only)
+  hornos?: Array<{ id: string; name: string }>
+  selectedHornoId?: string
+  onHornoChange?: (id: string) => void
 }
 
 export default function ProductionConfig({
@@ -29,6 +33,7 @@ export default function ProductionConfig({
   selectedPapelId, selectedTintaId, selectedPrinterId, selectedPressId,
   onPapelChange, onTintaChange, onPrinterChange, onPressChange,
   dtfMode, onDtfModeChange,
+  hornos = [], selectedHornoId, onHornoChange,
 }: ProductionConfigProps) {
   const isDTF = slug === 'dtf' || slug === 'dtf_uv'
   const isSubli = slug === 'subli'
@@ -131,6 +136,16 @@ export default function ProductionConfig({
               <select className="input-base text-sm" value={selectedPressId} onChange={e => onPressChange(e.target.value)}>
                 <option value="">Sin plancha</option>
                 {presses.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            </div>
+          )}
+
+          {slug === 'dtf' && !isTercerizado && hornos.length > 0 && onHornoChange && (
+            <div>
+              <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Horno</label>
+              <select className="input-base text-sm" value={selectedHornoId || ''} onChange={e => onHornoChange(e.target.value)}>
+                <option value="">Sin horno</option>
+                {hornos.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
               </select>
             </div>
           )}

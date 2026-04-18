@@ -373,11 +373,15 @@ function computeDTF(input: ComputeInput, config: DTFConfig | DTFUVConfig): CostR
     if (tAmortPrint > 0) lines.push({ label: `Amort. ${slug === 'dtf_uv' ? 'plotter UV' : 'plotter'}`, value: tAmortPrint })
   }
   if (totalAmortPress > 0) lines.push({ label: `Amort. plancha${numZones > 1 ? ` (×${numZones})` : ''}`, value: totalAmortPress })
+  // Horno amortization (DTF Textil only, 1 use per batch, not per zone)
+  const horno = slug === 'dtf' ? equipment.find(e => (e.clasificacion as string) === 'horno' && ((e.tecnicas_slugs as string[]) || []).includes('dtf')) : null
+  const amortHorno = horno ? Math.round(horno.cost / horno.lifespan_uses) : 0
+  if (amortHorno > 0 && config.modo !== 'tercerizado') lines.push({ label: 'Amort. horno', value: amortHorno })
   if (costoDesp > 0) lines.push({ label: `Desperdicio (${desperdicio}%)`, value: costoDesp })
   if (moAdjusted > 0) lines.push({ label: 'Mano de obra', value: moAdjusted })
   if (otrosGastos > 0) lines.push({ label: 'Otros gastos', value: otrosGastos / Math.max(quantity, 1) })
 
-  const costoTotal = costoProducto + totalImpresion + totalAmortPress + costoDesp + moAdjusted + otrosGastos / Math.max(quantity, 1)
+  const costoTotal = costoProducto + totalImpresion + totalAmortPress + amortHorno + costoDesp + moAdjusted + otrosGastos / Math.max(quantity, 1)
 
   const timeKey = 'time_dtf' // DTF UV uses same product handling time as DTF Textil
   const dtfPrinter = equipment.find(e => techniqueEquipmentIds.includes(e.id) && (e.type?.startsWith('printer') || e.clasificacion === 'impresora'))

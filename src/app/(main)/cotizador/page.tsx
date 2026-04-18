@@ -51,6 +51,7 @@ export default function CotizadorPage() {
   const [selectedPressId, setSelectedPressId] = useState('')
   const [cotizadorDtfMode, setCotizadorDtfMode] = useState<'propia' | 'tercerizado'>('propia')
   const [pricingMode, setPricingMode] = useState<'margin' | 'markup'>('margin')
+  const [selectedHornoId, setSelectedHornoId] = useState('')
   const [userOverrodePapel, setUserOverrodePapel] = useState(false)
 
   const loadedRef = useRef(false)
@@ -123,6 +124,7 @@ export default function CotizadorPage() {
       setSelectedPapelId('')
       setSelectedTintaId('')
       setSelectedPrinterId('')
+      setSelectedHornoId('')
     }
   }, [resolvedSlug, resolvedTec?.id])
 
@@ -164,6 +166,12 @@ export default function CotizadorPage() {
   const presses = equipment.filter((e: Record<string, unknown>) => {
     const t = e.type as string || ''
     if (!t.startsWith('press')) return false
+    const slugs = (e.tecnicas_slugs as string[]) || []
+    return slugs.length === 0 || slugs.includes(resolvedSlug)
+  })
+  const hornos = equipment.filter((e: Record<string, unknown>) => {
+    const cl = e.clasificacion as string || ''
+    if (cl !== 'horno') return false
     const slugs = (e.tecnicas_slugs as string[]) || []
     return slugs.length === 0 || slugs.includes(resolvedSlug)
   })
@@ -210,6 +218,9 @@ export default function CotizadorPage() {
   useEffect(() => {
     if (!selectedTintaId && tintaInsumos.length) setSelectedTintaId(tintaInsumos[0].id)
   }, [tintaInsumos.length, selectedTintaId])
+  useEffect(() => {
+    if (!selectedHornoId && hornos.length) setSelectedHornoId((hornos[0] as Record<string, unknown>).id as string)
+  }, [hornos.length, selectedHornoId])
 
   // Sync production config selections to cost engine
   useEffect(() => { engine.setOverridePapelId(selectedPapelId || null) }, [selectedPapelId])
@@ -583,6 +594,9 @@ export default function CotizadorPage() {
                   onPressChange={setSelectedPressId}
                   dtfMode={cotizadorDtfMode}
                   onDtfModeChange={setCotizadorDtfMode}
+                  hornos={hornos.map((h: Record<string, unknown>) => ({ id: h.id as string, name: h.name as string }))}
+                  selectedHornoId={selectedHornoId}
+                  onHornoChange={setSelectedHornoId}
                 />
               </div>
 

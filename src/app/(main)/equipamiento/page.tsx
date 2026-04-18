@@ -17,13 +17,14 @@ interface Equipment {
 }
 interface InsumoRef { id: string; nombre: string; tipo: string; config: Record<string, unknown> }
 
-const CLASIF_LABELS: Record<string, string> = { impresora: 'Impresora', plotter: 'Plotter', plancha: 'Plancha', pulpo: 'Pulpo' }
-const CLASIF_COLORS: Record<string, string> = { impresora: '#E17055', plotter: '#00B894', plancha: '#6C5CE7', pulpo: '#FDCB6E' }
+const CLASIF_LABELS: Record<string, string> = { impresora: 'Impresora', plotter: 'Plotter', plancha: 'Plancha', horno: 'Horno', pulpo: 'Pulpo' }
+const CLASIF_COLORS: Record<string, string> = { impresora: '#E17055', plotter: '#00B894', plancha: '#6C5CE7', horno: '#F97316', pulpo: '#FDCB6E' }
 const CLASIF_TABS = [
   { id: '', label: 'Todos' },
   { id: 'impresora', label: 'Impresoras', color: '#E17055' },
   { id: 'plotter', label: 'Plotters', color: '#00B894' },
   { id: 'plancha', label: 'Planchas', color: '#6C5CE7' },
+  { id: 'horno', label: 'Hornos', color: '#F97316' },
   { id: 'pulpo', label: 'Pulpos', color: '#FDCB6E' },
 ]
 
@@ -31,6 +32,7 @@ const TYPES_BY_CLASIF: Record<string, Array<[string, string]>> = {
   impresora: [['printer_subli', 'Impresora Sublimación'], ['printer_dtf', 'Impresora DTF'], ['printer_uv', 'Impresora UV'], ['printer_other', 'Otra impresora']],
   plotter: [['plotter_corte', 'Plotter de corte'], ['plotter_impresion', 'Plotter de impresión'], ['plotter_combo', 'Plotter corte + impresión'], ['plotter_other', 'Otro plotter']],
   plancha: [['press_flat', 'Plancha Plana'], ['press_mug', 'Plancha Tazas'], ['press_cap', 'Plancha Gorras'], ['press_5in1', 'Plancha 5 en 1'], ['press_pneumatic', 'Plancha Neumática'], ['press_other', 'Otra plancha']],
+  horno: [['horno_secado', 'Horno de secado'], ['horno_other', 'Otro horno']],
   pulpo: [['pulpo_manual', 'Pulpo manual'], ['pulpo_auto', 'Pulpo automático'], ['estacion', 'Estación de estampado'], ['pulpo_other', 'Otro']],
 }
 
