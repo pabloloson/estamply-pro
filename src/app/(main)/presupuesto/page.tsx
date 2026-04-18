@@ -21,9 +21,6 @@ import { usePermissions } from '@/shared/context/PermissionsContext'
 const TECHNIQUE_LABELS: Record<Tecnica, string> = {
   subli: 'Sublimación', dtf: 'DTF Textil', dtf_uv: 'DTF UV', vinyl: 'Vinilo Textil', vinyl_adhesivo: 'Vinilo Autoadhesivo', serigrafia: 'Serigrafía',
 }
-const TECHNIQUE_COLORS: Record<Tecnica, string> = {
-  subli: '#6C5CE7', dtf: '#E17055', dtf_uv: '#00B894', vinyl: '#E84393', vinyl_adhesivo: '#D63384', serigrafia: '#FDCB6E',
-}
 
 interface DBClient { id: string; name: string; phone: string | null; email: string | null; whatsapp: string | null }
 interface BusinessProfile {
@@ -176,6 +173,15 @@ export default function PresupuestoPage() {
     setDbPresupuestoId(id)
   }
 
+  // ── Autosave: debounced save on any change ──
+  const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [dirty, setDirty] = useState(false)
+  function triggerAutosave() {
+    setDirty(true)
+    if (autosaveTimer.current) clearTimeout(autosaveTimer.current)
+    autosaveTimer.current = setTimeout(() => { handleGuardar() }, 1500)
+  }
+
   // ── Explicit save: one button, one UPDATE ──
   async function handleGuardar() {
     const pid = dbIdRef.current
@@ -205,9 +211,18 @@ export default function PresupuestoPage() {
       client_id: clientId || null, client_name: clientDisplayName || null,
       condiciones, validez_dias: validezDias,
     }).eq('id', pid)
-    if (error) { setSaveStatus('error'); alert('Error al guardar: ' + error.message) }
-    else { setSaveStatus('saved'); setTimeout(() => setSaveStatus(s => s === 'saved' ? 'idle' : s), 2000) }
+    if (error) { setSaveStatus('error') }
+    else { setDirty(false); setSaveStatus('saved'); setTimeout(() => setSaveStatus(s => s === 'saved' ? 'idle' : s), 3000) }
   }
+
+  // Autosave on data changes (only when a presupuesto exists or items are loaded)
+  const prevDataRef = useRef('')
+  useEffect(() => {
+    if (items.length === 0) return
+    const dataKey = JSON.stringify({ items: items.map(i => ({ n: i.nombre, q: i.cantidad, p: i.precioUnit })), clientId, condiciones, validezDias })
+    if (prevDataRef.current && prevDataRef.current !== dataKey) triggerAutosave()
+    prevDataRef.current = dataKey
+  }, [items, clientId, condiciones, validezDias])
 
   async function handleEliminar() {
     const pid = dbIdRef.current || loadedPresupuestoId
@@ -273,18 +288,10 @@ export default function PresupuestoPage() {
     const doc = iframe.contentDocument || iframe.contentWindow?.document
     if (!doc) return
 
-    const techniqueLabel = (t: string) => ({ subli: 'Sublimación', dtf: 'DTF Textil', dtf_uv: 'DTF UV', vinyl: 'Vinilo Textil', vinyl_adhesivo: 'V. Autoadhesivo', serigrafia: 'Serigrafía' }[t] || '')
-
-    // Determine if any item has a real technique
-    const showTechCol = items.some(item => item.origen !== 'manual' && item.origen !== 'catalogo' && item.costoUnit > 0)
-
     const itemRows = items.map(item => {
-      const hasTechnique = item.origen !== 'manual' && item.origen !== 'catalogo' && item.costoUnit > 0
-      const techText = hasTechnique ? techniqueLabel(item.tecnica) : ''
       const breakdownText = item.variantBreakdown ? Object.entries(item.variantBreakdown as Record<string, number>).filter(([,v]) => v > 0).map(([k, v]) => `${k} ×${v}`).join(' · ') : ''
       return `
       <tr>
-        ${showTechCol ? `<td style="padding:10px 8px;font-size:12px;color:#333">${techText}</td>` : ''}
         <td style="padding:10px 8px"><div style="font-weight:500">${item.nombre}</div>${item.notas ? `<div style="font-size:11px;color:#999">${item.notas}</div>` : ''}${breakdownText ? `<div style="font-size:10px;color:#999;margin-top:2px">${breakdownText}</div>` : ''}</td>
         <td style="padding:10px 8px;text-align:center">${item.cantidad}</td>
         <td style="padding:10px 8px;text-align:right">${fmtCurrency(item.precioUnit)}</td>
@@ -338,7 +345,7 @@ export default function PresupuestoPage() {
       </div>
       ${clientHtml}
       <table style="margin-bottom:24px">
-        <thead><tr>${showTechCol ? '<th>Técnica</th>' : ''}<th>Descripción</th><th style="text-align:center">Cant.</th><th style="text-align:right">P. Unit.</th><th style="text-align:right">Subtotal</th></tr></thead>
+        <thead><tr><th>Descripción</th><th style="text-align:center">Cant.</th><th style="text-align:right">P. Unit.</th><th style="text-align:right">Subtotal</th></tr></thead>
         <tbody>${itemRows}</tbody>
       </table>
       <div style="display:flex;justify-content:flex-end;margin-bottom:32px">
@@ -658,14 +665,9 @@ export default function PresupuestoPage() {
             )}
             {!loadedPresupuestoId && !creatingNew && <span className="text-sm text-gray-400">{items.length} {items.length === 1 ? 'ítem' : 'ítems'}</span>}
             <div className="ml-auto flex items-center gap-2">
-              {saveStatus === 'saving' && <span className="text-xs text-gray-400 animate-pulse">Guardando...</span>}
-              {saveStatus === 'saved' && <span className="text-xs text-green-600">✓ Guardado</span>}
-              {saveStatus === 'error' && <span className="text-xs text-red-500">Error al guardar</span>}
-              {saveStatus === 'idle' && items.length > 0 && (
-                <button type="button" onClick={handleGuardar} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-[#6C5CE7] hover:bg-[#6C5CE7] hover:text-white border border-[#6C5CE7] transition-all">
-                  <Save size={12} /> Guardar
-                </button>
-              )}
+              {saveStatus === 'saving' && <span className="text-xs text-gray-400 animate-pulse flex items-center gap-1"><Loader2 size={11} className="animate-spin" /> Guardando...</span>}
+              {saveStatus === 'saved' && <span className="text-xs text-gray-400">✓ Guardado</span>}
+              {saveStatus === 'error' && <button type="button" onClick={handleGuardar} className="text-xs text-amber-600 hover:text-amber-800">⚠ Error al guardar · Reintentar</button>}
             </div>
           </div>
           {loadedPresupuestoId && (
@@ -882,17 +884,16 @@ export default function PresupuestoPage() {
                   ) : (
                     <div key={item.id} className="py-3 border-b border-gray-100 last:border-0">
                       <div className="flex items-center justify-between">
-                        {TECHNIQUE_LABELS[item.tecnica]
-                          ? <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: `${TECHNIQUE_COLORS[item.tecnica]}18`, color: TECHNIQUE_COLORS[item.tecnica] }}>{TECHNIQUE_LABELS[item.tecnica]}</span>
-                          : null}
-                        <div className="flex items-center gap-1">
-                          <span className="font-bold text-sm text-gray-800">{fmtCurrency(item.subtotal)}</span>
-                          <button onClick={() => startEdit(item)} className="w-6 h-6 rounded flex items-center justify-center text-gray-300 hover:text-purple-500 no-print"><Pencil size={11} /></button>
-                          <button onClick={() => { if (confirm('¿Eliminar este item?')) removeItem(item.id) }} className="w-6 h-6 rounded flex items-center justify-center text-gray-300 hover:text-red-500 no-print"><Trash2 size={12} /></button>
+                        <span className="font-bold text-sm text-gray-800">{fmtCurrency(item.subtotal)}</span>
+                        <div className="flex items-center gap-1 no-print">
+                          <button onClick={() => startEdit(item)} className="w-6 h-6 rounded flex items-center justify-center text-gray-300 hover:text-purple-500"><Pencil size={11} /></button>
+                          <button onClick={() => { if (confirm('¿Eliminar este item?')) removeItem(item.id) }} className="w-6 h-6 rounded flex items-center justify-center text-gray-300 hover:text-red-500"><Trash2 size={12} /></button>
                         </div>
                       </div>
                       <p className="font-medium text-sm text-gray-800 mt-1">{item.nombre}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">{item.notas ? `${item.notas} — ` : ''}Cant: {item.cantidad} × {fmtCurrency(item.precioUnit)}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        {[TECHNIQUE_LABELS[item.tecnica], item.notas].filter(Boolean).join(' · ')}{TECHNIQUE_LABELS[item.tecnica] || item.notas ? ' — ' : ''}Cant: {item.cantidad} × {fmtCurrency(item.precioUnit)}
+                      </p>
                       {getItemVariant(item) && breakdownOpen !== item.id && (() => {
                         const hasValues = item.variantBreakdown && Object.values(item.variantBreakdown).some(v => v > 0)
                         return hasValues ? (
@@ -945,7 +946,6 @@ export default function PresupuestoPage() {
                 <div className="px-8 py-5 hidden md:block">
                   <table className="w-full">
                     <thead><tr style={{ borderBottom: '2px solid #F3F4F6' }}>
-                      <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-400 pb-3">Técnica</th>
                       <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-400 pb-3">Descripción</th>
                       <th className="text-center text-xs font-bold uppercase tracking-wider text-gray-400 pb-3">Cant.</th>
                       <th className="text-right text-xs font-bold uppercase tracking-wider text-gray-400 pb-3">P. Unit.</th>
@@ -955,13 +955,7 @@ export default function PresupuestoPage() {
                     <tbody>
                       {items.map(item => editingItemId === item.id ? (
                         <tr key={item.id} style={{ borderBottom: '1px solid #F9FAFB' }}>
-                          <td className="py-3 pr-3 align-top">
-                            {TECHNIQUE_LABELS[item.tecnica]
-                              ? <span className="text-xs font-bold px-2 py-0.5 rounded-full whitespace-nowrap" style={{ background: `${TECHNIQUE_COLORS[item.tecnica]}18`, color: TECHNIQUE_COLORS[item.tecnica] }}>{TECHNIQUE_LABELS[item.tecnica]}</span>
-                              : null}
-                          </td>
                           <td className="py-3 pr-3 align-top"><input type="text" className="input-base text-sm" value={editForm.nombre} onChange={e => setEditForm({ ...editForm, nombre: e.target.value })} /></td>
-
                           <td className="py-3 align-top"><input type="number" className="input-base text-sm w-16 text-center" min={1} value={editForm.cantidad} onChange={e => setEditForm({ ...editForm, cantidad: Number(e.target.value) })} /></td>
                           <td className="py-3 align-top"><input type="number" className="input-base text-sm w-24 text-right" min={0} value={editForm.precioUnit} onChange={e => setEditForm({ ...editForm, precioUnit: Number(e.target.value) })} /></td>
                           <td className="py-3 text-right font-bold text-gray-800 align-top">{fmtCurrency(editForm.cantidad * editForm.precioUnit)}</td>
@@ -976,13 +970,13 @@ export default function PresupuestoPage() {
                         <React.Fragment key={item.id}>
                         <tr style={{ borderBottom: '1px solid #F9FAFB' }}>
                           <td className="py-3 pr-3 align-top">
-                            {TECHNIQUE_LABELS[item.tecnica]
-                              ? <span className="text-xs font-bold px-2 py-0.5 rounded-full whitespace-nowrap" style={{ background: `${TECHNIQUE_COLORS[item.tecnica]}18`, color: TECHNIQUE_COLORS[item.tecnica] }}>{TECHNIQUE_LABELS[item.tecnica]}</span>
-                              : null}
-                          </td>
-                          <td className="py-3 pr-3 align-top">
                             <p className="font-semibold text-gray-800 text-sm">{item.nombre}</p>
-                            {item.notas && <p className="text-[11px] text-gray-400 mt-0.5">{item.notas}</p>}
+                            {(TECHNIQUE_LABELS[item.tecnica] || item.notas || item.variantName) && (
+                              <p className="text-[11px] text-gray-400 mt-0.5 no-print">
+                                {[TECHNIQUE_LABELS[item.tecnica], item.variantName, item.notas].filter(Boolean).join(' · ')}
+                              </p>
+                            )}
+                            {item.notas && <p className="text-[11px] text-gray-400 mt-0.5 hidden print:block">{item.notas}</p>}
                             {getItemVariant(item) && breakdownOpen !== item.id && (() => {
                               const hasValues = item.variantBreakdown && Object.values(item.variantBreakdown).some(v => v > 0)
                               return hasValues ? (
@@ -1009,7 +1003,7 @@ export default function PresupuestoPage() {
                         </tr>
                         {breakdownOpen === item.id && item.variantName && (
                           <tr key={`${item.id}-breakdown`} style={{ borderBottom: '1px solid #F9FAFB' }}>
-                            <td colSpan={6} className="py-2 px-3">
+                            <td colSpan={5} className="py-2 px-3">
                               <div className="space-y-1.5 p-3 rounded-lg bg-gray-50">
                                 <div className="flex items-center justify-between mb-1">
                                   <span className="text-xs font-semibold text-gray-500">Desglose por {(getItemVariant(item)?.name || '').toLowerCase()}:</span>
