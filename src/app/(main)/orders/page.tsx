@@ -104,6 +104,20 @@ export default function OrdersPage() {
   useEffect(() => { load() }, [])
   useEffect(() => { if (typeof window !== 'undefined') localStorage.setItem('ov', view) }, [view])
 
+  function printIframeOrWindow(iframe: HTMLIFrameElement, doc: Document) {
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+    if (isMobile) {
+      const html = doc.documentElement.outerHTML
+      document.body.removeChild(iframe)
+      const w = window.open('', '_blank')
+      if (w) { w.document.open(); w.document.write(html); w.document.close(); setTimeout(() => w.print(), 500) }
+    } else {
+      iframe.contentWindow?.focus()
+      iframe.contentWindow?.print()
+      setTimeout(() => document.body.removeChild(iframe), 2000)
+    }
+  }
+
   function printOrder(order: Order) {
     const items = (order.items || []) as OrderItem[]
     const client = order.clients
@@ -117,6 +131,7 @@ export default function OrdersPage() {
     if (!doc) return
 
     const itemRows = items.map(i => {
+      const techLabel = TL[i.tecnica] || ''
       const breakdownHtml = i.variantBreakdown && Object.values(i.variantBreakdown as Record<string, number>).some(v => v > 0)
         ? `<tr><td colspan="4" style="padding:0 8px 8px">
             <div style="margin:4px 0 8px;padding:8px 12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px">
@@ -126,7 +141,7 @@ export default function OrdersPage() {
           </td></tr>` : ''
       return `
       <tr>
-        <td style="padding:8px">${i.nombre}${i.notas ? `<div style="font-size:11px;color:#999">${i.notas}</div>` : ''}</td>
+        <td style="padding:8px">${i.nombre}${techLabel ? `<div style="font-size:11px;color:#888">${techLabel}</div>` : ''}${i.notas ? `<div style="font-size:11px;color:#999">${i.notas}</div>` : ''}</td>
         <td style="padding:8px;text-align:center">${i.cantidad}</td>
         <td style="padding:8px;text-align:right">${fmtCurrency(i.precioUnit || 0)}</td>
         <td style="padding:8px;text-align:right;font-weight:600">${fmtCurrency(i.subtotal)}</td>
@@ -147,7 +162,7 @@ export default function OrdersPage() {
       <div class="section" style="display:flex;justify-content:space-between;align-items:flex-start">
         <div><div style="font-size:20px;font-weight:800">ORDEN DE TRABAJO</div>${tallerName ? `<div style="font-size:14px;color:#666;margin-top:2px">${tallerName}</div>` : ''}</div>
         <div style="text-align:right">
-          <div style="font-size:18px;font-weight:800">#${order.id.slice(0, 8)}</div>
+          <div style="font-size:18px;font-weight:800">#${order.id.slice(0, 6).toUpperCase()}</div>
           <div style="font-size:12px;color:#666">${new Date(order.created_at).toLocaleDateString('es-AR')}</div>
           <div style="font-size:12px;color:#666">Estado: ${SL[order.status] || order.status}</div>
         </div>
@@ -186,9 +201,7 @@ export default function OrdersPage() {
       <div style="text-align:center;font-size:11px;color:#ccc;margin-top:32px">Estamply · estamply.app</div>
     </body></html>`)
     doc.close()
-    iframe.contentWindow?.focus()
-    iframe.contentWindow?.print()
-    setTimeout(() => document.body.removeChild(iframe), 2000)
+    printIframeOrWindow(iframe, doc)
   }
 
   function printWorkshopSheet(order: Order) {
@@ -202,13 +215,19 @@ export default function OrdersPage() {
     if (!doc) return
 
     const itemRows = items.map(i => {
-      const breakdownHtml = i.variantBreakdown && Object.values(i.variantBreakdown).some(v => v > 0)
-        ? `<div style="margin:6px 0;padding:8px;background:#f3f4f6;border-radius:4px;font-size:13px">
-            <strong>${i.variantName || 'Variantes'}:</strong><br/>
-            ${Object.entries(i.variantBreakdown).filter(([,v]) => v > 0).map(([k,v]) => `${k}: <strong>${v}</strong>`).join(' &nbsp;·&nbsp; ')}
+      const techLabel = TL[i.tecnica] || ''
+      const hasBreakdown = i.variantBreakdown && Object.values(i.variantBreakdown).some(v => v > 0)
+      const breakdownCheckboxes = hasBreakdown
+        ? `<div style="margin:8px 0 4px;display:flex;flex-wrap:wrap;gap:12px;font-size:13px">
+            ${Object.entries(i.variantBreakdown!).filter(([,v]) => v > 0).map(([k,v]) => `<div><span class="check"></span>${k} ×${v}</div>`).join('')}
           </div>` : ''
       return `<tr>
-        <td style="padding:10px 8px;font-weight:500">${i.nombre}${i.notas ? `<div style="font-size:11px;color:#666;margin-top:2px">📝 ${i.notas}</div>` : ''}${breakdownHtml}</td>
+        <td style="padding:10px 8px;font-weight:500">
+          ${i.nombre}
+          ${techLabel ? `<div style="font-size:11px;color:#666;margin-top:2px">${techLabel}</div>` : ''}
+          ${i.notas ? `<div style="font-size:11px;color:#888;margin-top:2px">📝 ${i.notas}</div>` : ''}
+          ${breakdownCheckboxes}
+        </td>
         <td style="padding:10px 8px;text-align:center;font-weight:600;font-size:16px">${i.cantidad}</td>
         <td style="padding:10px 8px"><div style="width:40px;height:40px;border:1px solid #ccc;border-radius:4px"></div></td>
       </tr>`
@@ -232,7 +251,7 @@ export default function OrdersPage() {
           ${tallerName ? `<div style="font-size:14px;color:#666">${tallerName}</div>` : ''}
         </div>
         <div style="text-align:right">
-          <div style="font-size:20px;font-weight:800">#${order.id.slice(0, 8)}</div>
+          <div style="font-size:20px;font-weight:800">#${order.id.slice(0, 6).toUpperCase()}</div>
           <div style="font-size:12px;color:#666">${new Date(order.created_at).toLocaleDateString('es-AR')}</div>
           <div style="font-size:13px;font-weight:600;color:#333">Estado: ${SL[order.status] || order.status}</div>
         </div>
@@ -286,9 +305,7 @@ export default function OrdersPage() {
       <div style="text-align:center;font-size:10px;color:#ccc;margin-top:32px">Estamply · estamply.app</div>
     </body></html>`)
     doc.close()
-    iframe.contentWindow?.focus()
-    iframe.contentWindow?.print()
-    setTimeout(() => document.body.removeChild(iframe), 2000)
+    printIframeOrWindow(iframe, doc)
   }
 
   async function setStatus(id: string, s: string) { await supabase.from('orders').update({ status: s }).eq('id', id); load() }
