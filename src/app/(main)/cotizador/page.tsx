@@ -539,8 +539,8 @@ export default function CotizadorPage() {
                   </div></div>
               )}
 
-              {/* Vinyl per-color material + dimensions + per-color nesting */}
-              {isVinyl && Array.from({ length: engine.numColors }).map((_, i) => {
+              {/* Vinyl per-color material + dimensions + per-color nesting (only in propia mode) */}
+              {isVinyl && cotizadorDtfMode !== 'tercerizado' && Array.from({ length: engine.numColors }).map((_, i) => {
                 const sel = engine.vinylSelections[i] ?? { materialIdx: 0, colorIdx: 0, ancho: 10, alto: 10 }
                 const variantId = `${sel.materialIdx}-${sel.colorIdx}`
                 const vn = result?.vinylNesting?.[i]

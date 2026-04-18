@@ -22,7 +22,7 @@ interface Equipment { id: string; name: string; type: string }
 
 const TIPO_LABELS: Record<InsumoTipo, string> = {
   papel: 'Papel', tinta: 'Tinta', film: 'Film', polvo: 'Polvo', vinilo: 'Vinilo',
-  tinta_serigrafica: 'Tinta serigráfica', servicio_impresion: 'Servicio impresión', emulsion: 'Emulsión', otro: 'Otro',
+  tinta_serigrafica: 'Tinta serigráfica', servicio_impresion: 'Servicio tercerizado', emulsion: 'Emulsión', otro: 'Otro',
 }
 const TIPO_COLORS: Record<InsumoTipo, string> = {
   papel: '#6C5CE7', tinta: '#00B894', film: '#E17055', polvo: '#FDCB6E', vinilo: '#E84393',

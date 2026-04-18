@@ -406,9 +406,31 @@ function computeDTF(input: ComputeInput, config: DTFConfig | DTFUVConfig): CostR
 // ── Vinilo ──
 
 function computeVinyl(input: ComputeInput, config: VinylConfig | import('@/features/taller/types').VinylAdhesivoConfig): CostResult {
-  const { product, equipment, insumos, quantity, margin, mo, otrosGastos, setupMin, discountTiers, vinylSelections, techniqueEquipmentIds } = input
+  const { product, equipment, insumos, quantity, numColors, margin, mo, otrosGastos, setupMin, discountTiers, vinylSelections, techniqueEquipmentIds } = input
   const desperdicio = input.overrideMerma ?? config.desperdicio_pelado_pct ?? 15
   const isAdhesivo = config.tipo === 'vinyl_adhesivo'
+  const costoProducto = Number(product.base_cost)
+
+  // Tercerizado mode — single service line, no per-color breakdown
+  if (config.modo === 'tercerizado') {
+    const servicioIns = findInsumo(insumos, 'servicio_impresion', 'otro')
+    const sc = servicioIns ? insCfg(servicioIns) : null
+    const costoTerc = sc ? ((sc.precio_metro as number) || (sc.precio as number) || 0) : 0
+    const amortPress = isAdhesivo ? 0 : (input.overrideAmortPress ?? getPressAmort(product, equipment, 'vinyl'))
+    const costoDesp = (costoProducto + costoTerc + amortPress) * (desperdicio / 100)
+    const lines: { label: string; value: number }[] = [
+      { label: 'Producto base', value: costoProducto },
+      { label: `Corte tercerizado (${numColors} color${numColors > 1 ? 'es' : ''})`, value: costoTerc },
+    ]
+    if (amortPress > 0) lines.push({ label: 'Amort. plancha', value: amortPress })
+    if (costoDesp > 0) lines.push({ label: `Desperdicio (${desperdicio}%)`, value: costoDesp })
+    if (mo > 0) lines.push({ label: 'Mano de obra', value: mo })
+    if (otrosGastos > 0) lines.push({ label: 'Otros gastos', value: otrosGastos / Math.max(quantity, 1) })
+    const costoTotal = costoProducto + costoTerc + amortPress + costoDesp + mo + otrosGastos / Math.max(quantity, 1)
+    return buildResult(lines, costoTotal, margin, quantity, discountTiers, setupMin + (((product.time_vinyl as number) || 0) / 60) * quantity, undefined, input.pricingMode)
+  }
+
+  // Producción propia — per-color vinyl breakdown
   const vinylInsumos = insumos.filter(i => i.tipo === 'vinilo')
   const sels = vinylSelections ?? []
 
@@ -424,7 +446,6 @@ function computeVinyl(input: ComputeInput, config: VinylConfig | import('@/featu
   })
 
   const costoViniloRaw = vinylNesting.reduce((s, n) => s + n.costoColor, 0) / Math.max(quantity, 1)
-  const costoProducto = Number(product.base_cost)
   const amortPlotter = input.overrideAmortPrint ?? getAmort(equipment, techniqueEquipmentIds)
   const amortPress = isAdhesivo ? 0 : (input.overrideAmortPress ?? getPressAmort(product, equipment, 'vinyl'))
   const costoDesp = (costoProducto + costoViniloRaw + amortPlotter + amortPress) * (desperdicio / 100)

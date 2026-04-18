@@ -7,7 +7,7 @@ import type { Insumo, InsumoTipo, InsumoConfig } from '@/features/taller/types'
 
 const TIPO_LABELS: Record<InsumoTipo, string> = {
   papel: 'Papel', tinta: 'Tinta', film: 'Film', polvo: 'Polvo', vinilo: 'Vinilo',
-  tinta_serigrafica: 'Tinta serigráfica', servicio_impresion: 'Servicio impresión', emulsion: 'Emulsión', otro: 'Otro',
+  tinta_serigrafica: 'Tinta serigráfica', servicio_impresion: 'Servicio tercerizado', emulsion: 'Emulsión', otro: 'Otro',
 }
 const TIPO_COLORS: Record<InsumoTipo, string> = {
   papel: '#6C5CE7', tinta: '#00B894', film: '#E17055', polvo: '#FDCB6E', vinilo: '#E84393',
@@ -20,7 +20,7 @@ const TECNICA_FILTER_TABS = [
   { id: 'vinyl', label: 'Vinilo', color: '#E84393' },
   { id: 'serigrafia', label: 'Serigrafía', color: '#FDCB6E' },
 ]
-const TECNICA_OPTS = [['compartido', 'Compartido'], ['subli', 'Sublimación'], ['dtf', 'DTF Textil'], ['dtf_uv', 'DTF UV'], ['vinyl', 'Vinilo'], ['serigrafia', 'Serigrafía']]
+const TECNICA_OPTS = [['compartido', 'Compartido'], ['subli', 'Sublimación'], ['dtf', 'DTF Textil'], ['dtf_uv', 'DTF UV'], ['vinyl', 'Vinilo Textil'], ['vinyl_adhesivo', 'Vinilo Autoadhesivo'], ['serigrafia', 'Serigrafía']]
 
 // Pre-suggested técnica for each tipo
 const TIPO_TECNICA_DEFAULT: Partial<Record<InsumoTipo, string>> = {

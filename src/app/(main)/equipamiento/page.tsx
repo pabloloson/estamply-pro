@@ -49,7 +49,7 @@ const INSUMOS_POR_TIPO: Record<string, InsumoSlot[]> = {
   plotter_impresion: [{ key: 'assigned_paper_id', label: 'Insumo principal', hint: 'El papel, film o material que usa este plotter para imprimir.' }, { key: 'assigned_ink_id', label: 'Tinta asignada' }],
   plotter_combo: [{ key: 'assigned_paper_id', label: 'Insumo principal', hint: 'El papel, film o material que usa este plotter.' }, { key: 'assigned_ink_id', label: 'Tinta asignada' }],
 }
-const TIPO_LABEL_MAP: Record<string, string> = { papel: 'Papel', tinta: 'Tinta', film: 'Film', polvo: 'Polvo', vinilo: 'Vinilo', tinta_serigrafica: 'Tinta serig.', servicio_impresion: 'Serv. impr.', emulsion: 'Emulsión', otro: 'Otro' }
+const TIPO_LABEL_MAP: Record<string, string> = { papel: 'Papel', tinta: 'Tinta', film: 'Film', polvo: 'Polvo', vinilo: 'Vinilo', tinta_serigrafica: 'Tinta serig.', servicio_impresion: 'Serv. terc.', emulsion: 'Emulsión', otro: 'Otro' }
 
 const newEquip = (): Partial<Equipment> => ({ clasificacion: 'plancha', type: 'press_flat', cost: 0, lifespan_uses: 10000, tecnicas_slugs: [] })
 
