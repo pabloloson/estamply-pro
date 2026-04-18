@@ -156,6 +156,9 @@ export default function CatalogoPage() {
     return price > 0 && p.unit_cost > 0 ? Math.round(((price - p.unit_cost) / price) * 100) : 0
   }
 
+  const filterOptions: [string, string][] = [['all', t('allProducts')], ['featured', 'Destacados'], ['stock', t('withStock')], ['ondemand', t('onDemand')], ['visible', t('visible')], ['hidden', t('hidden')]]
+  const activeFilterCount = (catFilter !== 'all' ? 1 : 0) + (catCategoryFilter ? 1 : 0)
+
   const filtered = catalogProducts.filter(p => {
     // Status filter
     if (catFilter === 'stock' && !(p.manage_stock && p.current_stock > 0)) return false
@@ -182,21 +185,24 @@ export default function CatalogoPage() {
 
   return (
     <div onClick={() => stockPopover && setStockPopover(null)}>
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-        <div><h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
-          <p className="text-gray-500 text-sm mt-1">{t('subtitle')}</p></div>
+      {/* Header — compact on mobile */}
+      <div className="flex items-center justify-between gap-3 mb-3">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
+          <p className="text-gray-500 text-sm mt-1 hidden md:block">{t('subtitle')}</p>
+        </div>
         <div className="flex gap-2">
           <button onClick={() => setShowCats(true)} className="flex items-center gap-1.5 whitespace-nowrap text-xs sm:text-sm px-3 py-1.5 rounded-lg font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50">
-            <FolderOpen size={14} /> {t('categories')}
+            <FolderOpen size={14} /> <span className="hidden sm:inline">{t('categories')}</span>
           </button>
           <button onClick={() => setCatModal({ cost_mode: 'manual', unit_cost: 0, selling_price: 0, manage_stock: false, current_stock: 0, min_stock: 0, visible_in_catalog: true, photos: [] })}
-            className="flex items-center gap-1.5 whitespace-nowrap text-xs sm:text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={14} /> {t('addProduct')}</button>
+            className="flex items-center gap-1.5 whitespace-nowrap text-xs sm:text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={14} /> <span className="hidden sm:inline">{t('addProduct')}</span></button>
         </div>
       </div>
 
-      {/* Filters — desktop inline, mobile collapsible */}
+      {/* Desktop filters — inline chips */}
       <div className="hidden md:flex gap-1.5 mb-3 flex-wrap items-center">
-        {[['all', t('allProducts')], ['featured', 'Destacados'], ['stock', t('withStock')], ['ondemand', t('onDemand')], ['visible', t('visible')], ['hidden', t('hidden')]].map(([id, label]) => (
+        {filterOptions.map(([id, label]) => (
           <button key={id} onClick={() => setCatFilter(id)}
             className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${catFilter === id ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-500'}`}>{label}</button>
         ))}
@@ -210,58 +216,83 @@ export default function CatalogoPage() {
         )}
       </div>
 
-      {/* Mobile filters */}
-      <div className="md:hidden mb-3 space-y-2">
-        <div className="flex gap-2 items-center">
-          <button onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${(catFilter !== 'all' || catCategoryFilter) ? 'border-purple-300 text-purple-600 bg-purple-50' : 'border-gray-200 text-gray-500'}`}>
-            Filtros {(catFilter !== 'all' || catCategoryFilter) ? '·' : ''}
-          </button>
+      {/* Mobile: Filtros button + Search in one row */}
+      <div className="md:hidden flex gap-2 mb-2">
+        <button onClick={() => setMobileFiltersOpen(true)}
+          className={`flex-shrink-0 px-3 py-2 rounded-lg text-xs font-semibold border transition-all flex items-center gap-1.5 ${activeFilterCount > 0 ? 'border-purple-300 text-purple-600 bg-purple-50' : 'border-gray-200 text-gray-500'}`}>
+          Filtros{activeFilterCount > 0 && <span className="w-4 h-4 rounded-full bg-purple-600 text-white text-[9px] flex items-center justify-center">{activeFilterCount}</span>}
+        </button>
+        <div className="relative flex-1">
+          <input type="text" value={search} onChange={e => setSearch(e.target.value)}
+            className="input-base text-xs !py-2 !pl-8 w-full" placeholder="Buscar..." />
+          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-[10px]">🔍</span>
+        </div>
+      </div>
+      {/* Mobile active filter chips */}
+      {activeFilterCount > 0 && (
+        <div className="md:hidden flex gap-1.5 flex-wrap mb-2">
           {catFilter !== 'all' && (
             <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-purple-100 text-purple-600 flex items-center gap-1">
-              {[['all', t('allProducts')], ['featured', 'Destacados'], ['stock', t('withStock')], ['ondemand', t('onDemand')], ['visible', t('visible')], ['hidden', t('hidden')]].find(([id]) => id === catFilter)?.[1]}
-              <button onClick={() => setCatFilter('all')} className="hover:text-purple-800">✕</button>
+              {filterOptions.find(([id]) => id === catFilter)?.[1]}
+              <button onClick={() => setCatFilter('all')}>✕</button>
             </span>
           )}
           {catCategoryFilter && (
             <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-purple-100 text-purple-600 flex items-center gap-1">
               {catCategoryFilter === 'none' ? 'Sin categoría' : categories.find(c => c.id === catCategoryFilter)?.name}
-              <button onClick={() => setCatCategoryFilter('')} className="hover:text-purple-800">✕</button>
+              <button onClick={() => setCatCategoryFilter('')}>✕</button>
             </span>
           )}
         </div>
-        {mobileFiltersOpen && (
-          <div className="p-3 rounded-lg bg-gray-50 border border-gray-200 space-y-3">
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Estado</p>
-              <div className="flex gap-1.5 flex-wrap">
-                {[['all', t('allProducts')], ['featured', 'Destacados'], ['stock', t('withStock')], ['ondemand', t('onDemand')], ['visible', t('visible')], ['hidden', t('hidden')]].map(([id, label]) => (
-                  <button key={id} onClick={() => setCatFilter(id)}
-                    className={`px-2.5 py-1 rounded-full text-[10px] font-semibold ${catFilter === id ? 'bg-purple-600 text-white' : 'bg-white text-gray-500 border border-gray-200'}`}>{label}</button>
-                ))}
-              </div>
-            </div>
-            {categories.length > 0 && <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Categoría</p>
-              <div className="flex gap-1.5 flex-wrap">
-                <button onClick={() => setCatCategoryFilter('')} className={`px-2.5 py-1 rounded-full text-[10px] font-semibold ${!catCategoryFilter ? 'bg-purple-600 text-white' : 'bg-white text-gray-500 border border-gray-200'}`}>Todas</button>
-                {categories.map(c => (
-                  <button key={c.id} onClick={() => setCatCategoryFilter(c.id)} className={`px-2.5 py-1 rounded-full text-[10px] font-semibold ${catCategoryFilter === c.id ? 'bg-purple-600 text-white' : 'bg-white text-gray-500 border border-gray-200'}`}>{c.name}</button>
-                ))}
-                <button onClick={() => setCatCategoryFilter('none')} className={`px-2.5 py-1 rounded-full text-[10px] font-semibold ${catCategoryFilter === 'none' ? 'bg-purple-600 text-white' : 'bg-white text-gray-500 border border-gray-200'}`}>Sin categoría</button>
-              </div>
-            </div>}
-            <button onClick={() => setMobileFiltersOpen(false)} className="w-full py-1.5 rounded-lg text-xs font-semibold text-white" style={{ background: '#6C5CE7' }}>Aplicar</button>
-          </div>
-        )}
-      </div>
+      )}
 
-      {/* Search — full width, below filters */}
-      <div className="relative mb-4">
+      {/* Desktop search — full width below filters */}
+      <div className="relative mb-4 hidden md:block">
         <input type="text" value={search} onChange={e => setSearch(e.target.value)}
           className="input-base text-sm !pl-9" placeholder="Buscar por nombre, categoría o código..." />
         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">🔍</span>
       </div>
+
+      {/* Mobile bottom sheet for filters */}
+      {mobileFiltersOpen && (
+        <div className="fixed inset-0 z-50 md:hidden" onClick={() => setMobileFiltersOpen(false)}>
+          <div className="absolute inset-0 bg-black/30" />
+          <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl shadow-2xl p-5 pb-8 max-h-[60vh] overflow-y-auto"
+            onClick={e => e.stopPropagation()}
+            style={{ animation: 'slideUp 200ms ease-out' }}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-gray-900">Filtros</h3>
+              <button onClick={() => setMobileFiltersOpen(false)} className="p-1.5 rounded-lg hover:bg-gray-100"><X size={16} /></button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">Estado</p>
+                <div className="flex gap-1.5 flex-wrap">
+                  {filterOptions.map(([id, label]) => (
+                    <button key={id} onClick={() => setCatFilter(id)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-semibold ${catFilter === id ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-500'}`}>{label}</button>
+                  ))}
+                </div>
+              </div>
+              {categories.length > 0 && <div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">Categoría</p>
+                <div className="flex gap-1.5 flex-wrap">
+                  <button onClick={() => setCatCategoryFilter('')} className={`px-3 py-1.5 rounded-full text-xs font-semibold ${!catCategoryFilter ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-500'}`}>Todas</button>
+                  {categories.map(c => (
+                    <button key={c.id} onClick={() => setCatCategoryFilter(c.id)} className={`px-3 py-1.5 rounded-full text-xs font-semibold ${catCategoryFilter === c.id ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-500'}`}>{c.name}</button>
+                  ))}
+                  <button onClick={() => setCatCategoryFilter('none')} className={`px-3 py-1.5 rounded-full text-xs font-semibold ${catCategoryFilter === 'none' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-500'}`}>Sin categoría</button>
+                </div>
+              </div>}
+            </div>
+            <button onClick={() => setMobileFiltersOpen(false)} className="w-full mt-5 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: '#6C5CE7' }}>Aplicar</button>
+            {activeFilterCount > 0 && (
+              <button onClick={() => { setCatFilter('all'); setCatCategoryFilter(''); setMobileFiltersOpen(false) }}
+                className="w-full mt-2 text-xs text-gray-400 hover:text-gray-600 text-center">Limpiar filtros</button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Mobile cards */}
       <div className="md:hidden space-y-2">
