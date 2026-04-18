@@ -166,3 +166,51 @@ body {
   border-top: 2px dashed #E5E7EB;
   margin: 16px 0;
 }
+
+/* ── Print styles ── */
+@media print {
+  /* Hide everything that's not the document */
+  .no-print,
+  aside,
+  nav { display: none !important; }
+
+  /* Hide mobile header bar (fixed top bar with hamburger) */
+  .lg\:hidden.fixed { display: none !important; }
+
+  /* Reset page background and padding */
+  body { background: white !important; }
+  main { padding: 0 !important; margin: 0 !important; }
+
+  /* Remove sidebar gap — full-width content */
+  .flex.min-h-screen {
+    display: block !important;
+  }
+  .flex.min-h-screen > .flex-1 {
+    padding: 0 !important;
+  }
+
+  /* Mobile top padding (for fixed header) not needed in print */
+  .pt-20 { padding-top: 0 !important; }
+
+  /* Make document full-width, remove decorative styles */
+  .print-page {
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  /* Ensure flex layout inside document doesn't split to columns */
+  .flex-col.lg\:flex-row { flex-direction: column !important; }
+
+  /* Hide the action sidebar panel */
+  .lg\:w-72 { display: none !important; }
+
+  /* Page settings */
+  @page {
+    margin: 10mm;
+    size: A4;
+  }
+}
