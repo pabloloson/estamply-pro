@@ -45,6 +45,7 @@ export default function CatalogoPage() {
   const [catFilter, setCatFilter] = useState('all')
   const [catCategoryFilter, setCatCategoryFilter] = useState('')
   const [search, setSearch] = useState('')
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
   const [uploading, setUploading] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -193,27 +194,73 @@ export default function CatalogoPage() {
         </div>
       </div>
 
-      {/* Filters + Search */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
-        <div className="flex gap-1.5 flex-wrap flex-1">
-          {[['all', t('allProducts')], ['featured', 'Destacados'], ['stock', t('withStock')], ['ondemand', t('onDemand')], ['visible', t('visible')], ['hidden', t('hidden')]].map(([id, label]) => (
-            <button key={id} onClick={() => setCatFilter(id)}
-              className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${catFilter === id ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-500'}`}>{label}</button>
-          ))}
-          {categories.length > 0 && (
-            <select value={catCategoryFilter} onChange={e => setCatCategoryFilter(e.target.value)}
-              className="text-xs font-semibold rounded-full px-3 py-1 bg-gray-100 text-gray-500 border-none outline-none cursor-pointer">
-              <option value="">Todas las categorías</option>
-              {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              <option value="none">Sin categoría</option>
-            </select>
+      {/* Filters — desktop inline, mobile collapsible */}
+      <div className="hidden md:flex gap-1.5 mb-3 flex-wrap items-center">
+        {[['all', t('allProducts')], ['featured', 'Destacados'], ['stock', t('withStock')], ['ondemand', t('onDemand')], ['visible', t('visible')], ['hidden', t('hidden')]].map(([id, label]) => (
+          <button key={id} onClick={() => setCatFilter(id)}
+            className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${catFilter === id ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-500'}`}>{label}</button>
+        ))}
+        {categories.length > 0 && (
+          <select value={catCategoryFilter} onChange={e => setCatCategoryFilter(e.target.value)}
+            className="text-xs font-semibold rounded-full px-3 py-1 bg-gray-100 text-gray-500 border-none outline-none cursor-pointer">
+            <option value="">Todas las categorías</option>
+            {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            <option value="none">Sin categoría</option>
+          </select>
+        )}
+      </div>
+
+      {/* Mobile filters */}
+      <div className="md:hidden mb-3 space-y-2">
+        <div className="flex gap-2 items-center">
+          <button onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${(catFilter !== 'all' || catCategoryFilter) ? 'border-purple-300 text-purple-600 bg-purple-50' : 'border-gray-200 text-gray-500'}`}>
+            Filtros {(catFilter !== 'all' || catCategoryFilter) ? '·' : ''}
+          </button>
+          {catFilter !== 'all' && (
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-purple-100 text-purple-600 flex items-center gap-1">
+              {[['all', t('allProducts')], ['featured', 'Destacados'], ['stock', t('withStock')], ['ondemand', t('onDemand')], ['visible', t('visible')], ['hidden', t('hidden')]].find(([id]) => id === catFilter)?.[1]}
+              <button onClick={() => setCatFilter('all')} className="hover:text-purple-800">✕</button>
+            </span>
+          )}
+          {catCategoryFilter && (
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-purple-100 text-purple-600 flex items-center gap-1">
+              {catCategoryFilter === 'none' ? 'Sin categoría' : categories.find(c => c.id === catCategoryFilter)?.name}
+              <button onClick={() => setCatCategoryFilter('')} className="hover:text-purple-800">✕</button>
+            </span>
           )}
         </div>
-        <div className="relative w-full sm:w-56">
-          <input type="text" value={search} onChange={e => setSearch(e.target.value)}
-            className="input-base !py-1.5 text-sm !pl-8" placeholder="Buscar producto..." />
-          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs">🔍</span>
-        </div>
+        {mobileFiltersOpen && (
+          <div className="p-3 rounded-lg bg-gray-50 border border-gray-200 space-y-3">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Estado</p>
+              <div className="flex gap-1.5 flex-wrap">
+                {[['all', t('allProducts')], ['featured', 'Destacados'], ['stock', t('withStock')], ['ondemand', t('onDemand')], ['visible', t('visible')], ['hidden', t('hidden')]].map(([id, label]) => (
+                  <button key={id} onClick={() => setCatFilter(id)}
+                    className={`px-2.5 py-1 rounded-full text-[10px] font-semibold ${catFilter === id ? 'bg-purple-600 text-white' : 'bg-white text-gray-500 border border-gray-200'}`}>{label}</button>
+                ))}
+              </div>
+            </div>
+            {categories.length > 0 && <div>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Categoría</p>
+              <div className="flex gap-1.5 flex-wrap">
+                <button onClick={() => setCatCategoryFilter('')} className={`px-2.5 py-1 rounded-full text-[10px] font-semibold ${!catCategoryFilter ? 'bg-purple-600 text-white' : 'bg-white text-gray-500 border border-gray-200'}`}>Todas</button>
+                {categories.map(c => (
+                  <button key={c.id} onClick={() => setCatCategoryFilter(c.id)} className={`px-2.5 py-1 rounded-full text-[10px] font-semibold ${catCategoryFilter === c.id ? 'bg-purple-600 text-white' : 'bg-white text-gray-500 border border-gray-200'}`}>{c.name}</button>
+                ))}
+                <button onClick={() => setCatCategoryFilter('none')} className={`px-2.5 py-1 rounded-full text-[10px] font-semibold ${catCategoryFilter === 'none' ? 'bg-purple-600 text-white' : 'bg-white text-gray-500 border border-gray-200'}`}>Sin categoría</button>
+              </div>
+            </div>}
+            <button onClick={() => setMobileFiltersOpen(false)} className="w-full py-1.5 rounded-lg text-xs font-semibold text-white" style={{ background: '#6C5CE7' }}>Aplicar</button>
+          </div>
+        )}
+      </div>
+
+      {/* Search — full width, below filters */}
+      <div className="relative mb-4">
+        <input type="text" value={search} onChange={e => setSearch(e.target.value)}
+          className="input-base text-sm !pl-9" placeholder="Buscar por nombre, categoría o código..." />
+        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">🔍</span>
       </div>
 
       {/* Mobile cards */}
@@ -351,6 +398,7 @@ export default function CatalogoPage() {
                     <button onClick={e => { e.stopPropagation(); toggleFeatured(p) }} className="p-1.5 rounded-lg hover:bg-amber-50" title={p.featured ? 'Quitar destacado' : 'Destacar'}>
                       <Star size={14} className={p.featured ? 'text-amber-400 fill-amber-400' : 'text-gray-300'} />
                     </button>
+                    <button onClick={e => e.stopPropagation()} className="p-1.5 rounded-lg hover:bg-gray-100"><Pencil size={14} className="text-gray-400" /></button>
                     <button onClick={e => { e.stopPropagation(); deleteCatalogProduct(p.id) }} className="p-1.5 rounded-lg hover:bg-red-50"><Trash2 size={14} className="text-red-400" /></button>
                   </div></td>
                 </tr>
