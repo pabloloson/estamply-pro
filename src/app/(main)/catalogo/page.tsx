@@ -479,21 +479,31 @@ export default function CatalogoPage() {
                   {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select></div>
 
-              {/* Cost & Price */}
-              <div className="border-t border-gray-100 pt-4">
-                <div className={`grid gap-3 ${showCosts ? 'grid-cols-3' : 'grid-cols-2'}`}>
+              {/* Cost & Price — responsive: 2 rows on mobile, 1 row on desktop */}
+              <div className="border-t border-gray-100 pt-4 space-y-3">
+                <div className={`grid gap-3 grid-cols-2 ${showCosts ? 'md:grid-cols-3' : ''}`}>
                   <div><label className="block text-sm font-medium text-gray-700 mb-1">{t('salePrice')} *</label>
                     <NumericInput className={`input-base ${priceError ? '!border-red-400' : ''}`} value={catModal.selling_price || 0} onChange={v => { setCatModal({ ...catModal, selling_price: v }); if (v > 0) setPriceError('') }} />
-                    {priceError ? <p className="text-[10px] text-red-500 mt-0.5">{priceError}</p> : <p className="text-[10px] text-gray-400 mt-0.5">Precio de venta para tus clientes.</p>}</div>
-                  <div><label className="block text-sm font-medium text-gray-700 mb-1">Precio promocional ($)</label>
-                    <NumericInput className="input-base" value={catModal.precio_anterior || 0} onChange={v => setCatModal({ ...catModal, precio_anterior: v || null })} />
-                    <p className="text-[10px] text-gray-400 mt-0.5">Si lo completás, aparece como oferta.</p></div>
+                    {priceError && <p className="text-[10px] text-red-500 mt-0.5">{priceError}</p>}</div>
                   {showCosts && <div><label className="block text-sm font-medium text-gray-700 mb-1">{t('unitCost')}</label>
-                    <NumericInput className="input-base" value={catModal.unit_cost || 0} onChange={v => setCatModal({ ...catModal, unit_cost: v })} />
-                    <p className="text-[10px] text-gray-400 mt-0.5">Opcional. Para calcular margen.</p></div>}
+                    <NumericInput className="input-base" value={catModal.unit_cost || 0} onChange={v => setCatModal({ ...catModal, unit_cost: v })} /></div>}
+                  <div className={showCosts ? 'hidden md:block' : ''}><label className="block text-sm font-medium text-gray-700 mb-1">Precio promo ($)</label>
+                    <NumericInput className="input-base" value={catModal.precio_anterior || 0} onChange={v => setCatModal({ ...catModal, precio_anterior: v || null })} /></div>
                 </div>
-                {showCosts && catMargin > 0 && <p className={`text-xs font-medium mt-1.5 ${marginColor(catMargin)}`}>Margen: {catMargin}%</p>}
-                {(catModal.precio_anterior || 0) > (catModal.selling_price || 0) && <p className="text-xs text-red-500 mt-0.5">-{Math.round((1 - (catModal.selling_price || 0) / (catModal.precio_anterior || 1)) * 100)}% {t('discount')}</p>}
+                {showCosts && catMargin > 0 && (
+                  <div className="flex gap-3 flex-wrap">
+                    <p className={`text-xs font-medium ${marginColor(catMargin)}`}>Margen: {catMargin}%</p>
+                    {(catModal.precio_anterior || 0) > 0 && (catModal.selling_price || 0) > 0 && (catModal.unit_cost || 0) > 0 && (() => {
+                      const promoMargin = Math.round(((catModal.selling_price! - catModal.unit_cost!) / catModal.selling_price!) * 100)
+                      return catModal.precio_anterior! > catModal.selling_price! ? <p className="text-xs font-medium text-orange-500">Margen promo: {promoMargin}%</p> : null
+                    })()}
+                  </div>
+                )}
+                {/* Promo field on mobile — shown below margin when showCosts hides it from grid */}
+                {showCosts && <div className="md:hidden"><label className="block text-sm font-medium text-gray-700 mb-1">Precio promo ($)</label>
+                  <NumericInput className="input-base" value={catModal.precio_anterior || 0} onChange={v => setCatModal({ ...catModal, precio_anterior: v || null })} />
+                  <p className="text-[10px] text-gray-400 mt-0.5">Si lo completás, aparece como oferta.</p></div>}
+                {(catModal.precio_anterior || 0) > (catModal.selling_price || 0) && <p className="text-xs text-red-500">-{Math.round((1 - (catModal.selling_price || 0) / (catModal.precio_anterior || 1)) * 100)}% {t('discount')}</p>}
               </div>
 
               {/* Variants */}
