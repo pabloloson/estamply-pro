@@ -123,8 +123,14 @@ function applyRounding(value: number, mode: string): number {
   }
 }
 
-function getAmort(equipment: Array<{ id: string; cost: number; lifespan_uses: number }>, ids: string[]) {
-  return ids.reduce((sum, id) => { const eq = equipment.find(e => e.id === id); return sum + (eq ? eq.cost / eq.lifespan_uses : 0) }, 0)
+function getAmort(equipment: Array<{ id: string; type?: string; clasificacion?: string; cost: number; lifespan_uses: number }>, ids: string[]) {
+  // Only sum printers/plotters — presses are handled separately by getPressAmort
+  return ids.reduce((sum, id) => {
+    const eq = equipment.find(e => e.id === id)
+    if (!eq) return sum
+    const isPrinterOrPlotter = (eq.type || '').startsWith('printer') || (eq.type || '').startsWith('plotter') || eq.clasificacion === 'impresora' || eq.clasificacion === 'plotter'
+    return isPrinterOrPlotter ? sum + (eq.cost / eq.lifespan_uses) : sum
+  }, 0)
 }
 
 function getPressAmort(product: ComputeInput['product'], equipment: ComputeInput['equipment'], slug: string) {

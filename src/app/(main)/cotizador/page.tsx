@@ -156,9 +156,10 @@ export default function CotizadorPage() {
   // Filter equipment by technique compatibility
   const printers = equipment.filter((e: Record<string, unknown>) => {
     const t = e.type as string || ''
-    if (!t.startsWith('printer') && t !== 'plotter') return false
+    const cl = e.clasificacion as string || ''
+    if (!t.startsWith('printer') && !t.startsWith('plotter') && cl !== 'impresora' && cl !== 'plotter') return false
     const slugs = (e.tecnicas_slugs as string[]) || []
-    return slugs.length === 0 || slugs.includes(resolvedSlug) // show if no techniques set (legacy) or matches
+    return slugs.length === 0 || slugs.includes(resolvedSlug)
   })
   const presses = equipment.filter((e: Record<string, unknown>) => {
     const t = e.type as string || ''
