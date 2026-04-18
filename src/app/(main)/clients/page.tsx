@@ -247,9 +247,9 @@ export default function ClientsPage() {
                             {c.whatsapp || c.phone}
                             <a href={waLink(c.whatsapp || c.phone || '')} target="_blank" rel="noopener" onClick={e => e.stopPropagation()} className="text-green-600 hover:text-green-700" title="Abrir WhatsApp"><MessageCircle size={14} /></a>
                           </span>
-                        ) : <button onClick={e => { e.stopPropagation(); setModal(c) }} className="text-xs text-gray-300 hover:text-purple-500">+ Agregar</button>}
+                        ) : <span className="text-gray-300">—</span>}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-500">{c.email || <button onClick={e => { e.stopPropagation(); setModal(c) }} className="text-xs text-gray-300 hover:text-purple-500">+ Agregar</button>}</td>
+                      <td className="px-4 py-3 text-sm text-gray-500">{c.email || <span className="text-gray-300">—</span>}</td>
                       <td className="px-4 py-3 text-sm text-gray-700 text-right font-medium">{getClientTotal(c.id) > 0 ? fmtCurrency(getClientTotal(c.id)) : <span className="text-gray-300">-</span>}</td>
                       <td className="px-4 py-3 text-sm text-gray-600 text-center">{getClientOrders(c.id).length || <span className="text-gray-300">-</span>}</td>
                       <td className="px-4 py-3 text-xs text-gray-400">{(() => { const d = getClientLastOrder(c.id); return d ? new Date(d).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' }) : '-' })()}</td>

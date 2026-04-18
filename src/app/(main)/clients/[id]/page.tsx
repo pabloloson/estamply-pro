@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, MessageCircle, Pencil, Printer, X } from 'lucide-react'
+import { ArrowLeft, MessageCircle, Pencil, X, Plus } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useLocale } from '@/shared/context/LocaleContext'
 import { usePermissions } from '@/shared/context/PermissionsContext'
@@ -15,8 +15,8 @@ interface Client {
   created_at: string
 }
 
-interface OrderRow { id: string; status: string; total_price: number; due_date: string | null; created_at: string; items: unknown[] }
-interface PresupuestoRow { id: string; codigo: string; total: number; created_at: string; items: unknown[] }
+interface OrderRow { id: string; status: string; total_price: number; due_date: string | null; created_at: string; items: unknown[]; presupuesto_id?: string | null }
+interface PresupuestoRow { id: string; codigo: string; total: number; created_at: string; items: unknown[]; status?: string | null }
 interface PaymentRow { order_id: string; monto: number }
 
 const SL: Record<string, string> = { pending: 'Pendiente', production: 'En produccion', ready: 'Listo', delivered: 'Entregado' }
@@ -36,16 +36,20 @@ export default function ClientDetailPage() {
   const [editing, setEditing] = useState(false)
   const [editForm, setEditForm] = useState<Partial<Client>>({})
   const [saving, setSaving] = useState(false)
+  const [notes, setNotes] = useState('')
+  const [notesSaved, setNotesSaved] = useState(false)
+  const notesTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [pendienteOpen, setPendienteOpen] = useState(false)
 
   useEffect(() => {
     async function load() {
       const [{ data: c }, { data: o }, { data: p }, { data: pay }] = await Promise.all([
         supabase.from('clients').select('*').eq('id', id).single(),
-        supabase.from('orders').select('id, status, total_price, due_date, created_at, items').eq('client_id', id).order('created_at', { ascending: false }),
-        supabase.from('presupuestos').select('id, codigo, total, created_at, items').eq('client_id', id).order('created_at', { ascending: false }),
+        supabase.from('orders').select('id, status, total_price, due_date, created_at, items, presupuesto_id').eq('client_id', id).order('created_at', { ascending: false }),
+        supabase.from('presupuestos').select('id, codigo, total, created_at, items, status').eq('client_id', id).order('created_at', { ascending: false }),
         supabase.from('payments').select('order_id, monto'),
       ])
-      if (c) setClient(c)
+      if (c) { setClient(c); setNotes(c.notas || '') }
       setOrders((o || []) as OrderRow[])
       setPresupuestos((p || []) as PresupuestoRow[])
       setPayments((pay || []) as PaymentRow[])
@@ -53,6 +57,33 @@ export default function ClientDetailPage() {
     }
     load()
   }, [id])
+
+  function capitalize(s: string) { return s.replace(/\b\w+/g, w => w[0].toUpperCase() + w.slice(1).toLowerCase()) }
+
+  const handleNotesChange = useCallback((val: string) => {
+    setNotes(val)
+    setNotesSaved(false)
+    if (notesTimer.current) clearTimeout(notesTimer.current)
+    notesTimer.current = setTimeout(async () => {
+      await supabase.from('clients').update({ notas: val.trim() || null }).eq('id', id)
+      setNotesSaved(true)
+      setTimeout(() => setNotesSaved(false), 3000)
+    }, 1500)
+  }, [id])
+
+  // Pending orders for tooltip
+  const pendingOrders = orders.filter(o => {
+    const pd = payments.filter(p => p.order_id === o.id).reduce((s, p) => s + p.monto, 0)
+    return o.total_price - pd > 0 && o.status !== 'delivered'
+  })
+
+  // Presupuesto status labels
+  const PSL: Record<string, { label: string; bg: string; text: string }> = {
+    draft: { label: 'Borrador', bg: '#F3F4F6', text: '#6B7280' },
+    sent: { label: 'Enviado', bg: '#DBEAFE', text: '#2563EB' },
+    accepted: { label: 'Aceptado', bg: '#D1FAE5', text: '#059669' },
+    rejected: { label: 'Rechazado', bg: '#FEE2E2', text: '#DC2626' },
+  }
 
   if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>
   if (!client) return <div className="text-center py-16 text-gray-400">Cliente no encontrado</div>
@@ -110,28 +141,50 @@ export default function ClientDetailPage() {
             <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Ticket promedio</p>
             <p className="text-lg font-bold text-gray-800 mt-1">{fmt(ticketPromedio)}</p>
           </div>
-          <div className="p-4 rounded-xl bg-gray-50">
+          <div className="p-4 rounded-xl bg-gray-50 relative cursor-pointer" onClick={() => pendiente > 0 && setPendienteOpen(!pendienteOpen)}>
             <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Pendiente</p>
             <p className="text-lg font-bold text-gray-800 mt-1">{fmt(pendiente)}</p>
+            {pendienteOpen && pendingOrders.length > 0 && (
+              <div className="absolute z-20 top-full left-0 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 p-3 min-w-[280px]">
+                {pendingOrders.map(o => {
+                  const pd = payments.filter(p => p.order_id === o.id).reduce((s, p) => s + p.monto, 0)
+                  return (
+                    <div key={o.id} className="flex items-center justify-between text-xs py-1.5 border-b border-gray-50 last:border-0">
+                      <span className="font-medium text-gray-700">#{o.id.slice(0, 6).toUpperCase()}</span>
+                      <span className="text-gray-500">Total: {fmt(o.total_price)} · Pagado: {fmt(pd)} · <strong className="text-amber-600">Pend: {fmt(o.total_price - pd)}</strong></span>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </div>
         </>}
       </div>
 
       {/* Presupuestos */}
       <div className="card p-5 mb-6">
-        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">Presupuestos ({presupuestos.length})</h3>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Presupuestos ({presupuestos.length})</h3>
+          <Link href="/presupuesto" className="flex items-center gap-1 text-xs font-semibold text-[#6C5CE7] hover:text-[#5A4BD1]"><Plus size={12} /> Nuevo presupuesto</Link>
+        </div>
         {presupuestos.length > 0 ? (
           <div className="space-y-2">
-            {presupuestos.map(p => (
-              <Link key={p.id} href={`/presupuesto`} className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors">
-                <div>
-                  <span className="font-medium text-sm text-gray-800">#{p.codigo}</span>
-                  <span className="text-xs text-gray-400 ml-2">{new Date(p.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
-                  <span className="text-xs text-gray-400 ml-2">{(() => { const n = Array.isArray(p.items) ? p.items.length : 0; return `${n} ${n === 1 ? 'item' : 'items'}` })()}</span>
-                </div>
-                <span className="font-bold text-sm text-gray-800">{fmt(p.total)}</span>
-              </Link>
-            ))}
+            {presupuestos.map(p => {
+              const linkedOrder = orders.find(o => o.presupuesto_id === p.id)
+              const ps = PSL[p.status || '']
+              return (
+                <Link key={p.id} href={`/presupuesto`} className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-medium text-sm text-gray-800">#{p.codigo}</span>
+                    <span className="text-xs text-gray-400">{new Date(p.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                    <span className="text-xs text-gray-400">{(() => { const n = Array.isArray(p.items) ? p.items.length : 0; return `${n} ${n === 1 ? 'item' : 'items'}` })()}</span>
+                    {ps && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: ps.bg, color: ps.text }}>{ps.label}</span>}
+                    {linkedOrder && <span className="text-[10px] text-gray-400">→ Pedido #{linkedOrder.id.slice(0, 6).toUpperCase()}</span>}
+                  </div>
+                  <span className="font-bold text-sm text-gray-800">{fmt(p.total)}</span>
+                </Link>
+              )
+            })}
           </div>
         ) : <p className="text-sm text-gray-400 italic">No hay presupuestos para este cliente.</p>}
       </div>
@@ -141,24 +194,32 @@ export default function ClientDetailPage() {
         <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">Pedidos ({orders.length})</h3>
         {orders.length > 0 ? (
           <div className="space-y-2">
-            {orders.map(o => (
-              <div key={o.id} className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 cursor-pointer" onClick={() => router.push('/orders')}>
-                <div className="flex items-center gap-3">
-                  <span className="font-medium text-sm text-gray-800">#{o.id.slice(0, 8)}</span>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: `${SC[o.status]}18`, color: SC[o.status] }}>{SL[o.status]}</span>
-                  {o.due_date && <span className="text-xs text-gray-400">{new Date(o.due_date).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}</span>}
+            {orders.map(o => {
+              const linkedPres = o.presupuesto_id ? presupuestos.find(p => p.id === o.presupuesto_id) : null
+              return (
+                <div key={o.id} className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 cursor-pointer" onClick={() => router.push('/orders')}>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-medium text-sm text-gray-800">#{o.id.slice(0, 6).toUpperCase()}</span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: `${SC[o.status]}18`, color: SC[o.status] }}>{SL[o.status]}</span>
+                    {o.due_date && <span className="text-xs text-gray-400">{new Date(o.due_date).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}</span>}
+                    {linkedPres && <span className="text-[10px] text-gray-400">← Pres. #{linkedPres.codigo}</span>}
+                  </div>
+                  <span className="font-bold text-sm text-gray-800">{fmt(o.total_price)}</span>
                 </div>
-                <span className="font-bold text-sm text-gray-800">{fmt(o.total_price)}</span>
-              </div>
-            ))}
+              )
+            })}
           </div>
         ) : <p className="text-sm text-gray-400 italic">No hay pedidos para este cliente.</p>}
       </div>
 
-      {/* Action */}
-      <Link href="/presupuesto" className="flex items-center justify-center gap-2 w-full py-3 rounded-xl text-sm font-semibold border-2 border-[#6C5CE7] text-[#6C5CE7] hover:bg-[#6C5CE7] hover:text-white transition-colors">
-        + Nuevo presupuesto para este cliente
-      </Link>
+      {/* Notes */}
+      <div className="card p-5 mb-6">
+        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">Notas</h3>
+        <textarea className="input-base resize-none text-sm" rows={3} value={notes}
+          onChange={e => handleNotesChange(e.target.value)}
+          placeholder="Agregar notas sobre este cliente..." />
+        {notesSaved && <p className="text-[10px] text-gray-400 mt-1">✓ Guardado</p>}
+      </div>
 
       {/* Edit modal */}
       {editing && (
@@ -189,7 +250,7 @@ export default function ClientDetailPage() {
             <button disabled={!editForm.name?.trim() || saving} onClick={async () => {
               setSaving(true)
               await supabase.from('clients').update({
-                name: editForm.name?.trim(), email: editForm.email?.trim() || null,
+                name: capitalize(editForm.name?.trim() || ''), email: editForm.email?.trim()?.toLowerCase() || null,
                 whatsapp: editForm.whatsapp?.trim() || null, phone: editForm.whatsapp?.trim() || null,
                 identificacion_fiscal: editForm.identificacion_fiscal?.trim() || null,
                 ciudad: editForm.ciudad?.trim() || null, provincia: editForm.provincia?.trim() || null,
