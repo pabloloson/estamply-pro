@@ -208,6 +208,13 @@ body {
   /* Hide the action sidebar panel */
   .lg\:w-72 { display: none !important; }
 
+  /* Force desktop table layout on print (even from mobile viewport) */
+  .hidden.md\:block { display: block !important; }
+  .md\:hidden { display: none !important; }
+
+  /* Force business contact info visible (hidden sm:block) */
+  .hidden.sm\:block { display: block !important; }
+
   /* Page settings */
   @page {
     margin: 10mm;

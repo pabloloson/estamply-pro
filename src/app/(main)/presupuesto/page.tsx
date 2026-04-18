@@ -383,9 +383,23 @@ export default function PresupuestoPage() {
       <div style="text-align:center;font-size:11px;color:#ccc;padding-top:16px;border-top:1px solid #eee">Generado con Estamply · estamply.app</div>
     </body></html>`)
     doc.close()
-    iframe.contentWindow?.focus()
-    iframe.contentWindow?.print()
-    setTimeout(() => document.body.removeChild(iframe), 2000)
+    // On mobile/iOS, iframe.print() often fails — open in new window instead
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+    if (isMobile) {
+      document.body.removeChild(iframe)
+      const printWindow = window.open('', '_blank')
+      if (printWindow) {
+        printWindow.document.open()
+        printWindow.document.write(doc.documentElement.outerHTML)
+        printWindow.document.close()
+        // Let content render before triggering print
+        setTimeout(() => { printWindow.print() }, 500)
+      }
+    } else {
+      iframe.contentWindow?.focus()
+      iframe.contentWindow?.print()
+      setTimeout(() => document.body.removeChild(iframe), 2000)
+    }
   }
 
   async function loadCatalog() {
