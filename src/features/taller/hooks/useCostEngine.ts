@@ -151,7 +151,11 @@ export function useCostEngine(
       ? technique.equipment_ids
       : equipment.filter((e: { tecnicas_slugs?: string[] }) => (e.tecnicas_slugs || []).includes(technique.slug)).map((e: { id: string }) => e.id)
     const effectiveEquipIds = overridePrinterId
-      ? [...baseEquipIds.filter((id: string) => !equipment.some((e: { id: string; type: string }) => e.id === id && e.type.startsWith('printer'))), overridePrinterId]
+      ? [...baseEquipIds.filter((id: string) => {
+          const eq = equipment.find((e: { id: string }) => e.id === id) as { type?: string; clasificacion?: string } | undefined
+          const isP = (eq?.type || '').startsWith('printer') || (eq?.type || '').startsWith('plotter') || eq?.clasificacion === 'impresora' || eq?.clasificacion === 'plotter'
+          return !isP // keep non-printer/plotter equipment, remove printers/plotters (override replaces them)
+        }), overridePrinterId]
       : baseEquipIds
     const effectiveProduct = overridePressId
       ? { ...product, press_equipment_id: overridePressId }
