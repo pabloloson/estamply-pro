@@ -9,16 +9,16 @@ export interface Category {
   created_at: string
 }
 
-export type TecnicaSlug = 'subli' | 'dtf' | 'dtf_uv' | 'vinyl' | 'serigrafia'
+export type TecnicaSlug = 'subli' | 'dtf' | 'dtf_uv' | 'vinyl' | 'vinyl_adhesivo' | 'serigrafia'
 
-export const ALL_TECNICA_SLUGS: TecnicaSlug[] = ['subli', 'dtf', 'dtf_uv', 'vinyl', 'serigrafia']
+export const ALL_TECNICA_SLUGS: TecnicaSlug[] = ['subli', 'dtf', 'dtf_uv', 'vinyl', 'vinyl_adhesivo', 'serigrafia']
 export const DEFAULT_ACTIVE_SLUGS: TecnicaSlug[] = ['subli', 'dtf', 'vinyl']
 
 export const TECNICA_LABELS: Record<TecnicaSlug, string> = {
-  subli: 'Sublimación', dtf: 'DTF Textil', dtf_uv: 'DTF UV', vinyl: 'Vinilo', serigrafia: 'Serigrafía',
+  subli: 'Sublimación', dtf: 'DTF Textil', dtf_uv: 'DTF UV', vinyl: 'Vinilo Textil', vinyl_adhesivo: 'Vinilo Autoadhesivo', serigrafia: 'Serigrafía',
 }
 export const TECNICA_COLORS: Record<TecnicaSlug, string> = {
-  subli: '#6C5CE7', dtf: '#E17055', dtf_uv: '#00B894', vinyl: '#E84393', serigrafia: '#FDCB6E',
+  subli: '#6C5CE7', dtf: '#E17055', dtf_uv: '#00B894', vinyl: '#E84393', vinyl_adhesivo: '#D63384', serigrafia: '#FDCB6E',
 }
 
 export interface Tecnica {
@@ -64,7 +64,7 @@ export type InsumoConfig =
 
 // ── Technique configs (discriminated union) ──
 
-export type TecnicaConfig = SubliConfig | DTFConfig | DTFUVConfig | VinylConfig | SerigrafiaConfig
+export type TecnicaConfig = SubliConfig | DTFConfig | DTFUVConfig | VinylConfig | VinylAdhesivoConfig | SerigrafiaConfig
 
 export interface SubliConfig {
   tipo: 'subli'
@@ -101,6 +101,17 @@ export interface DTFUVConfig {
 
 export interface VinylConfig {
   tipo: 'vinyl'
+  modo?: 'propia' | 'tercerizado'
+  margen_seguridad?: number
+  desperdicio_pelado_pct: number
+  pedido_minimo: number
+  tiempo_preparacion?: number
+  descuento_override: boolean
+  descuentos: import('@/features/presupuesto/types').DiscountTier[]
+}
+
+export interface VinylAdhesivoConfig {
+  tipo: 'vinyl_adhesivo'
   modo?: 'propia' | 'tercerizado'
   margen_seguridad?: number
   desperdicio_pelado_pct: number
@@ -191,6 +202,7 @@ export const TECHNIQUE_DEFAULTS: Record<TecnicaSlug, { nombre: string; color: st
   subli: { nombre: 'Sublimación', color: '#6C5CE7', config: DEFAULT_SUBLI_CONFIG, activa: true },
   dtf: { nombre: 'DTF Textil', color: '#E17055', config: DEFAULT_DTF_CONFIG, activa: true },
   dtf_uv: { nombre: 'DTF UV', color: '#00B894', config: DEFAULT_DTF_UV_CONFIG, activa: false },
-  vinyl: { nombre: 'Vinilo', color: '#E84393', config: DEFAULT_VINYL_CONFIG, activa: true },
+  vinyl: { nombre: 'Vinilo Textil', color: '#E84393', config: DEFAULT_VINYL_CONFIG, activa: true },
+  vinyl_adhesivo: { nombre: 'Vinilo Autoadhesivo', color: '#D63384', config: { tipo: 'vinyl_adhesivo' as const, desperdicio_pelado_pct: 10, pedido_minimo: 1, descuento_override: false, descuentos: [] }, activa: false },
   serigrafia: { nombre: 'Serigrafía', color: '#FDCB6E', config: DEFAULT_SERIGRAFIA_CONFIG, activa: false },
 }

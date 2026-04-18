@@ -1,4 +1,4 @@
-export type Tecnica = 'subli' | 'dtf' | 'dtf_uv' | 'vinyl' | 'serigrafia'
+export type Tecnica = 'subli' | 'dtf' | 'dtf_uv' | 'vinyl' | 'vinyl_adhesivo' | 'serigrafia'
 
 export interface PresupuestoItem {
   id: string

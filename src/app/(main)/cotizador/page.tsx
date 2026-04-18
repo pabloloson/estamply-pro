@@ -22,7 +22,7 @@ import { useLocale } from '@/shared/context/LocaleContext'
 import { usePermissions } from '@/shared/context/PermissionsContext'
 
 // Cotizador tabs: Sublimación, DTF (unified), Vinilo, Serigrafía
-type CotizadorTab = 'subli' | 'dtf_unified' | 'vinyl' | 'serigrafia'
+type CotizadorTab = 'subli' | 'dtf_unified' | 'vinyl_unified' | 'serigrafia'
 
 export default function CotizadorPage() {
   const supabase = createClient()
@@ -45,6 +45,7 @@ export default function CotizadorPage() {
   const [showSheetNesting, setShowSheetNesting] = useState<Record<number, boolean>>({})
   const [cotizadorTab, setCotizadorTab] = useState<CotizadorTab>('subli')
   const [dtfVariant, setDtfVariant] = useState<'dtf' | 'dtf_uv'>('dtf') // internal DTF toggle
+  const [vinylVariant, setVinylVariant] = useState<'vinyl' | 'vinyl_adhesivo'>('vinyl') // internal Vinyl toggle
   const [selectedPapelId, setSelectedPapelId] = useState('')
   const [selectedTintaId, setSelectedTintaId] = useState('')
   const [selectedPrinterId, setSelectedPrinterId] = useState('')
@@ -104,11 +105,12 @@ export default function CotizadorPage() {
   const cotizadorTabs: { id: CotizadorTab; label: string; color: string }[] = []
   if (tecnicas.find(t => t.slug === 'subli' && t.activa)) cotizadorTabs.push({ id: 'subli', label: 'Sublimación', color: '#6C5CE7' })
   if (hasDtf) cotizadorTabs.push({ id: 'dtf_unified', label: 'DTF', color: '#E17055' })
-  if (tecnicas.find(t => t.slug === 'vinyl' && t.activa)) cotizadorTabs.push({ id: 'vinyl', label: 'Vinilo', color: '#E84393' })
+  const hasVinyl = tecnicas.some(t => (t.slug === 'vinyl' || t.slug === 'vinyl_adhesivo') && t.activa)
+  if (hasVinyl) cotizadorTabs.push({ id: 'vinyl_unified', label: 'Vinilo', color: '#E84393' })
   if (tecnicas.find(t => t.slug === 'serigrafia' && t.activa)) cotizadorTabs.push({ id: 'serigrafia', label: 'Serigrafía', color: '#FDCB6E' })
 
   // Resolve which actual technique to use
-  const resolvedSlug: TecnicaSlug = cotizadorTab === 'dtf_unified' ? dtfVariant : cotizadorTab as TecnicaSlug
+  const resolvedSlug: TecnicaSlug = cotizadorTab === 'dtf_unified' ? dtfVariant : cotizadorTab === 'vinyl_unified' ? vinylVariant : cotizadorTab as TecnicaSlug
   const activeTecnicasForEngine = tecnicas.filter(t => t.activa)
 
   // Pass ALL active to engine but set the selected one
@@ -346,6 +348,18 @@ export default function CotizadorPage() {
             <button key={slug} onClick={() => setDtfVariant(slug)}
               className="px-3 py-1 rounded-lg text-xs font-semibold transition-all"
               style={dtfVariant === slug ? { background: color, color: '#fff' } : { background: '#F1F1F1', color: '#888' }}>
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+      {/* Vinyl internal toggle: Textil / Autoadhesivo */}
+      {cotizadorTab === 'vinyl_unified' && tecnicas.some(t => t.slug === 'vinyl' && t.activa) && tecnicas.some(t => t.slug === 'vinyl_adhesivo' && t.activa) && (
+        <div className="flex gap-1 mb-4">
+          {([['vinyl', 'Vinilo Textil', '#E84393'], ['vinyl_adhesivo', 'Vinilo Autoadhesivo', '#D63384']] as const).map(([slug, label, color]) => (
+            <button key={slug} onClick={() => setVinylVariant(slug)}
+              className="px-3 py-1 rounded-lg text-xs font-semibold transition-all"
+              style={vinylVariant === slug ? { background: color, color: '#fff' } : { background: '#F1F1F1', color: '#888' }}>
               {label}
             </button>
           ))}

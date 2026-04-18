@@ -35,7 +35,7 @@ const TECNICA_FILTER_TABS = [
   { id: 'vinyl', label: 'Vinilo', color: '#E84393' },
   { id: 'serigrafia', label: 'Serigrafía', color: '#FDCB6E' },
 ]
-const TECNICA_OPTS: [string, string][] = [['compartido', 'Compartido'], ['subli', 'Sublimación'], ['dtf', 'DTF Textil'], ['dtf_uv', 'DTF UV'], ['vinyl', 'Vinilo'], ['serigrafia', 'Serigrafía']]
+const TECNICA_OPTS: [string, string][] = [['compartido', 'Compartido'], ['subli', 'Sublimación'], ['dtf', 'DTF Textil'], ['dtf_uv', 'DTF UV'], ['vinyl', 'Vinilo Textil'], ['vinyl_adhesivo', 'Vinilo Autoadhesivo'], ['serigrafia', 'Serigrafía']]
 const TIPO_TECNICA_DEFAULT: Partial<Record<InsumoTipo, string>> = {
   papel: 'subli', tinta: 'subli', film: 'dtf', polvo: 'dtf', vinilo: 'vinyl',
   tinta_serigrafica: 'serigrafia', emulsion: 'serigrafia', servicio_impresion: 'compartido',

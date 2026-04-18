@@ -37,7 +37,7 @@ export default function ProductionConfig({
 }: ProductionConfigProps) {
   const isDTF = slug === 'dtf' || slug === 'dtf_uv'
   const isSubli = slug === 'subli'
-  const isVinyl = slug === 'vinyl'
+  const isVinyl = slug === 'vinyl' || slug === 'vinyl_adhesivo'
   const isTercerizado = dtfMode === 'tercerizado'
 
   // Show mode dropdown for techniques that support tercerizado
@@ -52,7 +52,7 @@ export default function ProductionConfig({
   const showTinta = needsTinta && tintaInsumos.length > 0
   const showTintaEmpty = needsTinta && tintaInsumos.length === 0
   const showPrinter = (isSubli || isVinyl || isDTF) && !isTercerizado && printers.length > 0
-  const showPress = presses.length > 0 && slug !== 'serigrafia' && slug !== 'dtf_uv'
+  const showPress = presses.length > 0 && slug !== 'serigrafia' && slug !== 'dtf_uv' && slug !== 'vinyl_adhesivo'
 
   if (!showMode && !showPapel && !showPapelEmpty && !showPrinter && !showPress) return null
 

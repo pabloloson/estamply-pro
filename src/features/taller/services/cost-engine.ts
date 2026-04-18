@@ -89,7 +89,7 @@ export function computeCost(input: ComputeInput): CostResult {
   switch (config.tipo) {
     case 'subli': result = computeSubli(converted, config); break
     case 'dtf': case 'dtf_uv': result = computeDTF(converted, config); break
-    case 'vinyl': result = computeVinyl(converted, config); break
+    case 'vinyl': case 'vinyl_adhesivo': result = computeVinyl(converted, config); break
     case 'serigrafia': result = computeSerigrafia(converted, config); break
   }
 
@@ -405,32 +405,41 @@ function computeDTF(input: ComputeInput, config: DTFConfig | DTFUVConfig): CostR
 
 // ── Vinilo ──
 
-function computeVinyl(input: ComputeInput, config: VinylConfig): CostResult {
+function computeVinyl(input: ComputeInput, config: VinylConfig | import('@/features/taller/types').VinylAdhesivoConfig): CostResult {
   const { product, equipment, insumos, quantity, margin, mo, otrosGastos, setupMin, discountTiers, vinylSelections, techniqueEquipmentIds } = input
   const desperdicio = input.overrideMerma ?? config.desperdicio_pelado_pct ?? 15
+  const isAdhesivo = config.tipo === 'vinyl_adhesivo'
   const vinylInsumos = insumos.filter(i => i.tipo === 'vinilo')
   const sels = vinylSelections ?? []
 
-  const vinylNesting = sels.map(sel => {
+  const vinylNesting = sels.map((sel, i) => {
     const ins = vinylInsumos[sel.materialIdx]
-    if (!ins || sel.ancho <= 0 || sel.alto <= 0) return { cols: 0, rows: 0, rotated: false, metrosLineales: 0, anchoRollo: 50, costoColor: 0 }
+    if (!ins || sel.ancho <= 0 || sel.alto <= 0) return { cols: 0, rows: 0, rotated: false, metrosLineales: 0, anchoRollo: 50, costoColor: 0, nombre: '' }
     const c = insCfg(ins)
     const anchoRollo = (c.ancho as number) || 50
     const precioMetro = (c.precio_metro as number) || 0
     const n = calcRollNesting(sel.ancho, sel.alto, anchoRollo, quantity, PLOTTER_MARGIN, 0.5)
     const ml = n.lengthCm / 100
-    return { cols: n.cols, rows: n.rows, rotated: n.rotated, metrosLineales: ml, anchoRollo, costoColor: ml * precioMetro }
+    return { cols: n.cols, rows: n.rows, rotated: n.rotated, metrosLineales: ml, anchoRollo, costoColor: ml * precioMetro, nombre: (ins as unknown as Record<string, string>).nombre || `Color ${i + 1}` }
   })
 
   const costoViniloRaw = vinylNesting.reduce((s, n) => s + n.costoColor, 0) / Math.max(quantity, 1)
   const costoProducto = Number(product.base_cost)
   const amortPlotter = input.overrideAmortPrint ?? getAmort(equipment, techniqueEquipmentIds)
-  const amortPress = input.overrideAmortPress ?? getPressAmort(product, equipment, 'vinyl')
+  const amortPress = isAdhesivo ? 0 : (input.overrideAmortPress ?? getPressAmort(product, equipment, 'vinyl'))
   const costoDesp = (costoProducto + costoViniloRaw + amortPlotter + amortPress) * (desperdicio / 100)
   const costoTotal = costoProducto + costoViniloRaw + costoDesp + amortPlotter + amortPress + mo + otrosGastos / Math.max(quantity, 1)
 
   const totalMetrosVinyl = vinylNesting.reduce((s, n) => s + n.metrosLineales, 0)
-  const lines = [{ label: 'Producto base', value: costoProducto }, { label: `Vinilo (${totalMetrosVinyl.toFixed(2)}m)`, value: costoViniloRaw }]
+  const lines: { label: string; value: number }[] = [{ label: 'Producto base', value: costoProducto }]
+  // Per-color desglose if multiple colors, single line if 1
+  if (vinylNesting.length > 1) {
+    vinylNesting.forEach(vn => {
+      if (vn.costoColor > 0) lines.push({ label: `${vn.nombre} (${vn.metrosLineales.toFixed(2)}m)`, value: vn.costoColor / Math.max(quantity, 1) })
+    })
+  } else {
+    lines.push({ label: `Vinilo (${totalMetrosVinyl.toFixed(2)}m)`, value: costoViniloRaw })
+  }
   if (costoDesp > 0) lines.push({ label: `Desperdicio (${desperdicio}%)`, value: costoDesp })
   if (amortPlotter > 0) lines.push({ label: 'Amort. plotter', value: amortPlotter })
   if (amortPress > 0) lines.push({ label: 'Amort. plancha', value: amortPress })
