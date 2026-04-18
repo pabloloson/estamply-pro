@@ -59,7 +59,13 @@ export default function PublicQuoteView({ presupuesto }: Props) {
       </tr>`
     }).join('')
 
-    const condLines = condiciones ? condiciones.split('\n').filter(Boolean).map(c => `<div>${c.startsWith('·') ? c : `· ${c}`}</div>`).join('') : ''
+    const condLines = (() => {
+      if (!condiciones) return ''
+      let lines: string[] = []
+      if (condiciones.startsWith('[')) { try { lines = JSON.parse(condiciones) } catch { lines = condiciones.split('\n').filter(Boolean) } }
+      else { lines = condiciones.split('\n').filter(Boolean) }
+      return lines.map(c => `<div>${c.startsWith('·') ? c : `· ${c}`}</div>`).join('')
+    })()
 
     const socials: string[] = []
     if (biz?.business_website) socials.push(`<span>🌐 ${biz.business_website}</span>`)
@@ -223,7 +229,12 @@ export default function PublicQuoteView({ presupuesto }: Props) {
           {condiciones && (
             <div className="px-8 py-4 border-t border-gray-100">
               <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">Condiciones</p>
-              <div className="text-xs text-gray-500 whitespace-pre-line leading-relaxed">{condiciones}</div>
+              <div className="text-xs text-gray-500 leading-relaxed">{(() => {
+                let lines: string[] = []
+                if (condiciones!.startsWith('[')) { try { lines = JSON.parse(condiciones!) } catch { lines = condiciones!.split('\n').filter(Boolean) } }
+                else { lines = condiciones!.split('\n').filter(Boolean) }
+                return lines.map((c, i) => <div key={i}>· {c.replace(/^[·\-•]\s*/, '')}</div>)
+              })()}</div>
             </div>
           )}
 

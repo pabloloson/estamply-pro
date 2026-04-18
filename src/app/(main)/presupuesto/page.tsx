@@ -147,7 +147,11 @@ export default function PresupuestoPage() {
     // Load conditions and validez
     if (data.condiciones) {
       if (Array.isArray(data.condiciones)) setCondiciones(data.condiciones as string[])
-      else if (typeof data.condiciones === 'string') setCondiciones((data.condiciones as string).split('\n').map((l: string) => l.replace(/^[·\-•]\s*/, '').trim()).filter(Boolean))
+      else if (typeof data.condiciones === 'string') {
+        const raw = data.condiciones as string
+        if (raw.startsWith('[')) { try { const parsed = JSON.parse(raw); if (Array.isArray(parsed)) { setCondiciones(parsed); } } catch { setCondiciones(raw.split('\n').map((l: string) => l.replace(/^[·\-•"\[\]]\s*/g, '').trim()).filter(Boolean)) } }
+        else setCondiciones(raw.split('\n').map((l: string) => l.replace(/^[·\-•]\s*/, '').trim()).filter(Boolean))
+      }
     }
     if (data.validez_dias) setValidezDias(data.validez_dias as number)
     // Load public link
@@ -269,7 +273,7 @@ export default function PresupuestoPage() {
     const doc = iframe.contentDocument || iframe.contentWindow?.document
     if (!doc) return
 
-    const techniqueLabel = (t: string) => ({ subli: 'Sublimación', dtf: 'DTF Textil', dtf_uv: 'DTF UV', vinyl: 'Vinilo', serigrafia: 'Serigrafía' }[t] || '')
+    const techniqueLabel = (t: string) => ({ subli: 'Sublimación', dtf: 'DTF Textil', dtf_uv: 'DTF UV', vinyl: 'Vinilo Textil', vinyl_adhesivo: 'V. Autoadhesivo', serigrafia: 'Serigrafía' }[t] || '')
 
     // Determine if any item has a real technique
     const showTechCol = items.some(item => item.origen !== 'manual' && item.origen !== 'catalogo' && item.costoUnit > 0)
@@ -448,7 +452,11 @@ export default function PresupuestoPage() {
           else if (pres.client_name) setNewClientName(pres.client_name)
           if (pres.condiciones) {
             if (Array.isArray(pres.condiciones)) setCondiciones(pres.condiciones as string[])
-            else if (typeof pres.condiciones === 'string') setCondiciones((pres.condiciones as string).split('\n').map((l: string) => l.replace(/^[·\-•]\s*/, '').trim()).filter(Boolean))
+            else if (typeof pres.condiciones === 'string') {
+              const raw = pres.condiciones as string
+              if (raw.startsWith('[')) { try { const parsed = JSON.parse(raw); if (Array.isArray(parsed)) { setCondiciones(parsed); } } catch { setCondiciones(raw.split('\n').map((l: string) => l.replace(/^[·\-•"\[\]]\s*/g, '').trim()).filter(Boolean)) } }
+              else setCondiciones(raw.split('\n').map((l: string) => l.replace(/^[·\-•]\s*/, '').trim()).filter(Boolean))
+            }
           }
           if (pres.validez_dias) setValidezDias(pres.validez_dias as number)
           if (pres.codigo) setPublicLink(`/p/${pres.codigo}`)
@@ -649,11 +657,16 @@ export default function PresupuestoPage() {
               <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold bg-green-100 text-green-600">Catálogo</span>
             )}
             {!loadedPresupuestoId && !creatingNew && <span className="text-sm text-gray-400">{items.length} {items.length === 1 ? 'ítem' : 'ítems'}</span>}
-            <span className="ml-auto">
+            <div className="ml-auto flex items-center gap-2">
               {saveStatus === 'saving' && <span className="text-xs text-gray-400 animate-pulse">Guardando...</span>}
               {saveStatus === 'saved' && <span className="text-xs text-green-600">✓ Guardado</span>}
               {saveStatus === 'error' && <span className="text-xs text-red-500">Error al guardar</span>}
-            </span>
+              {saveStatus === 'idle' && items.length > 0 && (
+                <button type="button" onClick={handleGuardar} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-[#6C5CE7] hover:bg-[#6C5CE7] hover:text-white border border-[#6C5CE7] transition-all">
+                  <Save size={12} /> Guardar
+                </button>
+              )}
+            </div>
           </div>
           {loadedPresupuestoId && (
             <p className="text-xs text-gray-400 mt-1 ml-7">#{savedPresupuestos.find(p => p.id === loadedPresupuestoId)?.codigo || ''}</p>
@@ -715,6 +728,31 @@ export default function PresupuestoPage() {
                     </div>
                   </div>
                 </div>
+
+                {/* Update prices banner — show when quote is older than 7 days */}
+                {loadedPresupuestoId && Number((ws as Record<string, unknown>).tipo_cambio) > 1 && (() => {
+                  const pres = savedPresupuestos.find(p => p.id === loadedPresupuestoId)
+                  if (!pres) return null
+                  const ageMs = Date.now() - new Date(pres.created_at).getTime()
+                  const ageDays = Math.floor(ageMs / (1000 * 60 * 60 * 24))
+                  if (ageDays < 7) return null
+                  const dateStr = new Date(pres.created_at).toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })
+                  return (
+                    <div className="mx-8 mt-4 p-3 rounded-lg no-print" style={{ background: '#FFFBEB', border: '1px solid #FDE68A' }}>
+                      <p className="text-xs text-amber-700">
+                        Los precios de este presupuesto son del {dateStr}.{' '}
+                        <button type="button" onClick={async () => {
+                          if (!confirm('¿Actualizar precios al tipo de cambio vigente?')) return
+                          const pid = dbIdRef.current
+                          if (!pid) return
+                          await supabase.from('presupuestos').update({ tipo_cambio_congelado: (ws as Record<string, unknown>).tipo_cambio }).eq('id', pid)
+                          setSaveStatus('saved')
+                          setTimeout(() => setSaveStatus(s => s === 'saved' ? 'idle' : s), 2000)
+                        }} className="font-bold underline hover:text-amber-900">Actualizar a precios de hoy →</button>
+                      </p>
+                    </div>
+                  )
+                })()}
 
                 {/* Client — in the document body */}
                 <div className="px-8 py-4 border-b border-gray-100" style={{ background: '#FAFAFA' }}>
@@ -844,9 +882,9 @@ export default function PresupuestoPage() {
                   ) : (
                     <div key={item.id} className="py-3 border-b border-gray-100 last:border-0">
                       <div className="flex items-center justify-between">
-                        {item.origen === 'manual' ? null
-                          : item.origen === 'catalogo' ? <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: '#6C5CE715', color: '#6C5CE7' }}>Catálogo</span>
-                          : <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: `${TECHNIQUE_COLORS[item.tecnica]}18`, color: TECHNIQUE_COLORS[item.tecnica] }}>{TECHNIQUE_LABELS[item.tecnica]}</span>}
+                        {TECHNIQUE_LABELS[item.tecnica]
+                          ? <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: `${TECHNIQUE_COLORS[item.tecnica]}18`, color: TECHNIQUE_COLORS[item.tecnica] }}>{TECHNIQUE_LABELS[item.tecnica]}</span>
+                          : null}
                         <div className="flex items-center gap-1">
                           <span className="font-bold text-sm text-gray-800">{fmtCurrency(item.subtotal)}</span>
                           <button onClick={() => startEdit(item)} className="w-6 h-6 rounded flex items-center justify-center text-gray-300 hover:text-purple-500 no-print"><Pencil size={11} /></button>
@@ -918,9 +956,9 @@ export default function PresupuestoPage() {
                       {items.map(item => editingItemId === item.id ? (
                         <tr key={item.id} style={{ borderBottom: '1px solid #F9FAFB' }}>
                           <td className="py-3 pr-3 align-top">
-                            {item.origen === 'manual' ? null
-                              : item.origen === 'catalogo' ? <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: '#6C5CE715', color: '#6C5CE7' }}>Catálogo</span>
-                              : <span className="text-xs font-bold px-2 py-0.5 rounded-full whitespace-nowrap" style={{ background: `${TECHNIQUE_COLORS[item.tecnica]}18`, color: TECHNIQUE_COLORS[item.tecnica] }}>{TECHNIQUE_LABELS[item.tecnica]}</span>}
+                            {TECHNIQUE_LABELS[item.tecnica]
+                              ? <span className="text-xs font-bold px-2 py-0.5 rounded-full whitespace-nowrap" style={{ background: `${TECHNIQUE_COLORS[item.tecnica]}18`, color: TECHNIQUE_COLORS[item.tecnica] }}>{TECHNIQUE_LABELS[item.tecnica]}</span>
+                              : null}
                           </td>
                           <td className="py-3 pr-3 align-top"><input type="text" className="input-base text-sm" value={editForm.nombre} onChange={e => setEditForm({ ...editForm, nombre: e.target.value })} /></td>
 
@@ -938,9 +976,9 @@ export default function PresupuestoPage() {
                         <React.Fragment key={item.id}>
                         <tr style={{ borderBottom: '1px solid #F9FAFB' }}>
                           <td className="py-3 pr-3 align-top">
-                            {item.origen === 'manual' ? null
-                              : item.origen === 'catalogo' ? <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: '#6C5CE715', color: '#6C5CE7' }}>Catálogo</span>
-                              : <span className="text-xs font-bold px-2 py-0.5 rounded-full whitespace-nowrap" style={{ background: `${TECHNIQUE_COLORS[item.tecnica]}18`, color: TECHNIQUE_COLORS[item.tecnica] }}>{TECHNIQUE_LABELS[item.tecnica]}</span>}
+                            {TECHNIQUE_LABELS[item.tecnica]
+                              ? <span className="text-xs font-bold px-2 py-0.5 rounded-full whitespace-nowrap" style={{ background: `${TECHNIQUE_COLORS[item.tecnica]}18`, color: TECHNIQUE_COLORS[item.tecnica] }}>{TECHNIQUE_LABELS[item.tecnica]}</span>
+                              : null}
                           </td>
                           <td className="py-3 pr-3 align-top">
                             <p className="font-semibold text-gray-800 text-sm">{item.nombre}</p>
@@ -1130,19 +1168,6 @@ export default function PresupuestoPage() {
 
             {/* ── RIGHT: Actions ── */}
             <div className="lg:w-72 space-y-4 no-print">
-              {/* Save */}
-              <button type="button" onClick={handleGuardar} disabled={saveStatus === 'saving'}
-                className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all border-2 ${
-                  saveStatus === 'saved' ? 'border-green-500 text-green-600 bg-green-50'
-                  : saveStatus === 'error' ? 'border-red-500 text-red-600 bg-red-50'
-                  : 'border-[#6C5CE7] text-[#6C5CE7] hover:bg-[#6C5CE7] hover:text-white'
-                }`}>
-                {saveStatus === 'saving' ? <><Loader2 size={14} className="animate-spin" /> Guardando...</>
-                  : saveStatus === 'saved' ? <><Check size={14} /> Guardado</>
-                  : saveStatus === 'error' ? 'Error al guardar'
-                  : <><Save size={14} /> Guardar presupuesto</>}
-              </button>
-
               {/* Share */}
               <div className="card p-5 space-y-3">
                 <p className="text-xs font-bold uppercase tracking-wider text-gray-400">{t('share')}</p>
@@ -1232,19 +1257,7 @@ export default function PresupuestoPage() {
                 </button>
               </div>
 
-              {/* Update prices */}
-              {Number((ws as Record<string, unknown>).tipo_cambio) > 1 && (
-                <button type="button" onClick={async () => {
-                  if (!confirm('¿Actualizar precios al tipo de cambio vigente?')) return
-                  const pid = dbIdRef.current
-                  if (!pid) return
-                  await supabase.from('presupuestos').update({ tipo_cambio_congelado: (ws as Record<string, unknown>).tipo_cambio }).eq('id', pid)
-                  setSaveStatus('saved')
-                  setTimeout(() => setSaveStatus(s => s === 'saved' ? 'idle' : s), 2000)
-                }} className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-xl transition-colors">
-                  💱 Actualizar a precios actuales
-                </button>
-              )}
+              {/* Update prices moved to in-document banner */}
 
               {/* Delete */}
               <button type="button" onClick={handleEliminar} className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors">
