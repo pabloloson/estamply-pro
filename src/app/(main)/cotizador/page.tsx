@@ -53,6 +53,8 @@ export default function CotizadorPage() {
   const [cotizadorDtfMode, setCotizadorDtfMode] = useState<'propia' | 'tercerizado'>('propia')
   const [pricingMode, setPricingMode] = useState<'margin' | 'markup'>('margin')
   const [selectedHornoId, setSelectedHornoId] = useState('')
+  const [selectedPulpoId, setSelectedPulpoId] = useState('')
+  const [selectedTintaSeriId, setSelectedTintaSeriId] = useState('')
   const [userOverrodePapel, setUserOverrodePapel] = useState(false)
 
   const loadedRef = useRef(false)
@@ -177,6 +179,15 @@ export default function CotizadorPage() {
     const slugs = (e.tecnicas_slugs as string[]) || []
     return slugs.length === 0 || slugs.includes(resolvedSlug)
   })
+  const pulpos = equipment.filter((e: Record<string, unknown>) => {
+    const cl = e.clasificacion as string || ''
+    if (cl !== 'pulpo') return false
+    const slugs = (e.tecnicas_slugs as string[]) || []
+    return slugs.length === 0 || slugs.includes(resolvedSlug)
+  })
+  const tintaSeriInsumos = technique
+    ? insumos.filter(ins => ins.tipo === 'tinta_serigrafica' && matchesTecnica(ins))
+    : []
 
   // Auto-select: Product → Printer + Press (filtered by technique)
   useEffect(() => {
@@ -223,6 +234,12 @@ export default function CotizadorPage() {
   useEffect(() => {
     if (!selectedHornoId && hornos.length) setSelectedHornoId((hornos[0] as Record<string, unknown>).id as string)
   }, [hornos.length, selectedHornoId])
+  useEffect(() => {
+    if (!selectedPulpoId && pulpos.length) setSelectedPulpoId((pulpos[0] as Record<string, unknown>).id as string)
+  }, [pulpos.length, selectedPulpoId])
+  useEffect(() => {
+    if (!selectedTintaSeriId && tintaSeriInsumos.length) setSelectedTintaSeriId(tintaSeriInsumos[0].id)
+  }, [tintaSeriInsumos.length, selectedTintaSeriId])
 
   // Sync production config selections to cost engine
   useEffect(() => { engine.setOverridePapelId(selectedPapelId || null) }, [selectedPapelId])
@@ -614,6 +631,12 @@ export default function CotizadorPage() {
                   hornos={hornos.map((h: Record<string, unknown>) => ({ id: h.id as string, name: h.name as string }))}
                   selectedHornoId={selectedHornoId}
                   onHornoChange={setSelectedHornoId}
+                  pulpos={pulpos.map((p: Record<string, unknown>) => ({ id: p.id as string, name: p.name as string }))}
+                  selectedPulpoId={selectedPulpoId}
+                  onPulpoChange={id => { setSelectedPulpoId(id); engine.setOverridePulpoId(id || null) }}
+                  tintaSeriInsumos={tintaSeriInsumos}
+                  selectedTintaSeriId={selectedTintaSeriId}
+                  onTintaSeriChange={id => { setSelectedTintaSeriId(id); engine.setOverrideTintaSeriId(id || null) }}
                 />
               </div>
 

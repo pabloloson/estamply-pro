@@ -45,6 +45,8 @@ export function useCostEngine(
   const [overrideDtfMode, setOverrideDtfMode] = useState<'propia' | 'tercerizado' | null>(null)
   const [overrideTintaId, setOverrideTintaId] = useState<string | null>(null)
   const [overridePricingMode, setOverridePricingMode] = useState<'margin' | 'markup' | null>(null)
+  const [overridePulpoId, setOverridePulpoId] = useState<string | null>(null)
+  const [overrideTintaSeriId, setOverrideTintaSeriId] = useState<string | null>(null)
   // Zones for subli/dtf
   const [numZones, setNumZones] = useState(1)
   const [zones, setZones] = useState<Array<{ ancho: number; alto: number; ubicacion: string }>>([
@@ -116,8 +118,15 @@ export function useCostEngine(
         linked.push(overrideTinta)
       }
     }
+    if (overrideTintaSeriId) {
+      const overrideTintaSeri = insumos.find(ins => ins.id === overrideTintaSeriId)
+      if (overrideTintaSeri) {
+        linked = linked.filter(ins => ins.tipo !== 'tinta_serigrafica')
+        linked.push(overrideTintaSeri)
+      }
+    }
     return linked
-  }, [technique, insumos, overridePapelId, overrideTintaId])
+  }, [technique, insumos, overridePapelId, overrideTintaId, overrideTintaSeriId])
 
   // Resolve discount tiers
   const discountTiers = useMemo((): DiscountTier[] => {
@@ -150,13 +159,20 @@ export function useCostEngine(
     const baseEquipIds = technique.equipment_ids.length > 0
       ? technique.equipment_ids
       : equipment.filter((e: { tecnicas_slugs?: string[] }) => (e.tecnicas_slugs || []).includes(technique.slug)).map((e: { id: string }) => e.id)
-    const effectiveEquipIds = overridePrinterId
+    let effectiveEquipIds = overridePrinterId
       ? [...baseEquipIds.filter((id: string) => {
           const eq = equipment.find((e: { id: string }) => e.id === id) as { type?: string; clasificacion?: string } | undefined
           const isP = (eq?.type || '').startsWith('printer') || (eq?.type || '').startsWith('plotter') || eq?.clasificacion === 'impresora' || eq?.clasificacion === 'plotter'
           return !isP // keep non-printer/plotter equipment, remove printers/plotters (override replaces them)
         }), overridePrinterId]
       : baseEquipIds
+    // Pulpo override: replace any pulpo in equip IDs
+    if (overridePulpoId) {
+      effectiveEquipIds = [...effectiveEquipIds.filter((id: string) => {
+        const eq = equipment.find((e: { id: string }) => e.id === id) as { clasificacion?: string } | undefined
+        return eq?.clasificacion !== 'pulpo'
+      }), overridePulpoId]
+    }
     const effectiveProduct = overridePressId
       ? { ...product, press_equipment_id: overridePressId }
       : product
@@ -177,7 +193,7 @@ export function useCostEngine(
       redondeo_precios: ((settings as Record<string, unknown>).redondeo_precios as string || 'none') as 'none' | 'integer' | 'tens' | 'hundreds',
       pricingMode: overridePricingMode || ((settings as Record<string, unknown>).pricing_mode as 'margin' | 'markup') || 'margin',
     })
-  }, [technique, product, equipment, linkedInsumos, settings, quantity, designWidth, designHeight, numColors, numZones, zones, margin, mo, otrosGastos, vinylSelections, discountTiers, overrideMerma, overrideAmortPrint, overrideAmortPress, overrideCostoPantalla, overrideDiscountPct, overridePrinterId, overridePressId, overrideDtfMode, overridePricingMode])
+  }, [technique, product, equipment, linkedInsumos, settings, quantity, designWidth, designHeight, numColors, numZones, zones, margin, mo, otrosGastos, vinylSelections, discountTiers, overrideMerma, overrideAmortPrint, overrideAmortPress, overrideCostoPantalla, overrideDiscountPct, overridePrinterId, overridePressId, overridePulpoId, overrideDtfMode, overridePricingMode])
 
   // Compute default values for overrides display
   const defaultMerma = useMemo(() => {
@@ -225,6 +241,8 @@ export function useCostEngine(
     overrideTintaId, setOverrideTintaId,
     overrideDtfMode, setOverrideDtfMode,
     overridePricingMode, setOverridePricingMode,
+    overridePulpoId, setOverridePulpoId,
+    overrideTintaSeriId, setOverrideTintaSeriId,
     resetOverrides, hasOverrides,
   }
 }

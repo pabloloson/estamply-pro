@@ -124,11 +124,11 @@ function applyRounding(value: number, mode: string): number {
 }
 
 function getAmort(equipment: Array<{ id: string; type?: string; clasificacion?: string; cost: number; lifespan_uses: number }>, ids: string[]) {
-  // Only sum printers/plotters — presses are handled separately by getPressAmort
+  // Only sum printers/plotters/pulpos — presses are handled separately by getPressAmort
   return ids.reduce((sum, id) => {
     const eq = equipment.find(e => e.id === id)
     if (!eq) return sum
-    const isPrinterOrPlotter = (eq.type || '').startsWith('printer') || (eq.type || '').startsWith('plotter') || eq.clasificacion === 'impresora' || eq.clasificacion === 'plotter'
+    const isPrinterOrPlotter = (eq.type || '').startsWith('printer') || (eq.type || '').startsWith('plotter') || eq.clasificacion === 'impresora' || eq.clasificacion === 'plotter' || eq.clasificacion === 'pulpo'
     return isPrinterOrPlotter ? sum + (eq.cost / eq.lifespan_uses) : sum
   }, 0)
 }
@@ -503,9 +503,18 @@ function computeSerigrafia(input: ComputeInput, config: SerigrafiaConfig): CostR
     }
   }
 
+  // Emulsión cost per pantalla (if available)
+  const emulsionIns = findInsumo(insumos, 'emulsion')
+  const emulsionCfg = emulsionIns ? insCfg(emulsionIns) : null
+  let costoEmulsionPerPantalla = 0
+  if (emulsionCfg && emulsionCfg.precio_kg && emulsionCfg.rendimiento_pantallas_kg) {
+    costoEmulsionPerPantalla = (emulsionCfg.precio_kg as number) / Math.max(emulsionCfg.rendimiento_pantallas_kg as number, 1)
+  }
+  const costoPantallaPlusEmulsion = costoPantalla + costoEmulsionPerPantalla
+
   // Setup cost divided by quantity
-  const costoSetupPerUnit = (costoPantalla * numColors) / quantity
-  const costoSetupTotal = costoPantalla * numColors
+  const costoSetupPerUnit = (costoPantallaPlusEmulsion * numColors) / quantity
+  const costoSetupTotal = costoPantallaPlusEmulsion * numColors
 
   // Tinta cost per unit — use tinta_serigrafica if available, fallback to generic tinta
   const tintaSeriIns = findInsumo(insumos, 'tinta_serigrafica', 'tinta')
@@ -531,7 +540,7 @@ function computeSerigrafia(input: ComputeInput, config: SerigrafiaConfig): CostR
 
   const lines = [
     { label: 'Producto base', value: costoProducto },
-    { label: `Pantallas (${numColors} col. × $${costoPantalla.toLocaleString('es-AR')} / ${quantity} u.)`, value: costoSetupPerUnit },
+    { label: `Pantallas${costoEmulsionPerPantalla > 0 ? ' + emulsión' : ''} (${numColors} col. × $${costoPantallaPlusEmulsion.toLocaleString('es-AR')} / ${quantity} u.)`, value: costoSetupPerUnit },
     { label: `Tinta (${numColors} colores × $${costoTintaPerColor})`, value: costoTintaPerUnit },
   ]
   if (amortEquip > 0) lines.push({ label: 'Amort. pulpo', value: amortEquip })

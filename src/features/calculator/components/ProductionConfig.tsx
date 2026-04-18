@@ -26,6 +26,14 @@ interface ProductionConfigProps {
   hornos?: Array<{ id: string; name: string }>
   selectedHornoId?: string
   onHornoChange?: (id: string) => void
+  // Pulpo (Serigrafía only)
+  pulpos?: Array<{ id: string; name: string }>
+  selectedPulpoId?: string
+  onPulpoChange?: (id: string) => void
+  // Tinta serigráfica
+  tintaSeriInsumos?: Insumo[]
+  selectedTintaSeriId?: string
+  onTintaSeriChange?: (id: string) => void
 }
 
 export default function ProductionConfig({
@@ -34,14 +42,17 @@ export default function ProductionConfig({
   onPapelChange, onTintaChange, onPrinterChange, onPressChange,
   dtfMode, onDtfModeChange,
   hornos = [], selectedHornoId, onHornoChange,
+  pulpos = [], selectedPulpoId, onPulpoChange,
+  tintaSeriInsumos = [], selectedTintaSeriId, onTintaSeriChange,
 }: ProductionConfigProps) {
   const isDTF = slug === 'dtf' || slug === 'dtf_uv'
   const isSubli = slug === 'subli'
   const isVinyl = slug === 'vinyl' || slug === 'vinyl_adhesivo'
   const isTercerizado = dtfMode === 'tercerizado'
+  const isSerigrafia = slug === 'serigrafia'
 
   // Show mode dropdown for techniques that support tercerizado
-  const showMode = isDTF || isSubli || isVinyl || slug === 'serigrafia'
+  const showMode = isDTF || isSubli || isVinyl || isSerigrafia
   const needsPapel = (isSubli || isDTF) && !isTercerizado
   const showPapel = needsPapel && papelInsumos.length > 0
   const showPapelEmpty = needsPapel && papelInsumos.length === 0
@@ -52,9 +63,11 @@ export default function ProductionConfig({
   const showTinta = needsTinta && tintaInsumos.length > 0
   const showTintaEmpty = needsTinta && tintaInsumos.length === 0
   const showPrinter = (isSubli || isVinyl || isDTF) && !isTercerizado && printers.length > 0
-  const showPress = presses.length > 0 && slug !== 'serigrafia' && slug !== 'dtf_uv' && slug !== 'vinyl_adhesivo'
+  const showPress = presses.length > 0 && !isSerigrafia && slug !== 'dtf_uv' && slug !== 'vinyl_adhesivo'
+  const showPulpo = isSerigrafia && !isTercerizado && pulpos.length > 0
+  const showTintaSeri = isSerigrafia && !isTercerizado && tintaSeriInsumos.length > 0
 
-  if (!showMode && !showPapel && !showPapelEmpty && !showPrinter && !showPress) return null
+  if (!showMode && !showPapel && !showPapelEmpty && !showPrinter && !showPress && !showPulpo && !showTintaSeri) return null
 
   const printerLabel = isVinyl ? 'Plotter de corte' : isDTF ? (slug === 'dtf_uv' ? 'Plotter UV' : 'Plotter de impresión') : 'Impresora'
   const papelLabel = isDTF ? 'Film DTF' : 'Papel / Film'
@@ -146,6 +159,25 @@ export default function ProductionConfig({
               <select className="input-base text-sm" value={selectedHornoId || ''} onChange={e => onHornoChange(e.target.value)}>
                 <option value="">Sin horno</option>
                 {hornos.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
+              </select>
+            </div>
+          )}
+
+          {showPulpo && onPulpoChange && (
+            <div>
+              <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Pulpo</label>
+              <select className="input-base text-sm" value={selectedPulpoId || ''} onChange={e => onPulpoChange(e.target.value)}>
+                <option value="">Sin pulpo</option>
+                {pulpos.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            </div>
+          )}
+
+          {showTintaSeri && onTintaSeriChange && (
+            <div>
+              <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Tinta serigráfica</label>
+              <select className="input-base text-sm" value={selectedTintaSeriId || ''} onChange={e => onTintaSeriChange(e.target.value)}>
+                {tintaSeriInsumos.map(ins => <option key={ins.id} value={ins.id}>{ins.nombre}</option>)}
               </select>
             </div>
           )}
