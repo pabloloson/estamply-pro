@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Plus, Pencil, Trash2, X, Check, Search, Copy, MoreHorizontal, Share2 } from 'lucide-react'
 import { useLocale } from '@/shared/context/LocaleContext'
@@ -41,7 +41,6 @@ export default function PromocionesPage() {
   const [categories, setCategories] = useState<Array<{ id: string; name: string }>>([])
   const [toast, setToast] = useState('')
   const [openMenu, setOpenMenu] = useState<string | null>(null)
-  const menuRef = useRef<HTMLDivElement>(null)
 
   async function load() {
     const [{ data: p }, { data: cp }, { data: cu }, { data: cats }] = await Promise.all([
@@ -66,7 +65,7 @@ export default function PromocionesPage() {
     setLoading(false)
   }
   useEffect(() => { load() }, [])
-  useEffect(() => { const h = (e: MouseEvent) => { if (menuRef.current && !menuRef.current.contains(e.target as Node)) setOpenMenu(null) }; document.addEventListener('click', h); return () => document.removeEventListener('click', h) }, [])
+  // Close menus on outside click via parent div onClick
 
   function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(''), 2500) }
 
@@ -142,8 +141,8 @@ export default function PromocionesPage() {
                       <span className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform" style={{ transform: p.status !== 'paused' ? 'translateX(16px)' : 'translateX(0)' }} /></button>
                   )}
                   <button onClick={() => setPromoModal(p)} className="p-1.5 rounded hover:bg-gray-100"><Pencil size={13} className="text-gray-400" /></button>
-                  <div className="relative ml-auto" ref={menuRef}><button onClick={e => { e.stopPropagation(); setOpenMenu(openMenu === p.id ? null : p.id) }} className="p-1.5 rounded hover:bg-gray-100"><MoreHorizontal size={14} className="text-gray-400" /></button>
-                    {openMenu === p.id && (<div className="absolute right-0 top-full mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-100 z-50 py-1">
+                  <div className="relative ml-auto"><button onClick={e => { e.stopPropagation(); setOpenMenu(openMenu === p.id ? null : p.id) }} className="p-1.5 rounded hover:bg-gray-100"><MoreHorizontal size={14} className="text-gray-400" /></button>
+                    {openMenu === p.id && (<div className="absolute right-0 top-full mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-100 z-50 py-1" onClick={e => e.stopPropagation()}>
                       {p.status === 'active' && <button onClick={() => finishPromo(p.id)} className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50">Finalizar</button>}
                       <button onClick={() => duplicatePromo(p)} className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50">Duplicar</button>
                       <button onClick={() => deletePromo(p.id)} className="w-full text-left px-3 py-1.5 text-sm text-red-500 hover:bg-red-50">Eliminar</button>
@@ -170,8 +169,8 @@ export default function PromocionesPage() {
                         <span className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform" style={{ transform: p.status !== 'paused' ? 'translateX(16px)' : 'translateX(0)' }} /></button>
                     )}
                     <button onClick={e => e.stopPropagation()} className="p-1.5 rounded-lg hover:bg-gray-100"><Pencil size={14} className="text-gray-400" /></button>
-                    <div className="relative" ref={menuRef}><button onClick={e => { e.stopPropagation(); setOpenMenu(openMenu === `p-${p.id}` ? null : `p-${p.id}`) }} className="p-1.5 rounded-lg hover:bg-gray-100"><MoreHorizontal size={14} className="text-gray-400" /></button>
-                      {openMenu === `p-${p.id}` && (<div className="absolute right-0 top-full mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-100 z-50 py-1">
+                    <div className="relative"><button onClick={e => { e.stopPropagation(); setOpenMenu(openMenu === `p-${p.id}` ? null : `p-${p.id}`) }} className="p-1.5 rounded-lg hover:bg-gray-100"><MoreHorizontal size={14} className="text-gray-400" /></button>
+                      {openMenu === `p-${p.id}` && (<div className="absolute right-0 top-full mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-100 z-50 py-1" onClick={e => e.stopPropagation()}>
                         {p.status === 'active' && <button onClick={() => finishPromo(p.id)} className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50">Finalizar</button>}
                         <button onClick={() => duplicatePromo(p)} className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50">Duplicar</button>
                         <button onClick={() => deletePromo(p.id)} className="w-full text-left px-3 py-1.5 text-sm text-red-500 hover:bg-red-50">Eliminar</button>
@@ -205,8 +204,8 @@ export default function PromocionesPage() {
                       <span className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform" style={{ transform: c.status === 'active' ? 'translateX(16px)' : 'translateX(0)' }} /></button>
                   )}
                   <button onClick={() => setCouponModal(c)} className="p-1.5 rounded hover:bg-gray-100"><Pencil size={13} className="text-gray-400" /></button>
-                  <div className="relative ml-auto" ref={menuRef}><button onClick={e => { e.stopPropagation(); setOpenMenu(openMenu === c.id ? null : c.id) }} className="p-1.5 rounded hover:bg-gray-100"><MoreHorizontal size={14} className="text-gray-400" /></button>
-                    {openMenu === c.id && (<div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-lg shadow-lg border border-gray-100 z-50 py-1">
+                  <div className="relative ml-auto"><button onClick={e => { e.stopPropagation(); setOpenMenu(openMenu === c.id ? null : c.id) }} className="p-1.5 rounded hover:bg-gray-100"><MoreHorizontal size={14} className="text-gray-400" /></button>
+                    {openMenu === c.id && (<div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-lg shadow-lg border border-gray-100 z-50 py-1" onClick={e => e.stopPropagation()}>
                       <button onClick={() => { navigator.clipboard.writeText(c.code); showToast('Código copiado'); setOpenMenu(null) }} className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 flex items-center gap-2"><Copy size={12} /> Copiar código</button>
                       <button onClick={() => deleteCoupon(c.id)} className="w-full text-left px-3 py-1.5 text-sm text-red-500 hover:bg-red-50 flex items-center gap-2"><Trash2 size={12} /> Eliminar</button>
                     </div>)}</div>
@@ -233,8 +232,8 @@ export default function PromocionesPage() {
                         <span className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform" style={{ transform: c.status === 'active' ? 'translateX(16px)' : 'translateX(0)' }} /></button>
                     )}
                     <button onClick={e => e.stopPropagation()} className="p-1.5 rounded-lg hover:bg-gray-100"><Pencil size={14} className="text-gray-400" /></button>
-                    <div className="relative" ref={menuRef}><button onClick={e => { e.stopPropagation(); setOpenMenu(openMenu === `c-${c.id}` ? null : `c-${c.id}`) }} className="p-1.5 rounded-lg hover:bg-gray-100"><MoreHorizontal size={14} className="text-gray-400" /></button>
-                      {openMenu === `c-${c.id}` && (<div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-lg shadow-lg border border-gray-100 z-50 py-1">
+                    <div className="relative"><button onClick={e => { e.stopPropagation(); setOpenMenu(openMenu === `c-${c.id}` ? null : `c-${c.id}`) }} className="p-1.5 rounded-lg hover:bg-gray-100"><MoreHorizontal size={14} className="text-gray-400" /></button>
+                      {openMenu === `c-${c.id}` && (<div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-lg shadow-lg border border-gray-100 z-50 py-1" onClick={e => e.stopPropagation()}>
                         <button onClick={() => { navigator.clipboard.writeText(c.code); showToast('Código copiado'); setOpenMenu(null) }} className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 flex items-center gap-2"><Copy size={12} /> Copiar código</button>
                         <button onClick={() => deleteCoupon(c.id)} className="w-full text-left px-3 py-1.5 text-sm text-red-500 hover:bg-red-50 flex items-center gap-2"><Trash2 size={12} /> Eliminar</button>
                       </div>)}</div>
