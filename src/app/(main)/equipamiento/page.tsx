@@ -36,7 +36,7 @@ const TYPES_BY_CLASIF: Record<string, Array<[string, string]>> = {
   pulpo: [['pulpo_manual', 'Pulpo manual'], ['pulpo_auto', 'Pulpo automático'], ['estacion', 'Estación de estampado'], ['pulpo_other', 'Otro']],
 }
 
-const TEC_LABELS: Record<string, string> = { subli: 'Subli', dtf: 'DTF', dtf_uv: 'DTF UV', vinyl: 'Vinilo', serigrafia: 'Serigrafía' }
+const TEC_LABELS: Record<string, string> = { subli: 'Subli', dtf: 'DTF Textil', dtf_uv: 'DTF UV', vinyl: 'Vinilo', serigrafia: 'Serigrafía' }
 const TEC_COLORS: Record<string, string> = { subli: '#6C5CE7', dtf: '#E17055', dtf_uv: '#00B894', vinyl: '#E84393', serigrafia: '#FDCB6E' }
 const ALL_TECS = ['subli', 'dtf', 'dtf_uv', 'vinyl', 'serigrafia']
 
@@ -293,7 +293,7 @@ export default function EquipamientoPage() {
                     <NumericInput className="input-base" value={modal.cost || 0} onChange={v => setModal({ ...modal, cost: v })} /></div>
                   <div><label className="block text-sm font-medium text-gray-700 mb-1">Vida útil (usos) *</label>
                     <NumericInput className="input-base" min={1} value={modal.lifespan_uses || 10000} onChange={v => setModal({ ...modal, lifespan_uses: v })} />
-                    <p className="text-[10px] text-gray-400 mt-0.5">Usos estimados antes de reemplazar</p></div>
+                    <p className="text-[10px] text-gray-400 mt-0.5">Ej: 10 usos/día × 300 días/año × 3 años = 9.000 usos</p></div>
                 </div>
                 <div className="grid grid-cols-2 gap-3 mt-3">
                   <div>

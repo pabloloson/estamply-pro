@@ -257,7 +257,7 @@ function computeSubli(input: ComputeInput, config: SubliConfig): CostResult {
 
   const costoTotal = costoProducto + totalPapelTinta + totalAmortPress + amortEquip + costoDesp + moAdjusted + otrosGastos / Math.max(quantity, 1)
   // Time: prep + print + press
-  const printer = equipment.find(e => techniqueEquipmentIds.includes(e.id) && (e.type?.startsWith('printer') || e.clasificacion === 'impresora'))
+  const printer = equipment.find(e => techniqueEquipmentIds.includes(e.id) && (e.type?.startsWith('printer') || e.type?.startsWith('plotter') || e.clasificacion === 'impresora' || e.clasificacion === 'plotter'))
   const printTimeSec = printer?.print_time_sec || 0
   const printTimeMin = printTimeSec > 0 ? (printTimeSec * totalHojas) / 60 : 0
   const pressTimeMin = (((product.time_subli as number) || 0) / 60) * numZones * quantity
@@ -384,7 +384,7 @@ function computeDTF(input: ComputeInput, config: DTFConfig | DTFUVConfig): CostR
   const costoTotal = costoProducto + totalImpresion + totalAmortPress + amortHorno + costoDesp + moAdjusted + otrosGastos / Math.max(quantity, 1)
 
   const timeKey = 'time_dtf' // DTF UV uses same product handling time as DTF Textil
-  const dtfPrinter = equipment.find(e => techniqueEquipmentIds.includes(e.id) && (e.type?.startsWith('printer') || e.clasificacion === 'impresora'))
+  const dtfPrinter = equipment.find(e => techniqueEquipmentIds.includes(e.id) && (e.type?.startsWith('printer') || e.type?.startsWith('plotter') || e.clasificacion === 'impresora' || e.clasificacion === 'plotter'))
   const dtfPrintTimeSec = dtfPrinter?.print_time_sec || 0
   const totalMetrosDTF = dtfZoneResults.reduce((s, z) => s + z.metrosLineales, 0)
   const dtfPrintTimeMin = dtfPrintTimeSec > 0 ? (dtfPrintTimeSec * totalMetrosDTF) / 60 : 0

@@ -31,7 +31,7 @@ const TIPO_COLORS: Record<InsumoTipo, string> = {
 const TECNICA_FILTER_TABS = [
   { id: '', label: 'Todos' },
   { id: 'subli', label: 'Sublimación', color: '#6C5CE7' },
-  { id: 'dtf', label: 'DTF', color: '#E17055' },
+  { id: 'dtf', label: 'DTF Textil', color: '#E17055' },
   { id: 'vinyl', label: 'Vinilo', color: '#E84393' },
   { id: 'serigrafia', label: 'Serigrafía', color: '#FDCB6E' },
 ]
@@ -526,7 +526,7 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
               )}
               <div><label className="block text-sm font-semibold text-gray-600 mb-2">Tiempos de planchado (seg/unidad)</label>
                 <div className="grid grid-cols-3 gap-2">
-                  {[['time_subli', 'Subli', '#6C5CE7'], ['time_dtf', 'DTF', '#E17055'], ['time_vinyl', 'Vinilo', '#E84393']].map(([k, l, c]) => (
+                  {[['time_subli', 'Subli', '#6C5CE7'], ['time_dtf', 'DTF Textil', '#E17055'], ['time_vinyl', 'Vinilo', '#E84393']].map(([k, l, c]) => (
                     <div key={k}><label className="block text-xs font-medium mb-1" style={{ color: c as string }}>{l as string}</label>
                       <NumericInput className="input-base text-center" value={(modal as Record<string, number>)[k as string] || 0} onChange={v => setModal({ ...modal, [k as string]: v })} /></div>
                   ))}
