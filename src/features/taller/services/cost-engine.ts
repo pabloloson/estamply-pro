@@ -509,7 +509,7 @@ function computeSerigrafia(input: ComputeInput, config: SerigrafiaConfig): CostR
   if (config.modo === 'tercerizado') {
     const servicioIns = findInsumo(insumos, 'servicio_impresion', 'otro')
     const sc = servicioIns ? insCfg(servicioIns) : null
-    const precioColor = sc ? ((sc.precio_por_color as number) || (sc.precio as number) || 0) : 0
+    const precioColor = sc ? ((sc.precio_por_color as number) || (sc.precio_metro as number) || (sc.precio as number) || 0) : 0
     const costoTerc = precioColor * numColors
     const costoDesp = (costoProducto + costoTerc) * (desperdicio / 100)
     const costoTotal = costoProducto + costoTerc + costoDesp + mo + otrosGastos / Math.max(quantity, 1)

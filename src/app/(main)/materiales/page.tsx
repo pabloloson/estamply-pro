@@ -823,7 +823,7 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
                   const isSeri = insModal.tecnica_asociada === 'serigrafia'
                   return (<div className="space-y-3">
                     {isSeri ? (
-                      <div><label className="block text-xs text-gray-500 mb-1">Precio por color/unidad ($)</label><NumericInput className="input-base" value={c.precio_por_color as number || 0} onChange={v => up({ precio_por_color: v })} />
+                      <div><label className="block text-xs text-gray-500 mb-1">Precio por color/unidad ($)</label><NumericInput className="input-base" value={(c.precio_por_color as number) || (c.precio_metro as number) || 0} onChange={v => up({ precio_por_color: v })} />
                         <p className="text-[10px] text-gray-400 mt-0.5">Cuánto cobra el tercero por cada color en cada prenda.</p></div>
                     ) : (
                       <div className="grid grid-cols-2 gap-3">

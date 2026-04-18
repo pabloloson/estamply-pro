@@ -300,7 +300,7 @@ export default function InsumosPage() {
                 const isSeri = modal.tecnica_asociada === 'serigrafia'
                 return (<div className="space-y-3">
                   {isSeri ? (
-                    <div><label className="block text-xs text-gray-500 mb-1">Precio por color/unidad ($)</label><input type="number" className="input-base" value={c.precio_por_color as number || 0} onChange={e => up({ precio_por_color: Number(e.target.value) })} />
+                    <div><label className="block text-xs text-gray-500 mb-1">Precio por color/unidad ($)</label><input type="number" className="input-base" value={(c.precio_por_color as number) || (c.precio_metro as number) || 0} onChange={e => up({ precio_por_color: Number(e.target.value) })} />
                       <p className="text-[10px] text-gray-400 mt-0.5">Cuánto cobra el tercero por cada color en cada prenda.</p></div>
                   ) : (
                     <div className="grid grid-cols-2 gap-3">
