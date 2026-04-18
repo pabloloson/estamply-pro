@@ -43,6 +43,8 @@ export default function CatalogoPage() {
   const [stockPopover, setStockPopover] = useState<string | null>(null)
   const [showCats, setShowCats] = useState(false)
   const [catFilter, setCatFilter] = useState('all')
+  const [catCategoryFilter, setCatCategoryFilter] = useState('')
+  const [search, setSearch] = useState('')
   const [uploading, setUploading] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -84,8 +86,11 @@ export default function CatalogoPage() {
   }
 
   // Catalog product CRUD
+  const [priceError, setPriceError] = useState('')
   async function saveCatalogProduct() {
-    if (!catModal?.name) return; setSaving(true)
+    if (!catModal?.name) return
+    if (!catModal.selling_price || catModal.selling_price <= 0) { setPriceError('El precio debe ser mayor a 0'); return }
+    setPriceError(''); setSaving(true)
     const slug = catModal.slug || generateSlug(catModal.name)
     const payload = {
       name: catModal.name, description: catModal.description || null,
@@ -138,13 +143,34 @@ export default function CatalogoPage() {
     await supabase.from('catalog_products').update({ featured: newVal }).eq('id', p.id)
     setCatalogProducts(prev => prev.map(x => x.id === p.id ? { ...x, featured: newVal } : x))
   }
+  async function toggleVisibility(p: CatalogProduct) {
+    const newVal = !p.visible_in_catalog
+    await supabase.from('catalog_products').update({ visible_in_catalog: newVal }).eq('id', p.id)
+    setCatalogProducts(prev => prev.map(x => x.id === p.id ? { ...x, visible_in_catalog: newVal } : x))
+  }
+
+  function effectivePrice(p: CatalogProduct) { return (p.precio_anterior && p.precio_anterior > 0 && p.selling_price < p.precio_anterior) ? p.selling_price : p.selling_price }
+  function effectiveMargin(p: CatalogProduct) {
+    const price = effectivePrice(p)
+    return price > 0 && p.unit_cost > 0 ? Math.round(((price - p.unit_cost) / price) * 100) : 0
+  }
 
   const filtered = catalogProducts.filter(p => {
-    if (catFilter === 'stock') return p.manage_stock && p.current_stock > 0
-    if (catFilter === 'ondemand') return !p.manage_stock
-    if (catFilter === 'visible') return p.visible_in_catalog
-    if (catFilter === 'hidden') return !p.visible_in_catalog
-    if (catFilter === 'featured') return p.featured
+    // Status filter
+    if (catFilter === 'stock' && !(p.manage_stock && p.current_stock > 0)) return false
+    if (catFilter === 'ondemand' && p.manage_stock) return false
+    if (catFilter === 'visible' && !p.visible_in_catalog) return false
+    if (catFilter === 'hidden' && p.visible_in_catalog) return false
+    if (catFilter === 'featured' && !p.featured) return false
+    // Category filter
+    if (catCategoryFilter === 'none' && p.category_id) return false
+    if (catCategoryFilter && catCategoryFilter !== 'none' && p.category_id !== catCategoryFilter) return false
+    // Search
+    if (search) {
+      const s = search.toLowerCase()
+      const catName = categories.find(c => c.id === p.category_id)?.name || ''
+      if (!p.name.toLowerCase().includes(s) && !(p.description || '').toLowerCase().includes(s) && !catName.toLowerCase().includes(s)) return false
+    }
     return true
   })
 
@@ -167,19 +193,34 @@ export default function CatalogoPage() {
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex gap-1.5 mb-4 flex-wrap">
-        {[['all', t('allProducts')], ['featured', 'Destacados'], ['stock', t('withStock')], ['ondemand', t('onDemand')], ['visible', t('visible')], ['hidden', t('hidden')]].map(([id, label]) => (
-          <button key={id} onClick={() => setCatFilter(id)}
-            className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${catFilter === id ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-500'}`}>{label}</button>
-        ))}
+      {/* Filters + Search */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
+        <div className="flex gap-1.5 flex-wrap flex-1">
+          {[['all', t('allProducts')], ['featured', 'Destacados'], ['stock', t('withStock')], ['ondemand', t('onDemand')], ['visible', t('visible')], ['hidden', t('hidden')]].map(([id, label]) => (
+            <button key={id} onClick={() => setCatFilter(id)}
+              className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${catFilter === id ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-500'}`}>{label}</button>
+          ))}
+          {categories.length > 0 && (
+            <select value={catCategoryFilter} onChange={e => setCatCategoryFilter(e.target.value)}
+              className="text-xs font-semibold rounded-full px-3 py-1 bg-gray-100 text-gray-500 border-none outline-none cursor-pointer">
+              <option value="">Todas las categorías</option>
+              {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              <option value="none">Sin categoría</option>
+            </select>
+          )}
+        </div>
+        <div className="relative w-full sm:w-56">
+          <input type="text" value={search} onChange={e => setSearch(e.target.value)}
+            className="input-base !py-1.5 text-sm !pl-8" placeholder="Buscar producto..." />
+          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs">🔍</span>
+        </div>
       </div>
 
       {/* Mobile cards */}
       <div className="md:hidden space-y-2">
         {filtered.map(p => {
-          const margin = p.selling_price > 0 ? Math.round(((p.selling_price - p.unit_cost) / p.selling_price) * 100) : 0
-          const lowStock = p.manage_stock && p.current_stock <= p.min_stock
+          const margin = effectiveMargin(p)
+          const lowStock = p.manage_stock && p.current_stock <= p.min_stock && p.current_stock > 0
           const photo = (p.photos || [])[0]
           const catName = categories.find(c => c.id === p.category_id)?.name
           return (
@@ -199,9 +240,9 @@ export default function CatalogoPage() {
                   <button onClick={e => { e.stopPropagation(); toggleFeatured(p) }} className="p-1">
                     <Star size={14} className={p.featured ? 'text-amber-400 fill-amber-400' : 'text-gray-300'} />
                   </button>
-                  {p.visible_in_catalog
-                    ? <Eye size={14} className="text-green-500" />
-                    : <EyeOff size={14} className="text-gray-300" />}
+                  <button onClick={e => { e.stopPropagation(); toggleVisibility(p) }} className="p-1">
+                    {p.visible_in_catalog ? <Eye size={14} className="text-green-500" /> : <EyeOff size={14} className="text-gray-300" />}
+                  </button>
                   <button onClick={e => { e.stopPropagation(); deleteCatalogProduct(p.id) }} className="p-1.5 rounded-lg hover:bg-red-50">
                     <Trash2 size={14} className="text-red-400" />
                   </button>
@@ -210,7 +251,9 @@ export default function CatalogoPage() {
               <div className="mt-2 flex items-center gap-3 text-xs">
                 <div>
                   <span className="text-gray-400">{t('price')}</span>
-                  <p className="font-semibold text-gray-700">{fmtCurrency(p.selling_price)}</p>
+                  {p.precio_anterior && p.precio_anterior > 0 && p.selling_price < p.precio_anterior
+                    ? <p className="font-semibold"><span className="text-gray-400 line-through text-[10px]">{fmtCurrency(p.precio_anterior)}</span> <span className="text-green-600">{fmtCurrency(p.selling_price)}</span></p>
+                    : <p className="font-semibold text-gray-700">{fmtCurrency(p.selling_price)}</p>}
                 </div>
                 {showCosts && (
                   <div>
@@ -226,10 +269,12 @@ export default function CatalogoPage() {
                 )}
                 <div className="ml-auto text-right">
                   {p.manage_stock ? (
-                    p.current_stock > 0 ? (
-                      <p className="font-medium text-gray-600">{p.current_stock} en stock</p>
-                    ) : (
+                    p.current_stock <= 0 ? (
                       <p className="font-medium text-red-500">Sin stock</p>
+                    ) : lowStock ? (
+                      <p className="font-medium text-amber-600">⚠ {p.current_stock} en stock</p>
+                    ) : (
+                      <p className="font-medium text-gray-600">{p.current_stock} en stock</p>
                     )
                   ) : (
                     <span className="text-gray-400">A pedido</span>
@@ -250,9 +295,12 @@ export default function CatalogoPage() {
               <th key={i} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 py-3">{h}</th>)}
           </tr></thead><tbody>
             {filtered.map(p => {
-              const margin = p.selling_price > 0 ? Math.round(((p.selling_price - p.unit_cost) / p.selling_price) * 100) : 0
-              const lowStock = p.manage_stock && p.current_stock <= p.min_stock
+              const margin = effectiveMargin(p)
+              const lowStock = p.manage_stock && p.current_stock <= p.min_stock && p.current_stock > 0
+              const noStock = p.manage_stock && p.current_stock <= 0
               const photo = (p.photos || [])[0]
+              const catName = categories.find(c => c.id === p.category_id)?.name
+              const hasPromo = p.precio_anterior && p.precio_anterior > 0 && p.selling_price < p.precio_anterior
               return (
                 <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50">
                   <td className="px-3 py-2 w-10">
@@ -260,17 +308,23 @@ export default function CatalogoPage() {
                   </td>
                   <td className="px-3 py-3">
                     <p className="font-medium text-gray-800">{p.name}</p>
-                    {p.description && <p className="text-xs text-gray-400 truncate max-w-[200px]">{p.description}</p>}
+                    <p className="text-xs text-gray-400 truncate max-w-[250px]">{[p.description, catName].filter(Boolean).join(' · ') || ''}</p>
                   </td>
-                  <td className="px-3 py-3 font-semibold text-gray-800 text-sm">{fmtCurrency(p.selling_price)}</td>
+                  <td className="px-3 py-3 text-sm">
+                    {hasPromo ? (
+                      <div><span className="text-gray-400 line-through text-xs">{fmtCurrency(p.precio_anterior!)}</span> <span className="font-semibold text-green-600">{fmtCurrency(p.selling_price)}</span></div>
+                    ) : <span className="font-semibold text-gray-800">{fmtCurrency(p.selling_price)}</span>}
+                  </td>
                   {showCosts && <td className="px-3 py-3 text-gray-600 text-sm">{p.unit_cost ? fmtCurrency(p.unit_cost) : '—'}</td>}
                   {showCosts && <td className="px-3 py-3"><span className={`text-sm font-medium ${p.unit_cost ? marginColor(margin) : 'text-gray-300'}`}>{p.unit_cost ? `${margin}%` : '—'}</span></td>}
                   <td className="px-3 py-3 text-sm">
                     {p.manage_stock ? (
-                      p.current_stock > 0 ? (
+                      noStock ? (
+                        <span className="text-red-500 font-medium text-xs">Sin stock</span>
+                      ) : (
                         <div className="relative inline-block">
-                          <button onClick={e => { e.stopPropagation(); setStockPopover(stockPopover === p.id ? null : p.id) }} className="flex items-center gap-1 cursor-pointer text-gray-600 hover:text-gray-800">
-                            {p.current_stock} en stock
+                          <button onClick={e => { e.stopPropagation(); setStockPopover(stockPopover === p.id ? null : p.id) }} className={`flex items-center gap-1 cursor-pointer ${lowStock ? 'text-amber-600 font-semibold' : 'text-gray-600'} hover:text-gray-800`}>
+                            {lowStock && <AlertTriangle size={12} />}{p.current_stock} en stock
                           </button>
                           {stockPopover === p.id && (
                             <div className="absolute left-0 top-full mt-1 w-48 py-2 bg-white rounded-lg z-50" onClick={e => e.stopPropagation()}
@@ -285,12 +339,14 @@ export default function CatalogoPage() {
                             </div>
                           )}
                         </div>
-                      ) : (
-                        <span className="text-red-500 font-medium text-xs">Sin stock</span>
                       )
                     ) : <span className="text-gray-400 text-xs">A pedido</span>}
                   </td>
-                  <td className="px-3 py-3">{p.visible_in_catalog ? <Eye size={14} className="text-green-500" /> : <EyeOff size={14} className="text-gray-300" />}</td>
+                  <td className="px-3 py-3">
+                    <button onClick={e => { e.stopPropagation(); toggleVisibility(p) }} className="p-1 rounded hover:bg-gray-100" title={p.visible_in_catalog ? 'Ocultar del catálogo' : 'Mostrar en catálogo'}>
+                      {p.visible_in_catalog ? <Eye size={14} className="text-green-500" /> : <EyeOff size={14} className="text-gray-300" />}
+                    </button>
+                  </td>
                   <td className="px-3 py-3"><div className="flex gap-1">
                     <button onClick={() => toggleFeatured(p)} className="p-1.5 rounded-lg hover:bg-amber-50" title={p.featured ? 'Quitar destacado' : 'Destacar'}>
                       <Star size={14} className={p.featured ? 'text-amber-400 fill-amber-400' : 'text-gray-300'} />
@@ -348,9 +404,9 @@ export default function CatalogoPage() {
               {/* Cost & Price */}
               <div className="border-t border-gray-100 pt-4">
                 <div className={`grid gap-3 ${showCosts ? 'grid-cols-3' : 'grid-cols-2'}`}>
-                  <div><label className="block text-sm font-medium text-gray-700 mb-1">{t('salePrice')}</label>
-                    <NumericInput className="input-base" value={catModal.selling_price || 0} onChange={v => setCatModal({ ...catModal, selling_price: v })} />
-                    <p className="text-[10px] text-gray-400 mt-0.5">Precio de venta para tus clientes.</p></div>
+                  <div><label className="block text-sm font-medium text-gray-700 mb-1">{t('salePrice')} *</label>
+                    <NumericInput className={`input-base ${priceError ? '!border-red-400' : ''}`} value={catModal.selling_price || 0} onChange={v => { setCatModal({ ...catModal, selling_price: v }); if (v > 0) setPriceError('') }} />
+                    {priceError ? <p className="text-[10px] text-red-500 mt-0.5">{priceError}</p> : <p className="text-[10px] text-gray-400 mt-0.5">Precio de venta para tus clientes.</p>}</div>
                   <div><label className="block text-sm font-medium text-gray-700 mb-1">Precio promocional ($)</label>
                     <NumericInput className="input-base" value={catModal.precio_anterior || 0} onChange={v => setCatModal({ ...catModal, precio_anterior: v || null })} />
                     <p className="text-[10px] text-gray-400 mt-0.5">Si lo completás, aparece como oferta.</p></div>
