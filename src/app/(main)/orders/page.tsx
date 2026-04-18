@@ -326,6 +326,8 @@ export default function OrdersPage() {
     const { data: mats } = await supabase.from('pedido_materiales').select('disponible').eq('pedido_id', orderId)
     const allReady = mats?.every(m => m.disponible) || false
     await supabase.from('orders').update({ materiales_listos: allReady }).eq('id', orderId)
+    // Update local state immediately so yellow dot updates
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, materiales_listos: allReady } : o))
   }
 
   function getPays(oid: string) { return payments.filter(p => p.order_id === oid) }
@@ -346,7 +348,14 @@ export default function OrdersPage() {
     if (!e.over || !e.active) return
     const oid = e.active.id as string, ns = e.over.id as string
     const o = orders.find(x => x.id === oid)
-    if (o && o.status !== ns) setStatus(oid, ns)
+    if (o && o.status !== ns) {
+      // Optimistic update: move card immediately
+      setOrders(prev => prev.map(x => x.id === oid ? { ...x, status: ns } : x))
+      // Persist to DB in background
+      supabase.from('orders').update({ status: ns }).eq('id', oid).then(({ error }) => {
+        if (error) { setOrders(prev => prev.map(x => x.id === oid ? { ...x, status: o.status } : x)) }
+      })
+    }
   }
 
   // ── Detail view (shared between list expanded + kanban panel) ──
@@ -594,6 +603,7 @@ export default function OrdersPage() {
 
   // ── List card ──
   function Card({ order }: { order: Order }) {
+    const isExp = expanded === order.id
     const sc = SC[order.status] || SC.pending
     const p = paid(order.id)
     const od = isOD(order.due_date) && order.status !== 'delivered'
@@ -601,7 +611,7 @@ export default function OrdersPage() {
 
     return (
       <div className={`card overflow-hidden ${od ? 'border-l-[3px] border-l-red-400' : ''}`}>
-        <button type="button" onClick={() => setDetailPanel(order.id)} className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors ${od ? 'bg-red-50' : ''}`}>
+        <button type="button" onClick={() => setExpanded(isExp ? null : order.id)} className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors ${od ? 'bg-red-50' : ''}`}>
           {/* Line 1: client + total */}
           <div className="flex items-center justify-between">
             <span className="font-semibold text-gray-800 flex items-center gap-1.5">{order.clients?.name || <span className="text-gray-400 italic">Cliente no asignado</span>}{order.materiales_listos === false && <span className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" title="Faltan materiales" />}</span>
@@ -609,10 +619,9 @@ export default function OrdersPage() {
           </div>
           {/* Line 2: what to produce */}
           <div className="mt-1"><ItemSummary items={order.items || []} /></div>
-          {/* Line 3: status + date + payment */}
+          {/* Line 3: status + date + payment + print + chevron */}
           <div className="flex items-center justify-between mt-2 gap-2 flex-wrap">
             <div className="flex items-center gap-2">
-              {/* Status dropdown badge */}
               <div className="relative">
                 <span onClick={e => { e.stopPropagation(); setStatusDropdown(statusDropdown === order.id ? null : order.id) }}
                   className="text-[10px] font-bold px-2 py-0.5 rounded-full cursor-pointer select-none inline-flex items-center gap-0.5"
@@ -640,9 +649,19 @@ export default function OrdersPage() {
               {order.due_date && <span className={`text-xs flex items-center gap-1 ${od ? 'text-red-500 font-bold' : du <= 2 ? 'text-orange-500' : 'text-gray-400'}`}><Calendar size={10} />{new Date(order.due_date).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}{od && <span className="text-[9px] font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded">Vencido</span>}</span>}
               {!od && showPrices && p > 0 && p < order.total_price && <span className="text-[10px] text-gray-400">Seña: {fmtCurrency(p)}</span>}
             </div>
-            <ChevronDown size={14} className="text-gray-400" />
+            <div className="flex items-center gap-1">
+              <div className="relative group" onClick={e => e.stopPropagation()}>
+                <button className="p-1.5 rounded-lg hover:bg-gray-100"><Printer size={14} className="text-gray-400" /></button>
+                <div className="hidden group-hover:block absolute z-30 right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[160px]">
+                  <button onClick={() => printOrder(order)} className="w-full text-left px-3 py-1.5 text-xs font-medium hover:bg-gray-50 flex items-center gap-2"><Printer size={12} /> Orden de trabajo</button>
+                  <button onClick={() => printWorkshopSheet(order)} className="w-full text-left px-3 py-1.5 text-xs font-medium hover:bg-gray-50 flex items-center gap-2"><ClipboardList size={12} /> Hoja de taller</button>
+                </div>
+              </div>
+              {isExp ? <ChevronUp size={14} className="text-gray-400" /> : <ChevronDown size={14} className="text-gray-400" />}
+            </div>
           </div>
         </button>
+        {isExp && <div className="px-4 pb-4 pt-3 border-t border-gray-100"><Detail order={order} /></div>}
       </div>
     )
   }
