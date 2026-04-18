@@ -55,7 +55,7 @@ function DragCard({ id, children }: { id: string; children: React.ReactNode }) {
 
 function DropCol({ id, children }: { id: string; children: React.ReactNode }) {
   const { setNodeRef, isOver } = useDroppable({ id })
-  return <div ref={setNodeRef} className={`rounded-xl p-2 min-h-[200px] transition-all min-w-[70vw] snap-center md:min-w-0 ${isOver ? 'ring-2 ring-purple-300' : ''}`} style={{ background: SC[id]?.bg || '#F1F1F1' }}>{children}</div>
+  return <div ref={setNodeRef} className={`rounded-xl p-2 min-h-[200px] transition-all min-w-[70vw] snap-center md:min-w-0 ${isOver ? 'ring-2 ring-purple-300' : ''}`} style={{ background: '#F5F5F5' }}>{children}</div>
 }
 
 export default function OrdersPage() {
@@ -577,23 +577,22 @@ export default function OrdersPage() {
 
   // ── List card ──
   function Card({ order }: { order: Order }) {
-    const isExp = expanded === order.id
     const sc = SC[order.status] || SC.pending
-    const p = paid(order.id), saldo = order.total_price - p
+    const p = paid(order.id)
     const od = isOD(order.due_date) && order.status !== 'delivered'
     const du = dTo(order.due_date)
 
     return (
       <div className={`card overflow-hidden ${od ? 'border-l-[3px] border-l-red-400' : ''}`}>
-        <button type="button" onClick={() => setExpanded(isExp ? null : order.id)} className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors ${od ? 'bg-red-50' : ''}`}>
+        <button type="button" onClick={() => setDetailPanel(order.id)} className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors ${od ? 'bg-red-50' : ''}`}>
           {/* Line 1: client + total */}
           <div className="flex items-center justify-between">
-            <span className="font-semibold text-gray-800">{order.clients?.name || <span className="text-gray-400 italic">Cliente no asignado</span>}</span>
+            <span className="font-semibold text-gray-800 flex items-center gap-1.5">{order.clients?.name || <span className="text-gray-400 italic">Cliente no asignado</span>}{order.materiales_listos === false && <span className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" title="Faltan materiales" />}</span>
             {showPrices && <span className="font-bold text-gray-800">{fmtCurrency(order.total_price)}</span>}
           </div>
           {/* Line 2: what to produce */}
           <div className="mt-1"><ItemSummary items={order.items || []} /></div>
-          {/* Line 3: status + date + payment + action */}
+          {/* Line 3: status + date + payment */}
           <div className="flex items-center justify-between mt-2 gap-2 flex-wrap">
             <div className="flex items-center gap-2">
               {/* Status dropdown badge */}
@@ -622,14 +621,11 @@ export default function OrdersPage() {
                 )}
               </div>
               {order.due_date && <span className={`text-xs flex items-center gap-1 ${od ? 'text-red-500 font-bold' : du <= 2 ? 'text-orange-500' : 'text-gray-400'}`}><Calendar size={10} />{new Date(order.due_date).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}{od && <span className="text-[9px] font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded">Vencido</span>}</span>}
+              {!od && showPrices && p > 0 && p < order.total_price && <span className="text-[10px] text-gray-400">Seña: {fmtCurrency(p)}</span>}
             </div>
-            <div className="flex items-center gap-1">
-              <button onClick={e => { e.stopPropagation(); showPrices ? printOrder(order) : printWorkshopSheet(order) }} className="p-2.5 -m-1 rounded-lg hover:bg-gray-100 transition-colors" title={showPrices ? "Imprimir orden" : "Hoja de taller"}><Printer size={18} className="text-gray-400 hover:text-gray-700" /></button>
-              {isExp ? <ChevronUp size={14} className="text-gray-400" /> : <ChevronDown size={14} className="text-gray-400" />}
-            </div>
+            <ChevronDown size={14} className="text-gray-400" />
           </div>
         </button>
-        {isExp && <div className="px-4 pb-4 pt-3 border-t border-gray-100"><Detail order={order} /></div>}
       </div>
     )
   }
@@ -711,7 +707,13 @@ export default function OrdersPage() {
                             className={`p-3 rounded-lg bg-white shadow-sm cursor-pointer hover:shadow-md transition-all ${od ? 'border-l-4 border-l-red-500' : 'border border-transparent'}`}>
                             <div className="flex items-center justify-between">
                               <p className="font-semibold text-gray-800 text-sm truncate flex items-center gap-1.5">{order.clients?.name || <span className="text-gray-400 italic">Cliente no asignado</span>}{order.materiales_listos === false && <span className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" title="Faltan materiales" />}</p>
-                              <button onClick={e => { e.stopPropagation(); showPrices ? printOrder(order) : printWorkshopSheet(order) }} className="p-2.5 -m-1 rounded-lg hover:bg-gray-100 transition-colors" title={showPrices ? "Imprimir orden" : "Hoja de taller"}><Printer size={18} className="text-gray-400 hover:text-gray-700" /></button>
+                              <div className="relative group">
+                                <button onClick={e => e.stopPropagation()} className="p-2.5 -m-1 rounded-lg hover:bg-gray-100 transition-colors"><Printer size={18} className="text-gray-400 hover:text-gray-700" /></button>
+                                <div className="hidden group-hover:block absolute z-30 right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[160px]">
+                                  <button onClick={e => { e.stopPropagation(); printOrder(order) }} className="w-full text-left px-3 py-1.5 text-xs font-medium hover:bg-gray-50 flex items-center gap-2"><Printer size={12} /> Orden de trabajo</button>
+                                  <button onClick={e => { e.stopPropagation(); printWorkshopSheet(order) }} className="w-full text-left px-3 py-1.5 text-xs font-medium hover:bg-gray-50 flex items-center gap-2"><ClipboardList size={12} /> Hoja de taller</button>
+                                </div>
+                              </div>
                             </div>
                             {first ? (
                               <p className="text-[10px] text-gray-500 mt-0.5 truncate flex items-center gap-1">
@@ -744,7 +746,7 @@ export default function OrdersPage() {
         </DndContext>
       )}
 
-      {/* Kanban detail panel */}
+      {/* Detail panel — shared by list + kanban */}
       {detailPanel && detailOrder && (
         <div className="fixed inset-0 z-50 flex justify-end" onClick={() => setDetailPanel(null)}>
           <div className="absolute inset-0 bg-black/20" />
@@ -758,7 +760,7 @@ export default function OrdersPage() {
                 {showPrices && <p className="text-xs text-gray-400 mt-0.5">{fmtCurrency(detailOrder.total_price)}</p>}
               </div>
               <div className="flex gap-1">
-                <button onClick={() => showPrices ? printOrder(detailOrder) : printWorkshopSheet(detailOrder)} className="p-2 rounded-lg hover:bg-gray-100 text-gray-400" title={showPrices ? "Imprimir orden" : "Hoja de taller"}><Printer size={16} /></button>
+                <button onClick={() => printOrder(detailOrder)} className="p-2 rounded-lg hover:bg-gray-100 text-gray-400" title="Orden de trabajo"><Printer size={16} /></button>
                 <button onClick={() => printWorkshopSheet(detailOrder)} className="p-2 rounded-lg hover:bg-gray-100 text-gray-400" title="Hoja de taller"><ClipboardList size={16} /></button>
                 <button onClick={() => setDetailPanel(null)} className="p-2 rounded-lg hover:bg-gray-100"><X size={16} /></button>
               </div>
