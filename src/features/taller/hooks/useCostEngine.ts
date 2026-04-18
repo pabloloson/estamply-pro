@@ -171,7 +171,7 @@ export function useCostEngine(
       setupMin: (effectiveConfig as unknown as Record<string, unknown>).tiempo_preparacion as number || 0,
       discountTiers: effectiveDiscountTiers,
       zones: isZonable && numZones > 1 ? zones.slice(0, numZones) : undefined,
-      vinylSelections: technique.slug === 'vinyl' ? vinylSelections.slice(0, numColors) : undefined,
+      vinylSelections: (technique.slug === 'vinyl' || technique.slug === 'vinyl_adhesivo') ? vinylSelections.slice(0, numColors) : undefined,
       overrideMerma, overrideAmortPrint, overrideAmortPress, overrideCostoPantalla,
       tipoCambio: (settings as Record<string, unknown>).tipo_cambio as number || 1,
       redondeo_precios: ((settings as Record<string, unknown>).redondeo_precios as string || 'none') as 'none' | 'integer' | 'tens' | 'hundreds',

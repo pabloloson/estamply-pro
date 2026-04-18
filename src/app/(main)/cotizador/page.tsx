@@ -313,7 +313,7 @@ export default function CotizadorPage() {
 
   const activeTabMeta = cotizadorTabs.find(t => t.id === cotizadorTab) ?? cotizadorTabs[0]
   const activeColor = activeTabMeta?.color ?? '#6C5CE7'
-  const isVinyl = resolvedSlug === 'vinyl'
+  const isVinyl = resolvedSlug === 'vinyl' || resolvedSlug === 'vinyl_adhesivo'
   const isSerigrafia = resolvedSlug === 'serigrafia'
   const needsDesignSize = !isVinyl && !isSerigrafia
   const needsColors = isVinyl || isSerigrafia

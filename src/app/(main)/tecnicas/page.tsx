@@ -200,7 +200,7 @@ export default function ProduccionPage() {
                   </div>
 
                   {/* Margen de seguridad — subli, dtf, vinyl */}
-                  {(cfg.tipo === 'subli' || cfg.tipo === 'dtf' || cfg.tipo === 'dtf_uv' || cfg.tipo === 'vinyl') && (
+                  {(cfg.tipo === 'subli' || cfg.tipo === 'dtf' || cfg.tipo === 'dtf_uv' || cfg.tipo === 'vinyl' || cfg.tipo === 'vinyl_adhesivo') && (
                     <div><label className="block text-xs text-gray-500 mb-1">Margen seguridad (cm)</label>
                       <NumericInput className="input-base text-sm" value={(cfg as { margen_seguridad?: number }).margen_seguridad ?? (cfg.tipo === 'dtf' || cfg.tipo === 'dtf_uv' ? 0.3 : 0.5)}
                         onChange={v => updateConfig(tec.id, { margen_seguridad: v })} />
@@ -210,8 +210,8 @@ export default function ProduccionPage() {
                   {/* Desperdicio / Merma */}
                   <div><label className="block text-xs text-gray-500 mb-1">Desperdicio / Merma (%)</label>
                     <NumericInput className="input-base text-sm"
-                      value={cfg.tipo === 'vinyl' ? (cfg.desperdicio_pelado_pct ?? 15) : ((cfg as { desperdicio_pct?: number }).desperdicio_pct ?? 5)}
-                      onChange={v => updateConfig(tec.id, cfg.tipo === 'vinyl' ? { desperdicio_pelado_pct: v } : { desperdicio_pct: v })} />
+                      value={(cfg.tipo === 'vinyl' || cfg.tipo === 'vinyl_adhesivo') ? (cfg.desperdicio_pelado_pct ?? 15) : ((cfg as { desperdicio_pct?: number }).desperdicio_pct ?? 5)}
+                      onChange={v => updateConfig(tec.id, (cfg.tipo === 'vinyl' || cfg.tipo === 'vinyl_adhesivo') ? { desperdicio_pelado_pct: v } : { desperdicio_pct: v })} />
                     <p className="text-[10px] text-gray-400 mt-0.5">% de material que se pierde en el proceso.</p></div>
 
                   {/* Pedido mínimo */}
