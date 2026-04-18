@@ -71,10 +71,36 @@ export default function ClientsPage() {
     return () => document.removeEventListener('click', handler)
   }, [menuOpen])
 
-  async function save() {
-    if (!modal?.name?.trim()) return; setSaving(true)
+  const [dupWarning, setDupWarning] = useState<{ client: Client; field: string } | null>(null)
+
+  function capitalize(s: string) {
+    return s.replace(/\b\w+/g, w => w[0].toUpperCase() + w.slice(1).toLowerCase())
+  }
+
+  function findDuplicate(): { client: Client; field: string } | null {
+    if (modal?.id) return null // editing existing, skip
+    const phone = (modal?.whatsapp || modal?.phone || '').replace(/[\s\-\(\)+]/g, '')
+    const email = (modal?.email || '').trim().toLowerCase()
+    for (const c of clients) {
+      if (phone && phone.length >= 8) {
+        const cp = (c.whatsapp || c.phone || '').replace(/[\s\-\(\)+]/g, '')
+        if (cp && cp.includes(phone.slice(-8))) return { client: c, field: 'teléfono' }
+      }
+      if (email && c.email?.toLowerCase() === email) return { client: c, field: 'email' }
+    }
+    return null
+  }
+
+  async function save(force = false) {
+    if (!modal?.name?.trim()) return
+    // Duplicate check
+    if (!force && !modal.id) {
+      const dup = findDuplicate()
+      if (dup) { setDupWarning(dup); return }
+    }
+    setSaving(true)
     const payload = {
-      name: modal.name.trim(), email: modal.email?.trim() || null, phone: modal.phone?.trim() || null,
+      name: capitalize(modal.name.trim()), email: modal.email?.trim() || null, phone: modal.phone?.trim() || null,
       whatsapp: modal.whatsapp?.trim() || null, tipo_cliente: modal.tipo_cliente || 'persona',
       identificacion_fiscal: modal.identificacion_fiscal?.trim() || null,
       razon_social: modal.razon_social?.trim() || null, direccion: modal.direccion?.trim() || null,
@@ -83,7 +109,7 @@ export default function ClientsPage() {
     }
     if (modal.id) await supabase.from('clients').update(payload).eq('id', modal.id)
     else await supabase.from('clients').insert(payload)
-    setModal(null); setSaving(false); load()
+    setModal(null); setSaving(false); setDupWarning(null); load()
   }
 
   async function remove(id: string) {
@@ -196,6 +222,7 @@ export default function ClientsPage() {
                   <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">{t('name')}</th>
                   <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">Teléfono</th>
                   <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">{t('emailField')}</th>
+                  <th className="text-right text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">Facturado</th>
                   <th className="text-center text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">Pedidos</th>
                   <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">Último</th>
                   <th className="px-4 py-3"></th>
@@ -220,10 +247,11 @@ export default function ClientsPage() {
                             {c.whatsapp || c.phone}
                             <a href={waLink(c.whatsapp || c.phone || '')} target="_blank" rel="noopener" onClick={e => e.stopPropagation()} className="text-green-600 hover:text-green-700" title="Abrir WhatsApp"><MessageCircle size={14} /></a>
                           </span>
-                        ) : null}
+                        ) : <button onClick={e => { e.stopPropagation(); setModal(c) }} className="text-xs text-gray-300 hover:text-purple-500">+ Agregar</button>}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-500">{c.email || ''}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600 text-center">{getClientOrders(c.id).length}</td>
+                      <td className="px-4 py-3 text-sm text-gray-500">{c.email || <button onClick={e => { e.stopPropagation(); setModal(c) }} className="text-xs text-gray-300 hover:text-purple-500">+ Agregar</button>}</td>
+                      <td className="px-4 py-3 text-sm text-gray-700 text-right font-medium">{getClientTotal(c.id) > 0 ? fmtCurrency(getClientTotal(c.id)) : <span className="text-gray-300">-</span>}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600 text-center">{getClientOrders(c.id).length || <span className="text-gray-300">-</span>}</td>
                       <td className="px-4 py-3 text-xs text-gray-400">{(() => { const d = getClientLastOrder(c.id); return d ? new Date(d).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' }) : '-' })()}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-0.5">
@@ -320,9 +348,18 @@ export default function ClientsPage() {
                 <p className="text-[10px] text-gray-400 mt-0.5">Solo visible para vos, no aparece en presupuestos.</p>
               </div>
             </div>
+            {dupWarning && (
+              <div className="mt-4 p-3 rounded-lg" style={{ background: '#FFFBEB', border: '1px solid #FDE68A' }}>
+                <p className="text-xs text-amber-700 font-medium">Ya existe un cliente con este {dupWarning.field}: <strong>{dupWarning.client.name}</strong> ({dupWarning.client.whatsapp || dupWarning.client.phone || dupWarning.client.email})</p>
+                <div className="flex gap-2 mt-2">
+                  <button onClick={() => { setModal(dupWarning.client); setDupWarning(null) }} className="text-xs font-semibold text-amber-700 hover:text-amber-900 underline">Ver cliente existente</button>
+                  <button onClick={() => { setDupWarning(null); save(true) }} className="text-xs font-semibold text-gray-500 hover:text-gray-700">Crear de todos modos</button>
+                </div>
+              </div>
+            )}
             <div className="flex gap-3 mt-6">
-              <button onClick={() => setModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">{tc('cancel')}</button>
-              <button onClick={save} disabled={saving || !modal.name?.trim()} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#6C5CE7' }}>
+              <button onClick={() => { setModal(null); setDupWarning(null) }} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">{tc('cancel')}</button>
+              <button onClick={() => save()} disabled={saving || !modal.name?.trim()} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#6C5CE7' }}>
                 {saving ? tc('saving') : tc('save')}
               </button>
             </div>
