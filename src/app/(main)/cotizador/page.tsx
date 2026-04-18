@@ -539,24 +539,25 @@ export default function CotizadorPage() {
                   </div></div>
               )}
 
-              {/* Vinyl per-color material + dimensions + per-color nesting (only in propia mode) */}
-              {isVinyl && cotizadorDtfMode !== 'tercerizado' && Array.from({ length: engine.numColors }).map((_, i) => {
+              {/* Vinyl per-color: propia shows material picker, tercerizado shows only size */}
+              {isVinyl && Array.from({ length: engine.numColors }).map((_, i) => {
                 const sel = engine.vinylSelections[i] ?? { materialIdx: 0, colorIdx: 0, ancho: 10, alto: 10 }
                 const variantId = `${sel.materialIdx}-${sel.colorIdx}`
                 const vn = result?.vinylNesting?.[i]
-                const selectedV = vinylVariants.find(v => v.id === variantId)
+                const isTerc = cotizadorDtfMode === 'tercerizado'
+                const selectedV = !isTerc ? vinylVariants.find(v => v.id === variantId) : null
                 const tooWide = selectedV && sel.ancho > selectedV.anchoRollo
                 return (
                   <div key={i} className="rounded-xl p-3 border border-gray-100 bg-white shadow-sm space-y-2">
                     <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Color {i + 1}</span>
-                    {vinylVariants.length > 0 ? (
+                    {!isTerc && (vinylVariants.length > 0 ? (
                       <VinylPicker variants={vinylVariants} value={variantId} onChange={id => {
                         const [mi, ci] = id.split('-').map(Number)
                         engine.updateVinylSelection(i, { materialIdx: mi, colorIdx: ci })
                       }} />
                     ) : (
                       <p className="text-xs text-gray-400">Vinculá materiales de vinilo en Técnicas → Vinilo</p>
-                    )}
+                    ))}
                     <div>
                       <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Tamaño recorte (cm)</label>
                       <div className="flex items-center gap-2">
@@ -565,7 +566,7 @@ export default function CotizadorPage() {
                         <div className="flex-1"><p className="text-[9px] text-gray-400 mb-0.5">{t('height')}</p><NumericInput className="input-base text-sm" value={sel.alto} onChange={v => engine.updateVinylSelection(i, { alto: v })} /></div>
                       </div>
                     </div>
-                    {tooWide && <p className="text-[10px] text-red-500 font-medium">⚠ El recorte ({sel.ancho}cm) es más ancho que el rollo ({selectedV.anchoRollo}cm)</p>}
+                    {tooWide && <p className="text-[10px] text-red-500 font-medium">⚠ El recorte ({sel.ancho}cm) es más ancho que el rollo ({selectedV!.anchoRollo}cm)</p>}
                     {vn && vn.cols > 0 && (
                       <div>
                         <button type="button" onClick={() => setShowVinylNesting(prev => ({ ...prev, [i]: !prev[i] }))}

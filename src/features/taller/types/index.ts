@@ -155,7 +155,7 @@ export interface CostResult {
   }
   vinylNesting?: Array<{
     cols: number; rows: number; rotated: boolean
-    metrosLineales: number; anchoRollo: number; costoColor: number
+    metrosLineales: number; anchoRollo: number; costoColor: number; nombre?: string
   }>
   // Per-zone nesting details (for expandable Papel+Tinta)
   zoneNesting?: Array<{

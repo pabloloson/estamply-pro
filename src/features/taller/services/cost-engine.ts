@@ -411,23 +411,36 @@ function computeVinyl(input: ComputeInput, config: VinylConfig | import('@/featu
   const isAdhesivo = config.tipo === 'vinyl_adhesivo'
   const costoProducto = Number(product.base_cost)
 
-  // Tercerizado mode — single service line, no per-color breakdown
+  // Tercerizado mode — calculate meters from selections, use service price per meter
   if (config.modo === 'tercerizado') {
     const servicioIns = findInsumo(insumos, 'servicio_impresion', 'otro')
     const sc = servicioIns ? insCfg(servicioIns) : null
-    const costoTerc = sc ? ((sc.precio_metro as number) || (sc.precio as number) || 0) : 0
+    const precioMetro = sc ? ((sc.precio_metro as number) || (sc.precio as number) || 0) : 0
+    const anchoServicio = sc ? ((sc.ancho_material as number) || 50) : 50
+    const sels = vinylSelections ?? []
+    // Calculate nesting per color to get total meters
+    const tercNesting = sels.map((sel, i) => {
+      if (sel.ancho <= 0 || sel.alto <= 0) return { cols: 0, rows: 0, rotated: false, metrosLineales: 0, anchoRollo: anchoServicio, costoColor: 0, nombre: `Color ${i + 1}` }
+      const n = calcRollNesting(sel.ancho, sel.alto, anchoServicio, quantity, PLOTTER_MARGIN, 0.5)
+      const ml = n.lengthCm / 100
+      return { cols: n.cols, rows: n.rows, rotated: n.rotated, metrosLineales: ml, anchoRollo: anchoServicio, costoColor: ml * precioMetro, nombre: `Color ${i + 1}` }
+    })
+    const totalMetros = tercNesting.reduce((s, n) => s + n.metrosLineales, 0)
+    const costoTerc = (totalMetros * precioMetro) / Math.max(quantity, 1)
     const amortPress = isAdhesivo ? 0 : (input.overrideAmortPress ?? getPressAmort(product, equipment, 'vinyl'))
     const costoDesp = (costoProducto + costoTerc + amortPress) * (desperdicio / 100)
     const lines: { label: string; value: number }[] = [
       { label: 'Producto base', value: costoProducto },
-      { label: `Corte tercerizado (${numColors} color${numColors > 1 ? 'es' : ''})`, value: costoTerc },
+      { label: `Corte tercerizado (${totalMetros.toFixed(2)}m, ${numColors} color${numColors > 1 ? 'es' : ''})`, value: costoTerc },
     ]
     if (amortPress > 0) lines.push({ label: 'Amort. plancha', value: amortPress })
     if (costoDesp > 0) lines.push({ label: `Desperdicio (${desperdicio}%)`, value: costoDesp })
     if (mo > 0) lines.push({ label: 'Mano de obra', value: mo })
     if (otrosGastos > 0) lines.push({ label: 'Otros gastos', value: otrosGastos / Math.max(quantity, 1) })
     const costoTotal = costoProducto + costoTerc + amortPress + costoDesp + mo + otrosGastos / Math.max(quantity, 1)
-    return buildResult(lines, costoTotal, margin, quantity, discountTiers, setupMin + (((product.time_vinyl as number) || 0) / 60) * quantity, undefined, input.pricingMode)
+    const r = { ...buildResult(lines, costoTotal, margin, quantity, discountTiers, setupMin + (((product.time_vinyl as number) || 0) / 60) * quantity, undefined, input.pricingMode), vinylNesting: tercNesting }
+    if (!servicioIns) r.missingInsumosWarning = 'Creá un insumo tipo "Servicio tercerizado" con la técnica asociada para calcular el costo'
+    return r
   }
 
   // Producción propia — per-color vinyl breakdown
