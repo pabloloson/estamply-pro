@@ -272,12 +272,12 @@ export default function CatalogoPage() {
                     p.current_stock <= 0 ? (
                       <p className="font-medium text-red-500">Sin stock</p>
                     ) : lowStock ? (
-                      <p className="font-medium text-amber-600">⚠ {p.current_stock} en stock</p>
+                      <p className="font-medium text-amber-600">⚠ {p.current_stock}</p>
                     ) : (
                       <p className="font-medium text-gray-600">{p.current_stock} en stock</p>
                     )
                   ) : (
-                    <span className="text-gray-400">A pedido</span>
+                    <span className="text-green-600 font-medium">Disponible</span>
                   )}
                 </div>
               </div>
@@ -302,7 +302,7 @@ export default function CatalogoPage() {
               const catName = categories.find(c => c.id === p.category_id)?.name
               const hasPromo = p.precio_anterior && p.precio_anterior > 0 && p.selling_price < p.precio_anterior
               return (
-                <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50">
+                <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50 cursor-pointer" onClick={() => setCatModal(p)}>
                   <td className="px-3 py-2 w-10">
                     {photo ? <img src={photo} alt="" className="w-9 h-9 rounded-lg object-cover" /> : <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center"><ImageIcon size={14} className="text-gray-300" /></div>}
                   </td>
@@ -340,7 +340,7 @@ export default function CatalogoPage() {
                           )}
                         </div>
                       )
-                    ) : <span className="text-gray-400 text-xs">A pedido</span>}
+                    ) : <span className="text-green-600 text-xs font-medium">Disponible</span>}
                   </td>
                   <td className="px-3 py-3">
                     <button onClick={e => { e.stopPropagation(); toggleVisibility(p) }} className="p-1 rounded hover:bg-gray-100" title={p.visible_in_catalog ? 'Ocultar del catálogo' : 'Mostrar en catálogo'}>
@@ -348,11 +348,10 @@ export default function CatalogoPage() {
                     </button>
                   </td>
                   <td className="px-3 py-3"><div className="flex gap-1">
-                    <button onClick={() => toggleFeatured(p)} className="p-1.5 rounded-lg hover:bg-amber-50" title={p.featured ? 'Quitar destacado' : 'Destacar'}>
+                    <button onClick={e => { e.stopPropagation(); toggleFeatured(p) }} className="p-1.5 rounded-lg hover:bg-amber-50" title={p.featured ? 'Quitar destacado' : 'Destacar'}>
                       <Star size={14} className={p.featured ? 'text-amber-400 fill-amber-400' : 'text-gray-300'} />
                     </button>
-                    <button onClick={() => setCatModal(p)} className="p-1.5 rounded-lg hover:bg-gray-100"><Pencil size={14} className="text-gray-400" /></button>
-                    <button onClick={() => deleteCatalogProduct(p.id)} className="p-1.5 rounded-lg hover:bg-red-50"><Trash2 size={14} className="text-red-400" /></button>
+                    <button onClick={e => { e.stopPropagation(); deleteCatalogProduct(p.id) }} className="p-1.5 rounded-lg hover:bg-red-50"><Trash2 size={14} className="text-red-400" /></button>
                   </div></td>
                 </tr>
               )
@@ -472,17 +471,31 @@ export default function CatalogoPage() {
                 <input className="input-base text-sm" placeholder="Ej: 3-5 días hábiles" value={catModal.estimated_delivery || ''} onChange={e => setCatModal({ ...catModal, estimated_delivery: e.target.value })} />
               </div>
 
-              {/* Stock */}
+              {/* Disponibilidad */}
               <div className="border-t border-gray-100 pt-4">
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-sm font-semibold text-gray-700">{t('stock')}</p>
-                  <button type="button" onClick={() => setCatModal({ ...catModal, manage_stock: !catModal.manage_stock })}
-                    className="relative w-9 h-5 rounded-full transition-colors" style={{ background: catModal.manage_stock ? '#6C5CE7' : '#D1D5DB' }}>
-                    <span className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform" style={{ transform: catModal.manage_stock ? 'translateX(16px)' : 'translateX(0)' }} />
-                  </button>
+                <p className="text-sm font-semibold text-gray-700 mb-3">Disponibilidad</p>
+                <div className="space-y-2">
+                  {([
+                    ['disponible', 'Siempre disponible', 'No maneja stock. Se muestra como disponible.'],
+                    ['stock', 'Con stock', 'Se descuenta al vender. Alerta cuando llega al mínimo.'],
+                    ['pedido', 'A pedido', 'Requiere consulta o personalización del cliente.'],
+                  ] as const).map(([val, label, desc]) => {
+                    const current = catModal.manage_stock ? 'stock' : ((catModal as Record<string, unknown>).disponibilidad === 'pedido' ? 'pedido' : 'disponible')
+                    return (
+                      <label key={val} className={`flex items-start gap-3 p-3 rounded-lg cursor-pointer border transition-all ${current === val ? 'border-purple-300 bg-purple-50' : 'border-gray-100 hover:bg-gray-50'}`}>
+                        <input type="radio" name="disponibilidad" checked={current === val}
+                          onChange={() => setCatModal({ ...catModal, manage_stock: val === 'stock', ...(val === 'pedido' ? { disponibilidad: 'pedido' } as Record<string, unknown> : { disponibilidad: val } as Record<string, unknown>) })}
+                          className="mt-0.5 text-purple-600" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-800">{label}</p>
+                          <p className="text-[10px] text-gray-400">{desc}</p>
+                        </div>
+                      </label>
+                    )
+                  })}
                 </div>
                 {catModal.manage_stock && (
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-3 mt-3">
                     <div><label className="block text-xs font-medium text-gray-600 mb-1">{t('currentStock')}</label>
                       <NumericInput className="input-base" value={catModal.current_stock || 0} onChange={v => setCatModal({ ...catModal, current_stock: v })} /></div>
                     <div><label className="block text-xs font-medium text-gray-600 mb-1">{t('minStock')}</label>
