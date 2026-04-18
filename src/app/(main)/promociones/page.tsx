@@ -37,15 +37,18 @@ export default function PromocionesPage() {
   const [promoModal, setPromoModal] = useState<Partial<Promotion> | null>(null)
   const [couponModal, setCouponModal] = useState<Partial<Coupon> | null>(null)
   const [searchProd, setSearchProd] = useState('')
+  const [prodCatFilter, setProdCatFilter] = useState('')
+  const [categories, setCategories] = useState<Array<{ id: string; name: string }>>([])
   const [toast, setToast] = useState('')
   const [openMenu, setOpenMenu] = useState<string | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
 
   async function load() {
-    const [{ data: p }, { data: cp }, { data: cu }] = await Promise.all([
+    const [{ data: p }, { data: cp }, { data: cu }, { data: cats }] = await Promise.all([
       supabase.from('promotions').select('*').order('created_at', { ascending: false }),
       supabase.from('catalog_products').select('id,name,category_id,selling_price,photos').order('name'),
       supabase.from('coupons').select('*').order('created_at', { ascending: false }),
+      supabase.from('categories').select('id,name').order('name'),
     ])
     const now = new Date()
     const updated = ((p || []) as Promotion[]).map(pr => {
@@ -58,7 +61,7 @@ export default function PromocionesPage() {
       if (orig && orig.status !== pr.status) await supabase.from('promotions').update({ status: pr.status }).eq('id', pr.id)
     }
     setPromos(updated)
-    setProducts((cp || []) as CatProduct[])
+    setProducts((cp || []) as CatProduct[]); if (cats) setCategories(cats)
     setCoupons((cu || []) as Coupon[])
     setLoading(false)
   }
@@ -108,7 +111,7 @@ export default function PromocionesPage() {
       <div className="flex items-start justify-between gap-3 mb-4">
         <div><h1 className="text-2xl font-bold text-gray-900">Promociones</h1>
           <p className="text-gray-500 text-sm mt-1">Descuentos y cupones para tu catálogo web.</p></div>
-        <button onClick={() => tab === 'promos' ? setPromoModal({ discount_type: 'percentage', discount_value: 0, product_ids: [], show_countdown: false, starts_at: new Date().toISOString().slice(0, 16), ends_at: '' }) : setCouponModal({ discount_type: 'percentage', discount_value: 0, code: '' })}
+        <button onClick={() => tab === 'promos' ? setPromoModal({ discount_type: 'percentage', discount_value: 0, product_ids: [], show_countdown: false, starts_at: new Date().toISOString().slice(0, 10), ends_at: '' }) : setCouponModal({ discount_type: 'percentage', discount_value: 0, code: '' })}
           className="flex items-center gap-1.5 whitespace-nowrap text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={14} /> {tab === 'promos' ? 'Crear promoción' : 'Crear cupón'}</button>
       </div>
 
@@ -155,7 +158,7 @@ export default function PromocionesPage() {
               {['Nombre', 'Descuento', 'Productos', 'Período', 'Estado', ''].map(h => <th key={h} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">{h}</th>)}
             </tr></thead><tbody>
               {promos.map(p => { const st = STATUS_LABELS[p.status]; return (
-                <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50">
+                <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50 cursor-pointer" onClick={() => setPromoModal(p)}>
                   <td className="px-4 py-3 font-medium text-gray-800">{p.name}</td>
                   <td className="px-4 py-3 text-sm font-bold" style={{ color: '#6C5CE7' }}>{p.discount_type === 'percentage' ? `-${p.discount_value}%` : `-${fmtCurrency(p.discount_value)}`}</td>
                   <td className="px-4 py-3 text-sm text-gray-500">{p.product_ids.length}</td>
@@ -163,10 +166,10 @@ export default function PromocionesPage() {
                   <td className="px-4 py-3"><span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ color: st.color, background: st.bg }}>{st.label}</span></td>
                   <td className="px-4 py-3"><div className="flex items-center gap-1.5">
                     {(p.status === 'active' || p.status === 'paused' || p.status === 'scheduled') && (
-                      <button type="button" onClick={() => togglePromo(p)} className="relative w-9 h-5 rounded-full transition-colors" style={{ background: p.status !== 'paused' ? '#22C55E' : '#D1D5DB' }}>
+                      <button type="button" onClick={e => { e.stopPropagation(); togglePromo(p) }} className="relative w-9 h-5 rounded-full transition-colors" style={{ background: p.status !== 'paused' ? '#22C55E' : '#D1D5DB' }}>
                         <span className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform" style={{ transform: p.status !== 'paused' ? 'translateX(16px)' : 'translateX(0)' }} /></button>
                     )}
-                    <button onClick={() => setPromoModal(p)} className="p-1.5 rounded-lg hover:bg-gray-100"><Pencil size={14} className="text-gray-400" /></button>
+                    <button onClick={e => e.stopPropagation()} className="p-1.5 rounded-lg hover:bg-gray-100"><Pencil size={14} className="text-gray-400" /></button>
                     <div className="relative" ref={menuRef}><button onClick={e => { e.stopPropagation(); setOpenMenu(openMenu === `p-${p.id}` ? null : `p-${p.id}`) }} className="p-1.5 rounded-lg hover:bg-gray-100"><MoreHorizontal size={14} className="text-gray-400" /></button>
                       {openMenu === `p-${p.id}` && (<div className="absolute right-0 top-full mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-100 z-50 py-1">
                         {p.status === 'active' && <button onClick={() => finishPromo(p.id)} className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50">Finalizar</button>}
@@ -217,8 +220,8 @@ export default function PromocionesPage() {
               {['Código', 'Descuento', 'Usos', 'Monto mín.', 'Vencimiento', 'Estado', ''].map(h => <th key={h} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">{h}</th>)}
             </tr></thead><tbody>
               {coupons.map(c => { const st = STATUS_LABELS[c.status] || STATUS_LABELS.active; return (
-                <tr key={c.id} className="border-b border-gray-50 hover:bg-gray-50">
-                  <td className="px-4 py-3 font-mono font-bold text-gray-800">{c.code}</td>
+                <tr key={c.id} className="border-b border-gray-50 hover:bg-gray-50 cursor-pointer" onClick={() => setCouponModal(c)}>
+                  <td className="px-4 py-3"><button onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(c.code); showToast('Código copiado') }} className="font-mono font-bold text-gray-800 hover:text-purple-600 flex items-center gap-1 group" title="Copiar código">{c.code} <Copy size={11} className="text-gray-300 group-hover:text-purple-400" /></button></td>
                   <td className="px-4 py-3 text-sm font-bold" style={{ color: '#6C5CE7' }}>{c.discount_type === 'percentage' ? `-${c.discount_value}%` : `-${fmtCurrency(c.discount_value)}`}</td>
                   <td className="px-4 py-3 text-sm text-gray-500">{c.used_count}/{c.max_uses || '∞'}</td>
                   <td className="px-4 py-3 text-sm text-gray-500">{c.min_amount > 0 ? fmtCurrency(c.min_amount) : '—'}</td>
@@ -226,10 +229,10 @@ export default function PromocionesPage() {
                   <td className="px-4 py-3"><span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ color: st.color, background: st.bg }}>{st.label}</span></td>
                   <td className="px-4 py-3"><div className="flex items-center gap-1.5">
                     {c.status !== 'exhausted' && c.status !== 'expired' && (
-                      <button type="button" onClick={() => toggleCoupon(c)} className="relative w-9 h-5 rounded-full transition-colors" style={{ background: c.status === 'active' ? '#22C55E' : '#D1D5DB' }}>
+                      <button type="button" onClick={e => { e.stopPropagation(); toggleCoupon(c) }} className="relative w-9 h-5 rounded-full transition-colors" style={{ background: c.status === 'active' ? '#22C55E' : '#D1D5DB' }}>
                         <span className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform" style={{ transform: c.status === 'active' ? 'translateX(16px)' : 'translateX(0)' }} /></button>
                     )}
-                    <button onClick={() => setCouponModal(c)} className="p-1.5 rounded-lg hover:bg-gray-100"><Pencil size={14} className="text-gray-400" /></button>
+                    <button onClick={e => e.stopPropagation()} className="p-1.5 rounded-lg hover:bg-gray-100"><Pencil size={14} className="text-gray-400" /></button>
                     <div className="relative" ref={menuRef}><button onClick={e => { e.stopPropagation(); setOpenMenu(openMenu === `c-${c.id}` ? null : `c-${c.id}`) }} className="p-1.5 rounded-lg hover:bg-gray-100"><MoreHorizontal size={14} className="text-gray-400" /></button>
                       {openMenu === `c-${c.id}` && (<div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-lg shadow-lg border border-gray-100 z-50 py-1">
                         <button onClick={() => { navigator.clipboard.writeText(c.code); showToast('Código copiado'); setOpenMenu(null) }} className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 flex items-center gap-2"><Copy size={12} /> Copiar código</button>
@@ -256,16 +259,33 @@ export default function PromocionesPage() {
                 <div><label className="block text-sm font-medium text-gray-700 mb-1">Valor *</label><input type="number" className="input-base" min={1} max={promoModal.discount_type === 'percentage' ? 99 : undefined} value={promoModal.discount_value || ''} onChange={e => setPromoModal({ ...promoModal, discount_value: Number(e.target.value) })} /></div>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">Inicio *</label><input type="datetime-local" className="input-base text-sm" value={(promoModal.starts_at || '').slice(0, 16)} onChange={e => setPromoModal({ ...promoModal, starts_at: new Date(e.target.value).toISOString() })} /></div>
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">Fin *</label><input type="datetime-local" className="input-base text-sm" value={(promoModal.ends_at || '').slice(0, 16)} onChange={e => setPromoModal({ ...promoModal, ends_at: new Date(e.target.value).toISOString() })} /></div>
+                <div><label className="block text-sm font-medium text-gray-700 mb-1">Inicio *</label><input type="date" className="input-base text-sm" value={(promoModal.starts_at || '').slice(0, 10)} onChange={e => setPromoModal({ ...promoModal, starts_at: e.target.value ? new Date(e.target.value + 'T00:00:00').toISOString() : '' })} /></div>
+                <div><label className="block text-sm font-medium text-gray-700 mb-1">Fin *</label><input type="date" className="input-base text-sm" value={(promoModal.ends_at || '').slice(0, 10)} onChange={e => setPromoModal({ ...promoModal, ends_at: e.target.value ? new Date(e.target.value + 'T23:59:59').toISOString() : '' })} /></div>
               </div>
               <div className="flex items-center justify-between"><label className="text-sm font-medium text-gray-700">Contador regresivo</label>
                 <button type="button" onClick={() => setPromoModal({ ...promoModal, show_countdown: !promoModal.show_countdown })} className="relative w-9 h-5 rounded-full transition-colors" style={{ background: promoModal.show_countdown ? '#6C5CE7' : '#D1D5DB' }}><span className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform" style={{ transform: promoModal.show_countdown ? 'translateX(16px)' : 'translateX(0)' }} /></button></div>
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">Productos * <span className="text-xs text-gray-400 ml-1">{(promoModal.product_ids || []).length} seleccionados</span></label>
-                <div className="relative mb-2"><Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" /><input className="input-base text-sm w-full" style={{ paddingLeft: 36 }} placeholder="Buscar..." value={searchProd} onChange={e => setSearchProd(e.target.value)} /></div>
-                <div className="border border-gray-200 rounded-lg max-h-48 overflow-y-auto">{products.filter(p => !searchProd || p.name.toLowerCase().includes(searchProd.toLowerCase())).map(p => (
-                  <label key={p.id} className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-0"><input type="checkbox" checked={(promoModal.product_ids || []).includes(p.id)} onChange={() => toggleProduct(p.id)} className="rounded border-gray-300" style={{ accentColor: '#6C5CE7' }} /><span className="text-sm text-gray-700 flex-1 truncate">{p.name}</span><span className="text-xs text-gray-400">{fmtCurrency(p.selling_price)}</span></label>
-                ))}</div></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Productos * <span className="text-xs text-gray-400 ml-1">{(promoModal.product_ids || []).length} de {products.length} seleccionados</span></label>
+                <div className="flex gap-2 mb-2">
+                  <div className="relative flex-1"><Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" /><input className="input-base text-sm w-full !pl-9" placeholder="Buscar..." value={searchProd} onChange={e => setSearchProd(e.target.value)} /></div>
+                  {categories.length > 0 && <select value={prodCatFilter} onChange={e => setProdCatFilter(e.target.value)} className="input-base text-xs !py-1.5 w-auto"><option value="">Todas</option>{categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select>}
+                </div>
+                {(() => {
+                  const visible = products.filter(p => (!searchProd || p.name.toLowerCase().includes(searchProd.toLowerCase())) && (!prodCatFilter || p.category_id === prodCatFilter))
+                  const allSelected = visible.length > 0 && visible.every(p => (promoModal.product_ids || []).includes(p.id))
+                  return (<>
+                    <label className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-t-lg border border-gray-200 border-b-0 cursor-pointer">
+                      <input type="checkbox" checked={allSelected} onChange={() => {
+                        const visibleIds = visible.map(p => p.id)
+                        if (allSelected) setPromoModal({ ...promoModal, product_ids: (promoModal.product_ids || []).filter(id => !visibleIds.includes(id)) })
+                        else setPromoModal({ ...promoModal, product_ids: [...new Set([...(promoModal.product_ids || []), ...visibleIds])] })
+                      }} className="rounded border-gray-300" style={{ accentColor: '#6C5CE7' }} />
+                      <span className="text-xs font-semibold text-gray-500">Seleccionar todos ({visible.length})</span>
+                    </label>
+                    <div className="border border-gray-200 rounded-b-lg max-h-48 overflow-y-auto">{visible.map(p => (
+                      <label key={p.id} className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-0"><input type="checkbox" checked={(promoModal.product_ids || []).includes(p.id)} onChange={() => toggleProduct(p.id)} className="rounded border-gray-300" style={{ accentColor: '#6C5CE7' }} /><span className="text-sm text-gray-700 flex-1 truncate">{p.name}</span><span className="text-xs text-gray-400">{fmtCurrency(p.selling_price)}</span></label>
+                    ))}</div>
+                  </>)
+                })()}</div>
             </div>
             <div className="flex gap-3 mt-6"><button onClick={() => setPromoModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">Cancelar</button><button onClick={savePromo} disabled={!promoModal.name?.trim() || !promoModal.discount_value || !(promoModal.product_ids?.length) || !promoModal.ends_at} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#6C5CE7' }}>Guardar</button></div>
           </div>
