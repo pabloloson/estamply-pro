@@ -163,7 +163,7 @@ export default function InsumosPage() {
             else if (tipo === 'film') keyData = `$${(c.precio_rollo as number || 0).toLocaleString('es-AR')} / ${c.ancho}cm × ${c.largo}m`
             else if (tipo === 'polvo') keyData = `$${(c.precio_kg as number || 0).toLocaleString('es-AR')}/kg — ${c.rendimiento_m2} m²/kg`
             else if (tipo === 'vinilo') keyData = `$${(c.precio_metro as number || 0).toLocaleString('es-AR')}/m — ${c.ancho}cm`
-            else if (tipo === 'tinta_serigrafica') keyData = `$${(c.precio_kg as number || 0).toLocaleString('es-AR')}/kg — ${c.rendimiento_estampadas_kg} est/kg — ${c.color || '?'}`
+            else if (tipo === 'tinta_serigrafica') keyData = `$${(c.precio_kg as number || 0).toLocaleString('es-AR')}/kg — ${c.rendimiento_estampadas_kg} est/kg${c.color ? ` — ${c.color}` : ''}`
             else if (tipo === 'servicio_impresion') keyData = (c.precio_por_color as number) ? `$${(c.precio_por_color as number).toLocaleString('es-AR')}/color/u.${c.proveedor ? ` — ${c.proveedor}` : ''}` : `$${(c.precio_metro as number || 0).toLocaleString('es-AR')}/m — ${c.ancho_material}cm${c.proveedor ? ` — ${c.proveedor}` : ''}`
             else if (tipo === 'emulsion') keyData = `$${(c.precio_kg as number || 0).toLocaleString('es-AR')}/kg — ${c.rendimiento_pantallas_kg} pantallas/kg`
             else keyData = `$${(c.precio as number || 0).toLocaleString('es-AR')} / ${c.unidad}`
@@ -291,7 +291,7 @@ export default function InsumosPage() {
                 return (<div className="grid grid-cols-3 gap-3">
                   <div><label className="block text-xs text-gray-500 mb-1">Precio/kg ($)</label><input type="number" className="input-base" value={c.precio_kg as number || 0} onChange={e => up({ precio_kg: Number(e.target.value) })} /></div>
                   <div><label className="block text-xs text-gray-500 mb-1">Rendimiento (est/kg)</label><input type="number" className="input-base" value={c.rendimiento_estampadas_kg as number || 100} onChange={e => up({ rendimiento_estampadas_kg: Number(e.target.value) })} /></div>
-                  <div><label className="block text-xs text-gray-500 mb-1">Color</label><input className="input-base" value={c.color as string || ''} onChange={e => up({ color: e.target.value })} placeholder="Blanco, Negro..." /></div>
+                  <div><label className="block text-xs text-gray-500 mb-1">Color (opcional)</label><input className="input-base" value={c.color as string || ''} onChange={e => up({ color: e.target.value })} placeholder="Ej: Blanco, Negro..." /></div>
                 </div>)
               })()}
 

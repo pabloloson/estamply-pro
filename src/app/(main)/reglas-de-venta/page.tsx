@@ -97,7 +97,7 @@ export default function ReglasDeVentaPage() {
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               <DiscountTable title="Sublimación" tiers={ws.descuentos_subli} onChange={tiers => setWs({ ...ws, descuentos_subli: tiers })} />
-              <DiscountTable title="DTF" tiers={ws.descuentos_dtf} onChange={tiers => setWs({ ...ws, descuentos_dtf: tiers })} />
+              <DiscountTable title="DTF Textil" tiers={ws.descuentos_dtf} onChange={tiers => setWs({ ...ws, descuentos_dtf: tiers })} />
               <DiscountTable title="Vinilo" tiers={ws.descuentos_vinyl} onChange={tiers => setWs({ ...ws, descuentos_vinyl: tiers })} />
             </div>
           )}

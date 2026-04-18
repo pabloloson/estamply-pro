@@ -758,7 +758,7 @@ export default function SettingsPage() {
           { key: 'descuentos_subli', label: 'Sublimación', color: '#6C5CE7' },
           { key: 'descuentos_dtf', label: 'DTF Textil', color: '#E17055' },
           { key: 'descuentos_dtf_uv', label: 'DTF UV', color: '#00B894' },
-          { key: 'descuentos_vinyl', label: 'Vinilo', color: '#E84393' },
+          { key: 'descuentos_vinyl', label: 'Vinilo (Textil + Autoadhesivo)', color: '#E84393' },
           { key: 'descuentos_serigrafia', label: 'Serigrafía', color: '#FDCB6E' },
         ]
         type DiscKey = string

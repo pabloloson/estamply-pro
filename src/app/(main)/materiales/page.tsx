@@ -815,7 +815,7 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
                   return (<div className="grid grid-cols-3 gap-3">
                     <div><label className="block text-xs text-gray-500 mb-1">Precio/kg ($)</label><NumericInput className="input-base" value={c.precio_kg as number || 0} onChange={v => up({ precio_kg: v })} /></div>
                     <div><label className="block text-xs text-gray-500 mb-1">Rendimiento (est/kg)</label><NumericInput className="input-base" value={c.rendimiento_estampadas_kg as number || 100} onChange={v => up({ rendimiento_estampadas_kg: v })} /></div>
-                    <div><label className="block text-xs text-gray-500 mb-1">Color</label><input className="input-base" value={c.color as string || ''} onChange={e => up({ color: e.target.value })} /></div>
+                    <div><label className="block text-xs text-gray-500 mb-1">Color (opcional)</label><input className="input-base" value={c.color as string || ''} onChange={e => up({ color: e.target.value })} placeholder="Ej: Blanco, Negro..." /></div>
                   </div>)
                 })()}
                 {insModal.tipo === 'servicio_impresion' && (() => {
