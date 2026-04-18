@@ -22,8 +22,8 @@ function opSummary(op: Operator, fmtCurrency: (n: number) => string): string {
   return `${fmtCurrency(op.fixed_amount)}/unidad`
 }
 
-const TEC_LABELS: Record<string, string> = { subli: 'Subli', dtf: 'DTF', dtf_uv: 'DTF UV', vinyl: 'Vinilo', serigrafia: 'Serigrafía' }
-const TEC_COLORS: Record<string, string> = { subli: '#6C5CE7', dtf: '#E17055', dtf_uv: '#00B894', vinyl: '#E84393', serigrafia: '#FDCB6E' }
+const TEC_LABELS: Record<string, string> = { subli: 'Subli', dtf: 'DTF Textil', dtf_uv: 'DTF UV', vinyl: 'Vinilo Textil', vinyl_adhesivo: 'Vinilo Autoadhesivo', serigrafia: 'Serigrafía' }
+const TEC_COLORS: Record<string, string> = { subli: '#6C5CE7', dtf: '#E17055', dtf_uv: '#00B894', vinyl: '#E84393', vinyl_adhesivo: '#D63384', serigrafia: '#FDCB6E' }
 
 function DiscountTable({ tiers, onChange }: { tiers: DiscountTier[]; onChange: (t: DiscountTier[]) => void }) {
   const updateHasta = (i: number, v: number) => {

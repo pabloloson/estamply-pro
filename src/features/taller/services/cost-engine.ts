@@ -503,6 +503,28 @@ function computeSerigrafia(input: ComputeInput, config: SerigrafiaConfig): CostR
     }
   }
 
+  const costoProducto = Number(product.base_cost)
+
+  // Tercerizado mode — price per color per unit from service insumo
+  if (config.modo === 'tercerizado') {
+    const servicioIns = findInsumo(insumos, 'servicio_impresion', 'otro')
+    const sc = servicioIns ? insCfg(servicioIns) : null
+    const precioColor = sc ? ((sc.precio_por_color as number) || (sc.precio as number) || 0) : 0
+    const costoTerc = precioColor * numColors
+    const costoDesp = (costoProducto + costoTerc) * (desperdicio / 100)
+    const costoTotal = costoProducto + costoTerc + costoDesp + mo + otrosGastos / Math.max(quantity, 1)
+    const lines: { label: string; value: number }[] = [
+      { label: 'Producto base', value: costoProducto },
+      { label: `Estampado tercerizado (${numColors} color${numColors > 1 ? 'es' : ''} × $${precioColor.toLocaleString('es-AR')})`, value: costoTerc },
+    ]
+    if (costoDesp > 0) lines.push({ label: `Desperdicio (${desperdicio}%)`, value: costoDesp })
+    if (mo > 0) lines.push({ label: 'Mano de obra', value: mo })
+    if (otrosGastos > 0) lines.push({ label: 'Otros gastos', value: otrosGastos / Math.max(quantity, 1) })
+    const r = buildResult(lines, costoTotal, margin, quantity, discountTiers, setupMin, undefined, input.pricingMode)
+    if (!servicioIns) r.missingInsumosWarning = 'Creá un insumo tipo "Servicio tercerizado" con técnica Serigrafía y precio por color'
+    return r
+  }
+
   // Emulsión cost per pantalla (if available)
   const emulsionIns = findInsumo(insumos, 'emulsion')
   const emulsionCfg = emulsionIns ? insCfg(emulsionIns) : null
@@ -530,7 +552,6 @@ function computeSerigrafia(input: ComputeInput, config: SerigrafiaConfig): CostR
   }
   const costoTintaPerUnit = costoTintaPerColor * numColors
 
-  const costoProducto = Number(product.base_cost)
   const amortEquip = input.overrideAmortPrint ?? getAmort(equipment, techniqueEquipmentIds)
   const amortPress = input.overrideAmortPress ?? getPressAmort(product, equipment, 'serigrafia')
 

@@ -26,8 +26,8 @@ const SC: Record<string, { bg: string; text: string }> = {
   pending: { bg: '#FAEEDA', text: '#854F0B' }, production: { bg: '#E6F1FB', text: '#0C447C' },
   ready: { bg: '#EAF3DE', text: '#27500A' }, delivered: { bg: '#F1EFE8', text: '#444441' },
 }
-const TL: Record<string, string> = { subli: 'Subli', dtf: 'DTF', dtf_uv: 'DTF UV', vinyl: 'Vinilo', serigrafia: 'Serigrafía' }
-const TC: Record<string, string> = { subli: '#6C5CE7', dtf: '#E17055', dtf_uv: '#00B894', vinyl: '#E84393', serigrafia: '#FDCB6E' }
+const TL: Record<string, string> = { subli: 'Subli', dtf: 'DTF Textil', dtf_uv: 'DTF UV', vinyl: 'Vinilo Textil', vinyl_adhesivo: 'V. Autoadhesivo', serigrafia: 'Serigrafía' }
+const TC: Record<string, string> = { subli: '#6C5CE7', dtf: '#E17055', dtf_uv: '#00B894', vinyl: '#E84393', vinyl_adhesivo: '#D63384', serigrafia: '#FDCB6E' }
 const NEXT: Record<string, string> = { pending: 'production', production: 'ready', ready: 'delivered' }
 
 

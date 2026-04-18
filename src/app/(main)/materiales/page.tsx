@@ -414,7 +414,7 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
               else if (tipo === 'polvo') keyData = `${fmtCurrency(c.precio_kg as number || 0)}/kg · rinde ${c.rendimiento_m2} m²`
               else if (tipo === 'vinilo') keyData = `${fmtCurrency(c.precio_metro as number || 0)}/m · ${c.ancho}cm de ancho`
               else if (tipo === 'tinta_serigrafica') keyData = `${fmtCurrency(c.precio_kg as number || 0)}/kg · rinde ${c.rendimiento_estampadas_kg} pantallas`
-              else if (tipo === 'servicio_impresion') keyData = `${fmtCurrency(c.precio_metro as number || 0)}/m · ancho ${c.ancho_material}cm`
+              else if (tipo === 'servicio_impresion') keyData = (c.precio_por_color as number) ? `${fmtCurrency(c.precio_por_color as number)}/color/u.` : `${fmtCurrency(c.precio_metro as number || 0)}/m · ancho ${c.ancho_material}cm`
               else if (tipo === 'emulsion') keyData = `${fmtCurrency(c.precio_kg as number || 0)}/kg · rinde ${c.rendimiento_pantallas_kg} pantallas`
               else if (tipo === 'otro') keyData = `${fmtCurrency(c.precio as number || 0)} por ${c.unidad || 'unidad'}`
               return (
@@ -820,9 +820,17 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
                 })()}
                 {insModal.tipo === 'servicio_impresion' && (() => {
                   const c = (insModal.config || {}) as Record<string, unknown>
-                  return (<div className="grid grid-cols-2 gap-3">
-                    <div><label className="block text-xs text-gray-500 mb-1">Precio/metro ($)</label><NumericInput className="input-base" value={c.precio_metro as number || 0} onChange={v => up({ precio_metro: v })} /></div>
-                    <div><label className="block text-xs text-gray-500 mb-1">Ancho material (cm)</label><NumericInput className="input-base" value={c.ancho_material as number || 60} onChange={v => up({ ancho_material: v })} /></div>
+                  const isSeri = insModal.tecnica_asociada === 'serigrafia'
+                  return (<div className="space-y-3">
+                    {isSeri ? (
+                      <div><label className="block text-xs text-gray-500 mb-1">Precio por color/unidad ($)</label><NumericInput className="input-base" value={c.precio_por_color as number || 0} onChange={v => up({ precio_por_color: v })} />
+                        <p className="text-[10px] text-gray-400 mt-0.5">Cuánto cobra el tercero por cada color en cada prenda.</p></div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-3">
+                        <div><label className="block text-xs text-gray-500 mb-1">Precio/metro ($)</label><NumericInput className="input-base" value={c.precio_metro as number || 0} onChange={v => up({ precio_metro: v })} /></div>
+                        <div><label className="block text-xs text-gray-500 mb-1">Ancho material (cm)</label><NumericInput className="input-base" value={c.ancho_material as number || 60} onChange={v => up({ ancho_material: v })} /></div>
+                      </div>
+                    )}
                   </div>)
                 })()}
                 {insModal.tipo === 'emulsion' && (() => {

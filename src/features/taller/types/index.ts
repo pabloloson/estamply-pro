@@ -58,7 +58,7 @@ export type InsumoConfig =
   | { tipo: 'polvo'; precio_kg: number; rendimiento_m2: number }
   | { tipo: 'vinilo'; aplicacion: 'textil' | 'rigido'; acabado: string; precio_metro: number; ancho: number; colores: string[] }
   | { tipo: 'tinta_serigrafica'; precio_kg: number; rendimiento_estampadas_kg: number; color: string }
-  | { tipo: 'servicio_impresion'; precio_metro: number; ancho_material: number; proveedor: string }
+  | { tipo: 'servicio_impresion'; precio_metro: number; ancho_material: number; proveedor: string; precio_por_color?: number }
   | { tipo: 'emulsion'; precio_kg: number; rendimiento_pantallas_kg: number }
   | { tipo: 'otro'; precio: number; unidad: string; rendimiento: number; unidad_rendimiento: string; vida_util_usos?: number }
 

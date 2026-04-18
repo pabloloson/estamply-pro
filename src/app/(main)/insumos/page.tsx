@@ -164,7 +164,7 @@ export default function InsumosPage() {
             else if (tipo === 'polvo') keyData = `$${(c.precio_kg as number || 0).toLocaleString('es-AR')}/kg — ${c.rendimiento_m2} m²/kg`
             else if (tipo === 'vinilo') keyData = `$${(c.precio_metro as number || 0).toLocaleString('es-AR')}/m — ${c.ancho}cm`
             else if (tipo === 'tinta_serigrafica') keyData = `$${(c.precio_kg as number || 0).toLocaleString('es-AR')}/kg — ${c.rendimiento_estampadas_kg} est/kg — ${c.color || '?'}`
-            else if (tipo === 'servicio_impresion') keyData = `$${(c.precio_metro as number || 0).toLocaleString('es-AR')}/m — ${c.ancho_material}cm${c.proveedor ? ` — ${c.proveedor}` : ''}`
+            else if (tipo === 'servicio_impresion') keyData = (c.precio_por_color as number) ? `$${(c.precio_por_color as number).toLocaleString('es-AR')}/color/u.${c.proveedor ? ` — ${c.proveedor}` : ''}` : `$${(c.precio_metro as number || 0).toLocaleString('es-AR')}/m — ${c.ancho_material}cm${c.proveedor ? ` — ${c.proveedor}` : ''}`
             else if (tipo === 'emulsion') keyData = `$${(c.precio_kg as number || 0).toLocaleString('es-AR')}/kg — ${c.rendimiento_pantallas_kg} pantallas/kg`
             else keyData = `$${(c.precio as number || 0).toLocaleString('es-AR')} / ${c.unidad}`
             return (
@@ -297,11 +297,17 @@ export default function InsumosPage() {
 
               {modal.tipo === 'servicio_impresion' && (() => {
                 const c = (modal.config || {}) as Record<string, unknown>
+                const isSeri = modal.tecnica_asociada === 'serigrafia'
                 return (<div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div><label className="block text-xs text-gray-500 mb-1">Precio/metro lineal ($)</label><input type="number" className="input-base" value={c.precio_metro as number || 0} onChange={e => up({ precio_metro: Number(e.target.value) })} /></div>
-                    <div><label className="block text-xs text-gray-500 mb-1">Ancho material (cm)</label><input type="number" className="input-base" value={c.ancho_material as number || 60} onChange={e => up({ ancho_material: Number(e.target.value) })} /></div>
-                  </div>
+                  {isSeri ? (
+                    <div><label className="block text-xs text-gray-500 mb-1">Precio por color/unidad ($)</label><input type="number" className="input-base" value={c.precio_por_color as number || 0} onChange={e => up({ precio_por_color: Number(e.target.value) })} />
+                      <p className="text-[10px] text-gray-400 mt-0.5">Cuánto cobra el tercero por cada color en cada prenda.</p></div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-3">
+                      <div><label className="block text-xs text-gray-500 mb-1">Precio/metro lineal ($)</label><input type="number" className="input-base" value={c.precio_metro as number || 0} onChange={e => up({ precio_metro: Number(e.target.value) })} /></div>
+                      <div><label className="block text-xs text-gray-500 mb-1">Ancho material (cm)</label><input type="number" className="input-base" value={c.ancho_material as number || 60} onChange={e => up({ ancho_material: Number(e.target.value) })} /></div>
+                    </div>
+                  )}
                   <div><label className="block text-xs text-gray-500 mb-1">Proveedor (opcional)</label><input className="input-base" value={c.proveedor as string || ''} onChange={e => up({ proveedor: e.target.value })} placeholder="Nombre del proveedor" /></div>
                 </div>)
               })()}
