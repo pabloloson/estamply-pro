@@ -10,9 +10,9 @@ interface Plan {
 }
 
 const DEFAULT_PLANS: Plan[] = [
-  { id: 'emprendedor', name: 'Emprendedor', price: 0, currency: 'USD', limits: { products: 20, users: 1 }, features: ['Cotizador', 'Presupuestos', 'Pedidos', 'Hasta 20 productos'] },
-  { id: 'crecimiento', name: 'Crecimiento', price: 19, currency: 'USD', limits: { products: null, users: 3 }, features: ['Todo de Emprendedor', 'Productos ilimitados', 'Catálogo web', 'Estadísticas', 'Hasta 3 usuarios'] },
-  { id: 'negocio', name: 'Negocio', price: 39, currency: 'USD', limits: { products: null, users: 10 }, features: ['Todo de Crecimiento', 'Multi-usuario (10)', 'Soporte prioritario', 'Exportaciones'] },
+  { id: 'emprendedor', name: 'Emprendedor', price: 9, currency: 'USD', limits: { products: 25, users: 1 }, features: ['Cotizador', 'Presupuestos', 'Pedidos', '25 productos', '1 foto/producto'] },
+  { id: 'pro', name: 'Pro', price: 17, currency: 'USD', limits: { products: null, users: 3 }, features: ['Todo de Emprendedor', 'Productos ilimitados', '3 fotos/producto', 'Catálogo web', 'Estadísticas completas', '3 usuarios'] },
+  { id: 'negocio', name: 'Negocio', price: 29, currency: 'USD', limits: { products: null, users: 10 }, features: ['Todo de Pro', '5 fotos/producto', 'Estadísticas avanzadas', '10 usuarios', 'Soporte prioritario'] },
 ]
 
 export default function ConfiguracionPage() {
@@ -101,7 +101,7 @@ export default function ConfiguracionPage() {
         <div className="flex items-center gap-3 max-w-xs">
           <input type="number" min={1} max={90} className="w-20 px-2 py-1.5 rounded-lg border border-gray-200 text-sm text-center"
             value={trialDays} onChange={e => setTrialDays(Number(e.target.value))} />
-          <span className="text-sm text-gray-500">días de prueba gratis (plan Crecimiento)</span>
+          <span className="text-sm text-gray-500">días de prueba gratis (plan Pro)</span>
         </div>
       </div>
 

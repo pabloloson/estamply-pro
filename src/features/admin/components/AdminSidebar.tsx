@@ -1,9 +1,10 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
-import { BarChart3, Users, DollarSign, TrendingUp, Globe, Mail, Settings } from 'lucide-react'
+import { BarChart3, Users, DollarSign, TrendingUp, Globe, Mail, Settings, Menu, X } from 'lucide-react'
 
 const NAV = [
   { href: '/admin', label: 'Dashboard', icon: BarChart3 },
@@ -17,9 +18,10 @@ const NAV = [
 
 export default function AdminSidebar({ email }: { email: string }) {
   const pathname = usePathname()
+  const [mobileOpen, setMobileOpen] = useState(false)
 
-  return (
-    <aside className="w-56 flex-shrink-0 flex flex-col p-4 text-white" style={{ background: '#0F172A' }}>
+  const navContent = (
+    <>
       <div className="flex items-center gap-2.5 px-3 py-4 mb-4">
         <Image src="/logo-icon.png" alt="Estamply" width={32} height={32} className="rounded-lg" />
         <div>
@@ -32,7 +34,7 @@ export default function AdminSidebar({ email }: { email: string }) {
         {NAV.map(({ href, label, icon: Icon }) => {
           const active = href === '/admin' ? pathname === '/admin' : pathname.startsWith(href)
           return (
-            <Link key={href} href={href}
+            <Link key={href} href={href} onClick={() => setMobileOpen(false)}
               className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all ${active ? 'bg-white/10 text-white font-semibold' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
               <Icon size={16} />
               {label}
@@ -45,6 +47,36 @@ export default function AdminSidebar({ email }: { email: string }) {
         <p className="text-[10px] text-gray-500 truncate">{email}</p>
         <Link href="/dashboard" className="text-[10px] text-purple-400 hover:text-purple-300 mt-1 block">← Volver al taller</Link>
       </div>
-    </aside>
+    </>
+  )
+
+  return (
+    <>
+      {/* Desktop sidebar */}
+      <aside className="hidden lg:flex w-56 flex-shrink-0 flex-col p-4 text-white" style={{ background: '#0F172A' }}>
+        {navContent}
+      </aside>
+
+      {/* Mobile header bar */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 py-3" style={{ background: '#0F172A' }}>
+        <div className="flex items-center gap-2">
+          <Image src="/logo-icon.png" alt="Estamply" width={24} height={24} className="rounded" />
+          <span className="font-bold text-white text-sm">Admin</span>
+        </div>
+        <button onClick={() => setMobileOpen(!mobileOpen)} className="text-white p-1">
+          {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+        </button>
+      </div>
+
+      {/* Mobile overlay sidebar */}
+      {mobileOpen && (
+        <div className="lg:hidden fixed inset-0 z-50">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setMobileOpen(false)} />
+          <aside className="absolute left-0 top-0 bottom-0 w-64 flex flex-col p-4 text-white" style={{ background: '#0F172A' }}>
+            {navContent}
+          </aside>
+        </div>
+      )}
+    </>
   )
 }

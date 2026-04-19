@@ -17,10 +17,10 @@ const COUNTRY_NAMES: Record<string, string> = {
 }
 
 const PLAN_COLORS: Record<string, string> = {
-  emprendedor: '#94A3B8', crecimiento: '#6C5CE7', negocio: '#E17055', trial: '#FDCB6E', expired: '#EF4444',
+  emprendedor: '#94A3B8', pro: '#6C5CE7', crecimiento: '#6C5CE7', negocio: '#E17055', trial: '#FDCB6E', expired: '#EF4444',
 }
 const PLAN_LABELS: Record<string, string> = {
-  emprendedor: 'Emprendedor (gratis)', crecimiento: 'Crecimiento', negocio: 'Negocio', trial: 'Trial', expired: 'Expirado',
+  emprendedor: 'Emprendedor ($9)', pro: 'Pro ($17)', crecimiento: 'Pro ($17)', negocio: 'Negocio ($29)', trial: 'Trial', expired: 'Expirado',
 }
 
 const DONUT_COLORS = ['#6C5CE7', '#E17055', '#00B894', '#E84393', '#FDCB6E', '#636e72', '#3498db', '#94A3B8']
@@ -53,7 +53,7 @@ export default function AdminDashboard() {
   if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>
   if (!data) return <div className="text-center py-16 text-gray-400">Error cargando datos</div>
 
-  const paidCount = (data.planCounts['crecimiento'] || 0) + (data.planCounts['negocio'] || 0)
+  const paidCount = (data.planCounts['pro'] || 0) + (data.planCounts['crecimiento'] || 0) + (data.planCounts['negocio'] || 0)
 
   // Country chart data
   const countryData = Object.entries(data.countryCounts)
@@ -80,6 +80,14 @@ export default function AdminDashboard() {
         <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
         <p className="text-sm text-gray-500 mt-1">Resumen de la plataforma Estamply</p>
       </div>
+
+      {/* Trial alert */}
+      {data.trialsExpiringSoon > 0 && (
+        <div className="p-4 rounded-xl mb-6" style={{ background: '#FEF3C7', border: '1px solid #FDE68A', borderLeft: '4px solid #F59E0B' }}>
+          <p className="text-sm font-semibold text-amber-800">⚠️ {data.trialsExpiringSoon} taller{data.trialsExpiringSoon > 1 ? 'es' : ''} con trial venciendo en los próximos 3 días</p>
+          <a href="/admin/talleres" className="text-xs font-semibold text-amber-700 hover:text-amber-900 mt-1 inline-block">Ver talleres →</a>
+        </div>
+      )}
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -211,23 +219,26 @@ export default function AdminDashboard() {
       <div className="bg-white rounded-2xl p-5 border border-gray-100">
         <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Actividad reciente</h3>
         <div className="space-y-2">
-          {data.recentProfiles.map(p => (
-            <div key={p.id} className="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0">
-              <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0" style={{ background: '#6C5CE7' }}>
-                {(p.workshop_name || p.full_name || '?')[0].toUpperCase()}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-800 truncate">{p.workshop_name || p.full_name}</p>
-                <p className="text-xs text-gray-400">{p.email}</p>
-              </div>
-              <div className="text-right flex-shrink-0">
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${p.plan_status === 'trial' ? 'bg-amber-50 text-amber-600' : p.plan_status === 'expired' ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-600'}`}>
-                  {PLAN_LABELS[p.plan_status === 'trial' ? 'trial' : p.plan] || p.plan}
-                </span>
-                <p className="text-[10px] text-gray-400 mt-0.5">{new Date(p.created_at).toLocaleDateString('es')}</p>
-              </div>
-            </div>
-          ))}
+          {data.recentProfiles.map(p => {
+            const displayName = p.workshop_name || p.full_name || p.email.split('@')[0]
+            return (
+              <a key={p.id} href={`/admin/talleres/${p.id}`} className="flex items-center gap-3 py-2.5 px-2 rounded-lg border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors cursor-pointer">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0" style={{ background: '#6C5CE7' }}>
+                  {displayName[0].toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-800 truncate">{displayName}</p>
+                  <p className="text-xs text-gray-400 truncate">{p.email}</p>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${p.plan_status === 'trial' ? 'bg-amber-50 text-amber-600' : p.plan_status === 'expired' ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-600'}`}>
+                    {PLAN_LABELS[p.plan_status === 'trial' ? 'trial' : p.plan] || p.plan}
+                  </span>
+                  <p className="text-[10px] text-gray-400 mt-0.5">{new Date(p.created_at).toLocaleDateString('es')}</p>
+                </div>
+              </a>
+            )
+          })}
         </div>
       </div>
     </div>

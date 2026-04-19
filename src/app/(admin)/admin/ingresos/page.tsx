@@ -16,9 +16,9 @@ const MRR_EVOLUTION = [
 ]
 
 const PLANS = [
-  { name: 'Emprendedor', price: 0, talleres: 0, subtotal: 0 },
-  { name: 'Crecimiento', price: 19, talleres: 0, subtotal: 0 },
-  { name: 'Negocio', price: 39, talleres: 0, subtotal: 0 },
+  { name: 'Emprendedor', price: 9, talleres: 0, subtotal: 0 },
+  { name: 'Pro', price: 17, talleres: 0, subtotal: 0 },
+  { name: 'Negocio', price: 29, talleres: 0, subtotal: 0 },
 ]
 
 export default function IngresosPage() {
