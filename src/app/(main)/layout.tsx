@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { auth } from '@/auth'
-import { createClient } from '@/lib/supabase/server'
+import { prisma } from '@/lib/db/prisma'
+import { getTeamOwnerId } from '@/lib/db/tenant'
 import { Sidebar } from '@/shared/components/Sidebar'
 import TrialBanner from '@/shared/components/TrialBanner'
 import { PresupuestoProvider } from '@/features/presupuesto/context/PresupuestoContext'
@@ -11,19 +12,17 @@ export default async function MainLayout({ children }: { children: React.ReactNo
   const session = await auth()
   if (!session?.user?.id) redirect('/login')
 
-  // Still using Supabase for DB queries (will migrate in FASE 4B)
-  const supabase = await createClient()
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('workshop_name, onboarding_completed')
-    .eq('id', session.user.id)
-    .single()
+  const ownerId = await getTeamOwnerId(session.user.id)
+  const profile = await prisma.profile.findUnique({
+    where: { userId: ownerId },
+    select: { workshopName: true, onboardingCompleted: true },
+  })
 
-  if (profile && !profile.onboarding_completed) {
+  if (profile && !profile.onboardingCompleted) {
     redirect('/onboarding')
   }
 
-  const workshopName = profile?.workshop_name || 'Mi Taller'
+  const workshopName = profile?.workshopName || 'Mi Taller'
 
   return (
     <LocaleProvider>

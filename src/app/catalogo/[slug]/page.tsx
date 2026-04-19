@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { prisma } from '@/lib/db/prisma'
 import type { Metadata } from 'next'
 import CatalogPage from './CatalogClient'
 
@@ -6,48 +6,32 @@ interface Props { params: Promise<{ slug: string }> }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
-  const supabase = await createClient()
 
-  const { data: match } = await supabase
-    .from('workshop_settings')
-    .select('settings, user_id')
-    .filter('settings->>catalog_slug', 'eq', slug)
-    .single()
+  // Find workshop by catalog_slug in JSONB settings
+  const allSettings = await prisma.workshopSettings.findMany({ select: { settings: true, userId: true } })
+  const match = allSettings.find((ws: typeof allSettings[number]) => (ws.settings as Record<string, unknown>)?.catalog_slug === slug)
 
   if (!match) return { title: 'Catálogo no encontrado' }
 
   const s = match.settings as Record<string, unknown>
-  const userId = match.user_id as string
+  const userId = match.userId
 
-  const { data: prof } = await supabase
-    .from('profiles')
-    .select('business_name, business_logo_url')
-    .eq('id', userId)
-    .single()
+  const prof = await prisma.profile.findUnique({
+    where: { userId },
+    select: { businessName: true, businessLogoUrl: true },
+  })
 
-  const nombre = (s.nombre_tienda as string) || (prof?.business_name as string) || 'Mi Taller'
+  const nombre = (s.nombre_tienda as string) || prof?.businessName || 'Mi Taller'
   const description = (s.descripcion_tienda as string) || (s.brand_description as string) || 'Catálogo de productos personalizados'
-  const image = (s.banner_url as string) || (prof?.business_logo_url as string) || 'https://www.estamply.app/logo-icon.png'
+  const image = (s.banner_url as string) || prof?.businessLogoUrl || 'https://www.estamply.app/logo-icon.png'
   const url = `https://www.estamply.app/catalogo/${slug}`
 
   return {
     title: nombre,
     description,
     robots: { index: false, follow: false },
-    openGraph: {
-      title: nombre,
-      description,
-      url,
-      siteName: 'Estamply',
-      images: [{ url: image, width: 1200, height: 630 }],
-      type: 'website',
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: nombre,
-      description,
-      images: [image],
-    },
+    openGraph: { title: nombre, description, url, siteName: 'Estamply', images: [{ url: image, width: 1200, height: 630 }], type: 'website' },
+    twitter: { card: 'summary_large_image', title: nombre, description, images: [image] },
   }
 }
 

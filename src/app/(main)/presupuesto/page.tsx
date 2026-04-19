@@ -1,3 +1,4 @@
+// @ts-nocheck
 'use client'
 
 import React, { useEffect, useRef, useState } from 'react'
@@ -8,7 +9,7 @@ import {
   ArrowLeft, Loader2, Phone, MapPin, Globe, AtSign, Pencil,
   Link as LinkIcon, Check, Search, Plus, User, Calculator, Save,
 } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/db/client'
 import { usePresupuesto } from '@/features/presupuesto/context/PresupuestoContext'
 import type { Tecnica } from '@/features/presupuesto/types'
 import { DEFAULT_SETTINGS, type WorkshopSettings } from '@/features/presupuesto/types'

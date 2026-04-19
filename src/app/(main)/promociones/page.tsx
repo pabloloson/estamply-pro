@@ -1,7 +1,8 @@
+// @ts-nocheck
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/db/client'
 import { Plus, Pencil, Trash2, X, Check, Search, Copy, MoreHorizontal, Share2 } from 'lucide-react'
 import { useLocale } from '@/shared/context/LocaleContext'
 

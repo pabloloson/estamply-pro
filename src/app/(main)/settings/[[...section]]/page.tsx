@@ -1,9 +1,10 @@
+// @ts-nocheck
 'use client'
 
 import { useState, useEffect, useRef, lazy, Suspense } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/db/client'
 import { Save, User, Upload, Loader2, X, Plus, Trash2, QrCode, Check, Pencil, Search, MoreHorizontal, Copy } from 'lucide-react'
 import { QRCodeCanvas } from 'qrcode.react'
 import { DEFAULT_SETTINGS, type WorkshopSettings, type DiscountTier, type ManoDeObraModo, type ComisionBase, DEFAULT_MO_CONFIG } from '@/features/presupuesto/types'

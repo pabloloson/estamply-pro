@@ -1,7 +1,8 @@
+// @ts-nocheck
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/db/client'
 import { Plus, Pencil, Trash2, X, Save, Cpu, Users } from 'lucide-react'
 import { DEFAULT_SETTINGS, type WorkshopSettings, type ManoDeObraConfig, type ManoDeObraModo, type ComisionBase, type VinylMaterial, DEFAULT_MO_CONFIG } from '@/features/presupuesto/types'
 

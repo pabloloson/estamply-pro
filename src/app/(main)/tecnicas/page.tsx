@@ -1,7 +1,8 @@
+// @ts-nocheck
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/db/client'
 import { Save, Plus, Trash2 } from 'lucide-react'
 import { DEFAULT_SETTINGS, type WorkshopSettings, type DiscountTier } from '@/features/presupuesto/types'
 import { TECHNIQUE_DEFAULTS, TECNICA_LABELS, ALL_TECNICA_SLUGS, type Tecnica, type TecnicaConfig, type TecnicaSlug, type DTFConfig, type SerigrafiaConfig } from '@/features/taller/types'

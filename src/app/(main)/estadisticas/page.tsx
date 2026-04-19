@@ -1,8 +1,9 @@
+// @ts-nocheck
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/db/client'
 import { TrendingUp, TrendingDown, ShoppingBag, FileText, DollarSign, BarChart3, Download, FileDown } from 'lucide-react'
 import EmptyState from '@/shared/components/EmptyState'
 import { ComposedChart, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts'

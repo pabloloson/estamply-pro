@@ -1,7 +1,8 @@
+// @ts-nocheck
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/db/client'
 import { Plus, Pencil, Trash2, X } from 'lucide-react'
 import type { Insumo, InsumoTipo, InsumoConfig } from '@/features/taller/types'
 

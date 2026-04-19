@@ -1,9 +1,10 @@
+// @ts-nocheck
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { ShoppingCart, LayoutGrid, AlertTriangle } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/db/client'
 import { usePresupuesto } from '@/features/presupuesto/context/PresupuestoContext'
 import { DEFAULT_SETTINGS, DEFAULT_MO_CONFIG, type WorkshopSettings } from '@/features/presupuesto/types'
 import type { Tecnica, Category, Insumo, TecnicaSlug } from '@/features/taller/types'

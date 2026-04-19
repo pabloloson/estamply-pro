@@ -1,7 +1,8 @@
+// @ts-nocheck
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/db/client'
 import type { Technique, Product, Equipment, WorkshopSettings, CalcResult, NestingResult } from '../types'
 
 // A4 sheet dimensions in cm

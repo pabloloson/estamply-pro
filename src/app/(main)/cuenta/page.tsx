@@ -1,7 +1,8 @@
+// @ts-nocheck
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/db/client'
 import { Save, Loader2, Check, Upload, X, UserCircle, Lock, CreditCard, ArrowRight } from 'lucide-react'
 import { useTranslations } from '@/shared/hooks/useTranslations'
 

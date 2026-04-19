@@ -1,84 +1,64 @@
-import { createClient } from '@supabase/supabase-js'
+import { prisma } from '@/lib/db/prisma'
 import { NextResponse } from 'next/server'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
 
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const { userId, nombre, whatsapp, comentarios, items, total, medioPago, ajustePorcentaje, ajusteMonto, couponCode, couponDiscount } = body
+    const { userId, nombre, whatsapp, comentarios, items, total, medioPago, ajustePorcentaje, ajusteMonto, couponCode } = body
 
     if (!userId || !nombre || !whatsapp || !items?.length) {
       return NextResponse.json({ error: 'Faltan datos obligatorios' }, { status: 400 })
     }
 
     // Find or create client
-    const { data: existing } = await supabase
-      .from('clients').select('id').eq('user_id', userId).eq('whatsapp', whatsapp).maybeSingle()
-
-    let clientId = existing?.id
-    if (!clientId) {
-      const { data: newClient } = await supabase
-        .from('clients').insert({ user_id: userId, name: nombre, whatsapp }).select('id').single()
-      clientId = newClient?.id
+    let client = await prisma.client.findFirst({ where: { userId, whatsapp } })
+    if (!client) {
+      client = await prisma.client.create({ data: { userId, name: nombre, whatsapp } })
     }
 
-    // Generate code
     const codigo = `WEB-${Date.now().toString(36).toUpperCase()}`
 
-    // Fetch business profile for the presupuesto header
-    const [{ data: profile }, { data: wsRow }] = await Promise.all([
-      supabase.from('profiles').select('business_name,business_cuit,business_address,city,province,postal_code,business_phone,business_email,business_instagram,business_website,business_logo_url,facebook,tiktok,youtube').eq('id', userId).single(),
-      supabase.from('workshop_settings').select('settings').eq('user_id', userId).single(),
+    const [profile, wsRow] = await Promise.all([
+      prisma.profile.findUnique({ where: { userId } }),
+      prisma.workshopSettings.findFirst({ where: { userId }, select: { settings: true } }),
     ])
     const wsSettings = (wsRow?.settings || {}) as Record<string, unknown>
     const bizProfile = {
-      ...profile,
-      business_name: (wsSettings.nombre_tienda as string) || profile?.business_name || 'Mi Taller',
+      business_name: (wsSettings.nombre_tienda as string) || profile?.businessName || 'Mi Taller',
+      business_logo_url: profile?.businessLogoUrl, business_cuit: profile?.businessCuit,
+      business_address: profile?.businessAddress, business_phone: profile?.businessPhone,
+      business_email: profile?.businessEmail, business_instagram: profile?.businessInstagram,
+      business_website: profile?.businessWebsite, city: profile?.city, province: profile?.province,
     }
-    // Build condiciones from workshop settings
+
     const rawCond = wsSettings.condiciones_default as Array<string | { text: string; activa: boolean }> | undefined
     const condicionesText = rawCond
-      ? rawCond.filter(c => typeof c === 'string' || (c as { activa: boolean }).activa !== false).map(c => typeof c === 'string' ? `· ${c}` : `· ${c.text}`).join('\n')
+      ? rawCond.filter(c => typeof c === 'string' || (c as { activa: boolean }).activa !== false).map(c => typeof c === 'string' ? `· ${c}` : `· ${(c as { text: string }).text}`).join('\n')
       : null
 
-    // Create presupuesto
-    const { error } = await supabase.from('presupuestos').insert({
-      user_id: userId, client_id: clientId || null, codigo,
-      numero: codigo, client_name: nombre,
-      items: items.map((i: { name: string; variant: string; quantity: number; price: number }) => ({
-        nombre: `${i.name}${i.variant ? ` (${i.variant})` : ''}`,
-        cantidad: i.quantity, precioUnit: i.price, subtotal: i.price * i.quantity,
-      })),
-      total, origen: 'catalogo_web',
-      notas: comentarios || null,
-      condiciones: condicionesText,
-      business_profile: bizProfile || {},
-      medio_pago_nombre: medioPago || null,
-      ajuste_porcentaje: ajustePorcentaje || 0,
-      ajuste_monto: ajusteMonto || 0,
-      total_final: total,
+    await prisma.presupuesto.create({
+      data: {
+        userId, clientId: client.id, codigo, numero: codigo, clientName: nombre,
+        items: items.map((i: { name: string; variant: string; quantity: number; price: number }) => ({
+          nombre: `${i.name}${i.variant ? ` (${i.variant})` : ''}`,
+          cantidad: i.quantity, precioUnit: i.price, subtotal: i.price * i.quantity,
+        })),
+        total, origen: 'catalogo_web', notas: comentarios || null,
+        condiciones: condicionesText, businessProfile: bizProfile,
+        medioPagoNombre: medioPago || null, ajustePorcentaje: ajustePorcentaje || 0,
+        ajusteMonto: ajusteMonto || 0, totalFinal: total,
+      },
     })
 
-    if (error) {
-      console.error('Presupuesto insert error:', error)
-      return NextResponse.json({ codigo, warning: 'Presupuesto no se pudo crear' })
-    }
-
-    // Increment coupon used_count if applicable
     if (couponCode) {
-      const { data: coupon } = await supabase.from('coupons').select('id, used_count, used_by_clients').eq('user_id', userId).eq('code', couponCode.toUpperCase()).single()
+      const coupon = await prisma.coupon.findFirst({ where: { userId, code: couponCode.toUpperCase() } })
       if (coupon) {
-        const usedBy = [...(coupon.used_by_clients || []), whatsapp].filter(Boolean)
-        const newCount = (coupon.used_count || 0) + 1
-        await supabase.from('coupons').update({ used_count: newCount, used_by_clients: usedBy }).eq('id', coupon.id)
+        const usedBy = [...(coupon.usedByClients || []), whatsapp].filter(Boolean)
+        await prisma.coupon.update({ where: { id: coupon.id }, data: { usedCount: coupon.usedCount + 1, usedByClients: usedBy } })
       }
     }
 
-    return NextResponse.json({ codigo, clientId })
+    return NextResponse.json({ codigo, clientId: client.id })
   } catch (e) {
     console.error('Catalog order error:', e)
     return NextResponse.json({ error: 'Error interno' }, { status: 500 })

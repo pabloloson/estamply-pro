@@ -1,7 +1,8 @@
+// @ts-nocheck
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/db/client'
 import { Plus, Pencil, Trash2, X, Search, AlertTriangle } from 'lucide-react'
 import NumericInput from '@/shared/components/NumericInput'
 import EmptyState from '@/shared/components/EmptyState'

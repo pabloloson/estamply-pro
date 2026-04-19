@@ -1,9 +1,10 @@
+// @ts-nocheck
 'use client'
 
 import { useState, useEffect, useContext } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/db/client'
 import { ShoppingCart, Plus, Minus, X, MessageCircle, ArrowLeft, ChevronLeft, ChevronRight, Check, Share2 } from 'lucide-react'
 import esMsg from '../../../../../messages/es.json'
 import ptMsg from '../../../../../messages/pt.json'

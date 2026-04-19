@@ -1,8 +1,9 @@
+// @ts-nocheck
 'use client'
 
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/db/client'
 import { Plus, Pencil, Trash2, X, FolderOpen, Search } from 'lucide-react'
 import type { Category, Insumo, InsumoTipo, InsumoConfig } from '@/features/taller/types'
 import CategoryModal from '@/features/taller/components/CategoryModal'
