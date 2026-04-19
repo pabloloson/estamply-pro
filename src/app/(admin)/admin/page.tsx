@@ -220,7 +220,7 @@ export default function AdminDashboard() {
         <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Actividad reciente</h3>
         <div className="space-y-2">
           {data.recentProfiles.map(p => {
-            const displayName = p.workshop_name || p.full_name || p.email.split('@')[0]
+            const displayName = p.workshop_name || p.full_name || (p.email || '').split('@')[0] || 'Sin nombre'
             return (
               <a key={p.id} href={`/admin/talleres/${p.id}`} className="flex items-center gap-3 py-2.5 px-2 rounded-lg border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors cursor-pointer">
                 <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0" style={{ background: '#6C5CE7' }}>
