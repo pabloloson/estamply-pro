@@ -2,6 +2,8 @@ import { prisma } from '@/lib/db/prisma'
 import type { Metadata } from 'next'
 import CatalogPage from './CatalogClient'
 
+export const dynamic = 'force-dynamic'
+
 interface Props { params: Promise<{ slug: string }> }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

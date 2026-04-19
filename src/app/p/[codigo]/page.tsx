@@ -2,6 +2,8 @@ import { prisma } from '@/lib/db/prisma'
 import { notFound } from 'next/navigation'
 import PublicQuoteView from './PublicQuoteView'
 
+export const dynamic = 'force-dynamic'
+
 export default async function PublicPresupuestoPage({ params }: { params: Promise<{ codigo: string }> }) {
   const { codigo } = await params
 

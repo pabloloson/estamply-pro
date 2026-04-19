@@ -3,6 +3,8 @@ import { prisma } from '@/lib/db/prisma'
 import { getTeamOwnerId } from '@/lib/db/tenant'
 import { NextResponse } from 'next/server'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET() {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })

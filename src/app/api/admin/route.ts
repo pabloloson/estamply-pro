@@ -2,6 +2,8 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
 import { NextResponse } from 'next/server'
 
+export const dynamic = 'force-dynamic'
+
 function isAdmin(email: string): boolean {
   const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase())
   return adminEmails.includes(email.toLowerCase())

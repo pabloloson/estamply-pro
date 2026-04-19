@@ -4,6 +4,8 @@ import { prisma } from '@/lib/db/prisma'
 import { getTeamOwnerId } from '@/lib/db/tenant'
 import DashboardClient from '../DashboardClient'
 
+export const dynamic = 'force-dynamic'
+
 export default async function HomePage() {
   const session = await auth()
   if (!session?.user?.id) redirect('/login')

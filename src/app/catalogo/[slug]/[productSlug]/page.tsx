@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import ProductPageClient from './ProductPageClient'
 
+export const dynamic = 'force-dynamic'
+
 interface Props { params: Promise<{ slug: string; productSlug: string }> }
 
 async function findWorkshopBySlug(slug: string) {

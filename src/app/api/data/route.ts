@@ -3,6 +3,8 @@ import { prisma } from '@/lib/db/prisma'
 import { getTeamOwnerId } from '@/lib/db/tenant'
 import { NextRequest, NextResponse } from 'next/server'
 
+export const dynamic = 'force-dynamic'
+
 // Model name mapping (client sends table name, we map to Prisma model)
 const MODEL_MAP: Record<string, string> = {
   profiles: 'profile', workshop_settings: 'workshopSettings', tecnicas: 'tecnica',
