@@ -1,82 +1,57 @@
-import { createServerClient } from '@supabase/ssr'
-import { NextResponse, type NextRequest } from 'next/server'
+import { auth } from "@/auth"
+import { NextResponse } from "next/server"
 
 const APP_HOST = 'app.estamply.app'
 
-export async function middleware(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request })
+const publicRoutes = ['/', '/login', '/signup', '/onboarding', '/br']
+const publicPrefixes = ['/p/', '/catalogo/', '/api/auth/', '/api/catalog-order', '/api/validate-coupon']
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-          supabaseResponse = NextResponse.next({ request })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          )
-        },
-      },
-    }
-  )
-
-  const { pathname } = request.nextUrl
-  const host = (request.headers.get('host') || '').toLowerCase()
+export default auth((req) => {
+  const { pathname } = req.nextUrl
+  const host = (req.headers.get('host') || '').toLowerCase()
   const isAppSubdomain = host.startsWith('app.')
   const isLocalhost = host.startsWith('localhost') || host.startsWith('127.0.0.1')
+  const isLoggedIn = !!req.auth
 
-  // ── MAIN DOMAIN (estamply.app, www.estamply.app, or any non-app. host): NO AUTH ──
+  // Main domain — redirect app routes to app subdomain
   if (!isAppSubdomain && !isLocalhost) {
-    // Redirect auth/app routes to app subdomain
     const appRedirectRoutes = ['/login', '/signup', '/register', '/admin', '/dashboard',
       '/cotizador', '/presupuesto', '/orders', '/clients', '/materiales',
       '/equipamiento', '/tecnicas', '/settings', '/estadisticas', '/promociones', '/onboarding']
     const shouldRedirectToApp = appRedirectRoutes.some(r => pathname === r || pathname.startsWith(r + '/'))
 
     if (shouldRedirectToApp) {
-      const appUrl = new URL(request.url)
+      const appUrl = new URL(req.url)
       appUrl.hostname = APP_HOST
       appUrl.port = ''
       if (pathname === '/register') appUrl.pathname = '/signup'
       return NextResponse.redirect(appUrl, 301)
     }
-
-    // Everything else on main domain: serve without auth (landing, /br, /catalogo/*, /p/*, etc.)
-    return supabaseResponse
+    return NextResponse.next()
   }
 
-  // ── APP SUBDOMAIN (app.estamply.app) or LOCALHOST: normal auth logic ──
-
-  // Admin routes: skip middleware, let layout handle auth
+  // App subdomain / localhost — auth logic
+  // Admin routes: skip middleware, let layout handle
   if (pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) {
-    return supabaseResponse
+    return NextResponse.next()
   }
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const isPublicRoute = publicRoutes.includes(pathname)
+  const isPublicPrefix = publicPrefixes.some(prefix => pathname.startsWith(prefix))
 
-  // Public routes on app subdomain
-  const publicRoutes = ['/', '/login', '/signup', '/auth/callback', '/onboarding', '/p/', '/catalogo/']
-  const isPublicRoute = publicRoutes.some(route => pathname === route || pathname.startsWith(route))
-
-  if (!user && !isPublicRoute) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    return NextResponse.redirect(url)
+  if (isPublicRoute || isPublicPrefix) {
+    if (isLoggedIn && (pathname === '/login' || pathname === '/signup')) {
+      return NextResponse.redirect(new URL('/dashboard', req.nextUrl))
+    }
+    return NextResponse.next()
   }
 
-  if (user && (pathname === '/login' || pathname === '/signup')) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/dashboard'
-    return NextResponse.redirect(url)
+  if (!isLoggedIn) {
+    return NextResponse.redirect(new URL('/login', req.nextUrl))
   }
 
-  return supabaseResponse
-}
+  return NextResponse.next()
+})
 
 export const config = {
   matcher: [

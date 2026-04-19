@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import { auth } from '@/auth'
 import { createClient } from '@/lib/supabase/server'
 import { Sidebar } from '@/shared/components/Sidebar'
 import TrialBanner from '@/shared/components/TrialBanner'
@@ -7,23 +8,22 @@ import { PermissionsProvider } from '@/shared/context/PermissionsContext'
 import { LocaleProvider } from '@/shared/context/LocaleContext'
 
 export default async function MainLayout({ children }: { children: React.ReactNode }) {
+  const session = await auth()
+  if (!session?.user?.id) redirect('/login')
+
+  // Still using Supabase for DB queries (will migrate in FASE 4B)
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('workshop_name, onboarding_completed')
+    .eq('id', session.user.id)
+    .single()
 
-  let workshopName = 'Mi Taller'
-  if (user) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('workshop_name, onboarding_completed')
-      .eq('id', user.id)
-      .single()
-
-    if (profile && !profile.onboarding_completed) {
-      redirect('/onboarding')
-    }
-
-    if (profile?.workshop_name) workshopName = profile.workshop_name
+  if (profile && !profile.onboarding_completed) {
+    redirect('/onboarding')
   }
+
+  const workshopName = profile?.workshop_name || 'Mi Taller'
 
   return (
     <LocaleProvider>
