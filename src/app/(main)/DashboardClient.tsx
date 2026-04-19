@@ -1,7 +1,8 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
-import { Check, MessageCircle, Calendar, AlertTriangle, ShoppingBag } from 'lucide-react'
+import { Check, MessageCircle, Calendar, DollarSign, ShoppingBag, Clock, TrendingUp, ChevronDown } from 'lucide-react'
 import { useTranslations } from '@/shared/hooks/useTranslations'
 import { useLocale } from '@/shared/context/LocaleContext'
 import { usePermissions } from '@/shared/context/PermissionsContext'
@@ -114,17 +115,38 @@ export default function DashboardClient({ shopName, orders, payments, presupuest
   if (oldPres.length > 0) alerts.push({ color: '#EAB308', icon: '🟡', text: `${oldPres.length} presupuesto${oldPres.length > 1 ? 's' : ''} espera${oldPres.length > 1 ? 'n' : ''} respuesta hace más de 5 días`, href: '/presupuesto' })
   if (webPres.length > 0) alerts.push({ color: '#3B82F6', icon: '🔵', text: `Tenés ${webPres.length} presupuesto${webPres.length > 1 ? 's' : ''} nuevo${webPres.length > 1 ? 's' : ''} del catálogo web`, href: '/presupuesto' })
 
+  const [activityOpen, setActivityOpen] = useState(true)
+
+  // 7-day chart data
+  const last7 = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(today.getTime() - (6 - i) * 86400000)
+    const dayOrders = orders.filter(o => { const od = new Date(o.created_at as string); return od >= d && od < new Date(d.getTime() + 86400000) })
+    return { day: d.toLocaleDateString('es-AR', { day: '2-digit' }), value: dayOrders.reduce((s, o) => s + (o.total_price as number || 0), 0) }
+  })
+  const max7 = Math.max(...last7.map(d => d.value), 1)
+
+  // Onboarding checklist
+  const onboardingSteps = [
+    { label: 'Datos del taller', done: !!shopName && shopName !== 'Mi Taller', href: '/settings' },
+    { label: 'Equipamiento', done: (setupCounts?.equipment || 0) > 0, href: '/settings/equipamiento' },
+    { label: 'Insumos y costos', done: (setupCounts?.materials || 0) > 0, href: '/settings/insumos' },
+    { label: 'Primer producto', done: (setupCounts?.products || 0) > 0, href: '/catalogo' },
+    { label: 'Primera cotización', done: presupuestos.length > 0, href: '/cotizador' },
+  ]
+  const onboardingDone = onboardingSteps.filter(s => s.done).length
+  const showOnboarding = onboardingDone < onboardingSteps.length
+
   return (
-    <div className="max-w-5xl mx-auto">
+    <div className="max-w-5xl mx-auto space-y-6">
       {/* Header */}
-      <div className="mb-6">
+      <div>
         <h1 className="text-2xl font-black text-gray-900">{t(greetingKey, { name: shopName })} 👋</h1>
-        <p className="text-sm text-gray-400 mt-0.5 capitalize">{dateStr}</p>
+        <p className="text-sm text-gray-400 mt-0.5">{dateStr.charAt(0).toUpperCase() + dateStr.slice(1)}</p>
       </div>
 
       {/* Exchange rate */}
       {exchangeRate && (
-        <Link href="/settings/moneda" className="flex items-center justify-between p-3 rounded-xl bg-blue-50 border border-blue-100 mb-4 hover:bg-blue-100 transition-colors">
+        <Link href="/settings/moneda" className="flex items-center justify-between p-3 rounded-xl bg-blue-50 border border-blue-100 hover:bg-blue-100 transition-colors">
           <div className="flex items-center gap-2"><span className="text-lg">💱</span><span className="text-sm font-medium text-blue-800">1 {exchangeRate.currency} = {fmt(exchangeRate.value)}</span></div>
           <span className="text-xs text-blue-500">Editar →</span>
         </Link>
@@ -132,26 +154,31 @@ export default function DashboardClient({ shopName, orders, payments, presupuest
 
       {/* Alerts — Atención requerida */}
       {alerts.length > 0 && (
-        <div className="space-y-2 mb-6">
+        <div className="space-y-2">
           {alerts.map((alert, i) => (
-            <Link key={i} href={alert.href} className="block p-4 rounded-xl bg-white border border-gray-100 hover:shadow-sm transition-shadow" style={{ borderLeftWidth: 4, borderLeftColor: alert.color }}>
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold text-gray-800"><span className="mr-1.5">{alert.icon}</span>{alert.text}</p>
-                <span className="text-xs text-gray-400">Ver →</span>
-              </div>
-              {alert.items && (
-                <div className="mt-2 space-y-1">
-                  {alert.items.map((item, j) => (
-                    <div key={j} className="flex items-center justify-between text-xs">
-                      <span className="text-gray-600">{item.name}</span>
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-gray-700">{item.info}</span>
-                        {item.wa && <a href={`https://wa.me/${item.wa.replace(/[\s\-\(\)]/g, '')}`} target="_blank" rel="noopener" onClick={e => e.stopPropagation()} className="text-green-600 hover:text-green-700"><MessageCircle size={12} /></a>}
+            <Link key={i} href={alert.href} className="block p-5 rounded-xl hover:shadow-md transition-all" style={{ borderLeft: `4px solid ${alert.color}`, background: `${alert.color}08`, border: `1px solid ${alert.color}20`, borderLeftWidth: 4, borderLeftColor: alert.color }}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-3 flex-1">
+                  <span className="text-xl mt-0.5">{alert.icon}</span>
+                  <div>
+                    <p className="text-sm font-bold text-gray-800">{alert.text}</p>
+                    {alert.items && (
+                      <div className="mt-2 space-y-1.5">
+                        {alert.items.map((item, j) => (
+                          <div key={j} className="flex items-center justify-between text-xs">
+                            <span className="text-gray-600">{item.name}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-gray-700">{item.info}</span>
+                              {item.wa && <a href={`https://wa.me/${item.wa.replace(/[\s\-\(\)]/g, '')}`} target="_blank" rel="noopener" onClick={e => { e.preventDefault(); e.stopPropagation(); window.open(`https://wa.me/${item.wa!.replace(/[\s\-\(\)]/g, '')}`, '_blank') }} className="text-green-600 hover:text-green-700"><MessageCircle size={13} /></a>}
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    </div>
-                  ))}
+                    )}
+                  </div>
                 </div>
-              )}
+                <span className="text-xs font-semibold flex-shrink-0" style={{ color: alert.color }}>Ver →</span>
+              </div>
             </Link>
           ))}
         </div>
@@ -159,57 +186,68 @@ export default function DashboardClient({ shopName, orders, payments, presupuest
 
       {/* Summary KPIs */}
       {showPrices && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-          <div className="card p-4">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Facturación hoy</p>
-            <p className="text-xl font-black text-gray-900 mt-1">{fmt(todayRev)}</p>
-            <p className="text-[10px] text-gray-400 mt-0.5">vs {fmt(yesterdayRev)} ayer</p>
-          </div>
-          <div className="card p-4">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Pedidos hoy</p>
-            <p className="text-xl font-black text-gray-900 mt-1">{todayOrders.length}</p>
-            <p className="text-[10px] text-gray-400 mt-0.5">{todayOrders.length - todayCompleted} nuevos, {todayCompleted} completados</p>
-          </div>
-          <div className="card p-4">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Por cobrar</p>
-            <p className="text-xl font-black text-gray-900 mt-1">{fmt(totalPorCobrar)}</p>
-            <p className="text-[10px] text-gray-400 mt-0.5">{pendingColl.length} pedido{pendingColl.length !== 1 ? 's' : ''}</p>
-          </div>
-          <div className="card p-4">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Conversión</p>
-            <p className="text-xl font-black text-gray-900 mt-1">{convRate}%</p>
-            <p className="text-[10px] text-gray-400 mt-0.5">{convConverted} de {convTotal} convertidos</p>
-          </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            { label: 'Facturación hoy', value: fmt(todayRev), sub: `vs ${fmt(yesterdayRev)} ayer`, icon: DollarSign, color: '#22C55E', href: '/estadisticas' },
+            { label: 'Pedidos hoy', value: String(todayOrders.length), sub: `${todayOrders.length - todayCompleted} nuevos, ${todayCompleted} completados`, icon: ShoppingBag, color: '#6C5CE7', href: '/orders' },
+            { label: 'Por cobrar', value: fmt(totalPorCobrar), sub: `${pendingColl.length} pedido${pendingColl.length !== 1 ? 's' : ''}`, icon: Clock, color: '#F59E0B', href: '/orders', highlight: totalPorCobrar > 100000 },
+            { label: 'Conversión', value: `${convRate}%`, sub: `${convConverted} de ${convTotal}`, icon: TrendingUp, color: '#3B82F6', href: '/estadisticas' },
+          ].map(c => (
+            <Link key={c.label} href={c.href} className={`card p-5 hover:shadow-md transition-all cursor-pointer ${(c as { highlight?: boolean }).highlight ? 'ring-1 ring-amber-200' : ''}`}>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `${c.color}15` }}>
+                  <c.icon size={16} style={{ color: c.color }} />
+                </div>
+                <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">{c.label}</span>
+              </div>
+              <p className="text-2xl font-black text-gray-900">{c.value}</p>
+              <p className="text-xs text-gray-400 mt-1">{c.sub}</p>
+            </Link>
+          ))}
         </div>
       )}
 
+      {/* Mini 7-day chart */}
+      {showPrices && (
+        <Link href="/estadisticas" className="card p-4 hover:shadow-md transition-all hidden md:block">
+          <div className="flex items-end gap-1 h-16">
+            {last7.map((d, i) => (
+              <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                <div className="w-full rounded-t" style={{ height: `${Math.max((d.value / max7) * 56, 2)}px`, background: '#6C5CE7', opacity: i === 6 ? 1 : 0.5 }} title={`${d.day}: ${fmt(d.value)}`} />
+                <span className="text-[9px] text-gray-400">{d.day}</span>
+              </div>
+            ))}
+          </div>
+        </Link>
+      )}
+
       {/* Pedidos en curso */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Pipeline */}
-        <div className="card p-5">
+        <div className="card p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-bold text-gray-800">{t('activeOrders')}</h2>
-            <Link href="/orders" className="text-xs text-purple-600 font-semibold">{t('viewAll')}</Link>
+            <Link href="/orders" className="text-xs text-purple-600 font-semibold hover:text-purple-800">{t('viewAll')} →</Link>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-1">
             {(['pending', 'production', 'ready'] as const).map(s => (
-              <Link key={s} href="/orders" className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors">
-                <div className="flex items-center gap-2.5">
+              <Link key={s} href="/orders" className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors group">
+                <div className="flex items-center gap-3">
                   <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: SC[s] }} />
-                  <span className="text-sm font-medium text-gray-700">{SL[s]}</span>
+                  <span className={`text-sm font-medium ${countBy[s] > 0 ? 'text-gray-700' : 'text-gray-300'}`}>{SL[s]}</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-sm font-bold text-gray-800">{countBy[s]}</span>
+                  <span className={`text-sm font-bold ${countBy[s] > 0 ? 'text-gray-800' : 'text-gray-300'}`}>{countBy[s]}</span>
                   {showPrices && amountBy[s] > 0 && <span className="text-xs text-gray-400">{fmt(amountBy[s])}</span>}
+                  <span className="text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity">→</span>
                 </div>
               </Link>
             ))}
           </div>
-          {active.length === 0 && <p className="text-sm text-gray-400 py-4 text-center">No hay pedidos activos</p>}
         </div>
 
         {/* Próximas entregas */}
-        <div className="card p-5">
+        <div className={`card ${upcoming.length > 0 ? 'p-6' : 'p-6'}`}>
           <h2 className="font-bold text-gray-800 mb-4">Próximas entregas</h2>
           {upcoming.length > 0 ? (
             <div className="space-y-1">
@@ -220,68 +258,101 @@ export default function DashboardClient({ shopName, orders, payments, presupuest
                 const isTomorrow = daysLeft === 0 || daysLeft === 1
                 const cl = o.clients as Record<string, string> | null
                 return (
-                  <Link key={o.id as string} href="/orders" className="flex items-center justify-between p-2.5 rounded-lg hover:bg-gray-50">
+                  <Link key={o.id as string} href="/orders" className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors">
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-gray-800 truncate">{cl?.name || 'Sin cliente'}</p>
                       {showPrices && <p className="text-xs text-gray-400">{fmt(o.total_price as number)}</p>}
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className="text-xs text-gray-400"><Calendar size={10} className="inline mr-1" />{dueDate.toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}</span>
-                      {isOD && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-600 font-bold">Atrasado</span>}
-                      {isTomorrow && !isOD && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-600 font-bold">Mañana</span>}
-                      {!isOD && !isTomorrow && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-600 font-bold">{daysLeft}d</span>}
+                      <span className="text-xs text-gray-400">{dueDate.toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}</span>
+                      {isOD ? <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-100 text-red-600 font-bold">Atrasado</span>
+                        : isTomorrow ? <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-600 font-bold">Mañana</span>
+                        : <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-50 text-green-600 font-bold">{daysLeft}d</span>}
                     </div>
                   </Link>
                 )
               })}
             </div>
-          ) : <p className="text-sm text-gray-400 py-4 text-center">Sin entregas programadas</p>}
+          ) : (
+            <div className="flex flex-col items-center justify-center py-6 text-center">
+              <Calendar size={24} className="text-gray-200 mb-2" />
+              <p className="text-sm text-gray-400">Sin entregas programadas</p>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Recent activity */}
-      <div className="card p-5">
-        <h2 className="font-bold text-gray-800 mb-4">{t('recentActivity')}</h2>
-        <div className="space-y-1">
-          {[
-            ...presupuestos.slice(0, 8).map(p => ({
-              icon: p.origen === 'catalogo_web' ? '🛒' : '📋',
-              text: `${p.origen === 'catalogo_web' ? 'Pedido web' : 'Presupuesto'} #${(p.codigo as string || '').slice(0, 8)}`,
-              detail: `${p.client_name || ''}${showPrices && p.total ? ` — ${fmt(p.total as number)}` : ''}`,
-              date: new Date(p.created_at as string), href: '/presupuesto',
-            })),
-            ...orders.filter(o => o.status === 'delivered').slice(0, 5).map(o => ({
-              icon: '✅', text: `Pedido entregado #${(o.id as string).slice(0, 6).toUpperCase()}`,
-              detail: `${(o.clients as Record<string, string>)?.name || ''}${showPrices ? ` — ${fmt(o.total_price as number)}` : ''}`,
-              date: new Date(o.created_at as string), href: '/orders',
-            })),
-            ...payments.slice(0, 5).map(p => ({
-              icon: '💰', text: `Pago registrado`,
-              detail: showPrices ? fmt(p.monto as number) : '',
-              date: new Date(p.fecha as string), href: '/orders',
-            })),
-          ].sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 10).map((ev, i, arr) => {
-            const isToday = ev.date.toDateString() === now.toDateString()
-            const isYesterday = ev.date.toDateString() === new Date(now.getTime() - 86400000).toDateString()
-            const dayLabel = isToday ? 'Hoy' : isYesterday ? 'Ayer' : ev.date.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })
-            const showDayHeader = i === 0 || arr[i - 1].date.toDateString() !== ev.date.toDateString()
-            return (
-              <div key={i}>
-                {showDayHeader && <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mt-3 mb-1 first:mt-0">{dayLabel}</p>}
-                <Link href={ev.href} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50">
-                  <span className="text-base flex-shrink-0">{ev.icon}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-800">{ev.text}</p>
-                    {ev.detail && <p className="text-xs text-gray-400 truncate">{ev.detail}</p>}
-                  </div>
-                  <span className="text-[10px] text-gray-300 flex-shrink-0">{ev.date.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}</span>
-                </Link>
-              </div>
-            )
-          })}
-          {presupuestos.length === 0 && orders.length === 0 && <p className="text-sm text-gray-400 text-center py-4">No hay actividad reciente</p>}
-        </div>
+      {/* Recent activity — collapsible */}
+      <div className="card p-6">
+        <button onClick={() => setActivityOpen(!activityOpen)} className="flex items-center justify-between w-full text-left">
+          <h2 className="font-bold text-gray-800">{t('recentActivity')}</h2>
+          <ChevronDown size={16} className={`text-gray-400 transition-transform ${activityOpen ? '' : '-rotate-90'}`} />
+        </button>
+        {activityOpen && (
+          <div className="mt-4 space-y-0.5">
+            {[
+              ...presupuestos.slice(0, 8).map(p => ({
+                icon: p.origen === 'catalogo_web' ? '🛒' : '📋',
+                text: `${p.origen === 'catalogo_web' ? 'Pedido web' : 'Presupuesto'} #${(p.codigo as string || '').slice(0, 8)}`,
+                detail: [p.client_name, showPrices && p.total ? fmt(p.total as number) : ''].filter(Boolean).join(' · '),
+                date: new Date(p.created_at as string), href: '/presupuesto',
+              })),
+              ...orders.filter(o => o.status === 'delivered').slice(0, 5).map(o => ({
+                icon: '✅', text: `Entregado #${(o.id as string).slice(0, 6).toUpperCase()}`,
+                detail: [(o.clients as Record<string, string>)?.name, showPrices ? fmt(o.total_price as number) : ''].filter(Boolean).join(' · '),
+                date: new Date(o.created_at as string), href: '/orders',
+              })),
+              ...payments.slice(0, 5).map(p => ({
+                icon: '💰', text: 'Pago registrado',
+                detail: showPrices ? fmt(p.monto as number) : '',
+                date: new Date(p.fecha as string), href: '/orders',
+              })),
+            ].sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 8).map((ev, i, arr) => {
+              const isToday = ev.date.toDateString() === now.toDateString()
+              const isYesterday = ev.date.toDateString() === new Date(now.getTime() - 86400000).toDateString()
+              const dayLabel = isToday ? 'HOY' : isYesterday ? 'AYER' : ev.date.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' }).toUpperCase()
+              const showDayHeader = i === 0 || arr[i - 1].date.toDateString() !== ev.date.toDateString()
+              return (
+                <div key={i}>
+                  {showDayHeader && <p className="text-[10px] font-bold text-gray-300 uppercase tracking-wider mt-3 mb-1 first:mt-0">{dayLabel}</p>}
+                  <Link href={ev.href} className="flex items-center gap-3 py-2 px-2 rounded-lg hover:bg-gray-50 transition-colors">
+                    <span className="text-sm flex-shrink-0">{ev.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13px] text-gray-700">{ev.text}{ev.detail ? <span className="text-gray-400"> · {ev.detail}</span> : ''}</p>
+                    </div>
+                    <span className="text-[10px] text-gray-300 flex-shrink-0">{ev.date.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}</span>
+                  </Link>
+                </div>
+              )
+            })}
+            {presupuestos.length === 0 && orders.length === 0 && <p className="text-sm text-gray-400 text-center py-4">No hay actividad reciente</p>}
+          </div>
+        )}
       </div>
+
+      {/* Onboarding checklist */}
+      {showOnboarding && (
+        <div className="card p-6">
+          <h2 className="font-bold text-gray-800 mb-3">Configurá tu taller</h2>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div className="h-full rounded-full transition-all" style={{ width: `${(onboardingDone / onboardingSteps.length) * 100}%`, background: '#22C55E' }} />
+            </div>
+            <span className="text-xs font-semibold text-gray-500">{onboardingDone}/{onboardingSteps.length}</span>
+          </div>
+          <div className="space-y-1">
+            {onboardingSteps.map((step, i) => (
+              <Link key={i} href={step.href} className={`flex items-center gap-3 py-2.5 px-3 rounded-lg transition-colors ${step.done ? 'opacity-50' : 'hover:bg-gray-50'}`}>
+                <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${step.done ? 'bg-green-100' : 'border-2 border-gray-200'}`}>
+                  {step.done && <Check size={11} className="text-green-600" />}
+                </div>
+                <span className={`text-sm ${step.done ? 'text-gray-400 line-through' : 'text-gray-700 font-medium'}`}>{step.label}</span>
+                {!step.done && <span className="ml-auto text-xs text-gray-300">→</span>}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
