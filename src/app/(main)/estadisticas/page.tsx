@@ -39,6 +39,9 @@ export default function EstadisticasPage() {
   const [presupuestos, setPresupuestos] = useState<Pres[]>([])
   const now = new Date()
   const [period, setPeriod] = useState('30d')
+  const [periodOpen, setPeriodOpen] = useState(false)
+  const [customFrom, setCustomFrom] = useState('')
+  const [customTo, setCustomTo] = useState('')
   const [cmpA, setCmpA] = useState('')
   const [cmpB, setCmpB] = useState('')
   const [showCmp, setShowCmp] = useState(false)
@@ -55,18 +58,39 @@ export default function EstadisticasPage() {
     load()
   }, [])
 
+  const PERIOD_OPTIONS: Array<{ id: string; label: string }> = [
+    { id: 'today', label: 'Hoy' }, { id: 'yesterday', label: 'Ayer' },
+    { id: '7d', label: 'Últimos 7 días' }, { id: '30d', label: 'Últimos 30 días' },
+    { id: 'this_month', label: 'Este mes' }, { id: 'last_month', label: 'Mes anterior' },
+    { id: '3m', label: 'Últimos 3 meses' }, { id: '12m', label: 'Últimos 12 meses' },
+    { id: 'this_year', label: 'Este año' }, { id: 'last_year', label: 'Año anterior' },
+    { id: 'custom', label: 'Personalizado' },
+  ]
+
   // Period calculation
   const { start, end, prevStart, prevEnd, label } = useMemo(() => {
-    const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
-    let days = 30
-    if (period === '7d') days = 7
-    else if (period === '3m') days = 90
-    else if (period === '12m') days = 365
-    const start = new Date(end.getTime() - days * 86400000)
-    const prevEnd = new Date(start)
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const tomorrow = new Date(today.getTime() + 86400000)
+    let s: Date, e: Date
+    switch (period) {
+      case 'today': s = today; e = tomorrow; break
+      case 'yesterday': s = new Date(today.getTime() - 86400000); e = today; break
+      case '7d': s = new Date(tomorrow.getTime() - 7 * 86400000); e = tomorrow; break
+      case 'this_month': s = new Date(now.getFullYear(), now.getMonth(), 1); e = tomorrow; break
+      case 'last_month': s = new Date(now.getFullYear(), now.getMonth() - 1, 1); e = new Date(now.getFullYear(), now.getMonth(), 1); break
+      case '3m': s = new Date(tomorrow.getTime() - 90 * 86400000); e = tomorrow; break
+      case '12m': s = new Date(tomorrow.getTime() - 365 * 86400000); e = tomorrow; break
+      case 'this_year': s = new Date(now.getFullYear(), 0, 1); e = tomorrow; break
+      case 'last_year': s = new Date(now.getFullYear() - 1, 0, 1); e = new Date(now.getFullYear(), 0, 1); break
+      case 'custom': s = customFrom ? new Date(customFrom) : new Date(tomorrow.getTime() - 30 * 86400000); e = customTo ? new Date(new Date(customTo).getTime() + 86400000) : tomorrow; break
+      default: s = new Date(tomorrow.getTime() - 30 * 86400000); e = tomorrow
+    }
+    const days = Math.max(Math.round((e.getTime() - s.getTime()) / 86400000), 1)
+    const prevEnd = new Date(s)
     const prevStart = new Date(prevEnd.getTime() - days * 86400000)
-    return { start, end, prevStart, prevEnd, label: period === '7d' ? '7 días' : period === '30d' ? '30 días' : period === '3m' ? '3 meses' : '12 meses' }
-  }, [period])
+    const lbl = PERIOD_OPTIONS.find(o => o.id === period)?.label || 'Últimos 30 días'
+    return { start: s, end: e, prevStart, prevEnd, label: lbl }
+  }, [period, customFrom, customTo])
 
   const inRange = (d: string, s: Date, e: Date) => { const dt = new Date(d); return dt >= s && dt < e }
   const curOrders = orders.filter(o => inRange(o.created_at as string, start, end))
@@ -108,6 +132,93 @@ export default function EstadisticasPage() {
   const totalUnits = curOrders.reduce((s, o) => ((o.items || []) as Array<Record<string, unknown>>).reduce((sum, i) => sum + ((i.cantidad as number) || 1), s), 0)
   const daysInPeriod = Math.max(Math.round((end.getTime() - start.getTime()) / 86400000), 1)
   const ordersPerDay = (pedidos / daysInPeriod).toFixed(1)
+
+  // Facturación por día de la semana
+  const dayOfWeekData = useMemo(() => {
+    const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
+    const daySums: number[] = [0, 0, 0, 0, 0, 0, 0]
+    const dayCounts: number[] = [0, 0, 0, 0, 0, 0, 0]
+    curOrders.forEach(o => { const d = new Date(o.created_at as string).getDay(); daySums[d] += (o.total_price as number || 0); dayCounts[d]++ })
+    // Count weeks in period to get averages
+    const weeks = Math.max(daysInPeriod / 7, 1)
+    return [1, 2, 3, 4, 5, 6, 0].map(d => ({ name: dayNames[d], value: Math.round(daySums[d] / weeks), orders: dayCounts[d] }))
+  }, [curOrders, daysInPeriod])
+  const bestDay = dayOfWeekData.reduce((a, b) => b.value > a.value ? b : a, dayOfWeekData[0])
+  const worstDay = dayOfWeekData.reduce((a, b) => b.value < a.value ? b : a, dayOfWeekData[0])
+
+  // Clientes nuevos vs recurrentes
+  const { newClients, recurringClients } = useMemo(() => {
+    const clientFirstOrder = new Map<string, Date>()
+    orders.forEach(o => {
+      const name = (o.clients as Record<string, string>)?.name
+      if (!name) return
+      const d = new Date(o.created_at as string)
+      if (!clientFirstOrder.has(name) || d < clientFirstOrder.get(name)!) clientFirstOrder.set(name, d)
+    })
+    let newC = { count: 0, revenue: 0 }, recC = { count: 0, revenue: 0 }
+    const counted = new Set<string>()
+    curOrders.forEach(o => {
+      const name = (o.clients as Record<string, string>)?.name
+      if (!name || counted.has(name)) return
+      counted.add(name)
+      const firstDate = clientFirstOrder.get(name)
+      if (firstDate && firstDate >= start) { newC.count++; newC.revenue += (o.total_price as number || 0) }
+      else { recC.count++; recC.revenue += (o.total_price as number || 0) }
+    })
+    // Add revenue from all orders for recurring
+    curOrders.forEach(o => {
+      const name = (o.clients as Record<string, string>)?.name
+      if (!name) return
+      const firstDate = clientFirstOrder.get(name)
+      if (firstDate && firstDate >= start) return // already counted as new
+      if (!counted.has(name + '_rev')) { counted.add(name + '_rev') } // just for tracking
+    })
+    return { newClients: newC, recurringClients: recC }
+  }, [curOrders, orders, start])
+
+  // Clientes sin actividad reciente (60 días)
+  const atRiskClients = useMemo(() => {
+    const clientData = new Map<string, { lastOrder: Date; totalRevenue: number; phone?: string }>()
+    orders.forEach(o => {
+      const cl = o.clients as Record<string, string> | null
+      if (!cl?.name) return
+      const d = new Date(o.created_at as string)
+      const existing = clientData.get(cl.name)
+      if (!existing || d > existing.lastOrder) {
+        clientData.set(cl.name, { lastOrder: d, totalRevenue: (existing?.totalRevenue || 0) + (o.total_price as number || 0), phone: cl.whatsapp || cl.phone })
+      } else {
+        existing.totalRevenue += (o.total_price as number || 0)
+      }
+    })
+    const sixtyDaysAgo = new Date(now.getTime() - 60 * 86400000)
+    return [...clientData.entries()]
+      .filter(([, v]) => v.lastOrder < sixtyDaysAgo)
+      .map(([name, v]) => ({ name, lastOrder: v.lastOrder, daysSince: Math.round((now.getTime() - v.lastOrder.getTime()) / 86400000), totalRevenue: v.totalRevenue, phone: v.phone }))
+      .sort((a, b) => b.totalRevenue - a.totalRevenue)
+      .slice(0, 10)
+  }, [orders])
+
+  // Productos sin ventas en el período
+  const productsWithoutSales = useMemo(() => {
+    const soldNames = new Set<string>()
+    curOrders.forEach(o => { ((o.items || []) as Array<Record<string, unknown>>).forEach(i => { if (i.nombre) soldNames.add(i.nombre as string) }) })
+    // Get all product names from ALL orders (historical)
+    const allProducts = new Map<string, { lastSale: Date | null; price: number }>()
+    orders.forEach(o => {
+      ((o.items || []) as Array<Record<string, unknown>>).forEach(i => {
+        const name = i.nombre as string
+        if (!name) return
+        const d = new Date(o.created_at as string)
+        const existing = allProducts.get(name)
+        if (!existing || (d > (existing.lastSale || new Date(0)))) allProducts.set(name, { lastSale: d, price: (i.precioUnit as number) || 0 })
+      })
+    })
+    return [...allProducts.entries()]
+      .filter(([name]) => !soldNames.has(name))
+      .map(([name, v]) => ({ name, lastSale: v.lastSale, daysSince: v.lastSale ? Math.round((now.getTime() - v.lastSale.getTime()) / 86400000) : 999, price: v.price }))
+      .sort((a, b) => b.daysSince - a.daysSince)
+      .slice(0, 10)
+  }, [curOrders, orders])
 
   // Chart data
   const chartData = useMemo(() => {
@@ -263,18 +374,35 @@ export default function EstadisticasPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
         <h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
-        <div className="flex items-center gap-2">
-          <div className="flex gap-1 bg-gray-100 rounded-lg p-0.5">
-            {[['7d', '7d'], ['30d', '30d'], ['3m', '3m'], ['12m', '12m']].map(([k, l]) => (
-              <button key={k} onClick={() => setPeriod(k)}
-                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${period === k ? 'bg-purple-600 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>{l}</button>
-            ))}
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Period dropdown */}
+          <div className="relative">
+            <button onClick={() => setPeriodOpen(!periodOpen)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-purple-600 text-white shadow-sm">
+              {label} <span className="text-[9px] opacity-70">▾</span>
+            </button>
+            {periodOpen && (
+              <div className="absolute right-0 top-full mt-1 w-52 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                {PERIOD_OPTIONS.map(o => (
+                  <button key={o.id} onClick={() => { if (o.id !== 'custom') { setPeriod(o.id); setPeriodOpen(false) } else { setPeriod('custom') } }}
+                    className={`w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 ${period === o.id ? 'font-bold text-purple-600' : 'text-gray-700'}`}>
+                    {o.label} {period === o.id && '✓'}
+                  </button>
+                ))}
+                {period === 'custom' && (
+                  <div className="px-3 py-2 border-t border-gray-100 space-y-2">
+                    <input type="date" className="input-base text-xs !py-1" value={customFrom} onChange={e => setCustomFrom(e.target.value)} />
+                    <input type="date" className="input-base text-xs !py-1" value={customTo} onChange={e => setCustomTo(e.target.value)} />
+                    <button onClick={() => setPeriodOpen(false)} className="w-full py-1 rounded text-xs font-semibold text-white" style={{ background: '#6C5CE7' }}>Aplicar</button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           <button onClick={exportExcel} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50">
-            <Download size={12} /> {t('exportExcel')}
+            <Download size={12} /> Excel
           </button>
           <button onClick={exportPDF} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50">
-            <FileDown size={12} /> {t('exportPdf')}
+            <FileDown size={12} /> PDF
           </button>
         </div>
       </div>
@@ -425,22 +553,122 @@ export default function EstadisticasPage() {
 
       {/* Payment methods + Production */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        {payMethodData.length > 0 && (
-          <div className="card p-5">
-            <h2 className="font-bold text-gray-800 mb-3">Facturación por método de pago</h2>
+        <div className="card p-5">
+          <h2 className="font-bold text-gray-800 mb-3">Facturación por método de pago</h2>
+          {payMethodData.length > 0 ? (<>
             <ResponsiveContainer width="100%" height={160}><PieChart><Pie data={payMethodData} dataKey="value" cx="50%" cy="50%" innerRadius={40} outerRadius={65}>{payMethodData.map((_, i) => <Cell key={i} fill={DONUT_COLORS[i % DONUT_COLORS.length]} />)}</Pie></PieChart></ResponsiveContainer>
             <div className="space-y-1 mt-2">{payMethodData.map((d, i) => <div key={d.name} className="flex items-center gap-2 text-xs"><span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: DONUT_COLORS[i % DONUT_COLORS.length] }} /><span className="flex-1 text-gray-600">{d.name}</span><span className="font-semibold text-gray-800">{payMethodTotal > 0 ? Math.round(d.value / payMethodTotal * 100) : 0}%</span><span className="text-gray-400">{fmt(d.value)}</span></div>)}</div>
-          </div>
-        )}
+          </>) : (
+            <div className="text-center py-6">
+              <p className="text-gray-400 text-sm">Sin datos de pagos registrados.</p>
+              <p className="text-xs text-gray-300 mt-1">Registrá pagos en tus pedidos para ver esta estadística.</p>
+            </div>
+          )}
+        </div>
         <div className="card p-5">
           <h2 className="font-bold text-gray-800 mb-3">Producción del período</h2>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="p-3 rounded-lg bg-gray-50"><p className="text-[10px] text-gray-500 uppercase font-semibold">Unidades</p><p className="text-lg font-black text-gray-900">{totalUnits.toLocaleString('es-AR')}</p></div>
             <div className="p-3 rounded-lg bg-gray-50"><p className="text-[10px] text-gray-500 uppercase font-semibold">Pedidos/día</p><p className="text-lg font-black text-gray-900">{ordersPerDay}</p></div>
             <div className="p-3 rounded-lg bg-gray-50"><p className="text-[10px] text-gray-500 uppercase font-semibold">Completados</p><p className="text-lg font-black text-gray-900">{pedidosCompleted}</p></div>
+            <div className="p-3 rounded-lg bg-gray-50"><p className="text-[10px] text-gray-500 uppercase font-semibold">Completitud</p><p className="text-lg font-black text-gray-900">{pedidos > 0 ? Math.round((pedidosCompleted / pedidos) * 100) : 0}%</p></div>
           </div>
         </div>
       </div>
+
+      {/* Day of week */}
+      {facturacion > 0 && (
+        <div className="card p-5 mb-6">
+          <h2 className="font-bold text-gray-800 mb-3">Facturación por día de la semana</h2>
+          <div className="space-y-2">
+            {dayOfWeekData.map(d => {
+              const maxVal = bestDay.value || 1
+              return (
+                <div key={d.name} className="flex items-center gap-3">
+                  <span className="text-xs font-medium text-gray-600 w-20">{d.name}</span>
+                  <div className="flex-1 h-5 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="h-full rounded-full transition-all" style={{ width: `${(d.value / maxVal) * 100}%`, background: d === bestDay ? '#22C55E' : d === worstDay ? '#D1D5DB' : '#6C5CE7' }} />
+                  </div>
+                  <span className="text-xs font-semibold text-gray-700 w-20 text-right">{fmt(d.value)}</span>
+                </div>
+              )
+            })}
+          </div>
+          <p className="text-xs text-gray-400 mt-3">Mejor día: <span className="font-semibold text-green-600">{bestDay.name}</span> ({fmt(bestDay.value)} promedio)</p>
+        </div>
+      )}
+
+      {/* Clientes nuevos vs recurrentes */}
+      {(newClients.count + recurringClients.count) > 0 && (
+        <div className="card p-5 mb-6">
+          <h2 className="font-bold text-gray-800 mb-3">Clientes nuevos vs recurrentes</h2>
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <div className="p-3 rounded-lg bg-green-50 border border-green-100">
+              <p className="text-[10px] text-green-600 uppercase font-semibold">Nuevos</p>
+              <p className="text-lg font-black text-green-700">{newClients.count}</p>
+              <p className="text-xs text-green-600">{fmt(newClients.revenue)}</p>
+            </div>
+            <div className="p-3 rounded-lg bg-purple-50 border border-purple-100">
+              <p className="text-[10px] text-purple-600 uppercase font-semibold">Recurrentes</p>
+              <p className="text-lg font-black text-purple-700">{recurringClients.count}</p>
+              <p className="text-xs text-purple-600">{fmt(recurringClients.revenue)}</p>
+            </div>
+          </div>
+          {(newClients.revenue + recurringClients.revenue) > 0 && (
+            <p className="text-xs text-gray-400">{Math.round((recurringClients.revenue / (newClients.revenue + recurringClients.revenue)) * 100)}% de tu facturación viene de clientes recurrentes</p>
+          )}
+        </div>
+      )}
+
+      {/* Clientes sin actividad reciente */}
+      {atRiskClients.length > 0 && (
+        <div className="card p-5 mb-6">
+          <h2 className="font-bold text-gray-800 mb-3">Clientes sin actividad reciente</h2>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm"><thead><tr className="border-b border-gray-100">
+              <th className="text-left px-2 py-2 text-xs text-gray-400 font-semibold">Cliente</th>
+              <th className="text-left px-2 py-2 text-xs text-gray-400 font-semibold">Última compra</th>
+              <th className="text-left px-2 py-2 text-xs text-gray-400 font-semibold">Días sin comprar</th>
+              <th className="text-right px-2 py-2 text-xs text-gray-400 font-semibold">Facturación total</th>
+              <th className="px-2 py-2"></th>
+            </tr></thead><tbody>
+              {atRiskClients.map(c => (
+                <tr key={c.name} className="border-b border-gray-50">
+                  <td className="px-2 py-2 font-medium text-gray-800">{c.name}</td>
+                  <td className="px-2 py-2 text-gray-500">{c.lastOrder.toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}</td>
+                  <td className="px-2 py-2"><span className="text-red-500 font-semibold">{c.daysSince}d</span></td>
+                  <td className="px-2 py-2 text-right font-semibold text-gray-800">{fmt(c.totalRevenue)}</td>
+                  <td className="px-2 py-2">{c.phone && <a href={`https://wa.me/${c.phone.replace(/[\s\-\(\)]/g, '')}`} target="_blank" rel="noopener" className="text-green-600 hover:text-green-700" title="WhatsApp">💬</a>}</td>
+                </tr>
+              ))}
+            </tbody></table>
+          </div>
+        </div>
+      )}
+
+      {/* Productos sin ventas */}
+      {productsWithoutSales.length > 0 && (
+        <div className="card p-5 mb-6">
+          <h2 className="font-bold text-gray-800 mb-3">Productos sin ventas en el período</h2>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm"><thead><tr className="border-b border-gray-100">
+              <th className="text-left px-2 py-2 text-xs text-gray-400 font-semibold">Producto</th>
+              <th className="text-left px-2 py-2 text-xs text-gray-400 font-semibold">Última venta</th>
+              <th className="text-left px-2 py-2 text-xs text-gray-400 font-semibold">Días sin venta</th>
+              <th className="text-right px-2 py-2 text-xs text-gray-400 font-semibold">Precio</th>
+            </tr></thead><tbody>
+              {productsWithoutSales.map(p => (
+                <tr key={p.name} className="border-b border-gray-50">
+                  <td className="px-2 py-2 font-medium text-gray-800">{p.name}</td>
+                  <td className="px-2 py-2 text-gray-500">{p.lastSale ? p.lastSale.toLocaleDateString('es-AR', { day: '2-digit', month: 'short' }) : '—'}</td>
+                  <td className="px-2 py-2"><span className="text-amber-600 font-semibold">{p.daysSince}d</span></td>
+                  <td className="px-2 py-2 text-right text-gray-600">{p.price ? fmt(p.price) : '—'}</td>
+                </tr>
+              ))}
+            </tbody></table>
+          </div>
+        </div>
+      )}
 
       {/* Evolution */}
       {showCosts && <div className="card p-5 mb-6">
