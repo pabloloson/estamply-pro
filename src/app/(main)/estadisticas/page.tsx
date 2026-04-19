@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { TrendingUp, TrendingDown, ShoppingBag, FileText, DollarSign, BarChart3, Download, FileDown } from 'lucide-react'
 import EmptyState from '@/shared/components/EmptyState'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts'
+import { ComposedChart, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts'
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
 import * as XLSX from 'xlsx'
@@ -32,6 +33,7 @@ export default function EstadisticasPage() {
   const { fmt } = useLocale()
   const { showCosts } = usePermissions()
   const SL: Record<string, string> = { pending: to('pending'), production: to('inProduction'), ready: to('ready'), delivered: to('delivered') }
+  const router = useRouter()
   const supabase = createClient()
   const [loading, setLoading] = useState(true)
   const [orders, setOrders] = useState<Order[]>([])
@@ -229,12 +231,20 @@ export default function EstadisticasPage() {
       if (days <= 100) return `Sem ${Math.ceil(((d.getTime() - start.getTime()) / 86400000 + 1) / 7)}`
       return d.toLocaleDateString('es-AR', { month: 'short', year: '2-digit' })
     }
+    const orderCounts: Record<string, number> = {}
     curOrders.forEach(o => {
       const d = new Date(o.created_at as string)
       const key = fmt2(d)
       buckets[key] = (buckets[key] || 0) + (o.total_price as number || 0)
+      orderCounts[key] = (orderCounts[key] || 0) + 1
     })
-    return Object.entries(buckets).map(([name, value]) => ({ name, value }))
+    // Build data with trend line (3-point moving average)
+    const raw = Object.entries(buckets).map(([name, value]) => ({ name, value, orders: orderCounts[name] || 0, trend: 0 }))
+    for (let i = 0; i < raw.length; i++) {
+      const window = [raw[i - 1]?.value || 0, raw[i].value, raw[i + 1]?.value || 0].filter((_, j) => (i === 0 ? j >= 1 : i === raw.length - 1 ? j <= 1 : true))
+      raw[i].trend = Math.round(window.reduce((a, b) => a + b, 0) / window.length)
+    }
+    return raw
   }, [curOrders, start, end])
 
   // Rentabilidad
@@ -436,7 +446,7 @@ export default function EstadisticasPage() {
       <div className="card p-5 mb-6">
         <h2 className="font-bold text-gray-800 mb-3">{t('ordersByStatus')}</h2>
         <div className="flex gap-4 mb-3 flex-wrap">
-          {Object.entries(SL).map(([k, v]) => <div key={k} className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full" style={{ background: SC[k] }} /><span className="text-sm text-gray-600">{v}: <span className="font-bold">{statusCounts[k] || 0}</span>{(statusAmounts[k] || 0) > 0 && <span className="text-gray-400 ml-1">({fmt(statusAmounts[k])})</span>}</span></div>)}
+          {Object.entries(SL).map(([k, v]) => <button key={k} onClick={() => router.push('/orders')} className="flex items-center gap-1.5 hover:bg-gray-50 px-1.5 py-0.5 rounded-lg transition-colors"><span className="w-3 h-3 rounded-full" style={{ background: SC[k] }} /><span className="text-sm text-gray-600">{v}: <span className="font-bold">{statusCounts[k] || 0}</span>{(statusAmounts[k] || 0) > 0 && <span className="text-gray-400 ml-1">({fmt(statusAmounts[k])})</span>}</span></button>)}
         </div>
         {totalStatus > 0 && <div className="flex h-4 rounded-full overflow-hidden bg-gray-100">{Object.keys(SL).map(k => { const p = ((statusCounts[k] || 0) / totalStatus) * 100; return p > 0 ? <div key={k} style={{ width: `${p}%`, background: SC[k] }} /> : null })}</div>}
       </div>
@@ -446,7 +456,17 @@ export default function EstadisticasPage() {
         <div className="card p-5 mb-6">
           <h2 className="font-bold text-gray-800 mb-4">{t('revenueChart')}</h2>
           <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={chartData}><XAxis dataKey="name" tick={{ fontSize: 11 }} /><YAxis tickFormatter={fmtK} tick={{ fontSize: 11 }} width={60} /><Tooltip formatter={(v) => fmt(Number(v))} /><Bar dataKey="value" fill="#6C5CE7" radius={[4, 4, 0, 0]} /></BarChart>
+            <ComposedChart data={chartData}>
+              <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+              <YAxis tickFormatter={fmtK} tick={{ fontSize: 11 }} width={60} />
+              <Tooltip content={({ active, payload }) => {
+                if (!active || !payload?.[0]) return null
+                const d = payload[0].payload as { name: string; value: number; orders: number }
+                return <div className="bg-white p-2 rounded-lg shadow-lg border border-gray-200 text-xs"><p className="font-semibold text-gray-800">{d.name}</p><p className="text-gray-600">{fmt(d.value)}</p><p className="text-gray-400">{d.orders} pedido{d.orders !== 1 ? 's' : ''}</p></div>
+              }} />
+              <Bar dataKey="value" fill="#6C5CE7" radius={[4, 4, 0, 0]} />
+              <Line type="monotone" dataKey="trend" stroke="#a29bfe" strokeWidth={2} dot={false} strokeDasharray="4 4" />
+            </ComposedChart>
           </ResponsiveContainer>
           <div className="flex gap-6 mt-3 text-sm text-gray-500">
             <span>{t('totalPeriod')}: <span className="font-bold text-gray-800">{fmt(facturacion)}</span></span>
@@ -519,7 +539,7 @@ export default function EstadisticasPage() {
                 return (
                   <tr key={n} className="border-b border-gray-50">
                     <td className="px-2 py-2 text-gray-400 font-bold">{i + 1}</td>
-                    <td className="px-2 py-2 font-medium text-gray-800">{n === 'Sin cliente' ? <span className="text-amber-600 flex items-center gap-1">⚠ Sin cliente</span> : n}</td>
+                    <td className="px-2 py-2 font-medium text-gray-800">{n === 'Sin cliente' ? <span className="text-amber-600 flex items-center gap-1 cursor-pointer" onClick={() => router.push('/orders')}>⚠ Sin cliente</span> : <span className="cursor-pointer hover:text-purple-600" onClick={() => router.push('/clients')}>{n}</span>}</td>
                     <td className="px-2 py-2 text-gray-600">{v.pedidos}</td>
                     <td className="px-2 py-2 font-semibold text-gray-800">{fmt(v.revenue)}</td>
                     {showCosts && <td className="px-2 py-2">{m !== null ? <span className={m >= 40 ? 'text-green-600' : m >= 20 ? 'text-amber-600' : 'text-red-500'}>{m}%</span> : <span className="text-gray-300">—</span>}</td>}
@@ -549,6 +569,40 @@ export default function EstadisticasPage() {
         )}
         <div className="flex gap-4 text-xs text-gray-500 mt-2"><span>■ {t('converted')} {convRate}%</span><span className="text-gray-300">□ {100 - Math.min(convRate, 100)}%</span></div>
         {convertedCount > 0 && <p className="text-xs text-gray-400 mt-2">Convertidos: {convertedCount} ({fmt(curPres.filter(p => p.estado === 'aceptado').reduce((s, p) => s + ((p.total as number) || 0), 0))} de {fmt(curPres.reduce((s, p) => s + ((p.total as number) || 0), 0))} presupuestados)</p>}
+
+        {/* Funnel */}
+        {curPres.length > 0 && (() => {
+          const created = curPres.length
+          const sent = curPres.filter(p => p.estado === 'enviado' || p.estado === 'aceptado').length || created
+          const accepted = convertedCount
+          const createdAmt = curPres.reduce((s, p) => s + ((p.total as number) || 0), 0)
+          const acceptedAmt = curPres.filter(p => p.estado === 'aceptado').reduce((s, p) => s + ((p.total as number) || 0), 0)
+          const steps = [
+            { label: 'Creados', count: created, pct: 100, amount: createdAmt },
+            { label: 'Convertidos a pedido', count: accepted, pct: created > 0 ? Math.round((accepted / created) * 100) : 0, amount: acceptedAmt },
+          ]
+          return (
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Embudo de conversión</p>
+              <div className="space-y-2">
+                {steps.map((step, i) => (
+                  <div key={step.label}>
+                    <div className="flex items-center justify-between text-xs mb-1">
+                      <span className="font-medium text-gray-700">{step.label}</span>
+                      <span className="text-gray-500">{step.count} ({step.pct}%) · {fmt(step.amount)}</span>
+                    </div>
+                    <div className="h-6 rounded-lg overflow-hidden" style={{ background: '#F3F4F6' }}>
+                      <div className="h-full rounded-lg transition-all" style={{ width: `${step.pct}%`, background: i === 0 ? '#6C5CE7' : '#a29bfe' }} />
+                    </div>
+                    {i < steps.length - 1 && steps[i].count > steps[i + 1].count && (
+                      <p className="text-[10px] text-red-400 mt-0.5 ml-1">↓ Perdidos: {steps[i].count - steps[i + 1].count} ({100 - steps[i + 1].pct}%)</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })()}
       </div>
 
       {/* Payment methods + Production */}
