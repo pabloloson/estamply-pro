@@ -376,6 +376,23 @@ export default function EstadisticasPage() {
     XLSX.writeFile(wb, `Estamply_Estadisticas_${label.replace(/\s/g, '')}.xlsx`)
   }
 
+  function Donut({ data, total }: { data: Array<{ name: string; value: number }>; total: number }) {
+    if (data.length <= 1) {
+      const d = data[0]
+      return d ? (
+        <div className="flex items-center justify-center gap-2 py-8">
+          <span className="w-3 h-3 rounded-full" style={{ background: DONUT_COLORS[0] }} />
+          <span className="text-sm font-semibold text-gray-700">{d.name}</span>
+          <span className="text-sm text-gray-400">— {fmt(d.value)} (100%)</span>
+        </div>
+      ) : null
+    }
+    return (<>
+      <ResponsiveContainer width="100%" height={160}><PieChart><Pie data={data} dataKey="value" cx="50%" cy="50%" innerRadius={40} outerRadius={65}>{data.map((_, i) => <Cell key={i} fill={DONUT_COLORS[i % DONUT_COLORS.length]} />)}</Pie></PieChart></ResponsiveContainer>
+      <div className="space-y-1 mt-2">{data.map((d, i) => <div key={d.name} className="flex items-center gap-2 text-xs"><span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: DONUT_COLORS[i % DONUT_COLORS.length] }} /><span className="flex-1 text-gray-600">{d.name}</span><span className="font-semibold text-gray-800">{total > 0 ? Math.round(d.value / total * 100) : 0}%</span><span className="text-gray-400">{fmt(d.value)}</span></div>)}</div>
+    </>)
+  }
+
   if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>
 
   if (orders.length === 0 && presupuestos.length === 0) return <EmptyState icon="📊" title="Todavía no hay datos para mostrar." description="Las estadísticas se generan a partir de tus presupuestos y pedidos. Empezá a cotizar y vas a ver tus métricas acá." actionLabel="Ir al Cotizador" actionHref="/cotizador" />
@@ -507,7 +524,13 @@ export default function EstadisticasPage() {
         {showCosts && (
         <div className="card p-5">
           <h2 className="font-bold text-gray-800 mb-3">{t('topProfitable')}</h2>
-          {topMargin.length > 0 ? <div className="space-y-2">{topMargin.map((p, i) => <div key={p.name} className="flex items-center gap-2"><span className="text-xs font-bold text-gray-400 w-5">{i + 1}.</span><div className="flex-1 min-w-0"><p className="text-sm font-medium text-gray-800 truncate">{p.name}</p><p className="text-xs text-gray-400">margen {p.margin}% — {fmt(p.profit)}</p></div></div>)}</div> : <p className="text-sm text-gray-400">{t('noCostData')}</p>}
+          {topMargin.length > 0 ? <div className="space-y-2">{topMargin.map((p, i) => <div key={p.name} className="flex items-center gap-2"><span className="text-xs font-bold text-gray-400 w-5">{i + 1}.</span><div className="flex-1 min-w-0"><p className="text-sm font-medium text-gray-800 truncate">{p.name}</p><p className="text-xs text-gray-400">margen {p.margin}% — {fmt(p.profit)}</p></div></div>)}</div> : (
+            <div className="text-center py-6">
+              <DollarSign size={24} className="mx-auto text-gray-300 mb-2" />
+              <p className="text-sm text-gray-500">Cargá los costos de tus productos para ver cuáles son más rentables</p>
+              <button onClick={() => router.push('/catalogo')} className="mt-2 text-xs font-semibold text-purple-600 hover:text-purple-800">Ir al Catálogo →</button>
+            </div>
+          )}
         </div>
         )}
       </div>}
@@ -516,17 +539,11 @@ export default function EstadisticasPage() {
       {statsTab === 'ventas' && <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <div className="card p-5">
           <h2 className="font-bold text-gray-800 mb-3">{t('salesByTechnique')}</h2>
-          {techData.length > 0 && techTotal > 0 ? (<>
-            <ResponsiveContainer width="100%" height={160}><PieChart><Pie data={techData} dataKey="value" cx="50%" cy="50%" innerRadius={40} outerRadius={65}>{techData.map((_, i) => <Cell key={i} fill={DONUT_COLORS[i % DONUT_COLORS.length]} />)}</Pie></PieChart></ResponsiveContainer>
-            <div className="space-y-1 mt-2">{techData.map((d, i) => <div key={d.name} className="flex items-center gap-2 text-xs"><span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: DONUT_COLORS[i % DONUT_COLORS.length] }} /><span className="flex-1 text-gray-600">{d.name}</span><span className="font-semibold text-gray-800">{Math.round(d.value / techTotal * 100)}%</span><span className="text-gray-400">{fmt(d.value)}</span></div>)}</div>
-          </>) : <p className="text-sm text-gray-400">{tc('noData')}</p>}
+          {techData.length > 0 && techTotal > 0 ? <Donut data={techData} total={techTotal} /> : <p className="text-sm text-gray-400">{tc('noData')}</p>}
         </div>
         <div className="card p-5">
           <h2 className="font-bold text-gray-800 mb-3">{t('salesByOrigin')}</h2>
-          {facturacion > 0 ? (<>
-            <ResponsiveContainer width="100%" height={160}><PieChart><Pie data={originData} dataKey="value" cx="50%" cy="50%" innerRadius={40} outerRadius={65}>{originData.map((_, i) => <Cell key={i} fill={DONUT_COLORS[i % DONUT_COLORS.length]} />)}</Pie></PieChart></ResponsiveContainer>
-            <div className="space-y-1 mt-2">{originData.map((d, i) => <div key={d.name} className="flex items-center gap-2 text-xs"><span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: DONUT_COLORS[i % DONUT_COLORS.length] }} /><span className="flex-1 text-gray-600">{d.name}</span><span className="font-semibold text-gray-800">{Math.round(d.value / facturacion * 100)}%</span><span className="text-gray-400">{fmt(d.value)}</span></div>)}</div>
-          </>) : <p className="text-sm text-gray-400">{tc('noData')}</p>}
+          {facturacion > 0 ? <Donut data={originData} total={facturacion} /> : <p className="text-sm text-gray-400">{tc('noData')}</p>}
         </div>
       </div>}
 
@@ -537,7 +554,7 @@ export default function EstadisticasPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm"><thead><tr className="border-b border-gray-100">
               <th className="text-left px-2 py-2 text-xs text-gray-400 font-semibold">#</th>
-              <th className="text-left px-2 py-2 text-xs text-gray-400 font-semibold">{to('client')}</th>
+              <th className="text-left px-2 py-2 text-xs text-gray-400 font-semibold">Cliente</th>
               <th className="text-left px-2 py-2 text-xs text-gray-400 font-semibold">{t('orders')}</th>
               <th className="text-left px-2 py-2 text-xs text-gray-400 font-semibold">{t('revenue')}</th>
               {showCosts && <th className="text-left px-2 py-2 text-xs text-gray-400 font-semibold">{t('grossMargin')}</th>}
@@ -617,10 +634,7 @@ export default function EstadisticasPage() {
       {statsTab === 'ventas' && <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <div className="card p-5">
           <h2 className="font-bold text-gray-800 mb-3">Facturación por método de pago</h2>
-          {payMethodData.length > 0 ? (<>
-            <ResponsiveContainer width="100%" height={160}><PieChart><Pie data={payMethodData} dataKey="value" cx="50%" cy="50%" innerRadius={40} outerRadius={65}>{payMethodData.map((_, i) => <Cell key={i} fill={DONUT_COLORS[i % DONUT_COLORS.length]} />)}</Pie></PieChart></ResponsiveContainer>
-            <div className="space-y-1 mt-2">{payMethodData.map((d, i) => <div key={d.name} className="flex items-center gap-2 text-xs"><span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: DONUT_COLORS[i % DONUT_COLORS.length] }} /><span className="flex-1 text-gray-600">{d.name}</span><span className="font-semibold text-gray-800">{payMethodTotal > 0 ? Math.round(d.value / payMethodTotal * 100) : 0}%</span><span className="text-gray-400">{fmt(d.value)}</span></div>)}</div>
-          </>) : (
+          {payMethodData.length > 0 ? <Donut data={payMethodData} total={payMethodTotal} /> : (
             <div className="text-center py-6">
               <p className="text-gray-400 text-sm">Sin datos de pagos registrados.</p>
               <p className="text-xs text-gray-300 mt-1">Registrá pagos en tus pedidos para ver esta estadística.</p>
