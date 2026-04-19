@@ -44,6 +44,7 @@ export default function EstadisticasPage() {
   const [periodOpen, setPeriodOpen] = useState(false)
   const [customFrom, setCustomFrom] = useState('')
   const [customTo, setCustomTo] = useState('')
+  const [statsTab, setStatsTab] = useState<'resumen' | 'ventas' | 'productos' | 'clientes' | 'avanzado'>('resumen')
   const [cmpA, setCmpA] = useState('')
   const [cmpB, setCmpB] = useState('')
   const [showCmp, setShowCmp] = useState(false)
@@ -417,8 +418,15 @@ export default function EstadisticasPage() {
         </div>
       </div>
 
-      {/* Summary cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+      {/* Tabs */}
+      <div className="flex gap-1 mb-6 overflow-x-auto pb-1 -mt-2">
+        {([['resumen', 'Resumen'], ['ventas', 'Ventas'], ['productos', 'Productos'], ['clientes', 'Clientes'], ['avanzado', 'Avanzado']] as const).map(([id, label]) => (
+          <button key={id} onClick={() => setStatsTab(id)} className={`px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all ${statsTab === id ? 'text-white shadow-md' : 'bg-gray-100 text-gray-600'}`} style={statsTab === id ? { background: '#6C5CE7' } : {}}>{label}</button>
+        ))}
+      </div>
+
+      {/* Summary cards — Resumen */}
+      {statsTab === 'resumen' && <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         {[
           { label: t('revenue'), value: fmt(facturacion), change: pct(facturacion, facPrev), hasPrev: facPrev > 0, icon: DollarSign, color: '#6C5CE7', sub: facPrev > 0 ? `vs ${fmt(facPrev)} anterior` : '' },
           { label: t('orders'), value: String(pedidos), change: pct(pedidos, pedPrev), hasPrev: pedPrev > 0, icon: ShoppingBag, color: '#E17055', sub: `${pedidosCompleted} completados${pedidosInProcess > 0 ? `, ${pedidosInProcess} en proceso` : ''}` },
@@ -440,19 +448,19 @@ export default function EstadisticasPage() {
             {c.sub && <p className="text-[10px] text-gray-400 mt-0.5">{c.sub}</p>}
           </div>
         ))}
-      </div>
+      </div>}
 
-      {/* Status bar */}
-      <div className="card p-5 mb-6">
+      {/* Status bar — Resumen */}
+      {statsTab === 'resumen' && <div className="card p-5 mb-6">
         <h2 className="font-bold text-gray-800 mb-3">{t('ordersByStatus')}</h2>
         <div className="flex gap-4 mb-3 flex-wrap">
           {Object.entries(SL).map(([k, v]) => <button key={k} onClick={() => router.push('/orders')} className="flex items-center gap-1.5 hover:bg-gray-50 px-1.5 py-0.5 rounded-lg transition-colors"><span className="w-3 h-3 rounded-full" style={{ background: SC[k] }} /><span className="text-sm text-gray-600">{v}: <span className="font-bold">{statusCounts[k] || 0}</span>{(statusAmounts[k] || 0) > 0 && <span className="text-gray-400 ml-1">({fmt(statusAmounts[k])})</span>}</span></button>)}
         </div>
         {totalStatus > 0 && <div className="flex h-4 rounded-full overflow-hidden bg-gray-100">{Object.keys(SL).map(k => { const p = ((statusCounts[k] || 0) / totalStatus) * 100; return p > 0 ? <div key={k} style={{ width: `${p}%`, background: SC[k] }} /> : null })}</div>}
-      </div>
+      </div>}
 
-      {/* Revenue chart */}
-      {chartData.length > 0 && (
+      {/* Revenue chart — Resumen */}
+      {statsTab === 'resumen' && chartData.length > 0 && (
         <div className="card p-5 mb-6">
           <h2 className="font-bold text-gray-800 mb-4">{t('revenueChart')}</h2>
           <ResponsiveContainer width="100%" height={220}>
@@ -475,8 +483,8 @@ export default function EstadisticasPage() {
         </div>
       )}
 
-      {/* Rentabilidad */}
-      {showCosts && (
+      {/* Rentabilidad — Ventas */}
+      {statsTab === 'ventas' && showCosts && (
       <div className="card p-5 mb-6">
         <h2 className="font-bold text-gray-800 mb-4">{t('profitability')}</h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
@@ -490,8 +498,8 @@ export default function EstadisticasPage() {
       </div>
       )}
 
-      {/* Products */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      {/* Products — Productos */}
+      {statsTab === 'productos' && <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <div className="card p-5">
           <h2 className="font-bold text-gray-800 mb-3">{t('topSelling')}</h2>
           {topSold.length > 0 ? <div className="space-y-2">{topSold.map(([n, v], i) => <div key={n} className="flex items-center gap-2"><span className="text-xs font-bold text-gray-400 w-5">{i + 1}.</span><div className="flex-1 min-w-0"><p className="text-sm font-medium text-gray-800 truncate">{n}</p><p className="text-xs text-gray-400">{v.units} u. — {fmt(v.revenue)}</p></div></div>)}</div> : <p className="text-sm text-gray-400">{tc('noData')}</p>}
@@ -502,10 +510,10 @@ export default function EstadisticasPage() {
           {topMargin.length > 0 ? <div className="space-y-2">{topMargin.map((p, i) => <div key={p.name} className="flex items-center gap-2"><span className="text-xs font-bold text-gray-400 w-5">{i + 1}.</span><div className="flex-1 min-w-0"><p className="text-sm font-medium text-gray-800 truncate">{p.name}</p><p className="text-xs text-gray-400">margen {p.margin}% — {fmt(p.profit)}</p></div></div>)}</div> : <p className="text-sm text-gray-400">{t('noCostData')}</p>}
         </div>
         )}
-      </div>
+      </div>}
 
-      {/* By technique + origin */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      {/* By technique + origin — Ventas */}
+      {statsTab === 'ventas' && <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <div className="card p-5">
           <h2 className="font-bold text-gray-800 mb-3">{t('salesByTechnique')}</h2>
           {techData.length > 0 && techTotal > 0 ? (<>
@@ -520,10 +528,10 @@ export default function EstadisticasPage() {
             <div className="space-y-1 mt-2">{originData.map((d, i) => <div key={d.name} className="flex items-center gap-2 text-xs"><span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: DONUT_COLORS[i % DONUT_COLORS.length] }} /><span className="flex-1 text-gray-600">{d.name}</span><span className="font-semibold text-gray-800">{Math.round(d.value / facturacion * 100)}%</span><span className="text-gray-400">{fmt(d.value)}</span></div>)}</div>
           </>) : <p className="text-sm text-gray-400">{tc('noData')}</p>}
         </div>
-      </div>
+      </div>}
 
-      {/* Client ranking */}
-      <div className="card p-5 mb-6">
+      {/* Client ranking — Clientes */}
+      {statsTab === 'clientes' && <div className="card p-5 mb-6">
         <h2 className="font-bold text-gray-800 mb-3">{t('clientRanking')}</h2>
         {clientRanking.length > 0 ? (
           <div className="overflow-x-auto">
@@ -549,10 +557,10 @@ export default function EstadisticasPage() {
             </tbody></table>
           </div>
         ) : <p className="text-sm text-gray-400">{tc('noData')}</p>}
-      </div>
+      </div>}
 
-      {/* Conversion */}
-      <div className="card p-5 mb-6">
+      {/* Conversion — Resumen */}
+      {statsTab === 'resumen' && <div className="card p-5 mb-6">
         <h2 className="font-bold text-gray-800 mb-4">{t('quoteConversion')}</h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
           <div className="p-3 rounded-lg bg-gray-50"><p className="text-xs text-gray-500">{t('created')}</p><p className="text-lg font-black text-gray-900">{curPres.length}</p></div>
@@ -603,10 +611,10 @@ export default function EstadisticasPage() {
             </div>
           )
         })()}
-      </div>
+      </div>}
 
-      {/* Payment methods + Production */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      {/* Payment methods + Production — Ventas */}
+      {statsTab === 'ventas' && <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <div className="card p-5">
           <h2 className="font-bold text-gray-800 mb-3">Facturación por método de pago</h2>
           {payMethodData.length > 0 ? (<>
@@ -628,10 +636,10 @@ export default function EstadisticasPage() {
             <div className="p-3 rounded-lg bg-gray-50"><p className="text-[10px] text-gray-500 uppercase font-semibold">Completitud</p><p className="text-lg font-black text-gray-900">{pedidos > 0 ? Math.round((pedidosCompleted / pedidos) * 100) : 0}%</p></div>
           </div>
         </div>
-      </div>
+      </div>}
 
-      {/* Day of week */}
-      {facturacion > 0 && (
+      {/* Day of week — Ventas */}
+      {statsTab === 'ventas' && facturacion > 0 && (
         <div className="card p-5 mb-6">
           <h2 className="font-bold text-gray-800 mb-3">Facturación por día de la semana</h2>
           <div className="space-y-2">
@@ -652,8 +660,8 @@ export default function EstadisticasPage() {
         </div>
       )}
 
-      {/* Clientes nuevos vs recurrentes */}
-      {(newClients.count + recurringClients.count) > 0 && (
+      {/* Clientes nuevos vs recurrentes — Clientes */}
+      {statsTab === 'clientes' && (newClients.count + recurringClients.count) > 0 && (
         <div className="card p-5 mb-6">
           <h2 className="font-bold text-gray-800 mb-3">Clientes nuevos vs recurrentes</h2>
           <div className="grid grid-cols-2 gap-3 mb-3">
@@ -674,8 +682,8 @@ export default function EstadisticasPage() {
         </div>
       )}
 
-      {/* Clientes sin actividad reciente */}
-      {atRiskClients.length > 0 && (
+      {/* Clientes sin actividad reciente — Clientes */}
+      {statsTab === 'clientes' && atRiskClients.length > 0 && (
         <div className="card p-5 mb-6">
           <h2 className="font-bold text-gray-800 mb-3">Clientes sin actividad reciente</h2>
           <div className="overflow-x-auto">
@@ -700,8 +708,8 @@ export default function EstadisticasPage() {
         </div>
       )}
 
-      {/* Productos sin ventas */}
-      {productsWithoutSales.length > 0 && (
+      {/* Productos sin ventas — Productos */}
+      {statsTab === 'productos' && productsWithoutSales.length > 0 && (
         <div className="card p-5 mb-6">
           <h2 className="font-bold text-gray-800 mb-3">Productos sin ventas en el período</h2>
           <div className="overflow-x-auto">
@@ -724,8 +732,8 @@ export default function EstadisticasPage() {
         </div>
       )}
 
-      {/* Evolution */}
-      {showCosts && <div className="card p-5 mb-6">
+      {/* Evolution — Ventas */}
+      {statsTab === 'ventas' && showCosts && <div className="card p-5 mb-6">
         <h2 className="font-bold text-gray-800 mb-4">{t('profitEvolution')}</h2>
         {evolutionData.some(d => d.revenue > 0) ? (<>
           <ResponsiveContainer width="100%" height={200}>
@@ -744,8 +752,8 @@ export default function EstadisticasPage() {
         </>) : <p className="text-sm text-gray-400">{t('noSufficientData')}</p>}
       </div>}
 
-      {/* Compare periods */}
-      <div className="card p-5 mb-6">
+      {/* Compare periods — Ventas */}
+      {statsTab === 'ventas' && <div className="card p-5 mb-6">
         <h2 className="font-bold text-gray-800 mb-4">{t('comparePeriods')}</h2>
         <div className="flex flex-col sm:flex-row gap-3 mb-4 items-end">
           <div className="flex-1"><label className="block text-xs text-gray-500 mb-1">{t('periodA')}</label><input type="date" className="input-base text-sm" value={cmpA} onChange={e => setCmpA(e.target.value)} /></div>
@@ -783,7 +791,16 @@ export default function EstadisticasPage() {
             </div>
           )
         })()}
-      </div>
+      </div>}
+
+      {/* Avanzado — placeholder */}
+      {statsTab === 'avanzado' && (
+        <div className="card p-12 text-center">
+          <p className="text-4xl mb-3 opacity-30">🔮</p>
+          <p className="font-semibold text-gray-500">Próximamente</p>
+          <p className="text-sm text-gray-400 mt-1">Rentabilidad por técnica, frecuencia de compra, insights automáticos</p>
+        </div>
+      )}
     </div>
   )
 }
