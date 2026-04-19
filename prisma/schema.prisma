@@ -1,0 +1,563 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ── NextAuth tables ──
+
+model User {
+  id              String    @id @default(uuid())
+  email           String    @unique
+  name            String?
+  password        String?
+  emailVerifiedAt DateTime?
+  image           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  accounts Account[]
+  sessions Session[]
+
+  profile          Profile?
+  workshopSettings WorkshopSettings?
+  tecnicas         Tecnica[]
+  products         Product[]
+  catalogProducts  CatalogProduct[]
+  categories       Category[]
+  equipment        Equipment[]
+  insumos          Insumo[]
+  orders           Order[]
+  presupuestos     Presupuesto[]
+  clients          Client[]
+  payments         Payment[]
+  suppliers        Supplier[]
+  promotions       Promotion[]
+  coupons          Coupon[]
+  mediosPago       MedioPago[]
+  guiasTalles      GuiaTalles[]
+  pedidoMateriales PedidoMaterial[]
+  operators        Operator[]
+  stockMovements   StockMovement[]
+  teamOwned        TeamMember[]      @relation("TeamOwner")
+  teamMemberships  TeamMember[]      @relation("TeamUser")
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(uuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ── Business tables ──
+
+model Profile {
+  id                  String    @id @default(uuid())
+  userId              String    @unique
+  email               String?
+  fullName            String?
+  workshopName        String?
+  businessName        String?
+  businessLogoUrl     String?
+  businessCuit        String?
+  businessAddress     String?
+  businessPhone       String?
+  businessEmail       String?
+  businessInstagram   String?
+  businessWebsite     String?
+  facebook            String?
+  tiktok              String?
+  youtube             String?
+  city                String?
+  province            String?
+  postalCode          String?
+  onboardingCompleted Boolean   @default(false)
+  trialEndsAt         DateTime?
+  plan                String    @default("pro")
+  planStatus          String    @default("trial")
+  createdAt           DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("profiles")
+}
+
+model WorkshopSettings {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  settings  Json     @default("{}")
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("workshop_settings")
+}
+
+model Tecnica {
+  id           String   @id @default(uuid())
+  userId       String
+  slug         String
+  nombre       String
+  color        String?  @default("#6C5CE7")
+  config       Json     @default("{}")
+  equipmentIds String[] @default([])
+  insumoIds    String[] @default([])
+  activa       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("tecnicas")
+}
+
+model Product {
+  id                   String   @id @default(uuid())
+  userId               String
+  name                 String
+  baseCost             Float    @default(0)
+  category             String   @default("General")
+  categoryId           String?
+  timeSubli            Float?   @default(0)
+  timeDtf              Float?   @default(0)
+  timeVinyl            Float?   @default(0)
+  timeDtfUv            Int?     @default(0)
+  timeSerigrafia       Int?     @default(0)
+  pressEquipmentId     String?
+  printerEquipmentId   String?
+  stock                Int?     @default(0)
+  stockMinimo          Int?     @default(0)
+  tecnicasCompatibles  String[] @default(["subli", "dtf", "vinyl"])
+  unidadesPorPlanchada Int?     @default(1)
+  variantName          String?
+  variantOptions       String[] @default([])
+  moneda               String?  @default("local")
+  supplierId           String?
+  createdAt            DateTime @default(now())
+
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categoryRef      Category?        @relation(fields: [categoryId], references: [id])
+  pressEquipment   Equipment?       @relation("ProductPress", fields: [pressEquipmentId], references: [id])
+  printerEquipment Equipment?       @relation("ProductPrinter", fields: [printerEquipmentId], references: [id])
+  supplier         Supplier?        @relation(fields: [supplierId], references: [id])
+  catalogProducts  CatalogProduct[]
+
+  @@index([userId])
+  @@map("products")
+}
+
+model CatalogProduct {
+  id               String   @id @default(uuid())
+  userId           String
+  name             String
+  description      String?
+  categoryId       String?
+  photos           Json     @default("[]")
+  costMode         String   @default("manual")
+  baseProductId    String?
+  technique        String?
+  zoneConfig       Json?
+  productionConfig Json?
+  unitCost         Float    @default(0)
+  costBreakdown    Json?
+  sellingPrice     Float    @default(0)
+  manageStock      Boolean  @default(false)
+  currentStock     Int      @default(0)
+  minStock         Int      @default(0)
+  visibleInCatalog Boolean  @default(true)
+  sizes            Json?
+  colors           Json?
+  estimatedDelivery String?
+  precioAnterior   Float?
+  guiaTallesId     String?
+  variantName      String?
+  variantOptions   String[] @default([])
+  featured         Boolean  @default(false)
+  sortOrder        Int      @default(0)
+  slug             String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @default(now()) @updatedAt
+
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category       Category?      @relation(fields: [categoryId], references: [id])
+  baseProduct    Product?       @relation(fields: [baseProductId], references: [id])
+  guiaTalles     GuiaTalles?    @relation(fields: [guiaTallesId], references: [id])
+  stockMovements StockMovement[]
+
+  @@index([userId])
+  @@map("catalog_products")
+}
+
+model Category {
+  id             String   @id @default(uuid())
+  userId         String
+  name           String
+  margenSugerido Float?   @default(50)
+  type           String?  @default("both")
+  pricingMode    String?  @default("margin")
+  createdAt      DateTime @default(now())
+
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  products        Product[]
+  catalogProducts CatalogProduct[]
+
+  @@index([userId])
+  @@map("categories")
+}
+
+model Equipment {
+  id              String    @id @default(uuid())
+  userId          String
+  name            String
+  type            String
+  clasificacion   String?   @default("plancha")
+  cost            Float
+  lifespanUses    Int
+  tecnicasSlugs   String[]  @default([])
+  marca           String?
+  assignedPaperId String?
+  assignedInkId   String?
+  moneda          String?   @default("local")
+  purchaseDate    DateTime?
+  supplierId      String?
+  notes           String?
+  printTimeSec    Float?    @default(0)
+  createdAt       DateTime  @default(now())
+
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assignedPaper  Insumo?   @relation("EquipmentPaper", fields: [assignedPaperId], references: [id])
+  assignedInk    Insumo?   @relation("EquipmentInk", fields: [assignedInkId], references: [id])
+  productPress   Product[] @relation("ProductPress")
+  productPrinter Product[] @relation("ProductPrinter")
+
+  @@index([userId])
+  @@map("equipment")
+}
+
+model Insumo {
+  id                 String   @id @default(uuid())
+  userId             String
+  nombre             String
+  tipo               String   @default("otro")
+  tecnicaAsociada    String?  @default("compartido")
+  config             Json     @default("{}")
+  moneda             String?  @default("local")
+  supplierId         String?
+  categoriaFuncional String?  @default("directo")
+  createdAt          DateTime @default(now())
+
+  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  supplier       Supplier?   @relation(fields: [supplierId], references: [id])
+  equipmentPaper Equipment[] @relation("EquipmentPaper")
+  equipmentInk   Equipment[] @relation("EquipmentInk")
+
+  @@index([userId])
+  @@map("insumos")
+}
+
+model Order {
+  id               String    @id @default(uuid())
+  userId           String
+  clientId         String?
+  status           String    @default("pending")
+  totalPrice       Float     @default(0)
+  totalCost        Float     @default(0)
+  advancePayment   Float?    @default(0)
+  dueDate          DateTime?
+  notes            String?
+  items            Json      @default("[]")
+  filesLink        String?
+  materialesListos Boolean   @default(false)
+  presupuestoId    String?
+  createdAt        DateTime  @default(now())
+
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  client           Client?          @relation(fields: [clientId], references: [id])
+  payments         Payment[]
+  pedidoMateriales PedidoMaterial[]
+
+  @@index([userId])
+  @@index([clientId])
+  @@map("orders")
+}
+
+model Presupuesto {
+  id                  String    @id @default(uuid())
+  userId              String
+  codigo              String    @unique
+  numero              String?   @default("0")
+  fecha               DateTime? @default(now())
+  validezDias         Int?      @default(15)
+  clientId            String?
+  clientName          String?
+  items               Json      @default("[]")
+  total               Float?    @default(0)
+  condiciones         String?
+  businessProfile     Json      @default("{}")
+  origen              String?   @default("manual")
+  estado              String?   @default("borrador")
+  notas               String?
+  medioPagoNombre     String?
+  ajustePorcentaje    Float?    @default(0)
+  ajusteMonto         Float?    @default(0)
+  totalFinal          Float?
+  tipoCambioCongelado Float?
+  createdAt           DateTime  @default(now())
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  client Client? @relation(fields: [clientId], references: [id])
+
+  @@index([userId])
+  @@map("presupuestos")
+}
+
+model Client {
+  id                   String   @id @default(uuid())
+  userId               String
+  name                 String
+  email                String?
+  phone                String?
+  whatsapp             String?
+  tipoCliente          String?  @default("persona")
+  identificacionFiscal String?
+  razonSocial          String?
+  direccion            String?
+  ciudad               String?
+  provincia            String?
+  notas                String?
+  createdAt            DateTime @default(now())
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders       Order[]
+  presupuestos Presupuesto[]
+
+  @@index([userId])
+  @@map("clients")
+}
+
+model Payment {
+  id        String   @id @default(uuid())
+  orderId   String
+  userId    String
+  monto     Float    @default(0)
+  metodo    String?  @default("efectivo")
+  fecha     DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([orderId])
+  @@map("payments")
+}
+
+model TeamMember {
+  id        String   @id @default(uuid())
+  ownerId   String
+  userId    String?
+  nombre    String
+  email     String
+  rol       String   @default("vendedor")
+  estado    String   @default("invitado")
+  permisos  Json
+  createdAt DateTime @default(now())
+
+  owner User  @relation("TeamOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  user  User? @relation("TeamUser", fields: [userId], references: [id])
+
+  @@index([ownerId])
+  @@index([userId])
+  @@map("team_members")
+}
+
+model Supplier {
+  id        String   @id @default(uuid())
+  userId    String
+  name      String
+  whatsapp  String?
+  email     String?
+  website   String?
+  location  String?
+  notes     String?
+  createdAt DateTime @default(now())
+
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  products         Product[]
+  insumos          Insumo[]
+  pedidoMateriales PedidoMaterial[]
+
+  @@index([userId])
+  @@map("suppliers")
+}
+
+model Promotion {
+  id            String   @id @default(uuid())
+  userId        String
+  name          String
+  discountType  String   @default("percentage")
+  discountValue Float    @default(0)
+  productIds    String[] @default([])
+  startsAt      DateTime @default(now())
+  endsAt        DateTime
+  showCountdown Boolean  @default(false)
+  status        String   @default("scheduled")
+  createdAt     DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("promotions")
+}
+
+model Coupon {
+  id            String    @id @default(uuid())
+  userId        String
+  code          String
+  discountType  String    @default("percentage")
+  discountValue Float     @default(0)
+  maxUses       Int?
+  usedCount     Int       @default(0)
+  onePerClient  Boolean   @default(false)
+  usedByClients String[]  @default([])
+  minAmount     Float?    @default(0)
+  expiresAt     DateTime?
+  status        String    @default("active")
+  createdAt     DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("coupons")
+}
+
+model MedioPago {
+  id         String   @id @default(uuid())
+  userId     String
+  nombre     String
+  tipoAjuste String   @default("sin_ajuste")
+  porcentaje Float    @default(0)
+  activo     Boolean  @default(true)
+  orden      Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("medios_pago")
+}
+
+model GuiaTalles {
+  id               String   @id @default(uuid())
+  userId           String
+  nombre           String
+  columnas         Json     @default("[\"Ancho\", \"Largo\"]")
+  filas            Json     @default("[]")
+  imagenReferencia String?
+  orden            Int?     @default(0)
+  createdAt        DateTime @default(now())
+
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  catalogProducts CatalogProduct[]
+
+  @@index([userId])
+  @@map("guias_talles")
+}
+
+model PedidoMaterial {
+  id              String   @id @default(uuid())
+  pedidoId        String
+  userId          String
+  tipo            String
+  nombre          String
+  cantidad        Float
+  unidad          String   @default("unidades")
+  proveedorId     String?
+  proveedorNombre String?
+  disponible      Boolean  @default(false)
+  createdAt       DateTime @default(now())
+
+  order     Order     @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  proveedor Supplier? @relation(fields: [proveedorId], references: [id])
+
+  @@index([userId])
+  @@index([pedidoId])
+  @@map("pedido_materiales")
+}
+
+model Operator {
+  id              String   @id @default(uuid())
+  userId          String
+  name            String
+  hourlyRate      Float    @default(0)
+  techniques      String[] @default([])
+  calculationMode String   @default("salary")
+  monthlySalary   Float?   @default(0)
+  monthlyHours    Float?   @default(160)
+  percentage      Float?   @default(0)
+  percentageBase  String?  @default("cost")
+  fixedAmount     Float?   @default(0)
+  createdAt       DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("operators")
+}
+
+model StockMovement {
+  id        String   @id @default(uuid())
+  userId    String
+  productId String
+  type      String
+  quantity  Int
+  note      String?
+  createdAt DateTime @default(now())
+
+  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product CatalogProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([productId])
+  @@map("stock_movements")
+}
