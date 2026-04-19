@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { useSession } from 'next-auth/react'
 import { type CountryConfig, getCountry, formatCurrency as fmtCurrency } from '@/shared/lib/currency'
 
 interface LocaleCtx {
@@ -19,26 +19,26 @@ const Ctx = createContext<LocaleCtx>({
 })
 
 export function LocaleProvider({ children }: { children: ReactNode }) {
+  const { status } = useSession()
   const [locale, setLocale] = useState('es')
   const [country, setCountry] = useState<CountryConfig>(DEFAULT_COUNTRY)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    async function load() {
-      const supabase = createClient()
-      const { data } = await supabase.from('workshop_settings').select('settings').single()
-      if (data?.settings) {
-        const s = data.settings as Record<string, unknown>
-        const countryCode = (s.pais as string) || 'AR'
-        const lang = (s.idioma as string) || 'es'
-        const c = getCountry(countryCode)
-        setCountry(c)
-        setLocale(lang || c.locale)
-      }
-      setLoading(false)
-    }
-    load()
-  }, [])
+    if (status !== 'authenticated') { setLoading(status === 'loading'); return }
+    fetch('/api/me')
+      .then(r => r.json())
+      .then(data => {
+        if (data.locale) {
+          const countryCode = data.locale.pais || 'AR'
+          const c = getCountry(countryCode)
+          setCountry(c)
+          setLocale(c.locale)
+        }
+        setLoading(false)
+      })
+      .catch(() => setLoading(false))
+  }, [status])
 
   const fmt = (n: number) => fmtCurrency(n, country)
 
