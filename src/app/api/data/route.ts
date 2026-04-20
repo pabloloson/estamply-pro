@@ -124,7 +124,7 @@ export async function POST(req: NextRequest) {
   if (!session?.user?.id) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
   const body = await req.json()
-  const { table, data: rawData } = body
+  const { table, data: rawData, upsert } = body
   if (!table || !rawData) return NextResponse.json({ error: 'Missing table or data' }, { status: 400 })
 
   const modelName = MODEL_MAP[table]
@@ -137,7 +137,14 @@ export async function POST(req: NextRequest) {
   camelData.userId = ownerId
 
   try {
-    const result = await model.create({ data: camelData })
+    let result
+    if (upsert && camelData.id) {
+      result = await model.upsert({ where: { id: camelData.id }, update: camelData, create: camelData })
+    } else if (upsert && camelData.userId && table === 'workshop_settings') {
+      result = await model.upsert({ where: { userId: ownerId }, update: { settings: camelData.settings }, create: camelData })
+    } else {
+      result = await model.create({ data: camelData })
+    }
     return NextResponse.json(mapFieldsToSnake(result as Record<string, unknown>))
   } catch (error) {
     console.error(`Data API insert error (${table}):`, error)
@@ -151,8 +158,8 @@ export async function PATCH(req: NextRequest) {
   if (!session?.user?.id) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
   const body = await req.json()
-  const { table, id, data: rawData } = body
-  if (!table || !id || !rawData) return NextResponse.json({ error: 'Missing table, id, or data' }, { status: 400 })
+  const { table, id, filter, data: rawData } = body
+  if (!table || (!id && !filter) || !rawData) return NextResponse.json({ error: 'Missing table, id/filter, or data' }, { status: 400 })
 
   const modelName = MODEL_MAP[table]
   if (!modelName) return NextResponse.json({ error: `Unknown table: ${table}` }, { status: 400 })
@@ -160,7 +167,13 @@ export async function PATCH(req: NextRequest) {
   const model = (prisma as unknown as Record<string, Record<string, Function>>)[modelName]
 
   try {
-    const result = await model.update({ where: { id }, data: mapFieldsToCamel(rawData) })
+    const where = id ? { id } : mapFieldsToCamel(filter as Record<string, unknown>)
+    // Use updateMany for filter-based updates (e.g. workshop_settings by userId)
+    if (!id && filter) {
+      const result = await model.updateMany({ where, data: mapFieldsToCamel(rawData) })
+      return NextResponse.json({ count: result.count })
+    }
+    const result = await model.update({ where, data: mapFieldsToCamel(rawData) })
     return NextResponse.json(mapFieldsToSnake(result as Record<string, unknown>))
   } catch (error) {
     console.error(`Data API update error (${table}):`, error)

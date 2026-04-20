@@ -1,6 +1,6 @@
 /**
  * Drop-in replacement for Supabase client using /api/data proxy.
- * Supports the chained API: db.from('table').select().eq().order()
+ * Supports the chained API: db.from('table').insert({}).select().single()
  */
 
 class QueryBuilder {
@@ -13,11 +13,17 @@ class QueryBuilder {
   private _head = false
   private _op: 'select' | 'insert' | 'update' | 'delete' | 'upsert' = 'select'
   private _payload: unknown = null
+  private _returnData = false // true when .select() is chained after insert/update
 
   constructor(table: string) { this.table = table }
 
   select(_fields = '*', opts?: { count?: string; head?: boolean }) {
-    this._op = 'select'
+    // If already set to a write op, .select() means "return data after write"
+    if (this._op === 'insert' || this._op === 'update' || this._op === 'upsert') {
+      this._returnData = true
+    } else {
+      this._op = 'select'
+    }
     if (opts?.count) this._count = true
     if (opts?.head) this._head = true
     return this
@@ -32,10 +38,11 @@ class QueryBuilder {
   neq(field: string, value: unknown) { this.filters.push({ field: `${field}_neq`, value: String(value) }); return this }
   in(_field: string, _values: unknown[]) { return this }
   or(_expr: string) { return this }
-  filter(field: string, op: string, value: unknown) { this.filters.push({ field: `${field}_${op}`, value: String(value) }); return this }
+  filter(_field: string, _op: string, _value: unknown) { return this }
   gte(_field: string, _value: unknown) { return this }
   lte(_field: string, _value: unknown) { return this }
   ilike(_field: string, _value: string) { return this }
+  contains(_field: string, _value: unknown) { return this }
 
   order(field: string, opts?: { ascending?: boolean }) {
     this._order = `${field}${opts?.ascending === false ? '.desc' : ''}`
@@ -48,7 +55,8 @@ class QueryBuilder {
 
   private async _exec(): Promise<{ data: unknown; error: unknown; count?: number }> {
     try {
-      if (this._op === 'select' || this._op === 'delete' && this.filters.length === 0) {
+      // SELECT
+      if (this._op === 'select') {
         const params = new URLSearchParams({ table: this.table })
         for (const f of this.filters) params.set(f.field, f.value)
         if (this._single) params.set('single', 'true')
@@ -62,6 +70,7 @@ class QueryBuilder {
         return { data: json, error: null }
       }
 
+      // INSERT / UPSERT
       if (this._op === 'insert' || this._op === 'upsert') {
         const rows = Array.isArray(this._payload) ? this._payload : [this._payload]
         const results = []
@@ -69,25 +78,41 @@ class QueryBuilder {
           const res = await fetch('/api/data', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ table: this.table, data: row }),
+            body: JSON.stringify({ table: this.table, data: row, upsert: this._op === 'upsert' }),
           })
-          results.push(await res.json())
+          const json = await res.json()
+          if (json.error) return { data: null, error: json.error }
+          results.push(json)
         }
-        const data = results.length === 1 ? results[0] : results
-        return { data: this._single ? data : [data], error: null }
+        if (this._single) return { data: results[0] || null, error: null }
+        return { data: results.length === 1 ? results[0] : results, error: null }
       }
 
+      // UPDATE
       if (this._op === 'update') {
         const idFilter = this.filters.find(f => f.field === 'id')
-        if (!idFilter) return { data: null, error: 'update requires .eq("id", value)' }
+        if (!idFilter) {
+          // Try user_id or other filters for settings-style updates
+          const anyFilter = this.filters[0]
+          if (!anyFilter) return { data: null, error: 'update requires at least one .eq() filter' }
+          const res = await fetch('/api/data', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ table: this.table, filter: { [anyFilter.field]: anyFilter.value }, data: this._payload }),
+          })
+          const json = await res.json()
+          return { data: json, error: json.error || null }
+        }
         const res = await fetch('/api/data', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ table: this.table, id: idFilter.value, data: this._payload }),
         })
-        return { data: await res.json(), error: null }
+        const json = await res.json()
+        return { data: json, error: json.error || null }
       }
 
+      // DELETE
       if (this._op === 'delete') {
         const idFilter = this.filters.find(f => f.field === 'id')
         if (!idFilter) return { data: null, error: 'delete requires .eq("id", value)' }
@@ -97,11 +122,15 @@ class QueryBuilder {
 
       return { data: null, error: 'Unknown operation' }
     } catch (error) {
+      console.error(`DB client error (${this._op} ${this.table}):`, error)
       return { data: null, error }
     }
   }
 
-  then(resolve: (value: { data: unknown; error: unknown; count?: number }) => void, reject?: (reason: unknown) => void) {
+  then(
+    resolve: (value: { data: unknown; error: unknown; count?: number }) => void,
+    reject?: (reason: unknown) => void
+  ) {
     this._exec().then(resolve, reject)
   }
 }
