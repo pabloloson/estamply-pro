@@ -142,19 +142,20 @@ class StorageBuilder {
   async upload(path: string, file: File) {
     const formData = new FormData()
     formData.append('file', file)
-    formData.append('bucket', this.bucket)
-    formData.append('path', path)
+    formData.append('type', this.bucket === 'logos' ? 'logos' : 'products')
     try {
       const res = await fetch('/api/upload', { method: 'POST', body: formData })
       const json = await res.json()
-      return { data: json, error: null }
+      if (json.error) return { data: null, error: json.error }
+      return { data: { publicUrl: json.url }, error: null }
     } catch (error) {
       return { data: null, error }
     }
   }
 
   getPublicUrl(path: string) {
-    return { data: { publicUrl: `/uploads/${this.bucket}/${path}` } }
+    const cdn = 'estamply-cdn.b-cdn.net'
+    return { data: { publicUrl: path.startsWith('http') ? path : `https://${cdn}/${path}` } }
   }
 }
 
