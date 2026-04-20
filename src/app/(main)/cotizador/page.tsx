@@ -1,6 +1,7 @@
 // @ts-nocheck
 'use client'
 
+export const dynamic = 'force-dynamic'
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { ShoppingCart, LayoutGrid, AlertTriangle } from 'lucide-react'

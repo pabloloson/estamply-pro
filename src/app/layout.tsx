@@ -3,6 +3,8 @@ import { SessionProvider } from 'next-auth/react'
 import { auth } from '@/auth'
 import './globals.css'
 
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   metadataBase: new URL('https://estamply.app'),
   title: 'Estamply — Software para talleres de estampado',

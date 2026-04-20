@@ -1,6 +1,7 @@
 // @ts-nocheck
 'use client'
 
+export const dynamic = 'force-dynamic'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/db/client'
 import { ChevronDown, ChevronUp, MessageCircle, Trash2, Calendar, Plus, LayoutList, LayoutGrid, X, ExternalLink, Printer, Search, ClipboardList } from 'lucide-react'

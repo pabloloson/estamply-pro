@@ -8,6 +8,8 @@ import { PresupuestoProvider } from '@/features/presupuesto/context/PresupuestoC
 import { PermissionsProvider } from '@/shared/context/PermissionsContext'
 import { LocaleProvider } from '@/shared/context/LocaleContext'
 
+export const dynamic = 'force-dynamic'
+
 export default async function MainLayout({ children }: { children: React.ReactNode }) {
   const session = await auth()
   if (!session?.user?.id) redirect('/login')

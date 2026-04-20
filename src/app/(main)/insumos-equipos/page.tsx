@@ -1,6 +1,7 @@
 // @ts-nocheck
 'use client'
 
+export const dynamic = 'force-dynamic'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/db/client'
 import { Plus, Pencil, Trash2, X, Save, Cpu, Users } from 'lucide-react'
