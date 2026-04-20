@@ -197,11 +197,14 @@ export default function OnboardingWizard() {
     if (!slug || slug.length < 3) { setSlugStatus('idle'); return }
     setSlugStatus('checking')
     const timer = setTimeout(async () => {
-      const { data } = await supabase
-        .from('workshop_settings')
-        .select('id')
-        .contains('settings', { catalog_slug: slug })
-      setSlugStatus(data && data.length > 0 ? 'taken' : 'available')
+      try {
+        const res = await fetch(`/api/check-slug?slug=${encodeURIComponent(slug)}`)
+        const json = await res.json()
+        setSlugStatus(json.available ? 'available' : 'taken')
+      } catch {
+        // If check fails (empty DB, network error), assume available
+        setSlugStatus('available')
+      }
     }, 500)
     return () => clearTimeout(timer)
   }, [slug])
