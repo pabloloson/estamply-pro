@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { signup } from '@/app/actions/auth'
+import { trackEvent } from '@/lib/analytics'
 import { Zap, TrendingUp, Shield } from 'lucide-react'
 import { useTranslations } from '@/shared/hooks/useTranslations'
 
@@ -22,6 +23,9 @@ export default function SignupPage() {
     if (result?.error) {
       setError(result.error)
       setLoading(false)
+    } else {
+      trackEvent('sign_up')
+      trackEvent('begin_trial')
     }
   }
 

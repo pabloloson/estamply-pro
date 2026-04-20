@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { SessionProvider } from 'next-auth/react'
 import { auth } from '@/auth'
+import AnalyticsScripts from '@/shared/components/AnalyticsScripts'
 import './globals.css'
 
 export const dynamic = 'force-dynamic'
@@ -54,6 +55,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body>
         <SessionProvider session={session}>
+          <AnalyticsScripts />
           {children}
         </SessionProvider>
       </body>
