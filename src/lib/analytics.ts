@@ -1,7 +1,9 @@
 /**
- * Centralized analytics — fires events to both Meta Pixel and GA4.
+ * Centralized analytics — fires events to Meta Pixel, GA4, and PostHog.
  * Only active when env vars are set.
  */
+
+import { posthog } from './posthog'
 
 declare global {
   interface Window {
@@ -11,6 +13,11 @@ declare global {
 }
 
 export function trackEvent(name: string, params?: Record<string, unknown>) {
+  // PostHog
+  if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
+    posthog.capture(name, params)
+  }
+
   // Meta Pixel
   if (typeof window !== 'undefined' && window.fbq) {
     const pixelMap: Record<string, string> = {
