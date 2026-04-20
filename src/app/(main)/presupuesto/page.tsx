@@ -434,6 +434,8 @@ export default function PresupuestoPage() {
   }
 
   useEffect(() => {
+    // Safety timeout: if loading takes >8s, show empty state
+    const safetyTimeout = setTimeout(() => setLoadingClients(false), 8000)
     async function loadData() {
       try {
       const { data: { user } } = await supabase.auth.getUser()
@@ -491,6 +493,7 @@ export default function PresupuestoPage() {
       }
     }
     loadData()
+    return () => clearTimeout(safetyTimeout)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -607,7 +610,7 @@ export default function PresupuestoPage() {
 
           {loadingClients ? (
             <div className="space-y-3">
-              {[1, 2, 3, 4].map(i => (
+              {[1, 2, 3].map(i => (
                 <div key={i} className="h-16 bg-white rounded-xl border border-gray-100 animate-pulse" />
               ))}
             </div>
