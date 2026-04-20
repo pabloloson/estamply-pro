@@ -8,7 +8,7 @@ import Link from 'next/link'
 import {
   ShoppingCart, Trash2, FileDown, MessageCircle, Mail, X,
   ArrowLeft, Loader2, Phone, MapPin, Globe, AtSign, Pencil,
-  Link as LinkIcon, Check, Search, Plus, User, Calculator, Save,
+  Link as LinkIcon, Check, Search, Plus, User, Calculator, Save, FileText,
 } from 'lucide-react'
 import { createClient } from '@/lib/db/client'
 import { usePresupuesto } from '@/features/presupuesto/context/PresupuestoContext'
@@ -435,6 +435,7 @@ export default function PresupuestoPage() {
 
   useEffect(() => {
     async function loadData() {
+      try {
       const { data: { user } } = await supabase.auth.getUser()
       const [{ data: cls }, { data: prof }, { data: wsData }, { data: saved }] = await Promise.all([
         supabase.from('clients').select('id, name, phone, email, whatsapp').order('name'),
@@ -464,8 +465,6 @@ export default function PresupuestoPage() {
       const { data: bp } = await supabase.from('products').select('name, variant_name, variant_options').not('variant_name', 'is', null)
       if (bp) setBaseProducts(bp as typeof baseProducts)
 
-      setLoadingClients(false)
-
       // Restore client if presupuesto was loaded (e.g. after page refresh)
       if (loadedPresupuestoId) {
         setDbId(loadedPresupuestoId)
@@ -484,6 +483,11 @@ export default function PresupuestoPage() {
           if (pres.validez_dias) setValidezDias(pres.validez_dias as number)
           if (pres.codigo) setPublicLink(`/p/${pres.codigo}`)
         }
+      }
+      } catch (err) {
+        console.error('Error loading presupuesto data:', err)
+      } finally {
+        setLoadingClients(false)
       }
     }
     loadData()
@@ -664,9 +668,13 @@ export default function PresupuestoPage() {
             </div>
           </>) : (
             <div className="card flex flex-col items-center justify-center py-16 gap-4">
-              <div className="w-16 h-16 rounded-full flex items-center justify-center bg-gray-100"><ShoppingCart size={28} className="text-gray-400" /></div>
-              <p className="text-gray-500 text-sm text-center max-w-xs">No tenés presupuestos todavía. Creá uno desde el Cotizador.</p>
-              <Link href="/cotizador" className="btn-primary text-sm px-5 py-2 rounded-xl font-semibold">{t('goToQuoter')}</Link>
+              <div className="w-16 h-16 rounded-full flex items-center justify-center bg-purple-50"><FileText size={28} className="text-purple-300" /></div>
+              <div className="text-center">
+                <p className="text-gray-700 font-semibold">No tenés presupuestos todavía</p>
+                <p className="text-gray-400 text-sm mt-1">Creá tu primer presupuesto para empezar a cotizar para tus clientes</p>
+              </div>
+              <button onClick={() => { clearItems(); setLoadedPresupuestoId(null); setPublicLink(''); setClientId(''); setNewClientName(''); setCreatingNew(true) }}
+                className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: '#6C5CE7' }}>+ Nuevo presupuesto</button>
             </div>
           )}
         </>) : (<>
