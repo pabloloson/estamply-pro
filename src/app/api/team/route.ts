@@ -2,6 +2,7 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
 import bcrypt from 'bcryptjs'
 import { NextResponse } from 'next/server'
+import { sendTeamInvite } from '@/lib/email'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,6 +35,10 @@ export async function POST(req: Request) {
         nombre, email, rol: 'personalizado', estado: 'activo', permisos,
       },
     })
+
+    // Send invite email (fire-and-forget)
+    const ownerProfile = await prisma.profile.findUnique({ where: { userId: session.user.id }, select: { workshopName: true, fullName: true } })
+    sendTeamInvite(email, ownerProfile?.fullName || ownerProfile?.workshopName || 'Tu equipo', ownerProfile?.workshopName || 'Estamply', password).catch(() => {})
 
     return NextResponse.json({ ok: true, userId: user.id })
   } catch (e) {

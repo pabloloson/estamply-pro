@@ -4,6 +4,7 @@ import { signIn, signOut } from "@/auth"
 import { prisma } from "@/lib/db/prisma"
 import bcrypt from "bcryptjs"
 import { AuthError } from "next-auth"
+import { sendWelcome } from "@/lib/email"
 
 export async function login(formData: FormData) {
   const email = formData.get('email') as string
@@ -52,6 +53,9 @@ export async function signup(formData: FormData) {
         planStatus: 'trial',
       },
     })
+
+    // Send welcome email (fire-and-forget)
+    sendWelcome(email, fullName || '').catch(() => {})
 
     await signIn("credentials", {
       email,
