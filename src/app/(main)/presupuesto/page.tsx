@@ -448,7 +448,7 @@ export default function PresupuestoPage() {
       if (cls) setClients(cls)
       if (saved) setSavedPresupuestos(saved as typeof savedPresupuestos)
       if (prof) setBizProfile(prof as unknown as BusinessProfile)
-      const { data: catProds } = await supabase.from('catalog_products').select('id, name, selling_price, photos, category_name, variant_name, variant_options').eq('visible', true).order('name')
+      const { data: catProds } = await supabase.from('catalog_products').select('id, name, selling_price, photos, category_name, variant_name, variant_options').eq('visible_in_catalog', true).order('name')
       if (catProds) setCatalogProducts(catProds as typeof catalogProducts)
       if (wsData?.settings) {
         const s = { ...DEFAULT_SETTINGS, ...(wsData.settings as Partial<WorkshopSettings>) }
