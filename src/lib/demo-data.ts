@@ -322,6 +322,57 @@ export async function seedDemoData(userId: string, techniques: string[]) {
       },
     })
   }
+
+  // ══ VINILO AUTOADHESIVO ══
+  if (techniques.includes('vinyl_adhesivo')) {
+    const srViniloId = await getSupplier('El Sr. Vinilo', 'Vinilos textiles y autoadhesivos')
+    const donBotellasId = await getSupplier('Don botellas', 'Botellas y envases')
+
+    // Shared plotter (reuses vinyl's if exists)
+    const plotterId = await getEquipment('Silhouette Cameo 5', {
+      type: 'plotter_corte', clasificacion: 'plotter',
+      cost: 800000, lifespanUses: 40000, tecnicasSlugs: ['vinyl', 'vinyl_adhesivo'], moneda: 'local',
+      marca: 'Silhouette',
+    })
+
+    // New category
+    const catBotellas = await getCategory('Botellas')
+
+    // Vinilo autoadhesivo insumo
+    const viniloAdh = await prisma.insumo.create({
+      data: {
+        userId, nombre: 'Vinilo autoadhesivo premium', tipo: 'vinilo',
+        tecnicaAsociada: 'vinyl_adhesivo', moneda: 'local', isDemo: true,
+        supplierId: srViniloId,
+        config: { tipo: 'vinilo', aplicacion: 'rigido', acabado: 'Liso', precio_metro: 5000, ancho: 60, colores: ['Blanco', 'Negro', 'Rojo', 'Azul'] },
+      },
+    })
+
+    // New product
+    await getProduct('Botella de vidrio', {
+      baseCost: 1000, category: 'Botellas', categoryId: catBotellas,
+      moneda: 'local', supplierId: donBotellasId,
+    })
+
+    // Technique config
+    await prisma.tecnica.updateMany({
+      where: { userId, slug: 'vinyl_adhesivo' },
+      data: {
+        config: {
+          tipo: 'vinyl_adhesivo', modo: 'propia', margen_seguridad: 2,
+          desperdicio_pelado_pct: 10, pedido_minimo: 1, tiempo_preparacion: 20,
+          descuento_override: false, descuentos: [
+            { desde: 1, hasta: 9, porcentaje: 0 },
+            { desde: 10, hasta: 49, porcentaje: 0.05 },
+            { desde: 50, hasta: 99, porcentaje: 0.10 },
+            { desde: 100, hasta: 9999, porcentaje: 0.15 },
+          ],
+        },
+        equipmentIds: [plotterId],
+        insumoIds: [viniloAdh.id],
+      },
+    })
+  }
 }
 
 /**
