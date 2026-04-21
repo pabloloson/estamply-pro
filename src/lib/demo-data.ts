@@ -213,6 +213,47 @@ export async function seedDemoData(userId: string, techniques: string[]) {
       },
     })
   }
+
+  // ══ DTF UV ══
+  if (techniques.includes('dtf_uv')) {
+    // Shared product (reuses if subli already created it)
+    planchaTazasId = planchaTazasId || await getEquipment('Plancha de tazas', {
+      type: 'press_mug', clasificacion: 'plancha',
+      cost: 200000, lifespanUses: 2000, tecnicasSlugs: ['subli'], moneda: 'local',
+    })
+    await getProduct('Taza blanca', {
+      baseCost: 3000, category: 'Tazas', categoryId: catTazas,
+      pressEquipmentId: planchaTazasId,
+      timeSubli: 180, moneda: 'local', supplierId: reyTazasId,
+    })
+
+    // DTF UV-specific insumo
+    const servicioDtfUv = await prisma.insumo.create({
+      data: {
+        userId, nombre: 'Servicio de Impresión por metro DTF UV', tipo: 'servicio_impresion',
+        tecnicaAsociada: 'dtf_uv', moneda: 'local', isDemo: true,
+        supplierId: donImpresionesId,
+        config: { tipo: 'servicio_impresion', precio_metro: 18000, ancho_material: 30, proveedor: 'Don impresiones' },
+      },
+    })
+
+    await prisma.tecnica.updateMany({
+      where: { userId, slug: 'dtf_uv' },
+      data: {
+        config: {
+          tipo: 'dtf_uv', modo: 'tercerizado', margen_seguridad: 0.5,
+          desperdicio_pct: 5, pedido_minimo: 1, tiempo_preparacion: 15,
+          descuento_override: false, descuentos: [
+            { desde: 1, hasta: 9, porcentaje: 0 },
+            { desde: 10, hasta: 49, porcentaje: 0.05 },
+            { desde: 50, hasta: 99, porcentaje: 0.10 },
+            { desde: 100, hasta: 9999, porcentaje: 0.15 },
+          ],
+        },
+        insumoIds: [servicioDtfUv.id],
+      },
+    })
+  }
 }
 
 /**
