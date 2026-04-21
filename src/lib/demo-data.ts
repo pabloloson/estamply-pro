@@ -254,6 +254,74 @@ export async function seedDemoData(userId: string, techniques: string[]) {
       },
     })
   }
+
+  // ══ VINILO TEXTIL ══
+  if (techniques.includes('vinyl')) {
+    // New supplier
+    const srViniloId = await getSupplier('El Sr. Vinilo', 'Vinilos textiles y autoadhesivos')
+
+    // Shared equipment
+    planchaPlanaId = planchaPlanaId || await getEquipment('Plancha Plana 38x38', {
+      type: 'press_flat', clasificacion: 'plancha',
+      cost: 600000, lifespanUses: 20000, tecnicasSlugs: ['subli', 'dtf', 'vinyl'], moneda: 'local',
+    })
+    planchaGorrasId = planchaGorrasId || await getEquipment('Plancha de gorras', {
+      type: 'press_cap', clasificacion: 'plancha',
+      cost: 30000, lifespanUses: 2000, tecnicasSlugs: ['subli', 'dtf', 'vinyl'], moneda: 'local',
+    })
+
+    // Plotter de corte (shared with vinyl_adhesivo)
+    const plotterId = await getEquipment('Silhouette Cameo 5', {
+      type: 'plotter_corte', clasificacion: 'plotter',
+      cost: 800000, lifespanUses: 40000, tecnicasSlugs: ['vinyl', 'vinyl_adhesivo'], moneda: 'local',
+      marca: 'Silhouette',
+    })
+
+    // Vinilo textil insumo
+    const viniloTextil = await prisma.insumo.create({
+      data: {
+        userId, nombre: 'Vinilo textil económico', tipo: 'vinilo',
+        tecnicaAsociada: 'vinyl', moneda: 'local', isDemo: true,
+        supplierId: srViniloId,
+        config: { tipo: 'vinilo', aplicacion: 'textil', acabado: 'Liso', precio_metro: 7000, ancho: 50, colores: ['Blanco', 'Negro', 'Rojo', 'Azul'] },
+      },
+    })
+
+    // Shared products
+    await getProduct('Camiseta', {
+      baseCost: 10000, category: 'Textil', categoryId: catTextil,
+      pressEquipmentId: planchaPlanaId,
+      timeSubli: 45, timeDtf: 15, timeVinyl: 15, moneda: 'local',
+      variantName: 'Talle', variantOptions: ['S', 'M', 'L', 'XL', 'XXL'],
+      supplierId: donCamisetaId,
+    })
+    await getProduct('Gorra trucker', {
+      baseCost: 2500, category: 'Gorras', categoryId: catGorras,
+      pressEquipmentId: planchaGorrasId,
+      timeSubli: 30, timeDtf: 15, timeVinyl: 15, moneda: 'local',
+      variantName: 'Color', variantOptions: ['Negra frente blanco', 'Roja frente blanco', 'Negra completa', 'Roja completa'],
+      supplierId: todoGorrasId,
+    })
+
+    // Technique config
+    await prisma.tecnica.updateMany({
+      where: { userId, slug: 'vinyl' },
+      data: {
+        config: {
+          tipo: 'vinyl', modo: 'propia', margen_seguridad: 2,
+          desperdicio_pelado_pct: 10, pedido_minimo: 1, tiempo_preparacion: 20,
+          descuento_override: false, descuentos: [
+            { desde: 1, hasta: 9, porcentaje: 0 },
+            { desde: 10, hasta: 49, porcentaje: 0.05 },
+            { desde: 50, hasta: 99, porcentaje: 0.10 },
+            { desde: 100, hasta: 9999, porcentaje: 0.15 },
+          ],
+        },
+        equipmentIds: [plotterId],
+        insumoIds: [viniloTextil.id],
+      },
+    })
+  }
 }
 
 /**
