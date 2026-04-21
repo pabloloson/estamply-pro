@@ -156,6 +156,7 @@ model Product {
   userId               String
   name                 String
   baseCost             Float    @default(0)
+  isDemo               Boolean  @default(false)
   category             String   @default("General")
   categoryId           String?
   timeSubli            Float?   @default(0)
@@ -232,6 +233,7 @@ model Category {
   id             String   @id @default(uuid())
   userId         String
   name           String
+  isDemo         Boolean  @default(false)
   margenSugerido Float?   @default(50)
   type           String?  @default("both")
   pricingMode    String?  @default("margin")
@@ -250,6 +252,7 @@ model Equipment {
   userId          String
   name            String
   type            String
+  isDemo          Boolean   @default(false)
   clasificacion   String?   @default("plancha")
   cost            Float
   lifespanUses    Int
@@ -279,6 +282,7 @@ model Insumo {
   userId             String
   nombre             String
   tipo               String   @default("otro")
+  isDemo             Boolean  @default(false)
   tecnicaAsociada    String?  @default("compartido")
   config             Json     @default("{}")
   moneda             String?  @default("local")
@@ -415,6 +419,7 @@ model Supplier {
   id        String   @id @default(uuid())
   userId    String
   name      String
+  isDemo    Boolean  @default(false)
   whatsapp  String?
   email     String?
   website   String?
@@ -475,6 +480,7 @@ model MedioPago {
   id         String   @id @default(uuid())
   userId     String
   nombre     String
+  isDemo     Boolean  @default(false)
   tipoAjuste String   @default("sin_ajuste")
   porcentaje Float    @default(0)
   activo     Boolean  @default(true)

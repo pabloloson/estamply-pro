@@ -299,6 +299,15 @@ export default function OnboardingWizard() {
       await supabase.from('medios_pago').insert(defaultMedios)
     }
 
+    // 6. Seed demo data based on selected techniques
+    try {
+      await fetch('/api/demo-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ techniques: selectedTechniques }),
+      })
+    } catch { /* demo data is non-critical */ }
+
     router.push('/dashboard')
   }
 
