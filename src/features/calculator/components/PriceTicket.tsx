@@ -12,7 +12,11 @@ interface PriceTicketProps {
   designHeight: number
 }
 
-const fmt = (n: number) => `$${Math.round(n).toLocaleString('es-AR')}`
+const fmt = (n: number) => {
+  if (Math.abs(n) > 0 && Math.abs(n) < 1) return `$${n.toFixed(2).replace('.', ',')}`
+  if (Math.abs(n) < 100 && n !== Math.round(n)) return `$${n.toFixed(2).replace('.', ',')}`
+  return `$${Math.round(n).toLocaleString('es-AR')}`
+}
 
 export function PriceTicket({ result, technique, quantity, designWidth, designHeight }: PriceTicketProps) {
   if (!result) {

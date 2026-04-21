@@ -40,7 +40,11 @@ interface AuditTicketProps {
 
 const COLORS: Record<string, string> = { subli: '#6C5CE7', dtf: '#E17055', dtf_uv: '#00B894', vinyl: '#E84393', serigrafia: '#FDCB6E' }
 
-function fmt(n: number) { return `$${Math.round(n).toLocaleString('es-AR')}` }
+function fmt(n: number) {
+  if (Math.abs(n) > 0 && Math.abs(n) < 1) return `$${n.toFixed(2).replace('.', ',')}`
+  if (Math.abs(n) < 100 && n !== Math.round(n)) return `$${n.toFixed(2).replace('.', ',')}`
+  return `$${Math.round(n).toLocaleString('es-AR')}`
+}
 function fmtTime(min: number) {
   if (min < 60) return `${Math.round(min)} min`
   const h = Math.floor(min / 60), m = Math.round(min % 60)

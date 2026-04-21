@@ -48,6 +48,8 @@ const TECHNIQUE_LABELS: Record<string, string> = {
 }
 
 function fmt(n: number) {
+  if (Math.abs(n) > 0 && Math.abs(n) < 1) return `$${n.toFixed(2).replace('.', ',')}`
+  if (Math.abs(n) < 100 && n !== Math.round(n)) return `$${n.toFixed(2).replace('.', ',')}`
   return `$${Math.round(n).toLocaleString('es-AR')}`
 }
 

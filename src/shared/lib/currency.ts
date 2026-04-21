@@ -33,9 +33,12 @@ export function formatCurrency(amount: number, config?: Partial<CountryConfig>):
   const dSep = config?.decimalSep ?? ','
   let dec = config?.decimals ?? 0
 
-  // Smart precision: if configured for 0 decimals but value is small,
-  // show decimals to avoid displaying $0 for values like $0.07
+  // Smart precision: show decimals when they matter
+  // - Values < 1 (e.g. $0.07): always show 2 decimals
+  // - Values < 100 with meaningful decimals (e.g. $5.25): show 2 decimals
   if (dec === 0 && Math.abs(amount) > 0 && Math.abs(amount) < 1) {
+    dec = 2
+  } else if (dec === 0 && Math.abs(amount) < 100 && amount !== Math.round(amount)) {
     dec = 2
   }
 
