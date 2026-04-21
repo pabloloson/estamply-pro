@@ -373,6 +373,61 @@ export async function seedDemoData(userId: string, techniques: string[]) {
       },
     })
   }
+
+  // ══ SERIGRAFÍA ══
+  if (techniques.includes('serigrafia')) {
+    // Shared product
+    await getProduct('Camiseta', {
+      baseCost: 10000, category: 'Textil', categoryId: catTextil,
+      timeSubli: 45, timeDtf: 15, timeVinyl: 15, timeSerigrafia: 15, moneda: 'local',
+      variantName: 'Talle', variantOptions: ['S', 'M', 'L', 'XL', 'XXL'],
+      supplierId: donCamisetaId,
+    })
+
+    // Pulpo serigráfico
+    const pulpoId = await getEquipment('Pulpo serigráfico 4 colores', {
+      type: 'pulpo_manual', clasificacion: 'pulpo',
+      cost: 1500000, lifespanUses: 50000, tecnicasSlugs: ['serigrafia'], moneda: 'local',
+    })
+
+    // Insumos
+    const tintaSeri = await prisma.insumo.create({
+      data: {
+        userId, nombre: 'Tinta serigráfica plastisol', tipo: 'tinta_serigrafica',
+        tecnicaAsociada: 'serigrafia', moneda: 'local', isDemo: true,
+        supplierId: todoInsumosId,
+        config: { tipo: 'tinta_serigrafica', precio_kg: 35000, rendimiento_estampadas_kg: 500, color: '' },
+      },
+    })
+    const marco = await prisma.insumo.create({
+      data: {
+        userId, nombre: 'Marco/Cuadro serigráfico', tipo: 'otro',
+        tecnicaAsociada: 'serigrafia', moneda: 'local', isDemo: true,
+        supplierId: todoInsumosId,
+        config: { tipo: 'otro', precio: 25000, unidad: 'unidad', rendimiento: 500, unidad_rendimiento: 'usos' },
+      },
+    })
+
+    // Technique config
+    await prisma.tecnica.updateMany({
+      where: { userId, slug: 'serigrafia' },
+      data: {
+        config: {
+          tipo: 'serigrafia', modo: 'propia', margen_seguridad: 0.5,
+          desperdicio_pct: 5, pedido_minimo: 25, tiempo_preparacion: 30,
+          costo_pantalla_por_color: 25000, tiempo_preparacion_por_color: 600,
+          descuento_override: false, descuentos: [
+            { desde: 25, hasta: 49, porcentaje: 0 },
+            { desde: 50, hasta: 99, porcentaje: 0.05 },
+            { desde: 100, hasta: 499, porcentaje: 0.10 },
+            { desde: 500, hasta: 9999, porcentaje: 0.15 },
+          ],
+        },
+        equipmentIds: [pulpoId],
+        insumoIds: [tintaSeri.id, marco.id],
+      },
+    })
+  }
 }
 
 /**
