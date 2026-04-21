@@ -29,7 +29,7 @@ export default function DemoBanner() {
   return (
     <div className="bg-purple-50 border-b border-purple-100 px-4 py-2.5 flex items-center justify-center gap-3 text-sm no-print">
       <span className="text-purple-700">
-        🎯 Cargamos datos de ejemplo para que explores la plataforma. Los precios están en USD como referencia — editálos con tus costos reales.
+        🎯 Cargamos datos de ejemplo para que explores la plataforma — los valores son de referencia, editálos con tus costos reales.
       </span>
       <button onClick={handleClean} disabled={cleaning}
         className="text-xs font-semibold text-purple-600 hover:text-purple-800 underline whitespace-nowrap">
