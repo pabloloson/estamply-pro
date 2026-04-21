@@ -18,8 +18,10 @@ const TIPO_COLORS: Record<InsumoTipo, string> = {
 const TECNICA_FILTER_TABS = [
   { id: '', label: 'Todos' },
   { id: 'subli', label: 'Sublimación', color: '#6C5CE7' },
-  { id: 'dtf', label: 'DTF', color: '#E17055' },
-  { id: 'vinyl', label: 'Vinilo', color: '#E84393' },
+  { id: 'dtf', label: 'DTF Textil', color: '#E17055' },
+  { id: 'dtf_uv', label: 'DTF UV', color: '#00B894' },
+  { id: 'vinyl', label: 'Vinilo Textil', color: '#E84393' },
+  { id: 'vinyl_adhesivo', label: 'V. Autoadhesivo', color: '#D63384' },
   { id: 'serigrafia', label: 'Serigrafía', color: '#FDCB6E' },
 ]
 const TECNICA_OPTS = [['compartido', 'Compartido'], ['subli', 'Sublimación'], ['dtf', 'DTF Textil'], ['dtf_uv', 'DTF UV'], ['vinyl', 'Vinilo Textil'], ['vinyl_adhesivo', 'Vinilo Autoadhesivo'], ['serigrafia', 'Serigrafía']]
@@ -125,7 +127,7 @@ export default function InsumosPage() {
 
   // Filter by technique
   const filtered = filterTecnica
-    ? insumos.filter(i => i.tecnica_asociada === filterTecnica || (filterTecnica === 'dtf' && (i.tecnica_asociada === 'dtf' || i.tecnica_asociada === 'dtf_uv')) || i.tecnica_asociada === 'compartido')
+    ? insumos.filter(i => i.tecnica_asociada === filterTecnica || i.tecnica_asociada === 'compartido')
     : insumos
 
   if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>

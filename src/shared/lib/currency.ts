@@ -31,7 +31,13 @@ export function formatCurrency(amount: number, config?: Partial<CountryConfig>):
   const sym = config?.symbol ?? '$'
   const tSep = config?.thousandsSep ?? '.'
   const dSep = config?.decimalSep ?? ','
-  const dec = config?.decimals ?? 0
+  let dec = config?.decimals ?? 0
+
+  // Smart precision: if configured for 0 decimals but value is small,
+  // show decimals to avoid displaying $0 for values like $0.07
+  if (dec === 0 && Math.abs(amount) > 0 && Math.abs(amount) < 1) {
+    dec = 2
+  }
 
   const rounded = dec > 0 ? amount.toFixed(dec) : Math.round(amount).toString()
   const [intPart, decPart] = rounded.split('.')

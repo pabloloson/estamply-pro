@@ -451,8 +451,19 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
               <div><label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
                 <input className="input-base" value={modal.name || ''} onChange={e => setModal({ ...modal, name: e.target.value })} /></div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">Costo base ($)</label>
-                  <NumericInput className="input-base" value={modal.base_cost || 0} onChange={v => setModal({ ...modal, base_cost: v })} /></div>
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-sm font-medium text-gray-700">Costo base ({(modal.moneda || 'local') === 'USD' ? 'USD' : '$'})</label>
+                    <div className="inline-flex rounded-lg border border-gray-200 overflow-hidden">
+                      {[['local', 'Local'], ['USD', 'USD']].map(([v, l]) => (
+                        <button key={v} type="button" onClick={() => setModal({ ...modal, moneda: v })}
+                          className={`px-2.5 py-0.5 text-[10px] font-semibold ${(modal.moneda || 'local') === v ? 'text-white' : 'text-gray-500'}`}
+                          style={(modal.moneda || 'local') === v ? { background: '#6C5CE7' } : {}}>{l}</button>
+                      ))}
+                    </div>
+                  </div>
+                  <NumericInput className="input-base" value={modal.base_cost || 0} onChange={v => setModal({ ...modal, base_cost: v })} />
+                </div>
                 <div><label className="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
                   <select className="input-base" value={inlineCat ? '__new__' : (modal.category_id || '')} onChange={e => {
                     if (e.target.value === '__new__') { setInlineCat({ name: '', margen_sugerido: 50 }); return }
@@ -528,7 +539,7 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
               )}
               <div><label className="block text-sm font-semibold text-gray-600 mb-2">Tiempos de planchado (seg/unidad)</label>
                 <div className="grid grid-cols-3 gap-2">
-                  {[['time_subli', 'Subli', '#6C5CE7'], ['time_dtf', 'DTF Textil', '#E17055'], ['time_vinyl', 'Vinilo', '#E84393']].map(([k, l, c]) => (
+                  {[['time_subli', 'Subli', '#6C5CE7'], ['time_dtf', 'DTF Textil', '#E17055'], ['time_vinyl', 'Vinilo Textil', '#E84393']].map(([k, l, c]) => (
                     <div key={k}><label className="block text-xs font-medium mb-1" style={{ color: c as string }}>{l as string}</label>
                       <NumericInput className="input-base text-center" value={(modal as Record<string, number>)[k as string] || 0} onChange={v => setModal({ ...modal, [k as string]: v })} /></div>
                   ))}

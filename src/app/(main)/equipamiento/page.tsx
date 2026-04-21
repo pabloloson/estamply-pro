@@ -291,8 +291,19 @@ export default function EquipamientoPage() {
               <div className="pt-4 border-t border-gray-100">
                 <p className="text-[12px] font-medium text-gray-400 uppercase tracking-wider mb-3">Costo y amortización</p>
                 <div className="grid grid-cols-2 gap-3">
-                  <div><label className="block text-sm font-medium text-gray-700 mb-1">Valor de compra ($) *</label>
-                    <NumericInput className="input-base" value={modal.cost || 0} onChange={v => setModal({ ...modal, cost: v })} /></div>
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-sm font-medium text-gray-700">Valor de compra ({(modal.moneda || 'local') === 'USD' ? 'USD' : '$'}) *</label>
+                      <div className="inline-flex rounded-lg border border-gray-200 overflow-hidden">
+                        {[['local', 'Local'], ['USD', 'USD']].map(([v, l]) => (
+                          <button key={v} type="button" onClick={() => setModal({ ...modal, moneda: v })}
+                            className={`px-2.5 py-0.5 text-[10px] font-semibold ${(modal.moneda || 'local') === v ? 'text-white' : 'text-gray-500'}`}
+                            style={(modal.moneda || 'local') === v ? { background: '#6C5CE7' } : {}}>{l}</button>
+                        ))}
+                      </div>
+                    </div>
+                    <NumericInput className="input-base" value={modal.cost || 0} onChange={v => setModal({ ...modal, cost: v })} />
+                  </div>
                   <div><label className="block text-sm font-medium text-gray-700 mb-1">Vida útil (usos) *</label>
                     <NumericInput className="input-base" min={1} value={modal.lifespan_uses || 10000} onChange={v => setModal({ ...modal, lifespan_uses: v })} />
                     <p className="text-[10px] text-gray-400 mt-0.5">Ej: 10 usos/día × 300 días/año × 3 años = 9.000 usos</p></div>
