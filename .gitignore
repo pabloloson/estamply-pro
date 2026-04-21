@@ -65,3 +65,4 @@ supabase/.branches
 supabase/.temp
 
 /src/generated/prisma
+tsconfig.tsbuildinfo
