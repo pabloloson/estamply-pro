@@ -294,10 +294,10 @@ export default function EquipamientoPage() {
                   <div>
                     <div className="flex items-center justify-between mb-1">
                       <label className="text-sm font-medium text-gray-700">Valor de compra ({(modal.moneda || 'local') === 'USD' ? 'USD' : '$'}) *</label>
-                      <div className="inline-flex rounded-lg border border-gray-200 overflow-hidden">
+                      <div className="inline-flex rounded-full p-0.5" style={{ background: '#F1F1F1' }}>
                         {[['local', 'Local'], ['USD', 'USD']].map(([v, l]) => (
                           <button key={v} type="button" onClick={() => setModal({ ...modal, moneda: v })}
-                            className={`px-2.5 py-0.5 text-[10px] font-semibold ${(modal.moneda || 'local') === v ? 'text-white' : 'text-gray-500'}`}
+                            className={`px-3 py-0.5 rounded-full text-[10px] font-semibold transition-all ${(modal.moneda || 'local') === v ? 'text-white shadow-sm' : 'text-gray-500'}`}
                             style={(modal.moneda || 'local') === v ? { background: '#6C5CE7' } : {}}>{l}</button>
                         ))}
                       </div>
