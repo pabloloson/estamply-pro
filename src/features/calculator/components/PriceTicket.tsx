@@ -38,7 +38,7 @@ export function PriceTicket({ result, technique, quantity, designWidth, designHe
           background: technique === 'subli' ? 'rgba(108,92,231,0.1)' : technique === 'dtf' ? 'rgba(225,112,85,0.1)' : 'rgba(232,67,147,0.1)',
           color: technique === 'subli' ? '#6C5CE7' : technique === 'dtf' ? '#E17055' : '#E84393',
         }}>
-          {technique === 'subli' ? 'Sublimación' : technique === 'dtf' ? 'DTF' : 'Vinilo'} × {quantity}
+          {{ subli: 'Sublimación', dtf: 'DTF Textil', dtf_uv: 'DTF UV', vinyl: 'Vinilo Textil', vinyl_adhesivo: 'V. Autoadhesivo', serigrafia: 'Serigrafía' }[technique] || technique} × {quantity}
         </span>
       </div>
 

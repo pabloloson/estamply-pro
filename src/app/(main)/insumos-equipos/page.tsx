@@ -117,7 +117,7 @@ export default function InsumosEquiposPage() {
       {tab === 'Insumos' && (
         <div className="space-y-4">
           <div className="flex rounded-full p-1 gap-1 w-fit" style={{ background: '#F1F1F1' }}>
-            {([['subli', 'Sublimación', '#6C5CE7'], ['dtf', 'DTF', '#E17055'], ['vinyl', 'Vinilo', '#E84393']] as const).map(([id, label, color]) => (
+            {([['subli', 'Sublimación', '#6C5CE7'], ['dtf', 'DTF Textil', '#E17055'], ['dtf_uv', 'DTF UV', '#00B894'], ['vinyl', 'Vinilo Textil', '#E84393'], ['vinyl_adhesivo', 'V. Autoadhesivo', '#D63384'], ['serigrafia', 'Serigrafía', '#FDCB6E']] as const).map(([id, label, color]) => (
               <button key={id} onClick={() => setInsumoTab(id)} className="px-4 py-1.5 rounded-full text-xs font-semibold transition-all"
                 style={insumoTab === id ? { background: '#fff', color, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' } : { color: '#888' }}>{label}</button>
             ))}

@@ -1,4 +1,4 @@
-export type Technique = 'subli' | 'dtf' | 'vinyl'
+export type Technique = 'subli' | 'dtf' | 'dtf_uv' | 'vinyl' | 'vinyl_adhesivo' | 'serigrafia'
 
 export interface Product {
   id: string

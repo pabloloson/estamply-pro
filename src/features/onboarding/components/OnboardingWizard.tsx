@@ -139,7 +139,8 @@ const TECHNIQUES = [
   { slug: 'subli', label: 'Sublimación', color: '#6C5CE7' },
   { slug: 'dtf', label: 'DTF Textil', color: '#E17055' },
   { slug: 'dtf_uv', label: 'DTF UV', color: '#00B894' },
-  { slug: 'vinyl', label: 'Vinilo', color: '#E84393' },
+  { slug: 'vinyl', label: 'Vinilo Textil', color: '#E84393' },
+  { slug: 'vinyl_adhesivo', label: 'V. Autoadhesivo', color: '#D63384' },
   { slug: 'serigrafia', label: 'Serigrafía', color: '#FDCB6E' },
 ]
 
@@ -255,7 +256,8 @@ export default function OnboardingWizard() {
         subli: { nombre: 'Sublimación', color: '#6C5CE7' },
         dtf: { nombre: 'DTF Textil', color: '#E17055' },
         dtf_uv: { nombre: 'DTF UV', color: '#00B894' },
-        vinyl: { nombre: 'Vinilo', color: '#E84393' },
+        vinyl: { nombre: 'Vinilo Textil', color: '#E84393' },
+        vinyl_adhesivo: { nombre: 'Vinilo Autoadhesivo', color: '#D63384' },
         serigrafia: { nombre: 'Serigrafía', color: '#FDCB6E' },
       }
       for (const [tSlug, def] of Object.entries(TECHNIQUE_DEFAULTS)) {

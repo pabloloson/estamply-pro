@@ -134,7 +134,7 @@ export default function InventarioPage() {
               <div>
                 <label className="block text-sm font-semibold text-gray-600 mb-2">Tiempos de planchado (segundos/unidad)</label>
                 <div className="grid grid-cols-3 gap-2">
-                  {[['time_subli', 'Sublimación', '#6C5CE7'], ['time_dtf', 'DTF', '#E17055'], ['time_vinyl', 'Vinilo', '#E84393']].map(([key, label, color]) => (
+                  {[['time_subli', 'Sublimación', '#6C5CE7'], ['time_dtf', 'DTF Textil', '#E17055'], ['time_vinyl', 'Vinilo Textil', '#E84393']].map(([key, label, color]) => (
                     <div key={key}><label className="block text-xs font-medium mb-1" style={{ color: color as string }}>{label as string}</label>
                       <input type="number" min={0} step={1} value={(modal as Record<string, number>)[key as string] || 0} onChange={e => setModal({ ...modal, [key as string]: parseInt(e.target.value) || 0 })} className="input-base text-center" /></div>
                   ))}

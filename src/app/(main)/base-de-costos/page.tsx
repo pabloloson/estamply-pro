@@ -294,7 +294,7 @@ export default function BaseDeCostosPage() {
         <div className="space-y-4">
           {/* Sub-tabs */}
           <div className="flex rounded-full p-1 gap-1 w-fit" style={{ background: '#F1F1F1' }}>
-            {([['subli', 'Sublimación', '#6C5CE7'], ['dtf', 'DTF', '#E17055'], ['vinyl', 'Vinilo', '#E84393']] as const).map(([id, label, color]) => (
+            {([['subli', 'Sublimación', '#6C5CE7'], ['dtf', 'DTF Textil', '#E17055'], ['dtf_uv', 'DTF UV', '#00B894'], ['vinyl', 'Vinilo Textil', '#E84393'], ['vinyl_adhesivo', 'V. Autoadhesivo', '#D63384'], ['serigrafia', 'Serigrafía', '#FDCB6E']] as const).map(([id, label, color]) => (
               <button
                 key={id}
                 onClick={() => setInsumoTab(id)}
@@ -663,7 +663,7 @@ export default function BaseDeCostosPage() {
               <div>
                 <label className="block text-sm font-semibold text-gray-600 mb-2">Tiempos de producción (min/unidad)</label>
                 <div className="grid grid-cols-3 gap-2">
-                  {[['time_subli', 'Sublimación', '#6C5CE7'], ['time_dtf', 'DTF', '#E17055'], ['time_vinyl', 'Vinilo', '#E84393']].map(([key, label, color]) => (
+                  {[['time_subli', 'Sublimación', '#6C5CE7'], ['time_dtf', 'DTF', '#E17055'], ['time_vinyl', 'Vinilo Textil', '#E84393']].map(([key, label, color]) => (
                     <div key={key}>
                       <label className="block text-xs font-medium mb-1" style={{ color }}>{label}</label>
                       <input type="number" min={0} step={0.5} value={(modalProduct as Record<string, number>)[key] || 0} onChange={e => setModalProduct({ ...modalProduct, [key]: parseFloat(e.target.value) || 0 })} className="input-base text-center" />

@@ -42,9 +42,8 @@ const TECHNIQUE_COLORS: Record<string, string> = {
 }
 
 const TECHNIQUE_LABELS: Record<string, string> = {
-  subli: 'Sublimación',
-  dtf: 'DTF',
-  vinyl: 'Vinilo',
+  subli: 'Sublimación', dtf: 'DTF Textil', dtf_uv: 'DTF UV',
+  vinyl: 'Vinilo Textil', vinyl_adhesivo: 'V. Autoadhesivo', serigrafia: 'Serigrafía',
 }
 
 function fmt(n: number) {

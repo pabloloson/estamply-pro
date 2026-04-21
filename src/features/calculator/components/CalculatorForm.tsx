@@ -4,8 +4,11 @@ import type { Technique, Product } from '../types'
 
 const techniques: { id: Technique; label: string; color: string }[] = [
   { id: 'subli', label: 'Sublimación', color: '#6C5CE7' },
-  { id: 'dtf', label: 'DTF', color: '#E17055' },
-  { id: 'vinyl', label: 'Vinilo', color: '#E84393' },
+  { id: 'dtf', label: 'DTF Textil', color: '#E17055' },
+  { id: 'dtf_uv', label: 'DTF UV', color: '#00B894' },
+  { id: 'vinyl', label: 'Vinilo Textil', color: '#E84393' },
+  { id: 'vinyl_adhesivo', label: 'V. Autoadhesivo', color: '#D63384' },
+  { id: 'serigrafia', label: 'Serigrafía', color: '#FDCB6E' },
 ]
 
 interface CalculatorFormProps {
