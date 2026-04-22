@@ -1,10 +1,8 @@
-// @ts-nocheck
 'use client'
 
 export const dynamic = 'force-dynamic'
-import { useState, useEffect, useRef } from 'react'
-import { createClient } from '@/lib/db/client'
-import { Save, Loader2, Check, Upload, X, UserCircle, Lock, CreditCard, ArrowRight } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Save, Loader2, Check, UserCircle, Lock, CreditCard, ArrowRight } from 'lucide-react'
 import { useTranslations } from '@/shared/hooks/useTranslations'
 
 const PLAN_NAMES: Record<string, { label: string; price: string }> = {
@@ -14,17 +12,13 @@ const PLAN_NAMES: Record<string, { label: string; price: string }> = {
 }
 
 export default function CuentaPage() {
-  const supabase = createClient()
   const t = useTranslations('account')
-  const avatarRef = useRef<HTMLInputElement>(null)
 
   const [loading, setLoading] = useState(true)
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [userId, setUserId] = useState<string | null>(null)
   const [email, setEmail] = useState('')
   const [fullName, setFullName] = useState('')
-  const [avatarUrl, setAvatarUrl] = useState('')
-  const [uploadingAvatar, setUploadingAvatar] = useState(false)
 
   // Password change
   const [showPwChange, setShowPwChange] = useState(false)
@@ -42,53 +36,39 @@ export default function CuentaPage() {
 
   useEffect(() => {
     async function load() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-      setUserId(user.id)
-      setEmail(user.email || '')
-      const { data } = await supabase
-        .from('profiles')
-        .select('full_name, plan, plan_status, trial_ends_at')
-        .eq('id', user.id)
-        .single()
-      if (data) {
-        setFullName(data.full_name || '')
-        setPlan(data.plan || '')
-        setPlanStatus(data.plan_status || 'trial')
-        setTrialEndsAt(data.trial_ends_at || null)
-      }
-      // Check for avatar
-      const { data: files } = await supabase.storage.from('logos').list(user.id, { search: 'avatar' })
-      if (files && files.length > 0) {
-        const { data: { publicUrl } } = supabase.storage.from('logos').getPublicUrl(`${user.id}/${files[0].name}`)
-        setAvatarUrl(publicUrl)
-      }
+      try {
+        const meRes = await fetch('/api/me')
+        const me = await meRes.json()
+        if (!me.userId) return
+        setUserId(me.ownerId)
+        setEmail(me.email || '')
+
+        const profRes = await fetch(`/api/data?table=profiles&single=true`)
+        const prof = profRes.ok ? await profRes.json() : null
+        if (prof) {
+          setFullName(prof.full_name || '')
+          setPlan(prof.plan || '')
+          setPlanStatus(prof.plan_status || 'trial')
+          setTrialEndsAt(prof.trial_ends_at || null)
+        }
+      } catch { /* ignore */ }
       setLoading(false)
     }
     load()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-
-  async function uploadAvatar(file: File) {
-    if (!userId) return
-    setUploadingAvatar(true)
-    const ext = file.name.split('.').pop()
-    const path = `${userId}/avatar.${ext}`
-    const { error } = await supabase.storage.from('logos').upload(path, file, { upsert: true })
-    if (!error) {
-      const { data: { publicUrl } } = supabase.storage.from('logos').getPublicUrl(path)
-      setAvatarUrl(`${publicUrl}?t=${Date.now()}`)
-    }
-    setUploadingAvatar(false)
-  }
 
   async function save() {
     if (!userId) return
     setSaveState('saving')
-    const { error } = await supabase.from('profiles').upsert({ id: userId, full_name: fullName })
-    if (error) { setSaveState('error'); return }
-    setSaveState('saved')
-    setTimeout(() => setSaveState(s => s === 'saved' ? 'idle' : s), 2000)
+    try {
+      const res = await fetch('/api/data', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ table: 'profiles', id: userId, data: { full_name: fullName } }),
+      })
+      if (res.ok) { setSaveState('saved'); setTimeout(() => setSaveState(s => s === 'saved' ? 'idle' : s), 2000) }
+      else setSaveState('error')
+    } catch { setSaveState('error') }
   }
 
   async function changePassword() {
@@ -96,17 +76,19 @@ export default function CuentaPage() {
     if (newPassword.length < 6) { setPwError(t('pwMinLength')); return }
     if (newPassword !== confirmPassword) { setPwError(t('pwMismatch')); return }
     setPwState('saving')
-    // Verify current password first
-    const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password: currentPassword })
-    if (signInErr) { setPwError(t('pwCurrentWrong')); setPwState('error'); return }
-    const { error } = await supabase.auth.updateUser({ password: newPassword })
-    if (error) { setPwError(error.message); setPwState('error'); return }
-    setPwState('saved')
-    setCurrentPassword('')
-    setNewPassword('')
-    setConfirmPassword('')
-    setShowPwChange(false)
-    setTimeout(() => setPwState(s => s === 'saved' ? 'idle' : s), 3000)
+    try {
+      const res = await fetch('/api/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setPwError(data.error || 'Error'); setPwState('error'); return }
+      setPwState('saved')
+      setCurrentPassword(''); setNewPassword(''); setConfirmPassword('')
+      setShowPwChange(false)
+      setTimeout(() => setPwState(s => s === 'saved' ? 'idle' : s), 3000)
+    } catch { setPwError('Error de conexión'); setPwState('error') }
   }
 
   async function handleCheckout(lookupKey: string) {
@@ -161,30 +143,10 @@ export default function CuentaPage() {
           {t('personalData')}
         </h2>
 
-        {/* Avatar */}
+        {/* Avatar placeholder */}
         <div className="flex items-center gap-4 mb-5">
-          {avatarUrl ? (
-            <div className="relative">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={avatarUrl} alt="Avatar" className="w-16 h-16 rounded-full object-cover border border-gray-200" />
-              <button onClick={() => setAvatarUrl('')}
-                className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-100 text-red-500 flex items-center justify-center hover:bg-red-200">
-                <X size={10} />
-              </button>
-            </div>
-          ) : (
-            <div className="w-16 h-16 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center bg-gray-50">
-              <UserCircle size={24} className="text-gray-300" />
-            </div>
-          )}
-          <div>
-            <input ref={avatarRef} type="file" accept="image/*" className="hidden"
-              onChange={e => e.target.files?.[0] && uploadAvatar(e.target.files[0])} />
-            <button onClick={() => avatarRef.current?.click()} disabled={uploadingAvatar}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-semibold border border-gray-200 text-gray-700 hover:bg-gray-50">
-              {uploadingAvatar ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
-              {uploadingAvatar ? t('uploading') : t('uploadAvatar')}
-            </button>
+          <div className="w-16 h-16 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center bg-gray-50">
+            <UserCircle size={24} className="text-gray-300" />
           </div>
         </div>
 
@@ -263,37 +225,23 @@ export default function CuentaPage() {
           {t('planBilling')}
         </h2>
 
-        {/* Plan row */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
             <span className="text-sm text-gray-500">{t('currentPlan')}</span>
             {planLabel && planStatus !== 'trial' ? (
-              <span className="px-3 py-1 rounded-full text-sm font-bold text-white" style={{ background: '#6C5CE7' }}>
-                {planLabel}
-              </span>
+              <span className="px-3 py-1 rounded-full text-sm font-bold text-white" style={{ background: '#6C5CE7' }}>{planLabel}</span>
             ) : (
               <span className="text-sm font-medium text-gray-400">—</span>
             )}
           </div>
-          {planPrice && planStatus !== 'trial' && (
-            <span className="text-sm font-semibold text-gray-700">{planPrice}</span>
-          )}
+          {planPrice && planStatus !== 'trial' && <span className="text-sm font-semibold text-gray-700">{planPrice}</span>}
         </div>
 
-        {/* Status row */}
         <div className="flex items-center gap-2 mb-4">
           <span className="text-sm text-gray-500">{t('status')}</span>
-          {planStatus === 'trial' && (
-            <span className="text-sm font-medium text-amber-600">
-              {t('trial')} {trialEndsAt && <>· {t('daysLeft', { days: trialDaysLeft() })}</>}
-            </span>
-          )}
-          {planStatus === 'active' && (
-            <span className="text-sm font-medium text-green-600">{t('active')}</span>
-          )}
-          {(planStatus === 'expired' || planStatus === 'cancelled') && (
-            <span className="text-sm font-medium text-red-600">{planStatus === 'expired' ? t('expired') : t('cancelled')}</span>
-          )}
+          {planStatus === 'trial' && <span className="text-sm font-medium text-amber-600">{t('trial')} {trialEndsAt && <>· {t('daysLeft', { days: trialDaysLeft() })}</>}</span>}
+          {planStatus === 'active' && <span className="text-sm font-medium text-green-600">{t('active')}</span>}
+          {(planStatus === 'expired' || planStatus === 'cancelled') && <span className="text-sm font-medium text-red-600">{planStatus === 'expired' ? t('expired') : t('cancelled')}</span>}
         </div>
 
         <div className="border-t border-gray-100 pt-4">

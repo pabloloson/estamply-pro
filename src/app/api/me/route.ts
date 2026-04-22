@@ -23,6 +23,7 @@ export async function GET() {
   return NextResponse.json({
     userId,
     ownerId,
+    email: session.user.email || '',
     isOwner: !member || member.ownerId === userId,
     permisos: member?.permisos || null,
     plan: profile?.plan || 'pro',
