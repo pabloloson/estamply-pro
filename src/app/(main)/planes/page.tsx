@@ -2,9 +2,11 @@
 'use client'
 
 export const dynamic = 'force-dynamic'
-import { useState, useEffect } from 'react'
-import { Check, Loader2, Sparkles } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { Check, Loader2, Sparkles, X } from 'lucide-react'
 import { useTranslations } from '@/shared/hooks/useTranslations'
+import { StripeProvider } from '@/shared/components/StripeProvider'
+import StripeCheckoutForm from '@/shared/components/StripeCheckoutForm'
 
 type Billing = 'mensual' | 'anual'
 
@@ -48,7 +50,7 @@ const PLANS = [
       'Multi-sucursal (próximamente)',
     ],
   },
-] as const
+]
 
 const PLAN_LABELS: Record<string, string> = {
   emprendedor: 'Emprendedor',
@@ -63,6 +65,13 @@ export default function PlanesPage() {
   const [planStatus, setPlanStatus] = useState<string>('trial')
   const [redirecting, setRedirecting] = useState<string | null>(null)
 
+  // Checkout modal state
+  const [checkoutPlan, setCheckoutPlan] = useState<typeof PLANS[0] | null>(null)
+  const [clientSecret, setClientSecret] = useState<string | null>(null)
+  const [checkoutLoading, setCheckoutLoading] = useState(false)
+  const [checkoutError, setCheckoutError] = useState<string | null>(null)
+  const [successBanner, setSuccessBanner] = useState(false)
+
   useEffect(() => {
     fetch('/api/me')
       .then(r => r.json())
@@ -73,11 +82,85 @@ export default function PlanesPage() {
       .catch(() => {})
   }, [])
 
-  function handleChoose(planKey: string) {
-    const lookupKey = `${planKey}_${billing}`
-    setRedirecting(lookupKey)
-    window.location.href = `/api/stripe-checkout?plan=${lookupKey}`
+  // Detect ?status=success from 3D Secure redirect
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('status') === 'success') {
+      setSuccessBanner(true)
+      // Clean URL
+      window.history.replaceState({}, '', '/planes')
+      // Reload user data
+      fetch('/api/me')
+        .then(r => r.json())
+        .then(data => {
+          if (data.plan) setCurrentPlan(data.plan)
+          if (data.planStatus) setPlanStatus(data.planStatus)
+        })
+        .catch(() => {})
+    }
+  }, [])
+
+  async function openCheckout(plan: typeof PLANS[0]) {
+    setCheckoutPlan(plan)
+    setCheckoutLoading(true)
+    setCheckoutError(null)
+    setClientSecret(null)
+
+    const lookupKey = `${plan.key}_${billing}`
+    try {
+      const res = await fetch('/api/stripe-subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planLookupKey: lookupKey }),
+      })
+      const data = await res.json()
+
+      if (!res.ok) {
+        setCheckoutError(data.error || 'Error al crear la suscripción')
+        setCheckoutLoading(false)
+        return
+      }
+
+      if (data.status === 'trialing') {
+        // Trial activated without payment — success
+        setCheckoutPlan(null)
+        setSuccessBanner(true)
+        fetch('/api/me')
+          .then(r => r.json())
+          .then(d => {
+            if (d.plan) setCurrentPlan(d.plan)
+            if (d.planStatus) setPlanStatus(d.planStatus)
+          })
+          .catch(() => {})
+        setCheckoutLoading(false)
+        return
+      }
+
+      setClientSecret(data.clientSecret)
+    } catch {
+      setCheckoutError('Error de conexión. Intentá de nuevo.')
+    }
+    setCheckoutLoading(false)
   }
+
+  function closeCheckout() {
+    setCheckoutPlan(null)
+    setClientSecret(null)
+    setCheckoutError(null)
+  }
+
+  const handleSuccess = useCallback(() => {
+    setCheckoutPlan(null)
+    setClientSecret(null)
+    setSuccessBanner(true)
+    fetch('/api/me')
+      .then(r => r.json())
+      .then(data => {
+        if (data.plan) setCurrentPlan(data.plan)
+        if (data.planStatus) setPlanStatus(data.planStatus)
+      })
+      .catch(() => {})
+  }, [])
 
   function handlePortal() {
     setRedirecting('portal')
@@ -88,6 +171,18 @@ export default function PlanesPage() {
 
   return (
     <div className="max-w-5xl mx-auto">
+      {/* Success banner */}
+      {successBanner && (
+        <div className="mb-6 flex items-center justify-between p-4 rounded-xl bg-teal-50 border border-teal-200">
+          <p className="text-sm font-medium text-teal-800">
+            {t('successMessage')}
+          </p>
+          <button onClick={() => setSuccessBanner(false)} className="p-1 rounded hover:bg-teal-100">
+            <X size={14} className="text-teal-600" />
+          </button>
+        </div>
+      )}
+
       <div className="text-center mb-8">
         <h1 className="text-2xl font-bold text-gray-900 mb-2">{t('title')}</h1>
         <p className="text-sm text-gray-500 max-w-md mx-auto">{t('subtitle')}</p>
@@ -123,7 +218,7 @@ export default function PlanesPage() {
         {PLANS.map(plan => {
           const price = billing === 'mensual' ? plan.monthly : plan.yearly
           const isCurrent = isActive && currentPlan === plan.key
-          const lookupKey = `${plan.key}_${billing}`
+          const priceLabel = `$${price} USD/${billing === 'mensual' ? t('mo') : t('yr')}`
 
           return (
             <div
@@ -190,21 +285,14 @@ export default function PlanesPage() {
                 </div>
               ) : (
                 <button
-                  onClick={() => handleChoose(plan.key)}
-                  disabled={!!redirecting}
+                  onClick={() => openCheckout(plan)}
+                  disabled={!!checkoutPlan}
                   className={`w-full py-2.5 rounded-xl text-sm font-bold text-white transition-opacity disabled:opacity-50 ${
                     plan.popular ? '' : 'opacity-90 hover:opacity-100'
                   }`}
                   style={{ background: '#0F766E' }}
                 >
-                  {redirecting === lookupKey ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <Loader2 size={14} className="animate-spin" />
-                      Redirigiendo...
-                    </span>
-                  ) : (
-                    t('choosePlan')
-                  )}
+                  {isActive ? t('changePlan') : t('choosePlan')}
                 </button>
               )}
             </div>
@@ -216,6 +304,60 @@ export default function PlanesPage() {
       <p className="text-center text-xs text-gray-400 mt-6">
         {t('footer')}
       </p>
+
+      {/* ── Checkout Modal ── */}
+      {checkoutPlan && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-black/40" onClick={closeCheckout} />
+
+          {/* Modal */}
+          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={closeCheckout}
+              className="absolute top-4 right-4 p-1 rounded-lg hover:bg-gray-100"
+            >
+              <X size={18} className="text-gray-400" />
+            </button>
+
+            <h2 className="text-lg font-bold text-gray-900 mb-1">
+              {t('subscribeTo')} {PLAN_LABELS[checkoutPlan.key]}
+            </h2>
+            <p className="text-sm text-gray-500 mb-5">
+              {t('completePayment')}
+            </p>
+
+            {checkoutLoading && !clientSecret && (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 size={24} className="animate-spin text-teal-600" />
+              </div>
+            )}
+
+            {checkoutError && (
+              <div className="p-4 rounded-xl bg-red-50 border border-red-100">
+                <p className="text-sm text-red-700">{checkoutError}</p>
+                <button
+                  onClick={() => openCheckout(checkoutPlan)}
+                  className="mt-2 text-sm font-semibold text-red-600 hover:underline"
+                >
+                  Reintentar
+                </button>
+              </div>
+            )}
+
+            {clientSecret && (
+              <StripeProvider clientSecret={clientSecret}>
+                <StripeCheckoutForm
+                  planName={PLAN_LABELS[checkoutPlan.key]}
+                  price={`$${billing === 'mensual' ? checkoutPlan.monthly : checkoutPlan.yearly} USD/${billing === 'mensual' ? t('mo') : t('yr')}`}
+                  onSuccess={handleSuccess}
+                  onCancel={closeCheckout}
+                />
+              </StripeProvider>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

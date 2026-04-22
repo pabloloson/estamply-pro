@@ -1,3 +1,5 @@
+// DEPRECATED: Replaced by /api/stripe-subscribe + Stripe Elements embedded checkout.
+// Kept for backwards compat — can be removed once all clients use the new flow.
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
 import { stripe } from '@/lib/stripe'
