@@ -26,23 +26,28 @@ export async function POST(req: NextRequest) {
     if (!profile) {
       return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
     }
-    console.log('[stripe-subscribe] profile found:', {
+    console.log('[stripe-subscribe] profile:', {
       stripeCustomerId: profile.stripeCustomerId,
       stripeSubscriptionId: profile.stripeSubscriptionId,
       planStatus: profile.planStatus,
     })
 
-    // If user already has an active subscription, cancel the old one first
-    if (profile.stripeSubscriptionId) {
+    // Cancel ALL incomplete/active subscriptions for this customer to avoid duplicates
+    if (profile.stripeCustomerId) {
       try {
-        const existingSub = await stripe.subscriptions.retrieve(profile.stripeSubscriptionId)
-        if (existingSub.status === 'active' || existingSub.status === 'trialing' || existingSub.status === 'past_due') {
-          console.log('[stripe-subscribe] cancelling existing subscription:', profile.stripeSubscriptionId)
-          await stripe.subscriptions.cancel(profile.stripeSubscriptionId)
+        const existingSubs = await stripe.subscriptions.list({
+          customer: profile.stripeCustomerId,
+          status: 'all',
+          limit: 10,
+        })
+        for (const sub of existingSubs.data) {
+          if (['active', 'trialing', 'past_due', 'incomplete'].includes(sub.status)) {
+            console.log('[stripe-subscribe] cancelling sub:', sub.id, sub.status)
+            await stripe.subscriptions.cancel(sub.id)
+          }
         }
       } catch (e: unknown) {
-        // Subscription may not exist in Stripe anymore, ignore
-        console.log('[stripe-subscribe] could not cancel old sub:', (e as Error)?.message)
+        console.log('[stripe-subscribe] error cleaning subs:', (e as Error)?.message)
       }
     }
 
@@ -58,71 +63,86 @@ export async function POST(req: NextRequest) {
         where: { userId: session.user.id },
         data: { stripeCustomerId: customerId },
       })
-      console.log('[stripe-subscribe] created Stripe customer:', customerId)
+      console.log('[stripe-subscribe] created customer:', customerId)
     }
 
-    // Look up the price by lookup_key
+    // Look up the price
     const prices = await stripe.prices.list({ lookup_keys: [planLookupKey], active: true, limit: 1 })
-    console.log('[stripe-subscribe] prices found:', prices.data.length, prices.data.map(p => ({ id: p.id, lookup_key: p.lookup_key })))
+    console.log('[stripe-subscribe] prices:', prices.data.map(p => ({ id: p.id, key: p.lookup_key, amount: p.unit_amount })))
     if (!prices.data.length) {
-      return NextResponse.json({ error: `Price not found for lookup_key: ${planLookupKey}` }, { status: 404 })
+      return NextResponse.json({ error: `Price not found for: ${planLookupKey}` }, { status: 404 })
     }
 
-    // Create subscription with immediate payment (no trial — managed internally)
-    console.log('[stripe-subscribe] creating subscription for customer:', customerId, 'price:', prices.data[0].id)
+    const priceId = prices.data[0].id
+
+    // Create subscription — DO NOT use expand, retrieve invoice separately
+    console.log('[stripe-subscribe] creating sub, customer:', customerId, 'price:', priceId)
     const subscription = await stripe.subscriptions.create({
       customer: customerId,
-      items: [{ price: prices.data[0].id }],
+      items: [{ price: priceId }],
       payment_behavior: 'default_incomplete',
       payment_settings: { save_default_payment_method: 'on_subscription' },
-      expand: ['latest_invoice.payment_intent'],
       metadata: { userId: session.user.id },
     })
-    console.log('[stripe-subscribe] subscription created:', { id: subscription.id, status: subscription.status })
+    console.log('[stripe-subscribe] sub created:', subscription.id, 'status:', subscription.status)
 
-    // Get the client secret from the subscription's latest invoice
-    const invoice = subscription.latest_invoice as any
+    // Get the invoice ID from the subscription
+    const invoiceId = typeof subscription.latest_invoice === 'string'
+      ? subscription.latest_invoice
+      : subscription.latest_invoice?.id
+    console.log('[stripe-subscribe] invoiceId:', invoiceId)
 
-    if (!invoice) {
-      console.error('[stripe-subscribe] no invoice on subscription:', subscription.id)
+    if (!invoiceId) {
       return NextResponse.json({ error: 'No invoice on subscription' }, { status: 500 })
     }
 
-    console.log('[stripe-subscribe] invoice details:', {
-      invoiceId: invoice.id,
-      paymentIntentType: typeof invoice.payment_intent,
-      paymentIntentValue: invoice.payment_intent,
+    // Retrieve the invoice with payment_intent expanded
+    const invoice = await stripe.invoices.retrieve(invoiceId, {
+      expand: ['payment_intent'],
     })
+    console.log('[stripe-subscribe] invoice:', invoice.id, 'status:', invoice.status, 'amount_due:', invoice.amount_due)
 
-    // payment_intent can be a string (ID) if not properly expanded, or an object
+    // Get client_secret from the expanded payment_intent
     let clientSecret: string | null = null
+    const pi = (invoice as any).payment_intent
 
-    if (invoice.payment_intent && typeof invoice.payment_intent === 'object') {
-      clientSecret = invoice.payment_intent.client_secret
-    } else if (typeof invoice.payment_intent === 'string') {
-      // If it came as a string ID, retrieve the full PaymentIntent
-      const pi = await stripe.paymentIntents.retrieve(invoice.payment_intent)
+    console.log('[stripe-subscribe] payment_intent:', typeof pi, pi ? (typeof pi === 'string' ? pi : pi.id) : 'null')
+
+    if (pi && typeof pi === 'object' && pi.client_secret) {
       clientSecret = pi.client_secret
+    } else if (typeof pi === 'string') {
+      // Fallback: retrieve PaymentIntent directly
+      console.log('[stripe-subscribe] retrieving PI directly:', pi)
+      const fullPi = await stripe.paymentIntents.retrieve(pi)
+      clientSecret = fullPi.client_secret
     }
 
     if (!clientSecret) {
-      console.error('[stripe-subscribe] could not get client_secret:', {
-        invoiceId: invoice.id,
-        paymentIntent: invoice.payment_intent,
-      })
-      return NextResponse.json({ error: 'No payment intent' }, { status: 500 })
+      // Last resort: check if invoice has no amount due (free plan?)
+      console.error('[stripe-subscribe] NO client_secret. Full invoice dump:', JSON.stringify({
+        id: invoice.id,
+        status: invoice.status,
+        amount_due: invoice.amount_due,
+        amount_paid: invoice.amount_paid,
+        payment_intent: pi,
+        subscription: (invoice as any).subscription,
+      }))
+      return NextResponse.json({
+        error: 'Could not get payment secret. Check server logs for details.',
+      }, { status: 500 })
     }
 
-    console.log('[stripe-subscribe] success, returning clientSecret for subscription:', subscription.id)
+    console.log('[stripe-subscribe] SUCCESS, returning clientSecret')
     return NextResponse.json({
       clientSecret,
       subscriptionId: subscription.id,
     })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error)
-    const stack = error instanceof Error ? error.stack : undefined
-    console.error('[stripe-subscribe] CATCH error:', message)
-    if (stack) console.error('[stripe-subscribe] stack:', stack)
+    console.error('[stripe-subscribe] ERROR:', message)
+    if (error instanceof Error && error.stack) {
+      console.error('[stripe-subscribe] stack:', error.stack)
+    }
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }
