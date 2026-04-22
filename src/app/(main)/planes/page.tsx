@@ -12,6 +12,7 @@ const PLANS = [
     key: 'emprendedor',
     monthly: 9,
     yearly: 81,
+    popular: false,
     features: [
       'Cotizador (2 técnicas)',
       'Presupuestos',
@@ -38,6 +39,7 @@ const PLANS = [
     key: 'negocio',
     monthly: 29,
     yearly: 261,
+    popular: false,
     features: [
       'Todo de Pro',
       'Usuarios ilimitados',
