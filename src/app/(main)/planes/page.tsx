@@ -1,0 +1,218 @@
+'use client'
+
+export const dynamic = 'force-dynamic'
+import { useState, useEffect } from 'react'
+import { Check, Loader2, Sparkles } from 'lucide-react'
+import { useTranslations } from '@/shared/hooks/useTranslations'
+
+type Billing = 'mensual' | 'anual'
+
+const PLANS = [
+  {
+    key: 'emprendedor',
+    monthly: 9,
+    yearly: 81,
+    features: [
+      'Cotizador (2 técnicas)',
+      'Presupuestos',
+      'Pedidos',
+      'Clientes',
+      '1 usuario',
+    ],
+  },
+  {
+    key: 'pro',
+    monthly: 17,
+    yearly: 153,
+    popular: true,
+    features: [
+      'Todo de Emprendedor',
+      'Todas las técnicas',
+      'Catálogo web',
+      'Estadísticas',
+      'Promociones',
+      '3 usuarios',
+    ],
+  },
+  {
+    key: 'negocio',
+    monthly: 29,
+    yearly: 261,
+    features: [
+      'Todo de Pro',
+      'Usuarios ilimitados',
+      'Soporte prioritario',
+      'Multi-sucursal (próximamente)',
+    ],
+  },
+] as const
+
+const PLAN_LABELS: Record<string, string> = {
+  emprendedor: 'Emprendedor',
+  pro: 'Pro',
+  negocio: 'Negocio',
+}
+
+export default function PlanesPage() {
+  const t = useTranslations('plans')
+  const [billing, setBilling] = useState<Billing>('mensual')
+  const [currentPlan, setCurrentPlan] = useState<string | null>(null)
+  const [planStatus, setPlanStatus] = useState<string>('trial')
+  const [redirecting, setRedirecting] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetch('/api/me')
+      .then(r => r.json())
+      .then(data => {
+        if (data.plan) setCurrentPlan(data.plan)
+        if (data.planStatus) setPlanStatus(data.planStatus)
+      })
+      .catch(() => {})
+  }, [])
+
+  function handleChoose(planKey: string) {
+    const lookupKey = `${planKey}_${billing}`
+    setRedirecting(lookupKey)
+    window.location.href = `/api/stripe-checkout?plan=${lookupKey}`
+  }
+
+  function handlePortal() {
+    setRedirecting('portal')
+    window.location.href = '/api/stripe-portal'
+  }
+
+  const isActive = planStatus === 'active'
+
+  return (
+    <div className="max-w-5xl mx-auto">
+      <div className="text-center mb-8">
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">{t('title')}</h1>
+        <p className="text-sm text-gray-500 max-w-md mx-auto">{t('subtitle')}</p>
+      </div>
+
+      {/* Toggle mensual / anual */}
+      <div className="flex items-center justify-center gap-3 mb-8">
+        <span className={`text-sm font-medium ${billing === 'mensual' ? 'text-gray-900' : 'text-gray-400'}`}>
+          {t('monthly')}
+        </span>
+        <button
+          onClick={() => setBilling(b => b === 'mensual' ? 'anual' : 'mensual')}
+          className="relative w-12 h-6 rounded-full transition-colors"
+          style={{ background: billing === 'anual' ? '#0F766E' : '#D1D5DB' }}
+        >
+          <span
+            className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform"
+            style={{ transform: billing === 'anual' ? 'translateX(24px)' : 'translateX(0)' }}
+          />
+        </button>
+        <span className={`text-sm font-medium ${billing === 'anual' ? 'text-gray-900' : 'text-gray-400'}`}>
+          {t('yearly')}
+        </span>
+        {billing === 'anual' && (
+          <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-teal-50 text-teal-700">
+            {t('save3months')}
+          </span>
+        )}
+      </div>
+
+      {/* Plan cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        {PLANS.map(plan => {
+          const price = billing === 'mensual' ? plan.monthly : plan.yearly
+          const isCurrent = isActive && currentPlan === plan.key
+          const lookupKey = `${plan.key}_${billing}`
+
+          return (
+            <div
+              key={plan.key}
+              className={`relative rounded-2xl bg-white p-6 flex flex-col ${
+                plan.popular
+                  ? 'border-2 shadow-lg'
+                  : 'border border-gray-200 shadow-sm'
+              }`}
+              style={plan.popular ? { borderColor: '#0F766E' } : {}}
+            >
+              {plan.popular && (
+                <div
+                  className="absolute -top-3 left-1/2 -translate-x-1/2 flex items-center gap-1 px-3 py-0.5 rounded-full text-xs font-bold text-white"
+                  style={{ background: '#0F766E' }}
+                >
+                  <Sparkles size={12} />
+                  {t('mostPopular')}
+                </div>
+              )}
+
+              <h3 className="text-lg font-bold text-gray-900 mb-1">
+                {PLAN_LABELS[plan.key]}
+              </h3>
+
+              <div className="flex items-baseline gap-1 mb-4">
+                <span className="text-3xl font-extrabold text-gray-900">${price}</span>
+                <span className="text-sm text-gray-400">
+                  USD/{billing === 'mensual' ? t('mo') : t('yr')}
+                </span>
+              </div>
+
+              {billing === 'anual' && (
+                <p className="text-xs text-teal-600 font-medium -mt-3 mb-4">
+                  ${Math.round(plan.yearly / 12)}/mes · {t('save3months')}
+                </p>
+              )}
+
+              <ul className="space-y-2.5 mb-6 flex-1">
+                {plan.features.map(feat => (
+                  <li key={feat} className="flex items-start gap-2 text-sm text-gray-600">
+                    <Check size={16} className="shrink-0 mt-0.5" style={{ color: '#0F766E' }} />
+                    {feat}
+                  </li>
+                ))}
+              </ul>
+
+              {isCurrent ? (
+                <div className="text-center">
+                  <span
+                    className="inline-block w-full py-2.5 rounded-xl text-sm font-bold text-white"
+                    style={{ background: '#0F766E' }}
+                  >
+                    {t('currentPlan')}
+                  </span>
+                  <button
+                    onClick={handlePortal}
+                    disabled={redirecting === 'portal'}
+                    className="mt-2 text-xs font-semibold hover:underline disabled:opacity-50"
+                    style={{ color: '#0F766E' }}
+                  >
+                    {redirecting === 'portal' ? 'Redirigiendo...' : t('manageSubscription')}
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => handleChoose(plan.key)}
+                  disabled={!!redirecting}
+                  className={`w-full py-2.5 rounded-xl text-sm font-bold text-white transition-opacity disabled:opacity-50 ${
+                    plan.popular ? '' : 'opacity-90 hover:opacity-100'
+                  }`}
+                  style={{ background: '#0F766E' }}
+                >
+                  {redirecting === lookupKey ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <Loader2 size={14} className="animate-spin" />
+                      Redirigiendo...
+                    </span>
+                  ) : (
+                    t('choosePlan')
+                  )}
+                </button>
+              )}
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Footer note */}
+      <p className="text-center text-xs text-gray-400 mt-6">
+        {t('footer')}
+      </p>
+    </div>
+  )
+}

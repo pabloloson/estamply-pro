@@ -99,5 +99,19 @@
     "materialsSuppliesEmptyDesc": "Papel, tinta, film, vinilo, etc. Usá tus precios reales para que el cotizador calcule costos con precisión.",
     "equipmentEmpty": "Cargá tus máquinas: impresora, plancha, plotter.",
     "equipmentEmptyDesc": "Con el valor de compra y la vida útil, Estamply calcula automáticamente el costo de amortización por cada trabajo."
+  },
+  "plans": {
+    "title": "Elegí tu plan",
+    "subtitle": "Todas las herramientas que tu taller necesita para cotizar, vender y crecer.",
+    "monthly": "Mensual",
+    "yearly": "Anual",
+    "mo": "mes",
+    "yr": "año",
+    "save3months": "Ahorrá 3 meses",
+    "mostPopular": "Más popular",
+    "choosePlan": "Elegir plan",
+    "currentPlan": "Plan actual",
+    "manageSubscription": "Gestionar suscripción",
+    "footer": "Todos los planes incluyen 14 días de prueba gratis. Cancelá en cualquier momento. Pagos seguros con Stripe."
   }
 }

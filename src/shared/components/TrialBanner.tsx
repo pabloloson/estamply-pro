@@ -37,9 +37,9 @@ export default function TrialBanner() {
       <p className="font-medium">
         {expired ? t('trialExpired') : t('trialBanner', { days: daysLeft ?? 0 })}
       </p>
-      <button className={`text-xs font-bold px-3 py-1 rounded-full ${expired ? 'bg-amber-100 text-amber-800 hover:bg-amber-200' : 'bg-purple-100 text-purple-800 hover:bg-purple-200'}`}>
+      <a href="/planes" className={`text-xs font-bold px-3 py-1 rounded-full ${expired ? 'bg-amber-100 text-amber-800 hover:bg-amber-200' : 'bg-purple-100 text-purple-800 hover:bg-purple-200'}`}>
         {expired ? t('viewPlans') : t('choosePlan')}
-      </button>
+      </a>
       {!expired && (
         <button onClick={() => setDismissed(true)} className="p-0.5 rounded hover:bg-purple-100 ml-1"><X size={14} /></button>
       )}

@@ -91,11 +91,6 @@ export default function CuentaPage() {
     } catch { setPwError('Error de conexión'); setPwState('error') }
   }
 
-  function handleCheckout(lookupKey: string) {
-    setRedirecting(true)
-    window.location.href = `/api/stripe-checkout?plan=${lookupKey}`
-  }
-
   function handlePortal() {
     setRedirecting(true)
     window.location.href = '/api/stripe-portal'
@@ -234,11 +229,11 @@ export default function CuentaPage() {
           {planStatus === 'trial' && (
             <div className="p-4 rounded-xl bg-amber-50/60 border border-amber-100">
               <p className="text-sm text-gray-600 mb-3">{t('trialCta')}</p>
-              <button onClick={() => handleCheckout('pro_mensual')} disabled={redirecting}
-                className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700 disabled:opacity-50">
-                {redirecting ? <Loader2 size={14} className="animate-spin" /> : <ArrowRight size={14} />}
-                {redirecting ? 'Redirigiendo...' : t('choosePlan')}
-              </button>
+              <a href="/planes"
+                className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700">
+                <ArrowRight size={14} />
+                {t('choosePlan')}
+              </a>
             </div>
           )}
           {planStatus === 'active' && (
@@ -253,11 +248,11 @@ export default function CuentaPage() {
             </div>
           )}
           {(planStatus === 'expired' || planStatus === 'cancelled') && (
-            <button onClick={() => handleCheckout('pro_mensual')} disabled={redirecting}
-              className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700 disabled:opacity-50">
-              {redirecting ? <Loader2 size={14} className="animate-spin" /> : <ArrowRight size={14} />}
-              {redirecting ? 'Redirigiendo...' : t('reactivatePlan')}
-            </button>
+            <a href="/planes"
+              className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700">
+              <ArrowRight size={14} />
+              {t('reactivatePlan')}
+            </a>
           )}
         </div>
       </div>
