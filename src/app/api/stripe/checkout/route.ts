@@ -10,11 +10,19 @@ export async function POST(req: NextRequest) {
     const session = await auth()
     if (!session?.user?.id) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
-    const { priceId } = await req.json()
-    if (!priceId) return NextResponse.json({ error: 'priceId requerido' }, { status: 400 })
+    const { lookupKey, priceId: directPriceId } = await req.json()
+    if (!lookupKey && !directPriceId) return NextResponse.json({ error: 'lookupKey o priceId requerido' }, { status: 400 })
 
     const profile = await prisma.profile.findUnique({ where: { userId: session.user.id } })
     if (!profile) return NextResponse.json({ error: 'Perfil no encontrado' }, { status: 404 })
+
+    // Resolve priceId from lookup key if needed
+    let priceId = directPriceId
+    if (lookupKey && !priceId) {
+      const prices = await stripe.prices.list({ lookup_keys: [lookupKey], active: true })
+      if (!prices.data.length) return NextResponse.json({ error: 'Precio no encontrado' }, { status: 404 })
+      priceId = prices.data[0].id
+    }
 
     const checkoutSession = await stripe.checkout.sessions.create({
       customer: profile.stripeCustomerId || undefined,

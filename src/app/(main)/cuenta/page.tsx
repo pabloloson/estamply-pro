@@ -38,6 +38,7 @@ export default function CuentaPage() {
   const [plan, setPlan] = useState('')
   const [planStatus, setPlanStatus] = useState('trial')
   const [trialEndsAt, setTrialEndsAt] = useState<string | null>(null)
+  const [redirecting, setRedirecting] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -106,6 +107,30 @@ export default function CuentaPage() {
     setConfirmPassword('')
     setShowPwChange(false)
     setTimeout(() => setPwState(s => s === 'saved' ? 'idle' : s), 3000)
+  }
+
+  async function handleCheckout(lookupKey: string) {
+    setRedirecting(true)
+    try {
+      const res = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lookupKey }),
+      })
+      const data = await res.json()
+      if (data.url) window.location.href = data.url
+      else setRedirecting(false)
+    } catch { setRedirecting(false) }
+  }
+
+  async function handlePortal() {
+    setRedirecting(true)
+    try {
+      const res = await fetch('/api/stripe/portal', { method: 'POST' })
+      const data = await res.json()
+      if (data.url) window.location.href = data.url
+      else setRedirecting(false)
+    } catch { setRedirecting(false) }
   }
 
   const planInfo = PLAN_NAMES[plan]
@@ -275,21 +300,29 @@ export default function CuentaPage() {
           {planStatus === 'trial' && (
             <div className="p-4 rounded-xl bg-amber-50/60 border border-amber-100">
               <p className="text-sm text-gray-600 mb-3">{t('trialCta')}</p>
-              <button className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700">
-                {t('choosePlan')} <ArrowRight size={14} />
+              <button onClick={() => handleCheckout('pro_mensual')} disabled={redirecting}
+                className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700 disabled:opacity-50">
+                {redirecting ? <Loader2 size={14} className="animate-spin" /> : <ArrowRight size={14} />}
+                {redirecting ? 'Redirigiendo...' : t('choosePlan')}
               </button>
             </div>
           )}
           {planStatus === 'active' && (
             <div className="flex gap-2">
-              <button className="text-sm font-semibold text-purple-600 hover:text-purple-700">{t('changePlan')}</button>
+              <button onClick={handlePortal} disabled={redirecting} className="text-sm font-semibold text-purple-600 hover:text-purple-700 disabled:opacity-50">
+                {redirecting ? 'Redirigiendo...' : t('changePlan')}
+              </button>
               <span className="text-gray-300">·</span>
-              <button className="text-sm font-semibold text-gray-400 hover:text-red-500">{t('cancelSubscription')}</button>
+              <button onClick={handlePortal} disabled={redirecting} className="text-sm font-semibold text-gray-400 hover:text-red-500 disabled:opacity-50">
+                {t('cancelSubscription')}
+              </button>
             </div>
           )}
           {(planStatus === 'expired' || planStatus === 'cancelled') && (
-            <button className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700">
-              {t('reactivatePlan')} <ArrowRight size={14} />
+            <button onClick={() => handleCheckout('pro_mensual')} disabled={redirecting}
+              className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700 disabled:opacity-50">
+              {redirecting ? <Loader2 size={14} className="animate-spin" /> : <ArrowRight size={14} />}
+              {redirecting ? 'Redirigiendo...' : t('reactivatePlan')}
             </button>
           )}
         </div>
