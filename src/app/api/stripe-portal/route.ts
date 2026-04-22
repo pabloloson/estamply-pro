@@ -1,26 +1,26 @@
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
 import { stripe } from '@/lib/stripe'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
-export async function POST() {
+export async function GET(req: NextRequest) {
   try {
     const session = await auth()
-    if (!session?.user?.id) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    if (!session?.user?.id) return NextResponse.redirect(new URL('/login', req.url))
 
     const profile = await prisma.profile.findUnique({ where: { userId: session.user.id } })
-    if (!profile?.stripeCustomerId) return NextResponse.json({ error: 'No hay suscripción activa' }, { status: 400 })
+    if (!profile?.stripeCustomerId) return NextResponse.redirect(new URL('/cuenta?error=no_subscription', req.url))
 
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: profile.stripeCustomerId,
       return_url: `${process.env.NEXTAUTH_URL}/dashboard`,
     })
 
-    return NextResponse.json({ url: portalSession.url })
+    return NextResponse.redirect(portalSession.url)
   } catch (error) {
     console.error('Portal error:', error)
-    return NextResponse.json({ error: 'Error al crear sesión del portal' }, { status: 500 })
+    return NextResponse.redirect(new URL('/cuenta?error=portal_failed', req.url))
   }
 }

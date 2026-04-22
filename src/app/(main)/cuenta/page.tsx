@@ -91,32 +91,14 @@ export default function CuentaPage() {
     } catch { setPwError('Error de conexión'); setPwState('error') }
   }
 
-  async function handleCheckout(lookupKey: string) {
+  function handleCheckout(lookupKey: string) {
     setRedirecting(true)
-    try {
-      const res = await fetch(`${window.location.origin}/api/stripe-checkout`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lookupKey }),
-        cache: 'no-store',
-      })
-      const data = await res.json()
-      if (data.url) window.location.href = data.url
-      else setRedirecting(false)
-    } catch { setRedirecting(false) }
+    window.location.href = `/api/stripe-checkout?plan=${lookupKey}`
   }
 
-  async function handlePortal() {
+  function handlePortal() {
     setRedirecting(true)
-    try {
-      const res = await fetch(`${window.location.origin}/api/stripe-portal`, {
-        method: 'POST',
-        cache: 'no-store',
-      })
-      const data = await res.json()
-      if (data.url) window.location.href = data.url
-      else setRedirecting(false)
-    } catch { setRedirecting(false) }
+    window.location.href = '/api/stripe-portal'
   }
 
   const planInfo = PLAN_NAMES[plan]

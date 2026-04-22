@@ -5,40 +5,33 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
-export async function POST(req: NextRequest) {
+export async function GET(req: NextRequest) {
   try {
     const session = await auth()
-    if (!session?.user?.id) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    if (!session?.user?.id) return NextResponse.redirect(new URL('/login', req.url))
 
-    const { lookupKey, priceId: directPriceId } = await req.json()
-    if (!lookupKey && !directPriceId) return NextResponse.json({ error: 'lookupKey o priceId requerido' }, { status: 400 })
-
+    const lookupKey = req.nextUrl.searchParams.get('plan') || 'pro_mensual'
     const profile = await prisma.profile.findUnique({ where: { userId: session.user.id } })
-    if (!profile) return NextResponse.json({ error: 'Perfil no encontrado' }, { status: 404 })
+    if (!profile) return NextResponse.redirect(new URL('/cuenta', req.url))
 
-    // Resolve priceId from lookup key if needed
-    let priceId = directPriceId
-    if (lookupKey && !priceId) {
-      const prices = await stripe.prices.list({ lookup_keys: [lookupKey], active: true })
-      if (!prices.data.length) return NextResponse.json({ error: 'Precio no encontrado' }, { status: 404 })
-      priceId = prices.data[0].id
-    }
+    const prices = await stripe.prices.list({ lookup_keys: [lookupKey], active: true })
+    if (!prices.data.length) return NextResponse.redirect(new URL('/cuenta?error=price_not_found', req.url))
 
     const checkoutSession = await stripe.checkout.sessions.create({
       customer: profile.stripeCustomerId || undefined,
       customer_email: !profile.stripeCustomerId ? session.user.email! : undefined,
       mode: 'subscription',
       payment_method_types: ['card'],
-      line_items: [{ price: priceId, quantity: 1 }],
+      line_items: [{ price: prices.data[0].id, quantity: 1 }],
       metadata: { userId: session.user.id },
       success_url: `${process.env.NEXTAUTH_URL}/dashboard?payment=success`,
-      cancel_url: `${process.env.NEXTAUTH_URL}/planes?payment=cancelled`,
+      cancel_url: `${process.env.NEXTAUTH_URL}/cuenta?payment=cancelled`,
       subscription_data: { metadata: { userId: session.user.id } },
     })
 
-    return NextResponse.json({ url: checkoutSession.url })
+    return NextResponse.redirect(checkoutSession.url!)
   } catch (error) {
     console.error('Checkout error:', error)
-    return NextResponse.json({ error: 'Error al crear sesión de pago' }, { status: 500 })
+    return NextResponse.redirect(new URL('/cuenta?error=checkout_failed', req.url))
   }
 }
