@@ -94,10 +94,11 @@ export default function CuentaPage() {
   async function handleCheckout(lookupKey: string) {
     setRedirecting(true)
     try {
-      const res = await fetch('/api/stripe-checkout', {
+      const res = await fetch(`${window.location.origin}/api/stripe-checkout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ lookupKey }),
+        cache: 'no-store',
       })
       const data = await res.json()
       if (data.url) window.location.href = data.url
@@ -108,7 +109,10 @@ export default function CuentaPage() {
   async function handlePortal() {
     setRedirecting(true)
     try {
-      const res = await fetch('/api/stripe-portal', { method: 'POST' })
+      const res = await fetch(`${window.location.origin}/api/stripe-portal`, {
+        method: 'POST',
+        cache: 'no-store',
+      })
       const data = await res.json()
       if (data.url) window.location.href = data.url
       else setRedirecting(false)
