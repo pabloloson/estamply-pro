@@ -4,7 +4,7 @@ import { NextResponse } from "next/server"
 const APP_HOST = 'app.estamply.app'
 
 const publicRoutes = ['/', '/login', '/signup', '/onboarding', '/br']
-const publicPrefixes = ['/p/', '/catalogo/', '/api/auth/', '/api/catalog-order', '/api/validate-coupon']
+const publicPrefixes = ['/p/', '/catalogo/', '/api/auth/', '/api/catalog-order', '/api/validate-coupon', '/api/webhooks/', '/api/stripe/']
 
 export default auth((req) => {
   const { pathname } = req.nextUrl
