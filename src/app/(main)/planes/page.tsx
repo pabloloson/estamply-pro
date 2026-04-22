@@ -121,21 +121,6 @@ export default function PlanesPage() {
         return
       }
 
-      if (data.status === 'trialing') {
-        // Trial activated without payment — success
-        setCheckoutPlan(null)
-        setSuccessBanner(true)
-        fetch('/api/me')
-          .then(r => r.json())
-          .then(d => {
-            if (d.plan) setCurrentPlan(d.plan)
-            if (d.planStatus) setPlanStatus(d.planStatus)
-          })
-          .catch(() => {})
-        setCheckoutLoading(false)
-        return
-      }
-
       setClientSecret(data.clientSecret)
     } catch {
       setCheckoutError('Error de conexión. Intentá de nuevo.')
