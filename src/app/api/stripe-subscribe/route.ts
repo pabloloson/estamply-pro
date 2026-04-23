@@ -42,7 +42,17 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    // 3. Create subscription (~800ms)
+    // 3. Cancel incomplete subs to avoid conflicts
+    try {
+      const existingSubs = await stripe.subscriptions.list({
+        customer: customerId, status: 'incomplete', limit: 10,
+      })
+      await Promise.all(
+        existingSubs.data.map(sub => stripe.subscriptions.cancel(sub.id))
+      )
+    } catch { /* ignore cleanup errors */ }
+
+    // 4. Create subscription (~800ms)
     const subscription = await stripe.subscriptions.create({
       customer: customerId,
       items: [{ price: priceId }],
@@ -60,8 +70,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No invoice on subscription' }, { status: 500 })
     }
 
-    // 5. Retrieve invoice to get payment info (~400ms)
-    const invoice = await stripe.invoices.retrieve(invoiceId)
+    // 6. Retrieve invoice with payments expanded (~400ms)
+    const invoice = await stripe.invoices.retrieve(invoiceId, {
+      expand: ['payments.data.payment.payment_intent'],
+    })
 
     // Try confirmation_secret first (Stripe API 2024+)
     let clientSecret: string | null | undefined = invoice.confirmation_secret?.client_secret
