@@ -40,7 +40,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
           {CONFIG_SECTIONS.map(s => (
             <div key={s.group} className="mb-4">
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1 mb-1.5">{s.group}</p>
-              <div className="bg-white rounded-2xl shadow-sm overflow-hidden" style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
+              <div className="bg-white rounded-2xl border border-[#E5E5E3] overflow-hidden">
                 {s.items.map((item, i) => (
                   <Link key={item.id} href={`/settings/${item.id}`}
                     className={`flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors ${i < s.items.length - 1 ? 'border-b border-gray-50' : ''}`}>

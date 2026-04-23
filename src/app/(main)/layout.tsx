@@ -33,7 +33,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
     <PresupuestoProvider>
       <div className="flex min-h-screen bg-[#FAFAF8]">
         <Sidebar workshopName={workshopName} />
-        <div className="flex-1 flex flex-col min-w-0 overflow-x-hidden">
+        <div className="flex-1 flex flex-col min-w-0" style={{ overflowX: 'clip' }}>
           <main className="flex-1 pt-14 lg:pt-0">
             <TrialBanner />
             <DemoBanner />
