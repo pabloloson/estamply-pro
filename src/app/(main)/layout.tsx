@@ -36,7 +36,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
         <div className="flex-1 flex flex-col min-w-0 overflow-x-hidden">
           <TrialBanner />
           <DemoBanner />
-          <main className="flex-1 p-4 pt-20 lg:px-8 lg:pb-8 lg:pt-10">
+          <main className="flex-1 p-4 pt-16 lg:px-8 lg:pb-8 lg:pt-10">
             {children}
           </main>
         </div>
