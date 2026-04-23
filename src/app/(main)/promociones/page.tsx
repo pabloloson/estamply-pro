@@ -118,14 +118,20 @@ export default function PromocionesPage() {
 
       {/* Tabs */}
       <div className="flex gap-1 mb-6">
-        <button onClick={() => setTab('promos')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'promos' ? 'text-white shadow-md' : 'bg-gray-100 text-gray-600'}`} style={tab === 'promos' ? { background: '#0F766E' } : {}}>Promociones</button>
-        <button onClick={() => setTab('cupones')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'cupones' ? 'text-white shadow-md' : 'bg-gray-100 text-gray-600'}`} style={tab === 'cupones' ? { background: '#0F766E' } : {}}>Cupones</button>
+        <button onClick={() => setTab('promos')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'promos' ? 'bg-[#0F766E] text-white' : 'text-gray-500 hover:text-gray-700 hover:bg-[#F3F3F1]'}`}>Promociones</button>
+        <button onClick={() => setTab('cupones')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'cupones' ? 'bg-[#0F766E] text-white' : 'text-gray-500 hover:text-gray-700 hover:bg-[#F3F3F1]'}`}>Cupones</button>
       </div>
 
       {/* ══ PROMOTIONS TAB ══ */}
       {tab === 'promos' && (<>
         {promos.length === 0 ? (
-          <div className="card p-12 text-center"><p className="text-4xl mb-3 opacity-50">🏷️</p><p className="text-gray-500 text-sm">Todavía no creaste promociones.</p></div>
+          <div className="card p-12 flex flex-col items-center justify-center gap-3">
+            <p className="text-4xl opacity-50">🏷️</p>
+            <p className="text-sm font-medium text-gray-700">Todavía no creaste promociones.</p>
+            <p className="text-xs text-gray-400">Creá descuentos para incentivar las ventas en tu catálogo.</p>
+            <button onClick={() => setPromoModal({ discount_type: 'percentage', discount_value: 0, product_ids: [], show_countdown: false, starts_at: new Date().toISOString().slice(0, 10), ends_at: '' })}
+              className="mt-2 px-5 py-2.5 rounded-xl bg-[#0F766E] text-white text-sm font-semibold hover:bg-[#0D9488] transition-colors">+ Crear promoción</button>
+          </div>
         ) : (<>
           {/* Mobile */}
           <div className="md:hidden space-y-2">
@@ -156,7 +162,7 @@ export default function PromocionesPage() {
           {/* Desktop */}
           <div className="hidden md:block card" style={{ overflow: 'visible' }}>
             <table className="w-full"><thead><tr className="border-b border-gray-100">
-              {['Nombre', 'Descuento', 'Productos', 'Período', 'Estado', ''].map(h => <th key={h} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">{h}</th>)}
+              {['Nombre', 'Descuento', 'Productos', 'Período', 'Estado', ''].map(h => <th key={h} className="text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">{h}</th>)}
             </tr></thead><tbody>
               {promos.map(p => { const st = STATUS_LABELS[p.status]; return (
                 <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50 cursor-pointer" onClick={() => setPromoModal(p)}>
@@ -188,7 +194,13 @@ export default function PromocionesPage() {
       {/* ══ COUPONS TAB ══ */}
       {tab === 'cupones' && (<>
         {coupons.length === 0 ? (
-          <div className="card p-12 text-center"><p className="text-4xl mb-3 opacity-50">🎟️</p><p className="text-gray-500 text-sm">Todavía no creaste cupones.</p><p className="text-gray-400 text-xs mt-1">Creá códigos de descuento para compartir con tus clientes.</p></div>
+          <div className="card p-12 flex flex-col items-center justify-center gap-3">
+            <p className="text-4xl opacity-50">🎟️</p>
+            <p className="text-sm font-medium text-gray-700">Todavía no creaste cupones.</p>
+            <p className="text-xs text-gray-400">Creá códigos de descuento para compartir con tus clientes.</p>
+            <button onClick={() => setCouponModal({ discount_type: 'percentage', discount_value: 0, code: '' })}
+              className="mt-2 px-5 py-2.5 rounded-xl bg-[#0F766E] text-white text-sm font-semibold hover:bg-[#0D9488] transition-colors">+ Crear cupón</button>
+          </div>
         ) : (<>
           {/* Mobile */}
           <div className="md:hidden space-y-2">
@@ -218,7 +230,7 @@ export default function PromocionesPage() {
           {/* Desktop */}
           <div className="hidden md:block card" style={{ overflow: 'visible' }}>
             <table className="w-full"><thead><tr className="border-b border-gray-100">
-              {['Código', 'Descuento', 'Usos', 'Monto mín.', 'Vencimiento', 'Estado', ''].map(h => <th key={h} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">{h}</th>)}
+              {['Código', 'Descuento', 'Usos', 'Monto mín.', 'Vencimiento', 'Estado', ''].map(h => <th key={h} className="text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">{h}</th>)}
             </tr></thead><tbody>
               {coupons.map(c => { const st = STATUS_LABELS[c.status] || STATUS_LABELS.active; return (
                 <tr key={c.id} className="border-b border-gray-50 hover:bg-gray-50 cursor-pointer" onClick={() => setCouponModal(c)}>
@@ -253,19 +265,19 @@ export default function PromocionesPage() {
           <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl max-h-[90dvh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5"><h3 className="font-bold text-gray-900">{promoModal.id ? 'Editar' : 'Nueva'} promoción</h3><button onClick={() => setPromoModal(null)} className="p-2 rounded-lg hover:bg-gray-100"><X size={16} /></button></div>
             <div className="space-y-4">
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label><input className="input-base" value={promoModal.name || ''} onChange={e => setPromoModal({ ...promoModal, name: e.target.value })} placeholder="Ej: Promo Día de la Madre, Hot Sale..." /></div>
+              <div><label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Nombre *</label><input className="input-base" value={promoModal.name || ''} onChange={e => setPromoModal({ ...promoModal, name: e.target.value })} placeholder="Ej: Promo Día de la Madre, Hot Sale..." /></div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
-                  <div className="inline-flex rounded-lg border border-gray-200 overflow-hidden">{[['percentage', '%'], ['fixed', '$']].map(([v, l]) => (<button key={v} type="button" onClick={() => setPromoModal({ ...promoModal, discount_type: v as 'percentage' | 'fixed' })} className={`px-4 py-1.5 text-xs font-semibold ${promoModal.discount_type === v ? 'text-white' : 'text-gray-500'}`} style={promoModal.discount_type === v ? { background: '#0F766E' } : {}}>{l}</button>))}</div></div>
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">Valor *</label><input type="number" className="input-base" min={1} max={promoModal.discount_type === 'percentage' ? 99 : undefined} value={promoModal.discount_value || ''} onChange={e => setPromoModal({ ...promoModal, discount_value: Number(e.target.value) })} /></div>
+                <div><label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Tipo</label>
+                  <div className="inline-flex rounded-lg border border-[#E5E5E3] overflow-hidden">{[['percentage', '%'], ['fixed', '$']].map(([v, l]) => (<button key={v} type="button" onClick={() => setPromoModal({ ...promoModal, discount_type: v as 'percentage' | 'fixed' })} className={`px-4 py-1.5 text-xs font-semibold ${promoModal.discount_type === v ? 'text-white' : 'text-gray-500'}`} style={promoModal.discount_type === v ? { background: '#0F766E' } : {}}>{l}</button>))}</div></div>
+                <div><label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Valor *</label><input type="number" className="input-base" min={1} max={promoModal.discount_type === 'percentage' ? 99 : undefined} value={promoModal.discount_value || ''} onChange={e => setPromoModal({ ...promoModal, discount_value: Number(e.target.value) })} /></div>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">Inicio *</label><input type="date" className="input-base text-sm" value={(promoModal.starts_at || '').slice(0, 10)} onChange={e => setPromoModal({ ...promoModal, starts_at: e.target.value ? new Date(e.target.value + 'T00:00:00').toISOString() : '' })} /></div>
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">Fin *</label><input type="date" className="input-base text-sm" value={(promoModal.ends_at || '').slice(0, 10)} onChange={e => setPromoModal({ ...promoModal, ends_at: e.target.value ? new Date(e.target.value + 'T23:59:59').toISOString() : '' })} /></div>
+                <div><label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Inicio *</label><input type="date" className="input-base text-sm" value={(promoModal.starts_at || '').slice(0, 10)} onChange={e => setPromoModal({ ...promoModal, starts_at: e.target.value ? new Date(e.target.value + 'T00:00:00').toISOString() : '' })} /></div>
+                <div><label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Fin *</label><input type="date" className="input-base text-sm" value={(promoModal.ends_at || '').slice(0, 10)} onChange={e => setPromoModal({ ...promoModal, ends_at: e.target.value ? new Date(e.target.value + 'T23:59:59').toISOString() : '' })} /></div>
               </div>
-              <div className="flex items-center justify-between"><label className="text-sm font-medium text-gray-700">Contador regresivo</label>
+              <div className="flex items-center justify-between"><label className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Contador regresivo</label>
                 <button type="button" onClick={() => setPromoModal({ ...promoModal, show_countdown: !promoModal.show_countdown })} className="relative w-9 h-5 rounded-full transition-colors" style={{ background: promoModal.show_countdown ? '#0F766E' : '#D1D5DB' }}><span className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform" style={{ transform: promoModal.show_countdown ? 'translateX(16px)' : 'translateX(0)' }} /></button></div>
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">Productos * <span className="text-xs text-gray-400 ml-1">{(promoModal.product_ids || []).length} de {products.length} seleccionados</span></label>
+              <div><label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Productos * <span className="text-xs text-gray-400 ml-1">{(promoModal.product_ids || []).length} de {products.length} seleccionados</span></label>
                 <div className="flex gap-2 mb-2">
                   <div className="relative flex-1"><Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" /><input className="input-base text-sm w-full !pl-9" placeholder="Buscar..." value={searchProd} onChange={e => setSearchProd(e.target.value)} /></div>
                   {categories.length > 0 && <select value={prodCatFilter} onChange={e => setProdCatFilter(e.target.value)} className="input-base text-xs !py-1.5 w-auto"><option value="">Todas</option>{categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select>}
@@ -279,16 +291,16 @@ export default function PromocionesPage() {
                         const visibleIds = visible.map(p => p.id)
                         if (allSelected) setPromoModal({ ...promoModal, product_ids: (promoModal.product_ids || []).filter(id => !visibleIds.includes(id)) })
                         else setPromoModal({ ...promoModal, product_ids: [...new Set([...(promoModal.product_ids || []), ...visibleIds])] })
-                      }} className="rounded border-gray-300" style={{ accentColor: '#0F766E' }} />
+                      }} className="w-4 h-4 rounded accent-[#0F766E] cursor-pointer" />
                       <span className="text-xs font-semibold text-gray-500">Seleccionar todos ({visible.length})</span>
                     </label>
                     <div className="border border-gray-200 rounded-b-lg max-h-48 overflow-y-auto">{visible.map(p => (
-                      <label key={p.id} className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-0"><input type="checkbox" checked={(promoModal.product_ids || []).includes(p.id)} onChange={() => toggleProduct(p.id)} className="rounded border-gray-300" style={{ accentColor: '#0F766E' }} /><span className="text-sm text-gray-700 flex-1 truncate">{p.name}</span><span className="text-xs text-gray-400">{fmtCurrency(p.selling_price)}</span></label>
+                      <label key={p.id} className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-0"><input type="checkbox" checked={(promoModal.product_ids || []).includes(p.id)} onChange={() => toggleProduct(p.id)} className="w-4 h-4 rounded accent-[#0F766E] cursor-pointer" /><span className="text-sm text-gray-700 flex-1 truncate">{p.name}</span><span className="text-xs text-gray-400">{fmtCurrency(p.selling_price)}</span></label>
                     ))}</div>
                   </>)
                 })()}</div>
             </div>
-            <div className="flex gap-3 mt-6"><button onClick={() => setPromoModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">Cancelar</button><button onClick={savePromo} disabled={!promoModal.name?.trim() || !promoModal.discount_value || !(promoModal.product_ids?.length) || !promoModal.ends_at} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#0F766E' }}>Guardar</button></div>
+            <div className="flex gap-3 mt-6"><button onClick={() => setPromoModal(null)} className="flex-1 py-2.5 rounded-xl border border-[#E5E5E3] text-sm font-medium text-gray-600 hover:bg-[#F8F7F4] transition-colors">Cancelar</button><button onClick={savePromo} disabled={!promoModal.name?.trim() || !promoModal.discount_value || !(promoModal.product_ids?.length) || !promoModal.ends_at} className="flex-1 py-2.5 rounded-xl bg-[#0F766E] text-white text-sm font-semibold hover:bg-[#0D9488] transition-colors disabled:opacity-40">Guardar</button></div>
           </div>
         </div>
       )}
@@ -299,25 +311,25 @@ export default function PromocionesPage() {
           <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl max-h-[90dvh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5"><h3 className="font-bold text-gray-900">{couponModal.id ? 'Editar' : 'Nuevo'} cupón</h3><button onClick={() => setCouponModal(null)} className="p-2 rounded-lg hover:bg-gray-100"><X size={16} /></button></div>
             <div className="space-y-4">
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">Código *</label>
+              <div><label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Código *</label>
                 <div className="flex gap-2"><input className="input-base flex-1 uppercase font-mono" value={couponModal.code || ''} onChange={e => setCouponModal({ ...couponModal, code: e.target.value.toUpperCase().replace(/\s/g, '') })} placeholder="Ej: PRIMERA10" />
-                  <button type="button" onClick={() => setCouponModal({ ...couponModal, code: genCode() })} className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50 whitespace-nowrap">Generar</button></div>
+                  <button type="button" onClick={() => setCouponModal({ ...couponModal, code: genCode() })} className="px-4 py-2 rounded-lg border border-[#E5E5E3] text-sm font-medium text-gray-600 hover:bg-[#F8F7F4] transition-colors whitespace-nowrap">Generar</button></div>
                 <p className="text-[10px] text-gray-400 mt-0.5">Este código lo ingresa el cliente en el checkout.</p></div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
-                  <div className="inline-flex rounded-lg border border-gray-200 overflow-hidden">{[['percentage', '%'], ['fixed', '$']].map(([v, l]) => (<button key={v} type="button" onClick={() => setCouponModal({ ...couponModal, discount_type: v as 'percentage' | 'fixed' })} className={`px-4 py-1.5 text-xs font-semibold ${couponModal.discount_type === v ? 'text-white' : 'text-gray-500'}`} style={couponModal.discount_type === v ? { background: '#0F766E' } : {}}>{l}</button>))}</div></div>
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">Valor *</label><input type="number" className="input-base" min={1} value={couponModal.discount_value || ''} onChange={e => setCouponModal({ ...couponModal, discount_value: Number(e.target.value) })} /></div>
+                <div><label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Tipo</label>
+                  <div className="inline-flex rounded-lg border border-[#E5E5E3] overflow-hidden">{[['percentage', '%'], ['fixed', '$']].map(([v, l]) => (<button key={v} type="button" onClick={() => setCouponModal({ ...couponModal, discount_type: v as 'percentage' | 'fixed' })} className={`px-4 py-1.5 text-xs font-semibold ${couponModal.discount_type === v ? 'text-white' : 'text-gray-500'}`} style={couponModal.discount_type === v ? { background: '#0F766E' } : {}}>{l}</button>))}</div></div>
+                <div><label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Valor *</label><input type="number" className="input-base" min={1} value={couponModal.discount_value || ''} onChange={e => setCouponModal({ ...couponModal, discount_value: Number(e.target.value) })} /></div>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">Usos máximos</label><input type="number" className="input-base" min={1} value={couponModal.max_uses || ''} onChange={e => setCouponModal({ ...couponModal, max_uses: Number(e.target.value) || null })} placeholder="Ilimitado" /></div>
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">Monto mínimo ($)</label><input type="number" className="input-base" min={0} value={couponModal.min_amount || ''} onChange={e => setCouponModal({ ...couponModal, min_amount: Number(e.target.value) })} placeholder="Sin mínimo" /></div>
+                <div><label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Usos máximos</label><input type="number" className="input-base" min={1} value={couponModal.max_uses || ''} onChange={e => setCouponModal({ ...couponModal, max_uses: Number(e.target.value) || null })} placeholder="Ilimitado" /></div>
+                <div><label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Monto mínimo ($)</label><input type="number" className="input-base" min={0} value={couponModal.min_amount || ''} onChange={e => setCouponModal({ ...couponModal, min_amount: Number(e.target.value) })} placeholder="Sin mínimo" /></div>
               </div>
-              <div className="flex items-center justify-between"><label className="text-sm font-medium text-gray-700">Un uso por cliente</label>
+              <div className="flex items-center justify-between"><label className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Un uso por cliente</label>
                 <button type="button" onClick={() => setCouponModal({ ...couponModal, one_per_client: !couponModal.one_per_client })} className="relative w-9 h-5 rounded-full transition-colors" style={{ background: couponModal.one_per_client ? '#0F766E' : '#D1D5DB' }}><span className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform" style={{ transform: couponModal.one_per_client ? 'translateX(16px)' : 'translateX(0)' }} /></button></div>
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">Vencimiento</label><input type="date" className="input-base" value={couponModal.expires_at?.slice(0, 10) || ''} onChange={e => setCouponModal({ ...couponModal, expires_at: e.target.value ? new Date(e.target.value).toISOString() : null })} />
+              <div><label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Vencimiento</label><input type="date" className="input-base" value={couponModal.expires_at?.slice(0, 10) || ''} onChange={e => setCouponModal({ ...couponModal, expires_at: e.target.value ? new Date(e.target.value).toISOString() : null })} />
                 <p className="text-[10px] text-gray-400 mt-0.5">Dejalo vacío si no querés que venza.</p></div>
             </div>
-            <div className="flex gap-3 mt-6"><button onClick={() => setCouponModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">Cancelar</button><button onClick={saveCoupon} disabled={!couponModal.code?.trim() || !couponModal.discount_value} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#0F766E' }}>Guardar</button></div>
+            <div className="flex gap-3 mt-6"><button onClick={() => setCouponModal(null)} className="flex-1 py-2.5 rounded-xl border border-[#E5E5E3] text-sm font-medium text-gray-600 hover:bg-[#F8F7F4] transition-colors">Cancelar</button><button onClick={saveCoupon} disabled={!couponModal.code?.trim() || !couponModal.discount_value} className="flex-1 py-2.5 rounded-xl bg-[#0F766E] text-white text-sm font-semibold hover:bg-[#0D9488] transition-colors disabled:opacity-40">Guardar</button></div>
           </div>
         </div>
       )}
