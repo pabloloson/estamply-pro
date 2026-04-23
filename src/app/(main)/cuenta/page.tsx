@@ -2,8 +2,19 @@
 
 export const dynamic = 'force-dynamic'
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Save, Loader2, Check, UserCircle, Lock, CreditCard, Shield, FileText, ArrowUpRight, ChevronRight, XCircle, ArrowRight } from 'lucide-react'
 import { useTranslations } from '@/shared/hooks/useTranslations'
+
+const STATUS_LABELS: Record<string, { label: string; color: string }> = {
+  active: { label: 'Activo', color: 'bg-[#0F766E] text-white' },
+  trial: { label: 'Prueba gratuita', color: 'bg-amber-100 text-amber-700' },
+  inactive: { label: 'Inactivo', color: 'bg-gray-200 text-gray-600' },
+  past_due: { label: 'Pago pendiente', color: 'bg-red-100 text-red-600' },
+  cancelled: { label: 'Cancelado', color: 'bg-gray-200 text-gray-600' },
+  incomplete: { label: 'Incompleto', color: 'bg-amber-100 text-amber-700' },
+  expired: { label: 'Expirado', color: 'bg-gray-200 text-gray-600' },
+}
 
 const PLAN_NAMES: Record<string, string> = {
   emprendedor: 'Emprendedor',
@@ -23,6 +34,7 @@ function formatDate(dateStr: string) {
 
 export default function CuentaPage() {
   const t = useTranslations('account')
+  const router = useRouter()
 
   const [loading, setLoading] = useState(true)
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
@@ -176,13 +188,8 @@ export default function CuentaPage() {
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-lg font-bold text-gray-900">{planName}</span>
-                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase ${
-                  planStatus === 'active' ? 'bg-[#0F766E] text-white' :
-                  planStatus === 'trial' ? 'bg-amber-500 text-white' :
-                  planStatus === 'cancelled' ? 'bg-red-500 text-white' :
-                  'bg-gray-400 text-white'
-                }`}>
-                  {planStatus === 'active' ? 'Activo' : planStatus === 'trial' ? 'Prueba' : planStatus === 'cancelled' ? 'Cancelado' : planStatus}
+                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase ${STATUS_LABELS[planStatus]?.color || 'bg-gray-200 text-gray-600'}`}>
+                  {STATUS_LABELS[planStatus]?.label || planStatus}
                 </span>
               </div>
               {planPrice && <p className="text-sm text-gray-500 mt-1">${planPrice} USD/mes</p>}
@@ -233,8 +240,8 @@ export default function CuentaPage() {
         {/* Billing actions — all redirect to Stripe Portal */}
         {hasStripeCustomer && (
           <div className="space-y-2">
-            <button onClick={handlePortal} disabled={redirecting}
-              className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-[#E5E5E3] text-sm font-medium text-gray-700 hover:bg-[#F8F7F4] transition-colors disabled:opacity-50">
+            <button onClick={() => router.push('/planes')}
+              className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-[#E5E5E3] text-sm font-medium text-gray-700 hover:bg-[#F8F7F4] transition-colors">
               <span className="flex items-center gap-2">
                 <ArrowUpRight size={16} className="text-gray-400" />
                 Cambiar de plan

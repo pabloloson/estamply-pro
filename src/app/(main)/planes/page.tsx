@@ -59,6 +59,12 @@ const PLAN_LABELS: Record<string, string> = {
   negocio: 'Negocio',
 }
 
+const PLAN_ORDER = ['emprendedor', 'pro', 'negocio']
+function isPlanHigher(planKey: string, currentPlan: string | null) {
+  if (!currentPlan) return false
+  return PLAN_ORDER.indexOf(planKey) > PLAN_ORDER.indexOf(currentPlan)
+}
+
 export default function PlanesPage() {
   const t = useTranslations('plans')
   const [billing, setBilling] = useState<Billing>('mensual')
@@ -284,20 +290,12 @@ export default function PlanesPage() {
               </ul>
 
               {isCurrent ? (
-                <div className="text-center">
-                  <span
-                    className="inline-block w-full py-2.5 rounded-xl text-sm font-bold text-white"
-                    style={{ background: '#0F766E' }}
-                  >
-                    {t('currentPlan')}
+                <div>
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#0F766E] mb-2">
+                    <Check size={14} /> Plan actual
                   </span>
-                  <button
-                    onClick={handlePortal}
-                    disabled={redirecting === 'portal'}
-                    className="mt-2 text-xs font-semibold hover:underline disabled:opacity-50"
-                    style={{ color: '#0F766E' }}
-                  >
-                    {redirecting === 'portal' ? 'Redirigiendo...' : t('manageSubscription')}
+                  <button disabled className="w-full py-2.5 rounded-xl bg-gray-100 text-gray-400 text-sm font-semibold cursor-not-allowed">
+                    Tu plan actual
                   </button>
                 </div>
               ) : (
@@ -311,7 +309,7 @@ export default function PlanesPage() {
                   }`}
                   style={{ background: '#0F766E' }}
                 >
-                  {isActive ? t('changePlan') : t('choosePlan')}
+                  {isActive ? (isPlanHigher(plan.key, currentPlan) ? 'Subir de plan' : 'Cambiar plan') : t('choosePlan')}
                 </button>
               )}
             </div>
