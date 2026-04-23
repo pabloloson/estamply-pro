@@ -84,20 +84,44 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No invoice on subscription' }, { status: 500 })
     }
 
-    // Retrieve the invoice — in Stripe SDK v22 (API 2024+), the client_secret
-    // is in invoice.confirmation_secret.client_secret, NOT invoice.payment_intent
-    const invoice = await stripe.invoices.retrieve(invoiceId)
-    console.log('[stripe-subscribe] invoice:', invoice.id, 'confirmation_secret:', invoice.confirmation_secret)
+    // In Stripe SDK v22 (API 2024+), payment_intent is no longer on the Invoice.
+    // It's accessed via invoice.payments[].payment.payment_intent.
+    // Retrieve invoice with payments and payment_intent expanded.
+    const invoice = await stripe.invoices.retrieve(invoiceId, {
+      expand: ['payments.data.payment.payment_intent'],
+    })
+    console.log('[stripe-subscribe] invoice:', invoice.id, 'status:', invoice.status)
 
-    const clientSecret = invoice.confirmation_secret?.client_secret
+    // Try confirmation_secret first (available after finalization)
+    let clientSecret: string | null | undefined = invoice.confirmation_secret?.client_secret
+
+    // If not available, get it from the payments array
+    if (!clientSecret && invoice.payments?.data?.length) {
+      const firstPayment = invoice.payments.data[0]
+      const pi = firstPayment.payment?.payment_intent
+      if (pi && typeof pi === 'object' && 'client_secret' in pi) {
+        clientSecret = (pi as { client_secret: string }).client_secret
+      } else if (typeof pi === 'string') {
+        // PI not expanded, retrieve it directly
+        const fullPi = await stripe.paymentIntents.retrieve(pi)
+        clientSecret = fullPi.client_secret || null
+      }
+      console.log('[stripe-subscribe] got clientSecret from payments array')
+    }
 
     if (!clientSecret) {
-      console.error('[stripe-subscribe] No confirmation_secret on invoice:', {
-        id: invoice.id,
+      console.error('[stripe-subscribe] No client_secret found:', {
+        invoiceId: invoice.id,
         status: invoice.status,
         confirmation_secret: invoice.confirmation_secret,
+        paymentsCount: invoice.payments?.data?.length ?? 0,
+        firstPayment: invoice.payments?.data?.[0] ? {
+          id: invoice.payments.data[0].id,
+          paymentType: invoice.payments.data[0].payment?.type,
+          paymentIntent: invoice.payments.data[0].payment?.payment_intent,
+        } : null,
       })
-      return NextResponse.json({ error: 'No client secret on invoice' }, { status: 500 })
+      return NextResponse.json({ error: 'No client secret found' }, { status: 500 })
     }
 
     console.log('[stripe-subscribe] SUCCESS')
