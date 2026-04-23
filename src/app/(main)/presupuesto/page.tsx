@@ -6,7 +6,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
-  ShoppingCart, Trash2, FileDown, MessageCircle, Mail, X,
+  ShoppingCart, ShoppingBag, Trash2, FileDown, MessageCircle, Mail, X,
   ArrowLeft, Loader2, Phone, MapPin, Globe, AtSign, Pencil,
   Link as LinkIcon, Check, Search, Plus, User, Calculator, Save, FileText,
 } from 'lucide-react'
