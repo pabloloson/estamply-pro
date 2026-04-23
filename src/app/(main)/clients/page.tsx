@@ -2,10 +2,11 @@
 'use client'
 
 export const dynamic = 'force-dynamic'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/db/client'
-import { Plus, Pencil, Trash2, X, Users, Search, MessageCircle, Upload, Download, MoreVertical } from 'lucide-react'
+import { Plus, Pencil, Trash2, X, Users, Search, MessageCircle, Upload, Download, MoreVertical, FileText } from 'lucide-react'
 import EmptyState from '@/shared/components/EmptyState'
 import { useTranslations } from '@/shared/hooks/useTranslations'
 import { useLocale } from '@/shared/context/LocaleContext'
@@ -33,6 +34,8 @@ export default function ClientsPage() {
   const [saving, setSaving] = useState(false)
   const [ordersByClient, setOrdersByClient] = useState<Map<string, Array<{ total_price: number; created_at: string }>>>(new Map())
   const [menuOpen, setMenuOpen] = useState<string | null>(null)
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null)
+  const menuBtnRef = useRef<HTMLButtonElement>(null)
   const [importModal, setImportModal] = useState(false)
   const [importStep, setImportStep] = useState(1)
   const [importData, setImportData] = useState<string[][]>([])
@@ -66,12 +69,7 @@ export default function ClientsPage() {
   function getClientTotal(clientId: string) { return getClientOrders(clientId).reduce((s, o) => s + o.total_price, 0) }
   function getClientLastOrder(clientId: string) { const ords = getClientOrders(clientId); return ords.length > 0 ? ords.sort((a, b) => b.created_at.localeCompare(a.created_at))[0].created_at : null }
 
-  useEffect(() => {
-    if (!menuOpen) return
-    const handler = () => setMenuOpen(null)
-    document.addEventListener('click', handler)
-    return () => document.removeEventListener('click', handler)
-  }, [menuOpen])
+  function closeMenu() { setMenuOpen(null); setMenuPos(null) }
 
   const [dupWarning, setDupWarning] = useState<{ client: Client; field: string } | null>(null)
 
@@ -171,7 +169,7 @@ export default function ClientsPage() {
         <input type="text" value={search} onChange={e => setSearch(e.target.value)} className="input-base !pl-10" placeholder={t('searchPlaceholder')} />
       </div>
 
-      <div className="card overflow-visible">
+      <div className="card overflow-hidden">
         {clients.length === 0 && !search ? (
           <EmptyState icon="👥" title="Todavía no tenés clientes registrados." description="Los clientes se crean automáticamente cuando generás un presupuesto, o podés agregarlos manualmente." actionLabel="+ Agregar cliente" onAction={() => setModal({})} />
         ) : filtered.length === 0 ? (
@@ -182,36 +180,28 @@ export default function ClientsPage() {
         ) : (
           <>
             {/* Mobile cards */}
-            <div className="md:hidden space-y-2 p-3">
+            <div className="md:hidden px-3 py-1">
               {filtered.map(c => (
-                <div key={c.id} className="bg-white rounded-xl border border-gray-100 p-4" onClick={() => router.push(`/clients/${c.id}`)}>
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-[#F0FDFA] flex items-center justify-center text-sm font-semibold text-[#0F766E] flex-shrink-0">
-                        {c.name[0]?.toUpperCase() || '?'}
-                      </div>
-                      <div>
-                        <p className="font-semibold text-sm text-gray-900">
-                          {c.name}
-                          {c.tipo_cliente === 'empresa' && <span className="ml-1.5 text-[9px] px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-500 font-semibold">Empresa</span>}
-                        </p>
-                        {c.email && <p className="text-xs text-gray-400">{c.email}</p>}
-                      </div>
-                    </div>
-                    <div className="flex gap-1">
-                      <button onClick={e => { e.stopPropagation(); setModal(c) }} className="p-1.5 rounded-lg hover:bg-gray-100"><Pencil size={13} className="text-gray-400" /></button>
-                      <button onClick={e => { e.stopPropagation(); remove(c.id) }} className="p-1.5 rounded-lg hover:bg-red-50"><Trash2 size={13} className="text-red-400" /></button>
-                    </div>
+                <div key={c.id} className="flex items-center gap-3 py-3 border-b border-[#F3F3F1] cursor-pointer" onClick={() => router.push(`/clients/${c.id}`)}>
+                  <div className="w-10 h-10 rounded-lg bg-[#F0FDFA] flex items-center justify-center text-[#0F766E] font-semibold text-sm flex-shrink-0">
+                    {c.name[0]?.toUpperCase() || '?'}
                   </div>
-                  <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 truncate">
+                      {c.name}
+                      {c.tipo_cliente === 'empresa' && <span className="ml-1.5 text-[9px] px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-500 font-semibold">Empresa</span>}
+                    </p>
+                    {(c.whatsapp || c.phone) && <p className="text-xs text-gray-400 mt-0.5">{c.whatsapp || c.phone}</p>}
+                  </div>
+                  <div className="flex items-center gap-1 flex-shrink-0">
                     {(c.whatsapp || c.phone) && (
-                      <a href={waLink(c.whatsapp || c.phone || '')} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="flex items-center gap-1 text-green-600 font-medium">
-                        <MessageCircle size={12} /> {c.whatsapp || c.phone}
+                      <a href={waLink(c.whatsapp || c.phone || '')} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="p-2 rounded-lg hover:bg-[#F0FDFA] transition-colors">
+                        <MessageCircle size={16} className="text-[#0F766E]" />
                       </a>
                     )}
-                    {getClientOrders(c.id).length > 0 && (
-                      <span className="text-gray-500">{getClientOrders(c.id).length} pedidos</span>
-                    )}
+                    <button onClick={e => { e.stopPropagation(); setModal(c) }} className="p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                      <Pencil size={16} className="text-gray-400" />
+                    </button>
                   </div>
                 </div>
               ))}
@@ -258,18 +248,13 @@ export default function ClientsPage() {
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-0.5">
                           <button onClick={e => { e.stopPropagation(); setModal(c) }} className="p-1.5 rounded hover:bg-gray-100"><Pencil size={13} className="text-gray-400" /></button>
-                          <div className="relative">
-                            <button onClick={e => { e.stopPropagation(); setMenuOpen(menuOpen === c.id ? null : c.id) }} className="p-1.5 rounded hover:bg-gray-100"><MoreVertical size={13} className="text-gray-400" /></button>
-                            {menuOpen === c.id && (
-                              <div className="absolute right-0 top-full mt-1 bg-white rounded-xl border border-[#E5E5E3] shadow-lg py-1 min-w-[180px] z-50">
-                                <button onClick={e => { e.stopPropagation(); setModal(c); setMenuOpen(null) }} className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-[#F8F7F4] transition-colors flex items-center gap-2"><Pencil size={13} /> Editar</button>
-                                <button onClick={e => { e.stopPropagation(); router.push('/presupuesto'); setMenuOpen(null) }} className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-[#F8F7F4] transition-colors flex items-center gap-2"><Plus size={13} /> Nuevo presupuesto</button>
-                                {(c.whatsapp || c.phone) && <button onClick={e => { e.stopPropagation(); window.open(waLink(c.whatsapp || c.phone || ''), '_blank'); setMenuOpen(null) }} className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-[#F8F7F4] transition-colors flex items-center gap-2"><MessageCircle size={13} /> WhatsApp</button>}
-                                <div className="border-t border-[#F3F3F1] my-1" />
-                                <button onClick={e => { e.stopPropagation(); if (confirm(`¿Eliminar a ${c.name}? Los presupuestos y pedidos asociados NO se eliminan.`)) { supabase.from('clients').delete().eq('id', c.id).then(() => load()) }; setMenuOpen(null) }} className="w-full text-left px-4 py-2.5 text-sm text-red-400 hover:text-red-500 hover:bg-red-50 transition-colors flex items-center gap-2"><Trash2 size={13} /> Eliminar</button>
-                              </div>
-                            )}
-                          </div>
+                          <button onClick={e => {
+                            e.stopPropagation()
+                            if (menuOpen === c.id) { closeMenu(); return }
+                            const rect = e.currentTarget.getBoundingClientRect()
+                            setMenuPos({ top: rect.bottom + 4, left: rect.right - 180 })
+                            setMenuOpen(c.id)
+                          }} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"><MoreVertical size={14} className="text-gray-400" /></button>
                         </div>
                       </td>
                     </tr>
@@ -280,6 +265,26 @@ export default function ClientsPage() {
           </>
         )}
       </div>
+
+      {/* Context menu portal */}
+      {menuOpen && menuPos && (() => {
+        const c = clients.find(x => x.id === menuOpen)
+        if (!c) return null
+        return createPortal(
+          <>
+            <div className="fixed inset-0 z-[99]" onClick={closeMenu} />
+            <div className="fixed z-[100] bg-white rounded-xl border border-[#E5E5E3] shadow-lg py-1.5 min-w-[180px]"
+              style={{ top: menuPos.top, left: menuPos.left }}>
+              <button onClick={() => { setModal(c); closeMenu() }} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-[#F8F7F4] transition-colors flex items-center gap-2.5"><Pencil size={14} className="text-gray-400" /> Editar</button>
+              <button onClick={() => { router.push('/presupuesto'); closeMenu() }} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-[#F8F7F4] transition-colors flex items-center gap-2.5"><FileText size={14} className="text-gray-400" /> Nuevo presupuesto</button>
+              {(c.whatsapp || c.phone) && <button onClick={() => { window.open(waLink(c.whatsapp || c.phone || ''), '_blank'); closeMenu() }} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-[#F8F7F4] transition-colors flex items-center gap-2.5"><MessageCircle size={14} className="text-gray-400" /> WhatsApp</button>}
+              <div className="border-t border-[#F3F3F1] my-1" />
+              <button onClick={() => { if (confirm(`¿Eliminar a ${c.name}? Los presupuestos y pedidos asociados NO se eliminan.`)) { supabase.from('clients').delete().eq('id', c.id).then(() => load()) }; closeMenu() }} className="w-full text-left px-4 py-2 text-sm text-red-400 hover:text-red-500 hover:bg-red-50 transition-colors flex items-center gap-2.5"><Trash2 size={14} /> Eliminar</button>
+            </div>
+          </>,
+          document.body
+        )
+      })()}
 
       {/* Modal */}
       {modal && (
