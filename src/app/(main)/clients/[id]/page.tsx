@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, MessageCircle, Pencil, X, Plus } from 'lucide-react'
+import { ArrowLeft, MessageCircle, Pencil, X, Plus, Trash2 } from 'lucide-react'
 import { createClient } from '@/lib/db/client'
 import { useLocale } from '@/shared/context/LocaleContext'
 import { usePermissions } from '@/shared/context/PermissionsContext'
@@ -104,10 +104,10 @@ export default function ClientDetailPage() {
       </button>
 
       {/* Header */}
-      <div className="card p-5 mb-6">
+      <div className="rounded-2xl border border-[#E5E5E3] bg-white p-5 mb-6">
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-3">
-            <div className="w-12 h-12 rounded-full bg-teal-50 flex items-center justify-center text-teal-700 font-bold text-lg flex-shrink-0">
+            <div className="w-11 h-11 rounded-xl bg-[#F0FDFA] flex items-center justify-center text-[#0F766E] font-semibold text-base flex-shrink-0">
               {client.name[0]?.toUpperCase()}
             </div>
             <div>
@@ -122,30 +122,30 @@ export default function ClientDetailPage() {
             </div>
           </div>
           <div className="flex gap-1.5 flex-shrink-0">
-            {waNum && <a href={`https://wa.me/${waNum}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-green-700 bg-green-50 hover:bg-green-100"><MessageCircle size={14} /> WhatsApp</a>}
-            <button onClick={() => { setEditForm(client); setEditing(true) }} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200"><Pencil size={13} /> Editar</button>
+            {waNum && <a href={`https://wa.me/${waNum}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[#E5E5E3] text-sm font-medium text-gray-600 hover:bg-[#F8F7F4] transition-colors"><MessageCircle size={14} /> WhatsApp</a>}
+            <button onClick={() => { setEditForm(client); setEditing(true) }} className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[#E5E5E3] text-sm font-medium text-gray-600 hover:bg-[#F8F7F4] transition-colors"><Pencil size={13} /> Editar</button>
           </div>
         </div>
       </div>
 
       {/* Metrics */}
-      <div className={`grid gap-3 mb-6 ${isOwner ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-1 max-w-[200px]'}`}>
-        <div className="p-4 rounded-xl bg-gray-50">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Pedidos</p>
-          <p className="text-lg font-bold text-gray-800 mt-1">{orders.length}</p>
+      <div className={`grid gap-3 mb-6 ${isOwner ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 max-w-[200px]'}`}>
+        <div className="rounded-xl border border-[#E5E5E3] bg-white p-4">
+          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Pedidos</p>
+          <p className="text-xl font-bold text-gray-900 mt-1 tabular-nums">{orders.length}</p>
         </div>
         {isOwner && <>
-          <div className="p-4 rounded-xl bg-gray-50">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Total gastado</p>
-            <p className="text-lg font-bold text-gray-800 mt-1">{fmt(totalGastado)}</p>
+          <div className="rounded-xl border border-[#E5E5E3] bg-white p-4">
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Total gastado</p>
+            <p className="text-xl font-bold text-gray-900 mt-1 tabular-nums">{fmt(totalGastado)}</p>
           </div>
-          <div className="p-4 rounded-xl bg-gray-50">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Ticket promedio</p>
-            <p className="text-lg font-bold text-gray-800 mt-1">{fmt(ticketPromedio)}</p>
+          <div className="rounded-xl border border-[#E5E5E3] bg-white p-4">
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Ticket promedio</p>
+            <p className="text-xl font-bold text-gray-900 mt-1 tabular-nums">{fmt(ticketPromedio)}</p>
           </div>
-          <div className="p-4 rounded-xl bg-gray-50 relative cursor-pointer" onClick={() => pendiente > 0 && setPendienteOpen(!pendienteOpen)}>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Pendiente</p>
-            <p className="text-lg font-bold text-gray-800 mt-1">{fmt(pendiente)}</p>
+          <div className="rounded-xl border border-[#E5E5E3] bg-white p-4 relative cursor-pointer" onClick={() => pendiente > 0 && setPendienteOpen(!pendienteOpen)}>
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Pendiente</p>
+            <p className={`text-xl font-bold mt-1 tabular-nums ${pendiente > 0 ? 'text-red-500' : 'text-gray-900'}`}>{fmt(pendiente)}</p>
             {pendienteOpen && pendingOrders.length > 0 && (
               <div className="absolute z-20 top-full left-0 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 p-3 min-w-[280px]">
                 {pendingOrders.map(o => {
@@ -164,10 +164,10 @@ export default function ClientDetailPage() {
       </div>
 
       {/* Presupuestos */}
-      <div className="card p-5 mb-6">
+      <div className="rounded-2xl border border-[#E5E5E3] bg-white p-5 mb-6">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Presupuestos ({presupuestos.length})</h3>
-          <Link href="/presupuesto" className="flex items-center gap-1 text-xs font-semibold text-[#0F766E] hover:text-[#5A4BD1]"><Plus size={12} /> Nuevo presupuesto</Link>
+          <h3 className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Presupuestos ({presupuestos.length})</h3>
+          <Link href="/presupuesto" className="flex items-center gap-1 text-sm font-medium text-[#0F766E] hover:text-[#0D9488] transition-colors"><Plus size={12} /> Nuevo presupuesto</Link>
         </div>
         {presupuestos.length > 0 ? (
           <div className="space-y-2">
@@ -192,8 +192,8 @@ export default function ClientDetailPage() {
       </div>
 
       {/* Pedidos */}
-      <div className="card p-5 mb-6">
-        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">Pedidos ({orders.length})</h3>
+      <div className="rounded-2xl border border-[#E5E5E3] bg-white p-5 mb-6">
+        <h3 className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-3">Pedidos ({orders.length})</h3>
         {orders.length > 0 ? (
           <div className="space-y-2">
             {orders.map(o => {
@@ -215,13 +215,22 @@ export default function ClientDetailPage() {
       </div>
 
       {/* Notes */}
-      <div className="card p-5 mb-6">
-        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">Notas</h3>
+      <div className="rounded-2xl border border-[#E5E5E3] bg-white p-5 mb-6">
+        <h3 className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-3">Notas</h3>
         <textarea className="input-base resize-none text-sm" rows={3} value={notes}
           onChange={e => handleNotesChange(e.target.value)}
           placeholder="Agregar notas sobre este cliente..." />
         {notesSaved && <p className="text-[10px] text-gray-400 mt-1">✓ Guardado</p>}
       </div>
+
+      {/* Delete */}
+      <button onClick={async () => {
+        if (!confirm(`¿Eliminar a ${client.name}? Los presupuestos y pedidos asociados NO se eliminan.`)) return
+        await supabase.from('clients').delete().eq('id', client.id)
+        router.push('/clients')
+      }} className="flex items-center justify-center gap-1.5 mt-2 py-2 text-xs font-medium text-gray-400 hover:text-red-500 transition-colors w-full">
+        <Trash2 size={14} /> Eliminar cliente
+      </button>
 
       {/* Edit modal */}
       {editing && (
@@ -232,39 +241,56 @@ export default function ClientDetailPage() {
               <button onClick={() => setEditing(false)} className="p-2 rounded-lg hover:bg-gray-100"><X size={16} /></button>
             </div>
             <div className="space-y-4">
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
-                <input className="input-base" value={editForm.name || ''} onChange={e => setEditForm({ ...editForm, name: e.target.value })} /></div>
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">Teléfono / WhatsApp</label>
-                <input className="input-base" value={editForm.whatsapp || ''} onChange={e => setEditForm({ ...editForm, whatsapp: e.target.value })} placeholder="+54 351 5643137" /></div>
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input type="email" className="input-base" value={editForm.email || ''} onChange={e => setEditForm({ ...editForm, email: e.target.value })} /></div>
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">Identificación fiscal</label>
-                <input className="input-base" value={editForm.identificacion_fiscal || ''} onChange={e => setEditForm({ ...editForm, identificacion_fiscal: e.target.value })} /></div>
+              <div><label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Nombre *</label>
+                <input className="input-base text-sm" value={editForm.name || ''} onChange={e => setEditForm({ ...editForm, name: e.target.value })} placeholder="Nombre del cliente o empresa" /></div>
+              <div><label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Teléfono / WhatsApp</label>
+                <input className="input-base text-sm" value={editForm.whatsapp || ''} onChange={e => setEditForm({ ...editForm, whatsapp: e.target.value })} placeholder="+54 351 555 1234" /></div>
+              <div><label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Email</label>
+                <input type="email" className="input-base text-sm" value={editForm.email || ''} onChange={e => setEditForm({ ...editForm, email: e.target.value })} placeholder="email@ejemplo.com" /></div>
+              <div><label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Tipo de cliente</label>
+                <select className="input-base text-sm" value={editForm.tipo_cliente || 'persona'} onChange={e => setEditForm({ ...editForm, tipo_cliente: e.target.value })}>
+                  <option value="persona">Persona</option>
+                  <option value="empresa">Empresa</option>
+                </select></div>
+              {editForm.tipo_cliente === 'empresa' && (
+                <div><label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Empresa / Razón Social</label>
+                  <input className="input-base text-sm" value={editForm.razon_social || ''} onChange={e => setEditForm({ ...editForm, razon_social: e.target.value })} placeholder="Nombre legal de la empresa" /></div>
+              )}
+              <div><label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Identificación fiscal</label>
+                <input className="input-base text-sm" value={editForm.identificacion_fiscal || ''} onChange={e => setEditForm({ ...editForm, identificacion_fiscal: e.target.value })} placeholder="Ej: 20-12345678-9" /></div>
+              <div><label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Dirección</label>
+                <input className="input-base text-sm" value={editForm.direccion || ''} onChange={e => setEditForm({ ...editForm, direccion: e.target.value })} placeholder="Calle y número" /></div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">Ciudad</label>
-                  <input className="input-base" value={editForm.ciudad || ''} onChange={e => setEditForm({ ...editForm, ciudad: e.target.value })} /></div>
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">Provincia</label>
-                  <input className="input-base" value={editForm.provincia || ''} onChange={e => setEditForm({ ...editForm, provincia: e.target.value })} /></div>
+                <div><label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Ciudad</label>
+                  <input className="input-base text-sm" value={editForm.ciudad || ''} onChange={e => setEditForm({ ...editForm, ciudad: e.target.value })} placeholder="Ej: Córdoba Capital" /></div>
+                <div><label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Provincia</label>
+                  <input className="input-base text-sm" value={editForm.provincia || ''} onChange={e => setEditForm({ ...editForm, provincia: e.target.value })} placeholder="Ej: Córdoba" /></div>
               </div>
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">Notas internas</label>
-                <textarea className="input-base resize-none" rows={3} value={editForm.notas || ''} onChange={e => setEditForm({ ...editForm, notas: e.target.value })} /></div>
+              <div><label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Notas internas</label>
+                <textarea className="input-base resize-none text-sm" rows={3} value={editForm.notas || ''} onChange={e => setEditForm({ ...editForm, notas: e.target.value })} placeholder="Notas internas sobre este cliente..." />
+                <p className="text-[10px] text-gray-400 mt-0.5">Solo visible para vos, no aparece en presupuestos.</p></div>
             </div>
-            <button disabled={!editForm.name?.trim() || saving} onClick={async () => {
-              setSaving(true)
-              await supabase.from('clients').update({
-                name: capitalize(editForm.name?.trim() || ''), email: editForm.email?.trim()?.toLowerCase() || null,
-                whatsapp: editForm.whatsapp?.trim() || null, phone: editForm.whatsapp?.trim() || null,
-                identificacion_fiscal: editForm.identificacion_fiscal?.trim() || null,
-                ciudad: editForm.ciudad?.trim() || null, provincia: editForm.provincia?.trim() || null,
-                notas: editForm.notas?.trim() || null,
-              }).eq('id', client.id)
-              setSaving(false); setEditing(false)
-              // Reload client data
-              const { data: c } = await supabase.from('clients').select('*').eq('id', id).single()
-              if (c) setClient(c)
-            }} className="w-full mt-6 py-2.5 rounded-xl font-semibold text-sm text-white disabled:opacity-40" style={{ background: '#0F766E' }}>
-              {saving ? 'Guardando...' : 'Guardar cambios'}
-            </button>
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => setEditing(false)} className="flex-1 py-2.5 rounded-xl border border-[#E5E5E3] text-sm font-medium text-gray-600 hover:bg-[#F8F7F4] transition-colors">Cancelar</button>
+              <button disabled={!editForm.name?.trim() || saving} onClick={async () => {
+                setSaving(true)
+                await supabase.from('clients').update({
+                  name: capitalize(editForm.name?.trim() || ''), email: editForm.email?.trim()?.toLowerCase() || null,
+                  whatsapp: editForm.whatsapp?.trim() || null, phone: editForm.whatsapp?.trim() || null,
+                  tipo_cliente: editForm.tipo_cliente || 'persona',
+                  razon_social: editForm.razon_social?.trim() || null,
+                  identificacion_fiscal: editForm.identificacion_fiscal?.trim() || null,
+                  direccion: editForm.direccion?.trim() || null,
+                  ciudad: editForm.ciudad?.trim() || null, provincia: editForm.provincia?.trim() || null,
+                  notas: editForm.notas?.trim() || null,
+                }).eq('id', client.id)
+                setSaving(false); setEditing(false)
+                const { data: c } = await supabase.from('clients').select('*').eq('id', id).single()
+                if (c) { setClient(c); setNotes(c.notas || '') }
+              }} className="flex-1 py-2.5 rounded-xl bg-[#0F766E] text-white text-sm font-semibold hover:bg-[#0D9488] transition-colors disabled:opacity-40">
+                {saving ? 'Guardando...' : 'Guardar'}
+              </button>
+            </div>
           </div>
         </div>
       )}

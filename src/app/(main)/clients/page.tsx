@@ -160,7 +160,7 @@ export default function ClientsPage() {
           <button onClick={() => { setImportModal(true); setImportStep(1); setImportData([]); setImportResult(null) }} className="flex items-center gap-1.5 px-3 py-2 rounded-xl whitespace-nowrap text-xs sm:text-sm font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50">
             <Upload size={14} /> {t('importClients')}
           </button>
-          <button onClick={() => { setModal({}) }} className="flex items-center gap-1.5 px-4 py-2 rounded-xl whitespace-nowrap text-xs sm:text-sm font-semibold text-white" style={{ background: '#0F766E', boxShadow: '0 4px 14px rgba(15,118,110,0.3)' }}>
+          <button onClick={() => { setModal({}) }} className="flex items-center gap-1.5 px-4 py-2 rounded-xl whitespace-nowrap text-xs sm:text-sm font-semibold text-white bg-[#0F766E] hover:bg-[#0D9488] transition-colors shadow-sm">
             <Plus size={15} /> {t('newClient')}
           </button>
         </div>
@@ -187,7 +187,7 @@ export default function ClientsPage() {
                 <div key={c.id} className="bg-white rounded-xl border border-gray-100 p-4" onClick={() => router.push(`/clients/${c.id}`)}>
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0" style={{ background: 'linear-gradient(135deg, #0F766E, #a29bfe)' }}>
+                      <div className="w-9 h-9 rounded-lg bg-[#F0FDFA] flex items-center justify-center text-sm font-semibold text-[#0F766E] flex-shrink-0">
                         {c.name[0]?.toUpperCase() || '?'}
                       </div>
                       <div>
@@ -221,12 +221,12 @@ export default function ClientsPage() {
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full min-w-[700px]">
                 <thead><tr className="border-b border-gray-100">
-                  <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">{t('name')}</th>
-                  <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">Teléfono</th>
-                  <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">{t('emailField')}</th>
-                  <th className="text-right text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">Facturado</th>
-                  <th className="text-center text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">Pedidos</th>
-                  <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">Último</th>
+                  <th className="text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">{t('name')}</th>
+                  <th className="text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">Teléfono</th>
+                  <th className="text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">{t('emailField')}</th>
+                  <th className="text-right text-[10px] font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">Facturado</th>
+                  <th className="text-center text-[10px] font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">Pedidos</th>
+                  <th className="text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">Último</th>
                   <th className="px-4 py-3"></th>
                 </tr></thead>
                 <tbody>
@@ -234,7 +234,7 @@ export default function ClientsPage() {
                     <tr key={c.id} className="border-b border-gray-50 hover:bg-gray-50 cursor-pointer" onClick={() => router.push(`/clients/${c.id}`)}>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-full bg-teal-50 flex items-center justify-center text-teal-700 font-bold text-sm flex-shrink-0">
+                          <div className="w-8 h-8 rounded-lg bg-[#F0FDFA] flex items-center justify-center text-[#0F766E] font-semibold text-xs flex-shrink-0">
                             {c.name[0]?.toUpperCase()}
                           </div>
                           <div>
@@ -261,12 +261,12 @@ export default function ClientsPage() {
                           <div className="relative">
                             <button onClick={e => { e.stopPropagation(); setMenuOpen(menuOpen === c.id ? null : c.id) }} className="p-1.5 rounded hover:bg-gray-100"><MoreVertical size={13} className="text-gray-400" /></button>
                             {menuOpen === c.id && (
-                              <div className="absolute right-0 top-full mt-1 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-20 w-48">
-                                <button onClick={e => { e.stopPropagation(); setModal(c); setMenuOpen(null) }} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">Editar</button>
-                                <button onClick={e => { e.stopPropagation(); router.push('/presupuesto'); setMenuOpen(null) }} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">Nuevo presupuesto</button>
-                                {(c.whatsapp || c.phone) && <button onClick={e => { e.stopPropagation(); window.open(waLink(c.whatsapp || c.phone || ''), '_blank'); setMenuOpen(null) }} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">WhatsApp</button>}
-                                <div className="border-t border-gray-100 my-1" />
-                                <button onClick={e => { e.stopPropagation(); if (confirm(`¿Eliminar a ${c.name}? Los presupuestos y pedidos asociados NO se eliminan.`)) { supabase.from('clients').delete().eq('id', c.id).then(() => load()) }; setMenuOpen(null) }} className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50">Eliminar</button>
+                              <div className="absolute right-0 top-full mt-1 bg-white rounded-xl border border-[#E5E5E3] shadow-lg py-1 min-w-[180px] z-50">
+                                <button onClick={e => { e.stopPropagation(); setModal(c); setMenuOpen(null) }} className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-[#F8F7F4] transition-colors flex items-center gap-2"><Pencil size={13} /> Editar</button>
+                                <button onClick={e => { e.stopPropagation(); router.push('/presupuesto'); setMenuOpen(null) }} className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-[#F8F7F4] transition-colors flex items-center gap-2"><Plus size={13} /> Nuevo presupuesto</button>
+                                {(c.whatsapp || c.phone) && <button onClick={e => { e.stopPropagation(); window.open(waLink(c.whatsapp || c.phone || ''), '_blank'); setMenuOpen(null) }} className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-[#F8F7F4] transition-colors flex items-center gap-2"><MessageCircle size={13} /> WhatsApp</button>}
+                                <div className="border-t border-[#F3F3F1] my-1" />
+                                <button onClick={e => { e.stopPropagation(); if (confirm(`¿Eliminar a ${c.name}? Los presupuestos y pedidos asociados NO se eliminan.`)) { supabase.from('clients').delete().eq('id', c.id).then(() => load()) }; setMenuOpen(null) }} className="w-full text-left px-4 py-2.5 text-sm text-red-400 hover:text-red-500 hover:bg-red-50 transition-colors flex items-center gap-2"><Trash2 size={13} /> Eliminar</button>
                               </div>
                             )}
                           </div>
@@ -291,24 +291,24 @@ export default function ClientsPage() {
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('name')} *</label>
+                <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">{t('name')} *</label>
                 <input autoFocus value={modal.name || ''} onChange={e => setModal({ ...modal, name: e.target.value })}
                   onKeyDown={e => e.key === 'Enter' && save()} className="input-base" placeholder="Nombre del cliente o empresa" />
               </div>
               <div>
-                <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1">
+                <label className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">
                   <MessageCircle size={14} className="text-green-500" /> Teléfono / WhatsApp
                 </label>
                 <input value={modal.whatsapp || ''} onChange={e => setModal({ ...modal, whatsapp: e.target.value })}
                   className="input-base" placeholder="Ej: +54 351 555 1234" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('emailField')}</label>
+                <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">{t('emailField')}</label>
                 <input type="email" value={modal.email || ''} onChange={e => setModal({ ...modal, email: e.target.value })}
                   className="input-base" placeholder="email@ejemplo.com" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de cliente</label>
+                <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Tipo de cliente</label>
                 <select className="input-base" value={modal.tipo_cliente || 'persona'} onChange={e => setModal({ ...modal, tipo_cliente: e.target.value })}>
                   <option value="persona">Persona</option>
                   <option value="empresa">Empresa</option>
@@ -316,35 +316,35 @@ export default function ClientsPage() {
               </div>
               {modal.tipo_cliente === 'empresa' && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Empresa / Razón Social</label>
+                  <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Empresa / Razón Social</label>
                   <input value={modal.razon_social || ''} onChange={e => setModal({ ...modal, razon_social: e.target.value })}
                     className="input-base" placeholder="Nombre legal de la empresa" />
                 </div>
               )}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Identificación fiscal</label>
+                <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Identificación fiscal</label>
                 <input value={modal.identificacion_fiscal || ''} onChange={e => setModal({ ...modal, identificacion_fiscal: e.target.value })}
                   className="input-base" placeholder="Ej: 20-12345678-9" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Dirección</label>
+                <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Dirección</label>
                 <input value={modal.direccion || ''} onChange={e => setModal({ ...modal, direccion: e.target.value })}
                   className="input-base" placeholder="Calle y número" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Ciudad</label>
+                  <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Ciudad</label>
                   <input value={modal.ciudad || ''} onChange={e => setModal({ ...modal, ciudad: e.target.value })}
                     className="input-base" placeholder="Ej: Córdoba Capital" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Provincia</label>
+                  <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Provincia</label>
                   <input value={modal.provincia || ''} onChange={e => setModal({ ...modal, provincia: e.target.value })}
                     className="input-base" placeholder="Ej: Córdoba" />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('notes')}</label>
+                <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">{t('notes')}</label>
                 <textarea value={modal.notas || ''} onChange={e => setModal({ ...modal, notas: e.target.value })}
                   className="input-base resize-none" rows={3} placeholder="Notas internas sobre este cliente..." />
                 <p className="text-[10px] text-gray-400 mt-0.5">Solo visible para vos, no aparece en presupuestos.</p>
@@ -437,7 +437,7 @@ export default function ClientsPage() {
             {importStep === 2 && (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Código de país</label>
+                  <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Código de país</label>
                   <select className="input-base text-sm" value={importCountry} onChange={e => setImportCountry(e.target.value)}>
                     {[['54','Argentina'],['52','México'],['57','Colombia'],['56','Chile'],['51','Perú'],['593','Ecuador'],['598','Uruguay'],['595','Paraguay'],['591','Bolivia'],['55','Brasil'],['58','Venezuela']].map(([c,n]) => (
                       <option key={c} value={c}>+{c} {n}</option>
