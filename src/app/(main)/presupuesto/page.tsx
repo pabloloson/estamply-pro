@@ -185,7 +185,11 @@ export default function PresupuestoPage() {
   }
 
   // ── Explicit save: one button, one UPDATE ──
+  const savingRef = useRef(false)
   async function handleGuardar() {
+    if (savingRef.current) return // prevent concurrent saves
+    savingRef.current = true
+    try {
     const pid = dbIdRef.current
     if (!pid) {
       // Create new presupuesto first
@@ -215,6 +219,7 @@ export default function PresupuestoPage() {
     }).eq('id', pid)
     if (error) { setSaveStatus('error') }
     else { setDirty(false); setSaveStatus('saved'); setTimeout(() => setSaveStatus(s => s === 'saved' ? 'idle' : s), 3000) }
+    } finally { savingRef.current = false }
   }
 
   // Autosave on data changes (only when a presupuesto exists or items are loaded)
@@ -1204,7 +1209,7 @@ export default function PresupuestoPage() {
             </div>
 
             {/* ── RIGHT: Actions ── */}
-            <div className="lg:w-72 space-y-4 no-print">
+            <div className="lg:w-80 lg:max-w-[320px] flex-shrink-0 space-y-4 no-print">
               {/* Share */}
               <div className="rounded-2xl border border-[#E5E5E3] bg-white p-4 sm:p-5 space-y-3">
                 <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">{t('share')}</p>
@@ -1256,7 +1261,7 @@ export default function PresupuestoPage() {
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">{t('deliveryDate')}</label>
                   <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)}
-                    className="input-base text-sm" />
+                    className="input-base text-sm w-full" />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">{t('deposit')}</label>
