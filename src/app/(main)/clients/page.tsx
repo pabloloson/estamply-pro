@@ -171,7 +171,7 @@ export default function ClientsPage() {
         <input type="text" value={search} onChange={e => setSearch(e.target.value)} className="input-base !pl-10" placeholder={t('searchPlaceholder')} />
       </div>
 
-      <div className="card overflow-hidden">
+      <div className="card overflow-visible">
         {clients.length === 0 && !search ? (
           <EmptyState icon="👥" title="Todavía no tenés clientes registrados." description="Los clientes se crean automáticamente cuando generás un presupuesto, o podés agregarlos manualmente." actionLabel="+ Agregar cliente" onAction={() => setModal({})} />
         ) : filtered.length === 0 ? (
