@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Check, MessageCircle, Calendar, DollarSign, ShoppingBag, Clock, TrendingUp, ChevronDown } from 'lucide-react'
+import { Check, MessageCircle, Calendar, DollarSign, ShoppingBag, Clock, TrendingUp, ChevronDown, AlertCircle } from 'lucide-react'
 import { useTranslations } from '@/shared/hooks/useTranslations'
 import { useLocale } from '@/shared/context/LocaleContext'
 import { usePermissions } from '@/shared/context/PermissionsContext'
@@ -17,7 +17,7 @@ interface Props {
 }
 
 const SL: Record<string, string> = { pending: 'Pendiente', production: 'En producción', ready: 'Listo' }
-const SC: Record<string, string> = { pending: '#FDCB6E', production: '#0F766E', ready: '#00B894' }
+const SC: Record<string, string> = { pending: 'bg-amber-500', production: 'bg-blue-600', ready: 'bg-emerald-600' }
 
 export default function DashboardClient({ shopName, orders, payments, presupuestos, setupCounts, exchangeRate }: Props) {
   const t = useTranslations('dashboard')
@@ -77,7 +77,7 @@ export default function DashboardClient({ shopName, orders, payments, presupuest
     return (
       <div className="max-w-2xl mx-auto">
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-black text-gray-900">¡Bienvenido a Estamply! 👋</h1>
+          <h1 className="text-2xl font-black text-gray-900">¡Bienvenido a Estamply!</h1>
           <p className="text-gray-500 mt-2">Configurá tu taller para empezar a cotizar con precisión.</p>
         </div>
         <div className="space-y-3">
@@ -108,12 +108,12 @@ export default function DashboardClient({ shopName, orders, payments, presupuest
     )
   }
 
-  const alerts: Array<{ color: string; icon: string; text: string; detail?: string; href: string; items?: Array<{ name: string; info: string; wa?: string }> }> = []
-  if (overdue.length > 0) alerts.push({ color: '#EF4444', icon: '🔴', text: `Tenés ${overdue.length} pedido${overdue.length > 1 ? 's' : ''} atrasado${overdue.length > 1 ? 's' : ''}`, href: '/orders' })
-  if (totalPorCobrar > 0 && showPrices) alerts.push({ color: '#F97316', icon: '🟠', text: `Tenés ${fmt(totalPorCobrar)} por cobrar de ${pendingColl.length} pedido${pendingColl.length > 1 ? 's' : ''}`, href: '/orders',
+  const alerts: Array<{ bgColor: string; iconColor: string; iconBg: string; text: string; detail?: string; href: string; items?: Array<{ name: string; info: string; wa?: string }> }> = []
+  if (overdue.length > 0) alerts.push({ bgColor: 'bg-red-50/50 border-red-200', iconColor: 'text-red-600', iconBg: 'bg-red-100', text: `Tenés ${overdue.length} pedido${overdue.length > 1 ? 's' : ''} atrasado${overdue.length > 1 ? 's' : ''}`, href: '/orders' })
+  if (totalPorCobrar > 0 && showPrices) alerts.push({ bgColor: 'bg-amber-50/50 border-amber-200', iconColor: 'text-amber-600', iconBg: 'bg-amber-100', text: `Tenés ${fmt(totalPorCobrar)} por cobrar de ${pendingColl.length} pedido${pendingColl.length > 1 ? 's' : ''}`, href: '/orders',
     items: pendingColl.sort((a, b) => ((b.total_price as number) - paidFor(b.id as string)) - ((a.total_price as number) - paidFor(a.id as string))).slice(0, 3).map(o => ({ name: (o.clients as Record<string, string>)?.name || 'Sin cliente', info: fmt((o.total_price as number) - paidFor(o.id as string)), wa: (o.clients as Record<string, string>)?.whatsapp })) })
-  if (oldPres.length > 0) alerts.push({ color: '#EAB308', icon: '🟡', text: `${oldPres.length} presupuesto${oldPres.length > 1 ? 's' : ''} espera${oldPres.length > 1 ? 'n' : ''} respuesta hace más de 5 días`, href: '/presupuesto' })
-  if (webPres.length > 0) alerts.push({ color: '#3B82F6', icon: '🔵', text: `Tenés ${webPres.length} presupuesto${webPres.length > 1 ? 's' : ''} nuevo${webPres.length > 1 ? 's' : ''} del catálogo web`, href: '/presupuesto' })
+  if (oldPres.length > 0) alerts.push({ bgColor: 'bg-yellow-50/50 border-yellow-200', iconColor: 'text-yellow-600', iconBg: 'bg-yellow-100', text: `${oldPres.length} presupuesto${oldPres.length > 1 ? 's' : ''} espera${oldPres.length > 1 ? 'n' : ''} respuesta hace más de 5 días`, href: '/presupuesto' })
+  if (webPres.length > 0) alerts.push({ bgColor: 'bg-blue-50/50 border-blue-200', iconColor: 'text-blue-600', iconBg: 'bg-blue-100', text: `Tenés ${webPres.length} presupuesto${webPres.length > 1 ? 's' : ''} nuevo${webPres.length > 1 ? 's' : ''} del catálogo web`, href: '/presupuesto' })
 
   const [activityOpen, setActivityOpen] = useState(true)
 
@@ -140,7 +140,7 @@ export default function DashboardClient({ shopName, orders, payments, presupuest
     <div className="max-w-5xl mx-auto space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-black text-gray-900">{t(greetingKey, { name: shopName })} 👋</h1>
+        <h1 className="text-2xl font-black text-gray-900">{t(greetingKey, { name: shopName })}</h1>
         <p className="text-sm text-gray-400 mt-0.5">{dateStr.charAt(0).toUpperCase() + dateStr.slice(1)}</p>
       </div>
 
@@ -156,28 +156,28 @@ export default function DashboardClient({ shopName, orders, payments, presupuest
       {alerts.length > 0 && (
         <div className="space-y-2">
           {alerts.map((alert, i) => (
-            <Link key={i} href={alert.href} className="block p-5 rounded-xl hover:shadow-md transition-all" style={{ borderLeft: `4px solid ${alert.color}`, background: `${alert.color}08`, border: `1px solid ${alert.color}20`, borderLeftWidth: 4, borderLeftColor: alert.color }}>
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-start gap-3 flex-1">
-                  <span className="text-xl mt-0.5">{alert.icon}</span>
-                  <div>
-                    <p className="text-sm font-bold text-gray-800">{alert.text}</p>
-                    {alert.items && (
-                      <div className="mt-2 space-y-1.5">
-                        {alert.items.map((item, j) => (
-                          <div key={j} className="flex items-center justify-between text-xs">
-                            <span className="text-gray-600">{item.name}</span>
-                            <div className="flex items-center gap-2">
-                              <span className="font-bold text-gray-700">{item.info}</span>
-                              {item.wa && <a href={`https://wa.me/${item.wa.replace(/[\s\-\(\)]/g, '')}`} target="_blank" rel="noopener" onClick={e => { e.preventDefault(); e.stopPropagation(); window.open(`https://wa.me/${item.wa!.replace(/[\s\-\(\)]/g, '')}`, '_blank') }} className="text-green-600 hover:text-green-700"><MessageCircle size={13} /></a>}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+            <Link key={i} href={alert.href} className={`block rounded-xl border ${alert.bgColor} p-4 hover:shadow-md transition-all`}>
+              <div className="flex items-center gap-3">
+                <div className={`w-8 h-8 rounded-full ${alert.iconBg} flex items-center justify-center flex-shrink-0`}>
+                  <AlertCircle size={16} className={alert.iconColor} />
                 </div>
-                <span className="text-xs font-semibold flex-shrink-0" style={{ color: alert.color }}>Ver →</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-900">{alert.text}</p>
+                  {alert.items && (
+                    <div className="mt-1.5 space-y-1">
+                      {alert.items.map((item, j) => (
+                        <div key={j} className="flex items-center justify-between text-xs">
+                          <span className="text-gray-500">{item.name}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-gray-700">{item.info}</span>
+                            {item.wa && <a href={`https://wa.me/${item.wa.replace(/[\s\-\(\)]/g, '')}`} target="_blank" rel="noopener" onClick={e => { e.preventDefault(); e.stopPropagation(); window.open(`https://wa.me/${item.wa!.replace(/[\s\-\(\)]/g, '')}`, '_blank') }} className="text-green-600 hover:text-green-700"><MessageCircle size={13} /></a>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <span className="text-sm font-medium text-[#0F766E] hover:text-[#0D9488] flex-shrink-0">Ver →</span>
               </div>
             </Link>
           ))}
@@ -188,19 +188,19 @@ export default function DashboardClient({ shopName, orders, payments, presupuest
       {showPrices && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            { label: 'Facturación hoy', value: fmt(todayRev), sub: `vs ${fmt(yesterdayRev)} ayer`, icon: DollarSign, color: '#22C55E', href: '/estadisticas' },
-            { label: 'Pedidos hoy', value: String(todayOrders.length), sub: `${todayOrders.length - todayCompleted} nuevos, ${todayCompleted} completados`, icon: ShoppingBag, color: '#0F766E', href: '/orders' },
-            { label: 'Por cobrar', value: fmt(totalPorCobrar), sub: `${pendingColl.length} pedido${pendingColl.length !== 1 ? 's' : ''}`, icon: Clock, color: '#F59E0B', href: '/orders', highlight: totalPorCobrar > 100000 },
-            { label: 'Conversión', value: `${convRate}%`, sub: `${convConverted} de ${convTotal}`, icon: TrendingUp, color: '#3B82F6', href: '/estadisticas' },
+            { label: 'Facturación hoy', value: fmt(todayRev), sub: `vs ${fmt(yesterdayRev)} ayer`, icon: DollarSign, href: '/estadisticas', isAmber: false },
+            { label: 'Pedidos hoy', value: String(todayOrders.length), sub: `${todayOrders.length - todayCompleted} nuevos, ${todayCompleted} completados`, icon: ShoppingBag, href: '/orders', isAmber: false },
+            { label: 'Por cobrar', value: fmt(totalPorCobrar), sub: `${pendingColl.length} pedido${pendingColl.length !== 1 ? 's' : ''}`, icon: Clock, href: '/orders', isAmber: totalPorCobrar > 0 },
+            { label: 'Conversión', value: `${convRate}%`, sub: `${convConverted} de ${convTotal}`, icon: TrendingUp, href: '/estadisticas', isAmber: false },
           ].map(c => (
-            <Link key={c.label} href={c.href} className={`card p-5 hover:shadow-md transition-all cursor-pointer ${(c as { highlight?: boolean }).highlight ? 'ring-1 ring-amber-200' : ''}`}>
+            <Link key={c.label} href={c.href} className="rounded-2xl border border-[#E5E5E3] bg-white p-5 hover:shadow-md transition-all cursor-pointer">
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `${c.color}15` }}>
-                  <c.icon size={16} style={{ color: c.color }} />
+                <div className="w-10 h-10 rounded-xl bg-[#F0FDFA] flex items-center justify-center">
+                  <c.icon size={20} className="text-[#0F766E]" />
                 </div>
-                <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">{c.label}</span>
+                <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{c.label}</span>
               </div>
-              <p className="text-2xl font-black text-gray-900">{c.value}</p>
+              <p className={`text-2xl font-bold tabular-nums ${c.isAmber ? 'text-amber-600' : 'text-gray-900'}`}>{c.value}</p>
               <p className="text-xs text-gray-400 mt-1">{c.sub}</p>
             </Link>
           ))}
@@ -208,8 +208,9 @@ export default function DashboardClient({ shopName, orders, payments, presupuest
       )}
 
       {/* Mini 7-day chart */}
-      {showPrices && (
-        <Link href="/estadisticas" className="card p-4 hover:shadow-md transition-all hidden md:block">
+      {showPrices && last7.some(d => d.value > 0) && (
+        <Link href="/estadisticas" className="rounded-2xl border border-[#E5E5E3] bg-white p-5 hover:shadow-md transition-all hidden md:block">
+          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-3">Facturación últimos 7 días</p>
           <div className="flex items-end gap-1 h-16">
             {last7.map((d, i) => (
               <div key={i} className="flex-1 flex flex-col items-center gap-1">
@@ -224,20 +225,20 @@ export default function DashboardClient({ shopName, orders, payments, presupuest
       {/* Pedidos en curso */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Pipeline */}
-        <div className="card p-6">
+        <div className="rounded-2xl border border-[#E5E5E3] bg-white p-5">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-bold text-gray-800">{t('activeOrders')}</h2>
-            <Link href="/orders" className="text-xs text-teal-700 font-semibold hover:text-teal-900">{t('viewAll')} →</Link>
+            <h2 className="text-sm font-semibold text-gray-900">{t('activeOrders')}</h2>
+            <Link href="/orders" className="text-sm font-medium text-[#0F766E] hover:text-[#0D9488]">{t('viewAll')} →</Link>
           </div>
           <div className="space-y-1">
             {(['pending', 'production', 'ready'] as const).map(s => (
               <Link key={s} href="/orders" className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors group">
                 <div className="flex items-center gap-3">
-                  <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: SC[s] }} />
+                  <span className={`w-3 h-3 rounded-full flex-shrink-0 ${SC[s]}`} />
                   <span className={`text-sm font-medium ${countBy[s] > 0 ? 'text-gray-700' : 'text-gray-300'}`}>{SL[s]}</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className={`text-sm font-bold ${countBy[s] > 0 ? 'text-gray-800' : 'text-gray-300'}`}>{countBy[s]}</span>
+                  <span className={`text-sm ${countBy[s] > 0 ? 'text-gray-900 font-semibold' : 'text-gray-300'}`}>{countBy[s]}</span>
                   {showPrices && amountBy[s] > 0 && <span className="text-xs text-gray-400">{fmt(amountBy[s])}</span>}
                   <span className="text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity">→</span>
                 </div>
@@ -247,8 +248,8 @@ export default function DashboardClient({ shopName, orders, payments, presupuest
         </div>
 
         {/* Próximas entregas */}
-        <div className={`card ${upcoming.length > 0 ? 'p-6' : 'p-6'}`}>
-          <h2 className="font-bold text-gray-800 mb-4">Próximas entregas</h2>
+        <div className="rounded-2xl border border-[#E5E5E3] bg-white p-5">
+          <h2 className="text-sm font-semibold text-gray-900 mb-4">Próximas entregas</h2>
           {upcoming.length > 0 ? (
             <div className="space-y-1">
               {upcoming.map(o => {
@@ -274,77 +275,78 @@ export default function DashboardClient({ shopName, orders, payments, presupuest
               })}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center py-6 text-center">
-              <Calendar size={24} className="text-gray-200 mb-2" />
-              <p className="text-sm text-gray-400">Sin entregas programadas</p>
+            <div className="flex flex-col items-center justify-center py-8 gap-2">
+              <Calendar size={20} className="text-gray-300" />
+              <p className="text-xs text-gray-400">Sin entregas programadas</p>
             </div>
           )}
         </div>
       </div>
 
-      {/* Recent activity — collapsible */}
-      <div className="card p-6">
-        <button onClick={() => setActivityOpen(!activityOpen)} className="flex items-center justify-between w-full text-left">
-          <h2 className="font-bold text-gray-800">{t('recentActivity')}</h2>
-          <ChevronDown size={16} className={`text-gray-400 transition-transform ${activityOpen ? '' : '-rotate-90'}`} />
-        </button>
-        {activityOpen && (
-          <div className="mt-4 space-y-0.5">
-            {[
-              ...presupuestos.slice(0, 8).map(p => ({
-                icon: p.origen === 'catalogo_web' ? '🛒' : '📋',
-                text: `${p.origen === 'catalogo_web' ? 'Pedido web' : 'Presupuesto'} #${(p.codigo as string || '').slice(0, 8)}`,
-                detail: [p.client_name, showPrices && p.total ? fmt(p.total as number) : ''].filter(Boolean).join(' · '),
-                date: new Date(p.created_at as string), href: '/presupuesto',
-              })),
-              ...orders.filter(o => o.status === 'delivered').slice(0, 5).map(o => ({
-                icon: '✅', text: `Entregado #${(o.id as string).slice(0, 6).toUpperCase()}`,
-                detail: [(o.clients as Record<string, string>)?.name, showPrices ? fmt(o.total_price as number) : ''].filter(Boolean).join(' · '),
-                date: new Date(o.created_at as string), href: '/orders',
-              })),
-              ...payments.slice(0, 5).map(p => ({
-                icon: '💰', text: 'Pago registrado',
-                detail: showPrices ? fmt(p.monto as number) : '',
-                date: new Date(p.fecha as string), href: '/orders',
-              })),
-            ].sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 8).map((ev, i, arr) => {
-              const isToday = ev.date.toDateString() === now.toDateString()
-              const isYesterday = ev.date.toDateString() === new Date(now.getTime() - 86400000).toDateString()
-              const dayLabel = isToday ? 'HOY' : isYesterday ? 'AYER' : ev.date.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' }).toUpperCase()
-              const showDayHeader = i === 0 || arr[i - 1].date.toDateString() !== ev.date.toDateString()
-              return (
-                <div key={i}>
-                  {showDayHeader && <p className="text-[10px] font-bold text-gray-300 uppercase tracking-wider mt-3 mb-1 first:mt-0">{dayLabel}</p>}
-                  <Link href={ev.href} className="flex items-center gap-3 py-2 px-2 rounded-lg hover:bg-gray-50 transition-colors">
-                    <span className="text-sm flex-shrink-0">{ev.icon}</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[13px] text-gray-700">{ev.text}{ev.detail ? <span className="text-gray-400"> · {ev.detail}</span> : ''}</p>
-                    </div>
-                    <span className="text-[10px] text-gray-300 flex-shrink-0">{ev.date.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}</span>
-                  </Link>
-                </div>
-              )
-            })}
-            {presupuestos.length === 0 && orders.length === 0 && <p className="text-sm text-gray-400 text-center py-4">No hay actividad reciente</p>}
-          </div>
-        )}
-      </div>
+      {/* Recent activity — collapsible, hidden when empty */}
+      {(presupuestos.length > 0 || orders.length > 0) && (
+        <div className="rounded-2xl border border-[#E5E5E3] bg-white p-5">
+          <button onClick={() => setActivityOpen(!activityOpen)} className="flex items-center justify-between w-full text-left">
+            <span className="text-sm font-semibold text-gray-900">{t('recentActivity')}</span>
+            <ChevronDown size={16} className={`text-gray-400 transition-transform ${activityOpen ? '' : '-rotate-90'}`} />
+          </button>
+          {activityOpen && (
+            <div className="mt-4 space-y-0.5">
+              {[
+                ...presupuestos.slice(0, 8).map(p => ({
+                  icon: p.origen === 'catalogo_web' ? '🛒' : '📋',
+                  text: `${p.origen === 'catalogo_web' ? 'Pedido web' : 'Presupuesto'} #${(p.codigo as string || '').slice(0, 8)}`,
+                  detail: [p.client_name, showPrices && p.total ? fmt(p.total as number) : ''].filter(Boolean).join(' · '),
+                  date: new Date(p.created_at as string), href: '/presupuesto',
+                })),
+                ...orders.filter(o => o.status === 'delivered').slice(0, 5).map(o => ({
+                  icon: '✅', text: `Entregado #${(o.id as string).slice(0, 6).toUpperCase()}`,
+                  detail: [(o.clients as Record<string, string>)?.name, showPrices ? fmt(o.total_price as number) : ''].filter(Boolean).join(' · '),
+                  date: new Date(o.created_at as string), href: '/orders',
+                })),
+                ...payments.slice(0, 5).map(p => ({
+                  icon: '💰', text: 'Pago registrado',
+                  detail: showPrices ? fmt(p.monto as number) : '',
+                  date: new Date(p.fecha as string), href: '/orders',
+                })),
+              ].sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 8).map((ev, i, arr) => {
+                const isToday = ev.date.toDateString() === now.toDateString()
+                const isYesterday = ev.date.toDateString() === new Date(now.getTime() - 86400000).toDateString()
+                const dayLabel = isToday ? 'HOY' : isYesterday ? 'AYER' : ev.date.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' }).toUpperCase()
+                const showDayHeader = i === 0 || arr[i - 1].date.toDateString() !== ev.date.toDateString()
+                return (
+                  <div key={i}>
+                    {showDayHeader && <p className="text-[10px] font-bold text-gray-300 uppercase tracking-wider mt-3 mb-1 first:mt-0">{dayLabel}</p>}
+                    <Link href={ev.href} className="flex items-center gap-3 py-2 px-2 rounded-lg hover:bg-gray-50 transition-colors">
+                      <span className="text-sm flex-shrink-0">{ev.icon}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[13px] text-gray-700">{ev.text}{ev.detail ? <span className="text-gray-400"> · {ev.detail}</span> : ''}</p>
+                      </div>
+                      <span className="text-[10px] text-gray-300 flex-shrink-0">{ev.date.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}</span>
+                    </Link>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
-      {/* Onboarding checklist */}
+      {/* Onboarding checklist — hidden when all done */}
       {showOnboarding && (
-        <div className="card p-6">
-          <h2 className="font-bold text-gray-800 mb-3">Configurá tu taller</h2>
+        <div className="rounded-2xl border border-[#E5E5E3] bg-white p-5">
+          <h2 className="text-sm font-semibold text-gray-900 mb-3">Configurá tu taller</h2>
           <div className="flex items-center gap-3 mb-4">
-            <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-              <div className="h-full rounded-full transition-all" style={{ width: `${(onboardingDone / onboardingSteps.length) * 100}%`, background: '#22C55E' }} />
+            <div className="flex-1 h-2 rounded-full bg-gray-200 overflow-hidden">
+              <div className="h-2 rounded-full bg-[#0F766E] transition-all" style={{ width: `${(onboardingDone / onboardingSteps.length) * 100}%` }} />
             </div>
             <span className="text-xs font-semibold text-gray-500">{onboardingDone}/{onboardingSteps.length}</span>
           </div>
           <div className="space-y-1">
             {onboardingSteps.map((step, i) => (
-              <Link key={i} href={step.href} className={`flex items-center gap-3 py-2.5 px-3 rounded-lg transition-colors ${step.done ? 'opacity-50' : 'hover:bg-gray-50'}`}>
-                <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${step.done ? 'bg-green-100' : 'border-2 border-gray-200'}`}>
-                  {step.done && <Check size={11} className="text-green-600" />}
+              <Link key={i} href={step.href} className={`flex items-center gap-3 py-2.5 px-3 rounded-lg transition-colors ${step.done ? '' : 'hover:bg-gray-50'}`}>
+                <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${step.done ? 'bg-[#F0FDFA]' : 'border-2 border-gray-200'}`}>
+                  {step.done && <Check size={11} className="text-[#0F766E]" />}
                 </div>
                 <span className={`text-sm ${step.done ? 'text-gray-400 line-through' : 'text-gray-700 font-medium'}`}>{step.label}</span>
                 {!step.done && <span className="ml-auto text-xs text-gray-300">→</span>}

@@ -4,7 +4,7 @@
 export const dynamic = 'force-dynamic'
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/db/client'
-import { Plus, Pencil, Trash2, X, Eye, EyeOff, AlertTriangle, Upload, Image as ImageIcon, FolderOpen, Star, Package } from 'lucide-react'
+import { Plus, Pencil, Trash2, X, Eye, EyeOff, AlertTriangle, Upload, Image as ImageIcon, FolderOpen, Star, Package, ExternalLink, Globe, Copy, MessageCircle } from 'lucide-react'
 
 import type { Category } from '@/features/taller/types'
 import CategoryModal from '@/features/taller/components/CategoryModal'
@@ -49,15 +49,22 @@ export default function CatalogoPage() {
   const [search, setSearch] = useState('')
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [catalogSlug, setCatalogSlug] = useState<string | null>(null)
+  const [linkCopied, setLinkCopied] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
   async function load() {
-    const [{ data: cp }, { data: c }, { data: gt }] = await Promise.all([
+    const [{ data: cp }, { data: c }, { data: gt }, { data: ws }] = await Promise.all([
       supabase.from('catalog_products').select('*').order('sort_order').order('name'),
       supabase.from('categories').select('*').order('name'),
       supabase.from('guias_talles').select('id,nombre').order('orden'),
+      supabase.from('workshop_settings').select('settings').single(),
     ])
-    setCatalogProducts((cp || []) as CatalogProduct[]); setCategories(c || []); if (gt) setGuiasTalles(gt); setLoading(false)
+    setCatalogProducts((cp || []) as CatalogProduct[]); setCategories(c || []); if (gt) setGuiasTalles(gt)
+    if (ws?.settings && (ws.settings as Record<string, unknown>).catalog_slug) {
+      setCatalogSlug((ws.settings as Record<string, unknown>).catalog_slug as string)
+    }
+    setLoading(false)
   }
   useEffect(() => { load() }, [])
 
@@ -194,6 +201,18 @@ export default function CatalogoPage() {
           <p className="text-gray-500 text-sm mt-1 hidden md:block">{t('subtitle')}</p>
         </div>
         <div className="flex gap-2">
+          {catalogSlug && (
+            <>
+              <a href={`/catalogo/${catalogSlug}`} target="_blank"
+                className="lg:hidden w-10 h-10 rounded-xl border border-[#E5E5E3] text-gray-500 flex items-center justify-center hover:bg-[#F8F7F4] transition-colors">
+                <ExternalLink size={18} />
+              </a>
+              <a href={`/catalogo/${catalogSlug}`} target="_blank"
+                className="hidden lg:flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#E5E5E3] text-sm font-medium text-gray-600 hover:bg-[#F8F7F4] transition-colors">
+                <ExternalLink size={16} /> Ver tienda
+              </a>
+            </>
+          )}
           <button onClick={() => setShowCats(true)} className="hidden lg:flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#E5E5E3] text-sm font-medium text-gray-600 hover:bg-[#F8F7F4] transition-colors">
             <FolderOpen size={14} /> {t('categories')}
           </button>
@@ -256,6 +275,29 @@ export default function CatalogoPage() {
           className="input-base text-sm !pl-9" placeholder="Buscar por nombre, categoría o código..." />
         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">🔍</span>
       </div>
+
+      {/* URL bar — public catalog link */}
+      {catalogSlug && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#F8F7F4] border border-[#E5E5E3] mb-4">
+          <Globe size={14} className="text-gray-400 flex-shrink-0" />
+          <span className="text-xs text-gray-500 truncate flex-1">
+            estamply.app/catalogo/{catalogSlug}
+          </span>
+          <button
+            onClick={() => { navigator.clipboard.writeText(`https://www.estamply.app/catalogo/${catalogSlug}`); setLinkCopied(true); setTimeout(() => setLinkCopied(false), 2000) }}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white border border-[#E5E5E3] text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors flex-shrink-0"
+          >
+            <Copy size={12} /> {linkCopied ? '¡Copiado!' : 'Copiar'}
+          </button>
+          <a
+            href={`https://wa.me/?text=${encodeURIComponent('Mirá mi catálogo: https://www.estamply.app/catalogo/' + catalogSlug)}`}
+            target="_blank"
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#25D366] text-white text-xs font-medium hover:bg-[#20BD5A] transition-colors flex-shrink-0"
+          >
+            <MessageCircle size={12} /> <span className="hidden sm:inline">Compartir</span>
+          </a>
+        </div>
+      )}
 
       {/* Mobile bottom sheet for filters */}
       {mobileFiltersOpen && (

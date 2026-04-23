@@ -414,10 +414,10 @@ export default function EstadisticasPage() {
       {/* Header */}
       <div className="flex items-start justify-between gap-3 mb-6">
         <h1 className="text-2xl font-bold text-gray-900 tracking-tight">{t('title')}</h1>
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2">
           {/* Period dropdown */}
           <div className="relative">
-            <button onClick={() => setPeriodOpen(!periodOpen)} className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold bg-[#0F766E] text-white">
+            <button onClick={() => setPeriodOpen(!periodOpen)} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs lg:text-sm font-semibold bg-[#0F766E] text-white whitespace-nowrap">
               {label} <span className="text-white/70 text-xs">▾</span>
             </button>
             {periodOpen && (
@@ -441,8 +441,8 @@ export default function EstadisticasPage() {
               </>
             )}
           </div>
-          <button onClick={exportExcel} className="lg:hidden p-2 rounded-lg border border-[#E5E5E3] text-gray-600 hover:bg-[#F8F7F4] transition-colors"><Download size={16} /></button>
-          <button onClick={exportPDF} className="lg:hidden p-2 rounded-lg border border-[#E5E5E3] text-gray-600 hover:bg-[#F8F7F4] transition-colors"><FileDown size={16} /></button>
+          <button onClick={exportExcel} className="lg:hidden p-2 rounded-lg border border-[#E5E5E3] text-gray-500 hover:bg-[#F8F7F4] transition-colors flex-shrink-0"><Download size={16} /></button>
+          <button onClick={exportPDF} className="lg:hidden p-2 rounded-lg border border-[#E5E5E3] text-gray-500 hover:bg-[#F8F7F4] transition-colors flex-shrink-0"><FileDown size={16} /></button>
           <button onClick={exportExcel} className="hidden lg:flex items-center gap-2 px-4 py-2 rounded-lg border border-[#E5E5E3] text-sm font-medium text-gray-600 hover:bg-[#F8F7F4] transition-colors">
             <Download size={12} /> Excel
           </button>
