@@ -5,8 +5,7 @@ export const dynamic = 'force-dynamic'
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/db/client'
-import { TrendingUp, TrendingDown, ShoppingBag, FileText, DollarSign, BarChart3, Download, FileDown } from 'lucide-react'
-import EmptyState from '@/shared/components/EmptyState'
+import { TrendingUp, TrendingDown, ShoppingBag, FileText, DollarSign, BarChart3, Download, FileDown, Sparkles } from 'lucide-react'
 import { ComposedChart, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts'
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
@@ -22,7 +21,7 @@ function pct(cur: number, prev: number) { return prev === 0 ? (cur > 0 ? 100 : 0
 const TL: Record<string, string> = { subli: 'Sublimación', dtf: 'DTF Textil', dtf_uv: 'DTF UV', vinyl: 'Vinilo Textil', vinyl_adhesivo: 'V. Autoadhesivo', serigrafia: 'Serigrafía' }
 const TC: Record<string, string> = { subli: '#0F766E', dtf: '#E17055', dtf_uv: '#00B894', vinyl: '#E84393', vinyl_adhesivo: '#D63384', serigrafia: '#FDCB6E' }
 // SL moved inside component to use translations
-const SC: Record<string, string> = { pending: '#FDCB6E', production: '#0F766E', ready: '#00B894', delivered: '#636e72' }
+const SC: Record<string, string> = { pending: '#D97706', production: '#2563EB', ready: '#059669', delivered: '#6B7280' }
 const DONUT_COLORS = ['#0F766E', '#E17055', '#00B894', '#E84393', '#FDCB6E', '#636e72']
 
 type Order = Record<string, unknown>
@@ -397,7 +396,18 @@ export default function EstadisticasPage() {
 
   if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-teal-200 border-t-teal-700 rounded-full animate-spin" /></div>
 
-  if (orders.length === 0 && presupuestos.length === 0) return <EmptyState icon="📊" title="Todavía no hay datos para mostrar." description="Las estadísticas se generan a partir de tus presupuestos y pedidos. Empezá a cotizar y vas a ver tus métricas acá." actionLabel="Ir al Cotizador" actionHref="/cotizador" />
+  if (orders.length === 0 && presupuestos.length === 0) return (
+    <div className="rounded-2xl border border-dashed border-[#E5E5E3] bg-[#FAFAF8] flex flex-col items-center justify-center py-20 gap-4">
+      <div className="w-14 h-14 rounded-2xl bg-[#F0FDFA] flex items-center justify-center">
+        <BarChart3 size={24} className="text-[#0F766E]" />
+      </div>
+      <div className="text-center px-8">
+        <p className="text-sm font-semibold text-gray-700">Todavía no hay datos para mostrar</p>
+        <p className="text-xs text-gray-400 mt-1 max-w-[280px]">Las estadísticas se generan a partir de tus presupuestos y pedidos</p>
+      </div>
+      <a href="/cotizador" className="mt-2 px-5 py-2.5 rounded-xl bg-[#0F766E] text-white text-sm font-semibold hover:bg-[#0D9488] transition-colors">Ir al Cotizador</a>
+    </div>
+  )
 
   return (
     <div className="max-w-5xl mx-auto" id="stats-content">
@@ -407,7 +417,7 @@ export default function EstadisticasPage() {
         <div className="flex items-center gap-2 flex-wrap">
           {/* Period dropdown */}
           <div className="relative">
-            <button onClick={() => setPeriodOpen(!periodOpen)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-teal-700 text-white shadow-sm">
+            <button onClick={() => setPeriodOpen(!periodOpen)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold bg-[#0F766E] text-white shadow-sm">
               {label} <span className="text-[9px] opacity-70">▾</span>
             </button>
             {periodOpen && (
@@ -428,34 +438,36 @@ export default function EstadisticasPage() {
               </div>
             )}
           </div>
-          <button onClick={exportExcel} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50">
+          <button onClick={exportExcel} className="lg:hidden p-2 rounded-lg border border-[#E5E5E3] text-gray-600 hover:bg-[#F8F7F4] transition-colors"><Download size={16} /></button>
+          <button onClick={exportPDF} className="lg:hidden p-2 rounded-lg border border-[#E5E5E3] text-gray-600 hover:bg-[#F8F7F4] transition-colors"><FileDown size={16} /></button>
+          <button onClick={exportExcel} className="hidden lg:flex items-center gap-2 px-4 py-2 rounded-lg border border-[#E5E5E3] text-sm font-medium text-gray-600 hover:bg-[#F8F7F4] transition-colors">
             <Download size={12} /> Excel
           </button>
-          <button onClick={exportPDF} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50">
+          <button onClick={exportPDF} className="hidden lg:flex items-center gap-2 px-4 py-2 rounded-lg border border-[#E5E5E3] text-sm font-medium text-gray-600 hover:bg-[#F8F7F4] transition-colors">
             <FileDown size={12} /> PDF
           </button>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-6 overflow-x-auto pb-1 -mt-2">
+      <div className="flex gap-1 mb-6 overflow-x-auto no-scrollbar">
         {([['resumen', 'Resumen'], ['ventas', 'Ventas'], ['productos', 'Productos'], ['clientes', 'Clientes'], ['avanzado', 'Avanzado']] as const).map(([id, label]) => (
-          <button key={id} onClick={() => setStatsTab(id)} className={`px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all ${statsTab === id ? 'text-white shadow-md' : 'bg-gray-100 text-gray-600'}`} style={statsTab === id ? { background: '#0F766E' } : {}}>{label}</button>
+          <button key={id} onClick={() => setStatsTab(id)} className={`flex-shrink-0 px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all ${statsTab === id ? 'bg-[#0F766E] text-white' : 'text-gray-500 hover:text-gray-700 hover:bg-[#F3F3F1]'}`}>{label}</button>
         ))}
       </div>
 
       {/* Summary cards — Resumen */}
       {statsTab === 'resumen' && <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         {[
-          { label: t('revenue'), value: fmt(facturacion), change: pct(facturacion, facPrev), hasPrev: facPrev > 0, icon: DollarSign, color: '#0F766E', sub: facPrev > 0 ? `vs ${fmt(facPrev)} anterior` : '' },
-          { label: t('orders'), value: String(pedidos), change: pct(pedidos, pedPrev), hasPrev: pedPrev > 0, icon: ShoppingBag, color: '#E17055', sub: `${pedidosCompleted} completados${pedidosInProcess > 0 ? `, ${pedidosInProcess} en proceso` : ''}` },
-          { label: t('avgTicket'), value: fmt(ticket), change: pct(ticket, ticketPrev), hasPrev: ticketPrev > 0, icon: BarChart3, color: '#00B894', sub: pedidos > 0 ? `Mín: ${fmt(ticketMin)} — Máx: ${fmt(ticketMax)}` : '' },
-          { label: t('quotesCount'), value: String(presCount), change: pct(presCount, presPrev), hasPrev: presPrev > 0, icon: FileText, color: '#E84393', sub: `${convertedCount} convertidos (${convRate}%)` },
+          { label: t('revenue'), value: fmt(facturacion), change: pct(facturacion, facPrev), hasPrev: facPrev > 0, icon: DollarSign, sub: facPrev > 0 ? `vs ${fmt(facPrev)} anterior` : '' },
+          { label: t('orders'), value: String(pedidos), change: pct(pedidos, pedPrev), hasPrev: pedPrev > 0, icon: ShoppingBag, sub: `${pedidosCompleted} completados${pedidosInProcess > 0 ? `, ${pedidosInProcess} en proceso` : ''}` },
+          { label: t('avgTicket'), value: fmt(ticket), change: pct(ticket, ticketPrev), hasPrev: ticketPrev > 0, icon: BarChart3, sub: pedidos > 0 ? `Mín: ${fmt(ticketMin)} — Máx: ${fmt(ticketMax)}` : '' },
+          { label: t('quotesCount'), value: String(presCount), change: pct(presCount, presPrev), hasPrev: presPrev > 0, icon: FileText, sub: `${convertedCount} convertidos (${convRate}%)` },
         ].map(c => (
-          <div key={c.label} className="card p-4">
+          <div key={c.label} className="rounded-2xl border border-[#E5E5E3] bg-white p-4">
             <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `${c.color}15` }}><c.icon size={16} style={{ color: c.color }} /></div>
-              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{c.label}</span>
+              <div className="w-10 h-10 rounded-xl bg-[#F0FDFA] flex items-center justify-center"><c.icon size={20} className="text-[#0F766E]" /></div>
+              <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{c.label}</span>
             </div>
             <p className="text-xl font-black text-gray-900">{c.value}</p>
             {c.hasPrev ? (
@@ -463,14 +475,14 @@ export default function EstadisticasPage() {
                 {c.change >= 0 ? <TrendingUp size={12} className="text-green-500" /> : <TrendingDown size={12} className="text-red-500" />}
                 <span className={`text-xs font-medium ${c.change >= 0 ? 'text-green-600' : 'text-red-500'}`}>{c.change > 0 ? '+' : ''}{c.change}%</span>
               </div>
-            ) : <p className="text-[10px] text-gray-300 mt-1">Sin datos previos</p>}
+            ) : <p className="text-xs text-gray-300 mt-1">Sin datos previos</p>}
             {c.sub && <p className="text-[10px] text-gray-400 mt-0.5">{c.sub}</p>}
           </div>
         ))}
       </div>}
 
       {/* Status bar — Resumen */}
-      {statsTab === 'resumen' && <div className="card p-5 mb-6">
+      {statsTab === 'resumen' && <div className="rounded-2xl border border-[#E5E5E3] bg-white p-5 mb-6">
         <h2 className="font-bold text-gray-800 mb-3">{t('ordersByStatus')}</h2>
         <div className="flex gap-4 mb-3 flex-wrap">
           {Object.entries(SL).map(([k, v]) => <button key={k} onClick={() => router.push('/orders')} className="flex items-center gap-1.5 hover:bg-gray-50 px-1.5 py-0.5 rounded-lg transition-colors"><span className="w-3 h-3 rounded-full" style={{ background: SC[k] }} /><span className="text-sm text-gray-600">{v}: <span className="font-bold">{statusCounts[k] || 0}</span>{(statusAmounts[k] || 0) > 0 && <span className="text-gray-400 ml-1">({fmt(statusAmounts[k])})</span>}</span></button>)}
@@ -480,7 +492,7 @@ export default function EstadisticasPage() {
 
       {/* Revenue chart — Resumen */}
       {statsTab === 'resumen' && chartData.length > 0 && (
-        <div className="card p-5 mb-6">
+        <div className="rounded-2xl border border-[#E5E5E3] bg-white p-5 mb-6">
           <h2 className="font-bold text-gray-800 mb-4">{t('revenueChart')}</h2>
           <ResponsiveContainer width="100%" height={220}>
             <ComposedChart data={chartData}>
@@ -504,7 +516,7 @@ export default function EstadisticasPage() {
 
       {/* Rentabilidad — Ventas */}
       {statsTab === 'ventas' && showCosts && (
-      <div className="card p-5 mb-6">
+      <div className="rounded-2xl border border-[#E5E5E3] bg-white p-5 mb-6">
         <h2 className="font-bold text-gray-800 mb-4">{t('profitability')}</h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
           <div className="p-3 rounded-lg bg-gray-50"><p className="text-xs text-gray-500">{t('revenue')}</p><p className="text-lg font-black text-gray-900">{fmt(facConCosto)}</p></div>
@@ -519,12 +531,12 @@ export default function EstadisticasPage() {
 
       {/* Products — Productos */}
       {statsTab === 'productos' && <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <div className="card p-5">
+        <div className="rounded-2xl border border-[#E5E5E3] bg-white p-5">
           <h2 className="font-bold text-gray-800 mb-3">{t('topSelling')}</h2>
           {topSold.length > 0 ? <div className="space-y-2">{topSold.map(([n, v], i) => <div key={n} className="flex items-center gap-2"><span className="text-xs font-bold text-gray-400 w-5">{i + 1}.</span><div className="flex-1 min-w-0"><p className="text-sm font-medium text-gray-800 truncate">{n}</p><p className="text-xs text-gray-400">{v.units} u. — {fmt(v.revenue)}</p></div></div>)}</div> : <p className="text-sm text-gray-400">{tc('noData')}</p>}
         </div>
         {showCosts && (
-        <div className="card p-5">
+        <div className="rounded-2xl border border-[#E5E5E3] bg-white p-5">
           <h2 className="font-bold text-gray-800 mb-3">{t('topProfitable')}</h2>
           {topMargin.length > 0 ? <div className="space-y-2">{topMargin.map((p, i) => <div key={p.name} className="flex items-center gap-2"><span className="text-xs font-bold text-gray-400 w-5">{i + 1}.</span><div className="flex-1 min-w-0"><p className="text-sm font-medium text-gray-800 truncate">{p.name}</p><p className="text-xs text-gray-400">margen {p.margin}% — {fmt(p.profit)}</p></div></div>)}</div> : (
             <div className="text-center py-6">
@@ -539,18 +551,18 @@ export default function EstadisticasPage() {
 
       {/* By technique + origin — Ventas */}
       {statsTab === 'ventas' && <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <div className="card p-5">
+        <div className="rounded-2xl border border-[#E5E5E3] bg-white p-5">
           <h2 className="font-bold text-gray-800 mb-3">{t('salesByTechnique')}</h2>
           {techData.length > 0 && techTotal > 0 ? <Donut data={techData} total={techTotal} /> : <p className="text-sm text-gray-400">{tc('noData')}</p>}
         </div>
-        <div className="card p-5">
+        <div className="rounded-2xl border border-[#E5E5E3] bg-white p-5">
           <h2 className="font-bold text-gray-800 mb-3">{t('salesByOrigin')}</h2>
           {facturacion > 0 ? <Donut data={originData} total={facturacion} /> : <p className="text-sm text-gray-400">{tc('noData')}</p>}
         </div>
       </div>}
 
       {/* Client ranking — Clientes */}
-      {statsTab === 'clientes' && <div className="card p-5 mb-6">
+      {statsTab === 'clientes' && <div className="rounded-2xl border border-[#E5E5E3] bg-white p-5 mb-6">
         <h2 className="font-bold text-gray-800 mb-3">{t('clientRanking')}</h2>
         {clientRanking.length > 0 ? (
           <div className="overflow-x-auto">
@@ -579,7 +591,7 @@ export default function EstadisticasPage() {
       </div>}
 
       {/* Conversion — Resumen */}
-      {statsTab === 'resumen' && <div className="card p-5 mb-6">
+      {statsTab === 'resumen' && <div className="rounded-2xl border border-[#E5E5E3] bg-white p-5 mb-6">
         <h2 className="font-bold text-gray-800 mb-4">{t('quoteConversion')}</h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
           <div className="p-3 rounded-lg bg-gray-50"><p className="text-xs text-gray-500">{t('created')}</p><p className="text-lg font-black text-gray-900">{curPres.length}</p></div>
@@ -634,7 +646,7 @@ export default function EstadisticasPage() {
 
       {/* Payment methods + Production — Ventas */}
       {statsTab === 'ventas' && <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <div className="card p-5">
+        <div className="rounded-2xl border border-[#E5E5E3] bg-white p-5">
           <h2 className="font-bold text-gray-800 mb-3">Facturación por método de pago</h2>
           {payMethodData.length > 0 ? <Donut data={payMethodData} total={payMethodTotal} /> : (
             <div className="text-center py-6">
@@ -643,7 +655,7 @@ export default function EstadisticasPage() {
             </div>
           )}
         </div>
-        <div className="card p-5">
+        <div className="rounded-2xl border border-[#E5E5E3] bg-white p-5">
           <h2 className="font-bold text-gray-800 mb-3">Producción del período</h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="p-3 rounded-lg bg-gray-50"><p className="text-[10px] text-gray-500 uppercase font-semibold">Unidades</p><p className="text-lg font-black text-gray-900">{totalUnits.toLocaleString('es-AR')}</p></div>
@@ -656,7 +668,7 @@ export default function EstadisticasPage() {
 
       {/* Day of week — Ventas */}
       {statsTab === 'ventas' && facturacion > 0 && (
-        <div className="card p-5 mb-6">
+        <div className="rounded-2xl border border-[#E5E5E3] bg-white p-5 mb-6">
           <h2 className="font-bold text-gray-800 mb-3">Facturación por día de la semana</h2>
           <div className="space-y-2">
             {dayOfWeekData.map(d => {
@@ -678,7 +690,7 @@ export default function EstadisticasPage() {
 
       {/* Clientes nuevos vs recurrentes — Clientes */}
       {statsTab === 'clientes' && (newClients.count + recurringClients.count) > 0 && (
-        <div className="card p-5 mb-6">
+        <div className="rounded-2xl border border-[#E5E5E3] bg-white p-5 mb-6">
           <h2 className="font-bold text-gray-800 mb-3">Clientes nuevos vs recurrentes</h2>
           <div className="grid grid-cols-2 gap-3 mb-3">
             <div className="p-3 rounded-lg bg-green-50 border border-green-100">
@@ -700,7 +712,7 @@ export default function EstadisticasPage() {
 
       {/* Clientes sin actividad reciente — Clientes */}
       {statsTab === 'clientes' && atRiskClients.length > 0 && (
-        <div className="card p-5 mb-6">
+        <div className="rounded-2xl border border-[#E5E5E3] bg-white p-5 mb-6">
           <h2 className="font-bold text-gray-800 mb-3">Clientes sin actividad reciente</h2>
           <div className="overflow-x-auto">
             <table className="w-full text-sm"><thead><tr className="border-b border-gray-100">
@@ -726,7 +738,7 @@ export default function EstadisticasPage() {
 
       {/* Productos sin ventas — Productos */}
       {statsTab === 'productos' && productsWithoutSales.length > 0 && (
-        <div className="card p-5 mb-6">
+        <div className="rounded-2xl border border-[#E5E5E3] bg-white p-5 mb-6">
           <h2 className="font-bold text-gray-800 mb-3">Productos sin ventas en el período</h2>
           <div className="overflow-x-auto">
             <table className="w-full text-sm"><thead><tr className="border-b border-gray-100">
@@ -749,7 +761,7 @@ export default function EstadisticasPage() {
       )}
 
       {/* Evolution — Ventas */}
-      {statsTab === 'ventas' && showCosts && <div className="card p-5 mb-6">
+      {statsTab === 'ventas' && showCosts && <div className="rounded-2xl border border-[#E5E5E3] bg-white p-5 mb-6">
         <h2 className="font-bold text-gray-800 mb-4">{t('profitEvolution')}</h2>
         {evolutionData.some(d => d.revenue > 0) ? (<>
           <ResponsiveContainer width="100%" height={200}>
@@ -769,7 +781,7 @@ export default function EstadisticasPage() {
       </div>}
 
       {/* Compare periods — Ventas */}
-      {statsTab === 'ventas' && <div className="card p-5 mb-6">
+      {statsTab === 'ventas' && <div className="rounded-2xl border border-[#E5E5E3] bg-white p-5 mb-6">
         <h2 className="font-bold text-gray-800 mb-4">{t('comparePeriods')}</h2>
         <div className="flex flex-col sm:flex-row gap-3 mb-4 items-end">
           <div className="flex-1"><label className="block text-xs text-gray-500 mb-1">{t('periodA')}</label><input type="date" className="input-base text-sm" value={cmpA} onChange={e => setCmpA(e.target.value)} /></div>
@@ -811,10 +823,14 @@ export default function EstadisticasPage() {
 
       {/* Avanzado — placeholder */}
       {statsTab === 'avanzado' && (
-        <div className="card p-12 text-center">
-          <p className="text-4xl mb-3 opacity-30">🔮</p>
-          <p className="font-semibold text-gray-500">Próximamente</p>
-          <p className="text-sm text-gray-400 mt-1">Rentabilidad por técnica, frecuencia de compra, insights automáticos</p>
+        <div className="rounded-2xl border border-dashed border-[#E5E5E3] bg-[#FAFAF8] flex flex-col items-center justify-center py-20 gap-4">
+          <div className="w-14 h-14 rounded-2xl bg-[#F0FDFA] flex items-center justify-center">
+            <Sparkles size={24} className="text-[#0F766E]" />
+          </div>
+          <div className="text-center">
+            <p className="text-sm font-semibold text-gray-700">Próximamente</p>
+            <p className="text-xs text-gray-400 mt-1 max-w-[300px]">Rentabilidad por técnica, frecuencia de compra, insights automáticos</p>
+          </div>
         </div>
       )}
     </div>
