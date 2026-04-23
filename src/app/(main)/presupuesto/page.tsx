@@ -1209,7 +1209,7 @@ export default function PresupuestoPage() {
             </div>
 
             {/* ── RIGHT: Actions ── */}
-            <div className="lg:w-80 lg:max-w-[320px] flex-shrink-0 space-y-4 no-print">
+            <div className="lg:w-80 lg:max-w-[320px] flex-shrink-0 space-y-4 no-print min-w-0 overflow-hidden">
               {/* Share */}
               <div className="rounded-2xl border border-[#E5E5E3] bg-white p-4 sm:p-5 space-y-3">
                 <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">{t('share')}</p>
@@ -1256,12 +1256,12 @@ export default function PresupuestoPage() {
               </div>
 
               {/* Confirm — CORRECCIÓN 2: help text for seña */}
-              <div className="rounded-2xl border border-[#E5E5E3] bg-white p-4 sm:p-5 space-y-4">
+              <div className="rounded-2xl border border-[#E5E5E3] bg-white p-4 sm:p-5 space-y-4 overflow-hidden">
                 <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">{t('confirmAsOrder')}</p>
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">{t('deliveryDate')}</label>
                   <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)}
-                    className="input-base text-sm w-full" />
+                    className="input-base text-sm w-full max-w-full" style={{ boxSizing: 'border-box' }} />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">{t('deposit')}</label>
