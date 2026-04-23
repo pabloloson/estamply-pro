@@ -92,7 +92,7 @@ function AddCostForm({ onConfirm, onCancel, suggestions = [] }: { onConfirm: (na
           <div className="absolute left-0 right-0 top-full mt-0.5 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-32 overflow-auto">
             {filtered.map(s => (
               <button key={s.name} type="button" onClick={() => pickSuggestion(s)}
-                className="w-full flex justify-between items-center px-3 py-1.5 text-xs hover:bg-teal-50 text-left">
+                className="w-full flex justify-between items-center px-3 py-1.5 text-xs hover:bg-[#F0FDFA] text-left">
                 <span className="text-gray-700">{s.name}</span>
                 <span className="text-gray-400">{fmt(s.costPerUse)}/uso</span>
               </button>
@@ -137,9 +137,13 @@ export default function AuditTicket(props: AuditTicketProps) {
 
   if (addDisabled) {
     return (
-      <div className="rounded-2xl flex flex-col items-center justify-center min-h-[420px] gap-3 border-2 border-dashed border-gray-200">
-        <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: `${color}15` }}><Tag size={22} style={{ color }} /></div>
-        <p className="text-sm text-gray-400 text-center px-8 max-w-[220px]">Seleccioná un producto para ver la cotización.</p>
+      <div className="rounded-2xl flex flex-col items-center justify-center min-h-[420px] gap-4 border-2 border-dashed border-[#E5E5E3] bg-[#FAFAF8]">
+        <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-[#F0FDFA]">
+          <Tag size={22} className="text-[#0F766E]" />
+        </div>
+        <p className="text-sm text-gray-400 text-center px-8 max-w-[240px] leading-relaxed">
+          Seleccioná un producto para ver la cotización.
+        </p>
       </div>
     )
   }
@@ -187,18 +191,15 @@ export default function AuditTicket(props: AuditTicketProps) {
   const anyLineOverrides = Object.keys(lineOverrides).length > 0
   const extraPerUnit = extraCosts.reduce((s, c) => s + (c.modo === 'total' ? c.amount / Math.max(quantity, 1) : c.amount), 0)
 
-  const stepNum = { price: hasDiscount ? 4 : 3, metrics: hasDiscount ? 5 : 4 }
-
   return (
     <>
       <style>{noSpinnerCSS}</style>
-      <div className="rounded-2xl overflow-hidden border border-gray-100 shadow-sm bg-white">
-        <div className="h-1" style={{ background: `linear-gradient(90deg, ${color}, ${color}88)` }} />
+      <div className="rounded-2xl border border-[#E5E5E3] bg-white">
         <div className="p-5">
 
-          {/* 1. Desglose (hidden for non-cost users) */}
+          {/* Desglose (hidden for non-cost users) */}
           {showCosts && <div className="pb-4">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">1 &middot; Desglose de costos</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-3">Desglose de costos</p>
             <div className="space-y-0">
               {costLines.map((line, i) => {
                 const isEditing = editingLine === i
@@ -206,9 +207,9 @@ export default function AuditTicket(props: AuditTicketProps) {
                 const displayValue = i in lineOverrides ? lineOverrides[i] : line.value
 
                 return (
-                  <div key={i} className={`flex justify-between items-center py-1.5 px-2 -mx-2 rounded-md cursor-pointer transition-colors ${isEditing ? 'bg-teal-50' : 'hover:bg-gray-50'}`}
+                  <div key={i} className={`flex justify-between items-center py-1.5 px-2 -mx-2 rounded-md cursor-pointer transition-colors ${isEditing ? 'bg-[#F0FDFA]' : 'hover:bg-[#F8F7F4]'}`}
                     onClick={() => { if (!isEditing) startEdit(line, i) }}>
-                    <span className="text-sm text-gray-500 flex items-center gap-1">
+                    <span className="text-sm text-gray-600 flex items-center gap-1">
                       {line.label}
                       {modified && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" />}
                     </span>
@@ -231,11 +232,11 @@ export default function AuditTicket(props: AuditTicketProps) {
                 const perUnit = ec.modo === 'total' ? ec.amount / Math.max(quantity, 1) : ec.amount
                 const displayLabel = ec.modo === 'total' ? `${ec.name} (total ${fmt(ec.amount)})` : ec.name
                 return (
-                  <div key={`x-${i}`} className={`flex justify-between items-center py-1.5 px-2 -mx-2 rounded-md cursor-pointer transition-colors ${isEditingThis ? 'bg-teal-50' : 'hover:bg-gray-50'}`}
+                  <div key={`x-${i}`} className={`flex justify-between items-center py-1.5 px-2 -mx-2 rounded-md cursor-pointer transition-colors ${isEditingThis ? 'bg-[#F0FDFA]' : 'hover:bg-[#F8F7F4]'}`}
                     onClick={() => { if (!isEditingThis && onExtraCostsChange) { setTempVal(String(ec.amount)); setEditingExtra(i) } }}>
                     {isEditingThis ? (
                       <>
-                        <input type="text" className="text-sm text-gray-500 bg-transparent border-b border-teal-300 outline-none flex-1 mr-2" value={ec.name}
+                        <input type="text" className="text-sm text-gray-600 bg-transparent border-b border-teal-300 outline-none flex-1 mr-2" value={ec.name}
                           onClick={e => e.stopPropagation()}
                           onChange={e => { const u = [...extraCosts]; u[i] = { ...u[i], name: e.target.value }; onExtraCostsChange?.(u) }} />
                         <input type="text" inputMode="decimal" className="no-spinner w-20 text-right text-sm font-medium text-gray-800 bg-white border-b-2 border-teal-400 outline-none"
@@ -248,7 +249,7 @@ export default function AuditTicket(props: AuditTicketProps) {
                       </>
                     ) : (
                       <>
-                        <span className="text-sm text-gray-500">{displayLabel}</span>
+                        <span className="text-sm text-gray-600">{displayLabel}</span>
                         <div className="flex items-center gap-1.5">
                           <span className="text-sm font-medium text-gray-700">{perUnit === Math.round(perUnit) ? fmt(perUnit) : `$${perUnit.toFixed(2).replace('.', ',')}`}</span>
                           {onExtraCostsChange && (
@@ -272,37 +273,41 @@ export default function AuditTicket(props: AuditTicketProps) {
                   onConfirm={(name, amount, modo) => { onExtraCostsChange([...extraCosts, { name, amount, modo }]); setAddingCost(false) }}
                   onCancel={() => setAddingCost(false)} />
               ) : (
-                <button onClick={() => setAddingCost(true)} className="mt-2 flex items-center gap-1 text-[10px] font-medium text-gray-400 hover:text-teal-700 transition-colors">
-                  <Plus size={10} /> Agregar costo
+                <button onClick={() => setAddingCost(true)} className="mt-3 flex items-center gap-1.5 text-[11px] font-medium text-[#0F766E] hover:text-[#0D9488] transition-colors">
+                  <Plus size={12} /> Agregar costo
                 </button>
               )
             )}
 
-            <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-200">
-              <span className="text-sm font-bold text-gray-800">Costo Total</span>
-              <span className="text-sm font-bold text-gray-800">{fmt(costoTotal + extraPerUnit)}</span>
+            <div className="flex justify-between items-center mt-4 pt-4 border-t border-[#E5E5E3]">
+              <span className="text-sm font-semibold text-gray-900">Costo Total</span>
+              <span className="text-base font-bold text-gray-900">{fmt(costoTotal + extraPerUnit)}</span>
             </div>
             {(hasOverrides || extraCosts.length > 0 || anyLineOverrides) && onResetOverrides && (
-              <button onClick={() => { onResetOverrides(); setLineOverrides({}) }} className="mt-1 text-[10px] text-teal-700 hover:text-teal-800 font-medium">↺ Restaurar predeterminados</button>
+              <button onClick={() => { onResetOverrides(); setLineOverrides({}) }} className="mt-2 text-[11px] text-gray-400 hover:text-[#0F766E] font-medium transition-colors">↺ Restaurar predeterminados</button>
             )}
           </div>}
 
-          {/* 2. Precio Sugerido */}
-          {showCosts && <div className="pb-4 pt-3 border-t border-dashed border-gray-200">
+          {/* Precio Sugerido */}
+          {showCosts && <div className="pb-4 pt-3 border-t border-[#E5E5E3]">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">2 &middot; Precio sugerido</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Precio sugerido</p>
               {onPricingModeChange && (
-                <div className="inline-flex rounded-md border border-gray-200 overflow-hidden">
+                <div className="inline-flex rounded-lg border border-[#E5E5E3] overflow-hidden">
                   {[['margin', 'Margen'], ['markup', 'Markup']].map(([v, l]) => (
                     <button key={v} type="button" onClick={() => onPricingModeChange(v as 'margin' | 'markup')}
-                      className={`px-2 py-0.5 text-[10px] font-semibold ${pricingMode === v ? 'bg-teal-700 text-white' : 'text-gray-400 hover:bg-gray-50'}`}>{l}</button>
+                      className={`px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+                        pricingMode === v
+                          ? 'bg-[#0F766E] text-white'
+                          : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+                      }`}>{l}</button>
                   ))}
                 </div>
               )}
             </div>
-            <div className={`flex justify-between items-center py-1.5 px-2 -mx-2 rounded-md cursor-pointer transition-colors ${editingMargin ? 'bg-teal-50' : 'hover:bg-gray-50'}`}
+            <div className={`flex justify-between items-center py-1.5 px-2 -mx-2 rounded-md cursor-pointer transition-colors ${editingMargin ? 'bg-[#F0FDFA]' : 'hover:bg-[#F8F7F4]'}`}
               onClick={() => { if (!editingMargin) { setTempVal(String(margin)); setEditingMargin(true) } }}>
-              <span className="text-sm text-gray-500">{pricingMode === 'markup' ? 'Markup' : 'Margen de ganancia'} (+{editingMargin ? '' : margin}%{editingMargin ? '' : ')'}
+              <span className="text-sm text-gray-600">{pricingMode === 'markup' ? 'Markup' : 'Margen de ganancia'} (+{editingMargin ? '' : margin}%{editingMargin ? '' : ')'}
                 {editingMargin && (
                   <input type="number" className="no-spinner w-10 text-center text-sm font-medium bg-white border-b-2 border-teal-400 outline-none mx-0.5"
                     autoFocus value={tempVal} onChange={e => setTempVal(e.target.value)}
@@ -320,54 +325,54 @@ export default function AuditTicket(props: AuditTicketProps) {
             </div>
           </div>}
 
-          {/* 3. Descuento — editable */}
+          {/* Descuento — editable */}
           {showCosts && hasDiscount && (
-            <div className="pb-4 pt-3 border-t border-dashed border-gray-200">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">3 &middot; Descuento por volumen</p>
-              <div className={`flex justify-between items-center px-3 py-2 rounded-lg cursor-pointer transition-colors ${editingDiscount ? '' : 'hover:opacity-80'}`}
-                style={{ background: 'rgba(0,184,148,0.08)', border: '1px solid rgba(0,184,148,0.15)' }}
+            <div className="pb-4 pt-3 border-t border-[#E5E5E3]">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-3">Descuento por volumen</p>
+              <div className={`flex justify-between items-center px-3.5 py-2.5 rounded-xl cursor-pointer transition-colors ${editingDiscount ? '' : 'hover:opacity-90'}`}
+                style={{ background: '#ECFDF5', border: '1px solid #D1FAE5' }}
                 onClick={() => { if (!editingDiscount) { setTempVal(String(discountPct)); setEditingDiscount(true) } }}>
-                <span className="text-sm font-semibold" style={{ color: '#00B894' }}>
+                <span className="text-sm font-semibold text-emerald-700">
                   Desc. volumen (-{editingDiscount ? (
-                    <input type="number" className="no-spinner w-10 text-center font-semibold bg-transparent border-b-2 border-green-400 outline-none"
-                      style={{ color: '#00B894' }} autoFocus value={tempVal}
+                    <input type="number" className="no-spinner w-10 text-center font-semibold bg-transparent border-b-2 border-emerald-400 outline-none text-emerald-700"
+                      autoFocus value={tempVal}
                       onClick={e => e.stopPropagation()} onChange={e => setTempVal(e.target.value)}
                       onBlur={() => { onDiscountChange?.(Number(tempVal)); setEditingDiscount(false) }}
                       onKeyDown={e => { if (e.key === 'Enter') { onDiscountChange?.(Number(tempVal)); setEditingDiscount(false) }; if (e.key === 'Escape') setEditingDiscount(false) }} />
                   ) : discountPct}%)
                 </span>
-                <span className="text-sm font-bold" style={{ color: '#00B894' }}>-{fmt(montoDescuento)}</span>
+                <span className="text-sm font-bold text-emerald-700">-{fmt(montoDescuento)}</span>
               </div>
             </div>
           )}
 
           {/* Precio Final */}
-          <div className="rounded-xl p-5 text-center mt-2" style={{ background: `linear-gradient(135deg, ${color}10, ${color}05)`, border: `1px solid ${color}20` }}>
-            <p className="text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: `${color}99` }}>{stepNum.price} &middot; Precio final</p>
-            {hasDiscount && <p className="text-sm text-gray-400 line-through mb-0.5">{fmt(precioSugerido)}</p>}
-            <p className="text-4xl font-black" style={{ color }}>{fmt(precioConDesc)}</p>
-            <p className="text-xs text-gray-400 mt-0.5">por unidad</p>
-            <div className="mt-3 pt-3 flex items-center justify-between" style={{ borderTop: `1px dashed ${color}25` }}>
-              <span className="text-xs text-gray-500">Total ({quantity} u.)</span>
-              <span className="text-sm font-black" style={{ color }}>{fmt(subtotal)}</span>
+          <div className="rounded-xl p-6 text-center mt-3 bg-[#0F766E]">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-white/60 mb-2">Precio final</p>
+            {hasDiscount && <p className="text-sm text-white/50 line-through mb-1">{fmt(precioSugerido)}</p>}
+            <p className="text-4xl font-black text-white tracking-tight">{fmt(precioConDesc)}</p>
+            <p className="text-xs text-white/50 mt-1">por unidad</p>
+            <div className="mt-4 pt-3 flex items-center justify-between border-t border-white/15">
+              <span className="text-xs text-white/60">Total ({quantity} u.)</span>
+              <span className="text-base font-black text-white">{fmt(subtotal)}</span>
             </div>
           </div>
 
           {/* Rentabilidad */}
           {showCosts && <div className="mt-6 pt-1">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">{stepNum.metrics} &middot; Rentabilidad</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-3">Rentabilidad</p>
             <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-xl p-3.5" style={{ background: ganancia > 0 ? 'rgba(0,184,148,0.06)' : 'rgba(255,71,87,0.06)', border: `1px solid ${ganancia > 0 ? 'rgba(0,184,148,0.12)' : 'rgba(255,71,87,0.12)'}` }}>
-                <div className="flex items-center gap-1.5 mb-1.5"><TrendingUp size={13} style={{ color: ganancia > 0 ? '#00B894' : '#FF4757' }} /><span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Ganancia</span></div>
-                <p className="text-xl font-black" style={{ color: ganancia > 0 ? '#00B894' : '#FF4757' }}>{fmt(ganancia)}</p>
-                <p className="text-xs font-semibold mt-0.5" style={{ color: ganancia > 0 ? '#00B89499' : '#FF475799' }}>
+              <div className={`rounded-xl p-4 ${ganancia > 0 ? 'border border-emerald-100 bg-emerald-50/50' : 'border border-red-100 bg-red-50/50'}`}>
+                <div className="flex items-center gap-1.5 mb-1.5"><TrendingUp size={13} className={ganancia > 0 ? 'text-emerald-600' : 'text-red-500'} /><span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Ganancia</span></div>
+                <p className={`text-2xl font-black ${ganancia > 0 ? 'text-emerald-600' : 'text-red-500'}`}>{fmt(ganancia)}</p>
+                <p className={`text-xs font-semibold mt-0.5 ${ganancia > 0 ? 'text-emerald-600/60' : 'text-red-500/60'}`}>
                   {gananciaPercent}% del total
                   {tipoCambio && tipoCambio > 1 && <span className="ml-1 opacity-70">({monedaReferencia || 'USD'} {Math.round(ganancia / tipoCambio).toLocaleString('es-AR')})</span>}
                 </p>
               </div>
-              <div className="rounded-xl p-3.5 bg-gray-50 border border-gray-100">
+              <div className="rounded-xl p-4 border border-[#E5E5E3] bg-[#FAFAF8]">
                 <div className="flex items-center gap-1.5 mb-1.5"><Clock size={13} className="text-gray-400" /><span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Tiempo total</span></div>
-                <p className="text-xl font-black text-gray-800">{fmtTime(timeMinutes)}</p>
+                <p className="text-2xl font-black text-gray-800">{fmtTime(timeMinutes)}</p>
                 {timeBreakdown && (timeBreakdown.prepMin > 0 || timeBreakdown.printMin > 0) && (
                   <div className="text-[10px] text-gray-400 mt-1 space-y-0.5">
                     {timeBreakdown.prepMin > 0 && <p>Preparación: {Math.round(timeBreakdown.prepMin)} min</p>}
