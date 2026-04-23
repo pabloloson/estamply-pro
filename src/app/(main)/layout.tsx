@@ -31,7 +31,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
     <LocaleProvider>
     <PermissionsProvider>
     <PresupuestoProvider>
-      <div className="flex min-h-screen" style={{ background: '#F4F5F8' }}>
+      <div className="flex min-h-screen" style={{ background: '#FAFAF8' }}>
         <Sidebar workshopName={workshopName} />
         <div className="flex-1 flex flex-col min-w-0 overflow-x-hidden">
           <TrialBanner />

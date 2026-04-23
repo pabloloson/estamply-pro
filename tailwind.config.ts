@@ -6,13 +6,23 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['DM Sans', 'sans-serif'],
+      },
       colors: {
         brand: {
-          turquoise: '#4ECDC4',
-          'turquoise-light': '#7EDED8',
-          'turquoise-dark': '#3DBDB5',
-          navy: '#2C3347',
+          teal: '#0F766E',
+          'teal-hover': '#0D9488',
+          'teal-light': '#F0FDFA',
         },
+        surface: {
+          app: '#FAFAF8',
+          card: '#FFFFFF',
+          input: '#F5F5F3',
+        },
+      },
+      borderColor: {
+        DEFAULT: '#E5E5E3',
       },
     },
   },
