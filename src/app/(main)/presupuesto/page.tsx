@@ -599,7 +599,7 @@ export default function PresupuestoPage() {
         {items.length === 0 && !loadedPresupuestoId && !creatingNew ? (<>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 no-print">
             <div>
-              <h1 className="text-2xl font-black text-gray-900">{t('title')}</h1>
+              <h1 className="text-2xl font-bold text-gray-900 tracking-tight">{t('title')}</h1>
               <p className="text-sm text-gray-400 mt-0.5">{savedPresupuestos.length} presupuesto{savedPresupuestos.length !== 1 ? 's' : ''}</p>
             </div>
             <button onClick={() => { clearItems(); setLoadedPresupuestoId(null); setPublicLink(''); setClientId(''); setNewClientName(''); setCreatingNew(true) }}
@@ -670,8 +670,8 @@ export default function PresupuestoPage() {
               </div>
             </div>
           </>) : (
-            <div className="card flex flex-col items-center justify-center py-16 gap-4">
-              <div className="w-16 h-16 rounded-full flex items-center justify-center bg-teal-50"><FileText size={28} className="text-teal-400" /></div>
+            <div className="rounded-2xl border border-[#E5E5E3] bg-white flex flex-col items-center justify-center py-16 gap-4">
+              <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-[#F0FDFA]"><FileText size={24} className="text-[#0F766E]" /></div>
               <div className="text-center">
                 <p className="text-gray-700 font-semibold">No tenés presupuestos todavía</p>
                 <p className="text-gray-400 text-sm mt-1">Creá tu primer presupuesto para empezar a cotizar para tus clientes</p>
@@ -686,7 +686,7 @@ export default function PresupuestoPage() {
         <div className="mb-6 no-print">
           <div className="flex items-center gap-2">
             <button onClick={() => { clearItems(); setPublicLink(''); setCreatingNew(false); setDbId(null); reloadList() }} className="text-gray-400 hover:text-gray-600"><ArrowLeft size={18} /></button>
-            <h1 className="text-2xl font-black text-gray-900">Presupuesto</h1>
+            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Presupuesto</h1>
             {loadedPresupuestoId && savedPresupuestos.find(p => p.id === loadedPresupuestoId)?.origen === 'catalogo_web' && (
               <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold bg-green-100 text-green-600">Catálogo</span>
             )}
@@ -706,8 +706,7 @@ export default function PresupuestoPage() {
           <div className="flex flex-col lg:flex-row gap-6">
             {/* ── LEFT: Quote Document ── */}
             <div className="flex-1">
-              <div className="print-page bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden" id="quote-document">
-                <div className="h-2" style={{ background: 'linear-gradient(90deg, #0F766E, #a29bfe)' }} />
+              <div className="print-page bg-white rounded-2xl border border-[#E5E5E3] overflow-hidden" id="quote-document">
 
                 {/* Header — responsive: stacked on mobile, side-by-side on desktop */}
                 <div className="px-4 sm:px-8 pt-6 pb-5 border-b border-gray-100">
@@ -718,8 +717,8 @@ export default function PresupuestoPage() {
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={bizProfile.business_logo_url} alt="Logo" className="w-12 h-12 sm:w-16 sm:h-16 object-contain rounded-xl flex-shrink-0" />
                       ) : tallerName ? (
-                        <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(135deg, #0F766E, #a29bfe)' }}>
-                          <span className="text-white font-black text-lg sm:text-xl">{tallerName[0].toUpperCase()}</span>
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center flex-shrink-0 bg-[#F0FDFA]">
+                          <span className="text-[#0F766E] font-semibold text-sm sm:text-base">{tallerName[0].toUpperCase()}</span>
                         </div>
                       ) : null}
                       <div>
@@ -736,8 +735,8 @@ export default function PresupuestoPage() {
                     </div>
                     {/* Quote number */}
                     <div className="text-left sm:text-right flex-shrink-0">
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-0.5">Presupuesto</p>
-                      <p className="text-xl sm:text-2xl font-black" style={{ color: '#0F766E' }}>#{quoteNumber}</p>
+                      <p className="text-xs text-gray-400 uppercase tracking-wide">Presupuesto</p>
+                      <p className="text-sm font-bold text-gray-900 mt-0.5">#{quoteNumber}</p>
                       <p className="text-xs text-gray-500 mt-1">{quoteDate}</p>
                       <div className="mt-0.5">
                         {editingValidez ? (
@@ -785,7 +784,7 @@ export default function PresupuestoPage() {
 
                 {/* Client — in the document body */}
                 <div className="px-8 py-4 border-b border-gray-100" style={{ background: '#FAFAFA' }}>
-                  <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">{t('client')}</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1.5">{t('client')}</p>
                   {/* Edit mode — Combobox (screen only) */}
                   <div className="no-print">
                     {loadingClients ? (
@@ -819,7 +818,7 @@ export default function PresupuestoPage() {
                               onFocus={() => setClientDropdownOpen(true)} />
                           </div>
                           <button type="button" onClick={() => { setShowNewClientForm(true); setClientDropdownOpen(false); setNewClientName(clientSearch) }}
-                            className="flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap" style={{ background: '#0F766E15', color: '#0F766E' }}>
+                            className="flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap text-[#0F766E] border border-[#E5E5E3] hover:bg-[#F0FDFA] transition-colors">
                             <Plus size={13} /> Nuevo
                           </button>
                         </div>
@@ -1070,19 +1069,17 @@ export default function PresupuestoPage() {
                 {/* Add items buttons — visible on ALL screens */}
                 <div className="px-4 sm:px-8 py-3">
                   <div className="no-print grid grid-cols-3 gap-2">
-                    <Link href="/cotizador" className="flex flex-col items-center justify-center gap-1.5 min-h-[70px] py-3 rounded-xl border border-dashed border-gray-200 hover:border-teal-300 hover:bg-teal-50/30 transition-colors text-center">
-                      <Calculator size={22} className="text-gray-400" />
-                      <span className="text-[10px] font-semibold text-gray-500 leading-tight">Desde cotizador</span>
+                    <Link href="/cotizador" className="flex flex-col items-center justify-center gap-2 py-4 rounded-xl border border-[#E5E5E3] text-gray-400 hover:text-[#0F766E] hover:border-[#0F766E] hover:bg-[#F0FDFA] transition-all text-center">
+                      <Calculator size={18} />
+                      <span className="text-xs font-medium">Desde cotizador</span>
                     </Link>
-                    <button type="button" onClick={() => { setShowAddPanel('catalog'); loadCatalog() }} className="flex flex-col items-center justify-center gap-1.5 min-h-[70px] py-3 rounded-xl border border-dashed border-gray-200 hover:border-teal-300 hover:bg-teal-50/30 transition-colors">
-                      <ShoppingCart size={22} className="text-gray-400" />
-                      <span className="text-[10px] font-semibold text-gray-500 leading-tight">Desde catálogo</span>
+                    <button type="button" onClick={() => { setShowAddPanel('catalog'); loadCatalog() }} className="flex flex-col items-center justify-center gap-2 py-4 rounded-xl border border-[#E5E5E3] text-gray-400 hover:text-[#0F766E] hover:border-[#0F766E] hover:bg-[#F0FDFA] transition-all">
+                      <ShoppingBag size={18} />
+                      <span className="text-xs font-medium">Desde catálogo</span>
                     </button>
-                    <button type="button" onClick={() => setShowAddPanel('free')} className="flex flex-col items-center justify-center gap-1.5 min-h-[70px] py-3 rounded-xl border border-gray-200 hover:border-teal-400 transition-colors" style={{ background: '#0F766E08' }}>
-                      <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: '#0F766E15' }}>
-                        <Plus size={16} style={{ color: '#0F766E' }} />
-                      </div>
-                      <span className="text-[10px] font-semibold leading-tight" style={{ color: '#0F766E' }}>+ Item libre</span>
+                    <button type="button" onClick={() => setShowAddPanel('free')} className="flex flex-col items-center justify-center gap-2 py-4 rounded-xl border border-[#E5E5E3] text-gray-400 hover:text-[#0F766E] hover:border-[#0F766E] hover:bg-[#F0FDFA] transition-all">
+                      <Plus size={18} />
+                      <span className="text-xs font-medium">Ítem libre</span>
                     </button>
                   </div>
                   {showAddPanel === 'free' && (
@@ -1138,10 +1135,10 @@ export default function PresupuestoPage() {
                 <div className="px-4 sm:px-8 py-3">
                   <div className="flex justify-end">
                     <div className="w-60 space-y-1.5">
-                      <div className="flex justify-between text-sm text-gray-500"><span>Subtotal</span><span className="font-medium text-gray-700">{fmtCurrency(totalVenta)}</span></div>
-                      <div className="flex justify-between pt-2" style={{ borderTop: '2px solid #0F766E' }}>
-                        <span className="font-black text-gray-900">TOTAL</span>
-                        <span className="font-black text-xl" style={{ color: '#0F766E' }}>{fmtCurrency(totalVenta)}</span>
+                      <div className="flex justify-between items-center py-2 text-sm"><span className="text-gray-500">Subtotal</span><span className="text-gray-700 tabular-nums">{fmtCurrency(totalVenta)}</span></div>
+                      <div className="flex justify-between items-center pt-3 border-t border-[#E5E5E3]">
+                        <span className="text-base font-bold text-gray-900">TOTAL</span>
+                        <span className="text-xl font-black text-[#0F766E] tabular-nums">{fmtCurrency(totalVenta)}</span>
                       </div>
                     </div>
                   </div>
@@ -1150,7 +1147,7 @@ export default function PresupuestoPage() {
                 {/* Conditions */}
                 <div className="px-4 sm:px-8 py-4 border-t border-gray-100">
                   <div className="flex items-center gap-2 mb-2">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">{t('conditions')}</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">{t('conditions')}</p>
                     <button onClick={() => setEditingCondiciones(!editingCondiciones)} className="no-print p-0.5 rounded hover:bg-gray-100">
                       <Pencil size={10} className="text-gray-400" />
                     </button>
@@ -1177,13 +1174,10 @@ export default function PresupuestoPage() {
                 </div>
 
                 {/* Footer — CORRECCIÓN 6: branding */}
-                <div className="px-8 py-3 flex items-center justify-center" style={{ borderTop: '1px solid #F3F4F6', background: '#FAFAFA' }}>
-                  <p className="flex items-center gap-1.5 text-[10px] text-gray-300">
-                    <img src="/logo-icon.png" alt="" className="w-3 h-3 opacity-40" />
-                    Generado con Estamply
-                  </p>
+                <div className="mt-6 pt-4 border-t border-[#F3F3F1] flex items-center justify-center gap-1.5 pb-4 px-8">
+                  <img src="/logo-icon.png" alt="" className="w-3.5 h-3.5 opacity-30" />
+                  <span className="text-[10px] text-gray-300">Generado con Estamply</span>
                 </div>
-                <div className="h-1" style={{ background: 'linear-gradient(90deg, #0F766E, #a29bfe)' }} />
               </div>
             </div>
 
@@ -1191,7 +1185,7 @@ export default function PresupuestoPage() {
             <div className="lg:w-72 space-y-4 no-print">
               {/* Share */}
               <div className="card p-5 space-y-3">
-                <p className="text-xs font-bold uppercase tracking-wider text-gray-400">{t('share')}</p>
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">{t('share')}</p>
                 {/* WhatsApp — primary */}
                 <button disabled={savingLink} onClick={async () => {
                   const link = await ensurePublicLink()
@@ -1236,7 +1230,7 @@ export default function PresupuestoPage() {
 
               {/* Confirm — CORRECCIÓN 2: help text for seña */}
               <div className="card p-5 space-y-4">
-                <p className="text-xs font-bold uppercase tracking-wider text-gray-400">{t('confirmAsOrder')}</p>
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">{t('confirmAsOrder')}</p>
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">{t('deliveryDate')}</label>
                   <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)}
@@ -1245,10 +1239,10 @@ export default function PresupuestoPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">{t('deposit')}</label>
-                  <div className="flex gap-1 mb-2">
+                  <div className="inline-flex rounded-lg border border-[#E5E5E3] overflow-hidden mb-2">
                     {(['percent', 'fixed'] as const).map(m => (
                       <button key={m} type="button" onClick={() => setAdvanceMode(m)}
-                        className={`px-3 py-1 rounded-full text-xs font-semibold ${advanceMode === m ? 'bg-teal-50 text-teal-800' : 'bg-gray-100 text-gray-500'}`}>
+                        className={`px-2.5 py-1 text-[11px] font-semibold transition-colors ${advanceMode === m ? 'bg-[#0F766E] text-white' : 'text-gray-400 hover:bg-gray-50'}`}>
                         {m === 'percent' ? 'Porcentaje %' : 'Monto fijo $'}
                       </button>
                     ))}
@@ -1272,8 +1266,7 @@ export default function PresupuestoPage() {
                   <textarea className="input-base resize-none" rows={2} placeholder="Observaciones…" value={notes} onChange={e => setNotes(e.target.value)} />
                 </div>
                 <button type="button" disabled={submitting || items.length === 0} onClick={handleConfirmarPedido}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-white text-sm transition-all disabled:opacity-40"
-                  style={{ background: '#0F766E', boxShadow: submitting ? 'none' : '0 4px 14px rgba(15,118,110,0.35)' }}>
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-[#0F766E] hover:bg-[#0D9488] text-white font-semibold text-sm transition-colors disabled:opacity-40">
                   {submitting ? <><Loader2 size={15} className="animate-spin" /> {tc('loading')}</> : t('confirmOrder')}
                 </button>
               </div>
@@ -1281,7 +1274,7 @@ export default function PresupuestoPage() {
               {/* Update prices moved to in-document banner */}
 
               {/* Delete */}
-              <button type="button" onClick={handleEliminar} className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors">
+              <button type="button" onClick={handleEliminar} className="w-full flex items-center justify-center gap-1.5 mt-3 py-2 text-xs font-medium text-gray-400 hover:text-red-500 rounded-xl transition-colors">
                 <Trash2 size={14} /> Eliminar presupuesto
               </button>
 
