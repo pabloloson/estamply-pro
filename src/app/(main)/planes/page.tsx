@@ -3,7 +3,7 @@
 
 export const dynamic = 'force-dynamic'
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Check, Loader2, Sparkles, X } from 'lucide-react'
+import { Check, Loader2, Sparkles, X, AlertTriangle } from 'lucide-react'
 import { useTranslations } from '@/shared/hooks/useTranslations'
 import '@stripe/stripe-js' // Pre-load Stripe SDK when user visits /planes
 import { StripeProvider } from '@/shared/components/StripeProvider'
@@ -59,10 +59,34 @@ const PLAN_LABELS: Record<string, string> = {
   negocio: 'Negocio',
 }
 
-const PLAN_ORDER = ['emprendedor', 'pro', 'negocio']
-function isPlanHigher(planKey: string, currentPlan: string | null) {
-  if (!currentPlan) return false
-  return PLAN_ORDER.indexOf(planKey) > PLAN_ORDER.indexOf(currentPlan)
+const PLAN_HIERARCHY: Record<string, number> = {
+  emprendedor: 1,
+  pro: 2,
+  negocio: 3,
+}
+
+// Features exclusive to each tier (lost on downgrade)
+const PLAN_EXCLUSIVE_FEATURES: Record<string, string[]> = {
+  pro: ['Todas las técnicas', 'Catálogo web', 'Estadísticas', 'Promociones', '3 usuarios'],
+  negocio: ['Usuarios ilimitados', 'Soporte prioritario', 'Multi-sucursal'],
+}
+
+function getPlanAction(targetPlan: string, currentPlan: string | null, status: string): 'current' | 'upgrade' | 'downgrade' | 'subscribe' {
+  if (!currentPlan || status !== 'active') return 'subscribe'
+  if (targetPlan === currentPlan) return 'current'
+  return PLAN_HIERARCHY[targetPlan] > PLAN_HIERARCHY[currentPlan] ? 'upgrade' : 'downgrade'
+}
+
+function getLostFeatures(fromPlan: string, toPlan: string): string[] {
+  const fromLevel = PLAN_HIERARCHY[fromPlan]
+  const toLevel = PLAN_HIERARCHY[toPlan]
+  const lost: string[] = []
+  Object.entries(PLAN_HIERARCHY).forEach(([plan, level]) => {
+    if (level > toLevel && level <= fromLevel && PLAN_EXCLUSIVE_FEATURES[plan]) {
+      lost.push(...PLAN_EXCLUSIVE_FEATURES[plan])
+    }
+  })
+  return lost
 }
 
 export default function PlanesPage() {
@@ -70,14 +94,20 @@ export default function PlanesPage() {
   const [billing, setBilling] = useState<Billing>('mensual')
   const [currentPlan, setCurrentPlan] = useState<string | null>(null)
   const [planStatus, setPlanStatus] = useState<string>('trial')
-  const [redirecting, setRedirecting] = useState<string | null>(null)
 
-  // Checkout modal state
+  // Checkout modal state (for new subscriptions)
   const [checkoutPlan, setCheckoutPlan] = useState<typeof PLANS[0] | null>(null)
   const [clientSecret, setClientSecret] = useState<string | null>(null)
   const [checkoutLoading, setCheckoutLoading] = useState(false)
   const [checkoutError, setCheckoutError] = useState<string | null>(null)
   const [successBanner, setSuccessBanner] = useState(false)
+  const [modalVisible, setModalVisible] = useState(false)
+
+  // Change plan modal state (for upgrades/downgrades)
+  const [changePlanTarget, setChangePlanTarget] = useState<typeof PLANS[0] | null>(null)
+  const [changePlanAction, setChangePlanAction] = useState<'upgrade' | 'downgrade' | null>(null)
+  const [changingPlan, setChangingPlan] = useState(false)
+  const [changeError, setChangeError] = useState<string | null>(null)
 
   useEffect(() => {
     fetch('/api/me')
@@ -94,9 +124,7 @@ export default function PlanesPage() {
     const params = new URLSearchParams(window.location.search)
     if (params.get('status') === 'success') {
       setSuccessBanner(true)
-      // Clean URL
       window.history.replaceState({}, '', '/planes')
-      // Reload user data
       fetch('/api/me')
         .then(r => r.json())
         .then(data => {
@@ -107,12 +135,11 @@ export default function PlanesPage() {
     }
   }, [])
 
-  // Pre-fetch clientSecret on hover to reduce perceived wait time
+  // Pre-fetch clientSecret on hover
   const prefetchRef = useRef<{ key: string; promise: Promise<{ clientSecret?: string; error?: string }> } | null>(null)
 
   function prefetchPlan(plan: typeof PLANS[0]) {
     const lookupKey = `${plan.key}_${billing}`
-    // Don't re-fetch if already prefetching same plan
     if (prefetchRef.current?.key === lookupKey) return
     prefetchRef.current = {
       key: lookupKey,
@@ -134,7 +161,6 @@ export default function PlanesPage() {
 
     const lookupKey = `${plan.key}_${billing}`
     try {
-      // Reuse prefetched promise if available, otherwise fetch now
       let data: { clientSecret?: string; error?: string }
       if (prefetchRef.current?.key === lookupKey) {
         data = await prefetchRef.current.promise
@@ -170,12 +196,7 @@ export default function PlanesPage() {
     }, 300)
   }
 
-  // Track modal open for animation
-  const [modalVisible, setModalVisible] = useState(false)
-
   const handleSuccess = useCallback(() => {
-    // Don't close modal — StripeCheckoutForm shows success state internally
-    // After 5s auto-close or user clicks "Ir al inicio"
     fetch('/api/me')
       .then(r => r.json())
       .then(data => {
@@ -185,12 +206,51 @@ export default function PlanesPage() {
       .catch(() => {})
   }, [])
 
-  function handlePortal() {
-    setRedirecting('portal')
-    window.location.href = '/api/stripe-portal'
+  // Open confirmation modal for plan change
+  function handlePlanChangeClick(plan: typeof PLANS[0], action: 'upgrade' | 'downgrade') {
+    setChangePlanTarget(plan)
+    setChangePlanAction(action)
+    setChangeError(null)
   }
 
-  const isActive = planStatus === 'active'
+  // Execute the plan change
+  async function confirmPlanChange() {
+    if (!changePlanTarget) return
+    setChangingPlan(true)
+    setChangeError(null)
+
+    const lookupKey = `${changePlanTarget.key}_${billing}`
+    try {
+      const res = await fetch('/api/stripe-change-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planLookupKey: lookupKey }),
+      })
+      const data = await res.json()
+
+      if (!res.ok) {
+        setChangeError(data.error || 'Error al cambiar de plan')
+        setChangingPlan(false)
+        return
+      }
+
+      // Update local state
+      setCurrentPlan(data.plan)
+      setPlanStatus(data.status === 'active' ? 'active' : planStatus)
+      setChangePlanTarget(null)
+      setChangePlanAction(null)
+      setSuccessBanner(true)
+    } catch {
+      setChangeError('Error de conexión. Intentá de nuevo.')
+    }
+    setChangingPlan(false)
+  }
+
+  function closePlanChange() {
+    setChangePlanTarget(null)
+    setChangePlanAction(null)
+    setChangeError(null)
+  }
 
   return (
     <div className="max-w-5xl mx-auto">
@@ -240,26 +300,33 @@ export default function PlanesPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {PLANS.map(plan => {
           const price = billing === 'mensual' ? plan.monthly : plan.yearly
-          const isCurrent = isActive && currentPlan === plan.key
-          const priceLabel = `$${price} USD/${billing === 'mensual' ? t('mo') : t('yr')}`
+          const action = getPlanAction(plan.key, currentPlan, planStatus)
+          const isCurrent = action === 'current'
 
           return (
             <div
               key={plan.key}
-              className={`relative rounded-2xl bg-white p-6 flex flex-col ${
-                plan.popular
-                  ? 'border-2 shadow-lg'
-                  : 'border border-gray-200 shadow-sm'
+              className={`relative rounded-2xl p-6 flex flex-col ${
+                isCurrent
+                  ? 'border-2 border-[#0F766E] bg-[#FAFFFE]'
+                  : plan.popular
+                    ? 'border-2 border-[#0F766E] bg-white shadow-lg'
+                    : 'border border-gray-200 bg-white shadow-sm'
               }`}
-              style={plan.popular ? { borderColor: '#0F766E' } : {}}
             >
-              {plan.popular && (
+              {plan.popular && !isCurrent && (
                 <div
                   className="absolute -top-3 left-1/2 -translate-x-1/2 flex items-center gap-1 px-3 py-0.5 rounded-full text-xs font-bold text-white"
                   style={{ background: '#0F766E' }}
                 >
                   <Sparkles size={12} />
                   {t('mostPopular')}
+                </div>
+              )}
+
+              {isCurrent && (
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-[#0F766E] mb-3">
+                  <Check size={14} /> Plan actual
                 </div>
               )}
 
@@ -289,16 +356,32 @@ export default function PlanesPage() {
                 ))}
               </ul>
 
-              {isCurrent ? (
-                <div>
-                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#0F766E] mb-2">
-                    <Check size={14} /> Plan actual
-                  </span>
-                  <button disabled className="w-full py-2.5 rounded-xl bg-gray-100 text-gray-400 text-sm font-semibold cursor-not-allowed">
-                    Tu plan actual
-                  </button>
-                </div>
-              ) : (
+              {/* Action button */}
+              {action === 'current' && (
+                <button disabled className="w-full py-2.5 rounded-xl bg-[#F3F3F1] text-gray-400 text-sm font-semibold cursor-not-allowed">
+                  Tu plan actual
+                </button>
+              )}
+
+              {action === 'upgrade' && (
+                <button
+                  onClick={() => handlePlanChangeClick(plan, 'upgrade')}
+                  className="w-full py-2.5 rounded-xl bg-[#0F766E] text-white text-sm font-bold hover:bg-[#0D9488] transition-colors"
+                >
+                  Subir de plan
+                </button>
+              )}
+
+              {action === 'downgrade' && (
+                <button
+                  onClick={() => handlePlanChangeClick(plan, 'downgrade')}
+                  className="w-full py-2.5 rounded-xl border border-[#E5E5E3] text-sm font-medium text-gray-600 hover:bg-[#F8F7F4] transition-colors"
+                >
+                  Cambiar a este plan
+                </button>
+              )}
+
+              {action === 'subscribe' && (
                 <button
                   onClick={() => openCheckout(plan)}
                   onMouseEnter={() => prefetchPlan(plan)}
@@ -309,7 +392,7 @@ export default function PlanesPage() {
                   }`}
                   style={{ background: '#0F766E' }}
                 >
-                  {isActive ? (isPlanHigher(plan.key, currentPlan) ? 'Subir de plan' : 'Cambiar plan') : t('choosePlan')}
+                  {t('choosePlan')}
                 </button>
               )}
             </div>
@@ -322,7 +405,77 @@ export default function PlanesPage() {
         {t('footer')}
       </p>
 
-      {/* ── Checkout Modal / Drawer ── */}
+      {/* ── Confirmation Modal for plan change ── */}
+      {changePlanTarget && changePlanAction && (() => {
+        const targetPrice = billing === 'mensual' ? changePlanTarget.monthly : changePlanTarget.yearly
+        const currentPlanData = PLANS.find(p => p.key === currentPlan)
+        const currentPrice = currentPlanData ? (billing === 'mensual' ? currentPlanData.monthly : currentPlanData.yearly) : 0
+        const lostFeatures = changePlanAction === 'downgrade' && currentPlan ? getLostFeatures(currentPlan, changePlanTarget.key) : []
+        const isUpgrade = changePlanAction === 'upgrade'
+        const billingUnit = billing === 'mensual' ? 'mes' : 'año'
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/50" onClick={closePlanChange} />
+            <div className="relative bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+              <h3 className="text-lg font-semibold text-gray-900">
+                {isUpgrade ? `Subir a ${PLAN_LABELS[changePlanTarget.key]}` : `Cambiar a ${PLAN_LABELS[changePlanTarget.key]}`}
+              </h3>
+
+              <p className="text-sm text-gray-500 mt-3">
+                Tu plan cambiará de <strong>{PLAN_LABELS[currentPlan || '']}</strong> (${currentPrice}/{billingUnit}) a <strong>{PLAN_LABELS[changePlanTarget.key]}</strong> (${targetPrice}/{billingUnit}).
+              </p>
+
+              {isUpgrade ? (
+                <p className="text-sm text-gray-500 mt-2">
+                  Se te cobrará la diferencia proporcional por los días restantes del ciclo actual.
+                </p>
+              ) : (
+                <>
+                  <p className="text-sm text-gray-500 mt-2">
+                    El cambio se aplicará al final de tu ciclo de facturación actual.
+                  </p>
+                  {lostFeatures.length > 0 && (
+                    <div className="mt-3 p-3 rounded-xl bg-amber-50 border border-amber-100">
+                      <div className="flex items-start gap-2">
+                        <AlertTriangle size={16} className="text-amber-500 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-amber-700">Perderás acceso a:</p>
+                          <ul className="mt-1 space-y-0.5">
+                            {lostFeatures.map(f => (
+                              <li key={f} className="text-xs text-amber-600">• {f}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {changeError && (
+                <p className="text-sm text-red-500 mt-3">{changeError}</p>
+              )}
+
+              <div className="flex gap-3 mt-6">
+                <button onClick={closePlanChange} disabled={changingPlan}
+                  className="flex-1 py-2.5 rounded-xl border border-[#E5E5E3] text-sm font-medium text-gray-600 hover:bg-[#F8F7F4] transition-colors disabled:opacity-50">
+                  Cancelar
+                </button>
+                <button onClick={confirmPlanChange} disabled={changingPlan}
+                  className={`flex-1 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2 ${
+                    isUpgrade ? 'bg-[#0F766E] hover:bg-[#0D9488]' : 'bg-amber-500 hover:bg-amber-600'
+                  }`}>
+                  {changingPlan ? <Loader2 size={16} className="animate-spin" /> : null}
+                  {changingPlan ? 'Procesando...' : 'Confirmar cambio'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
+
+      {/* ── Checkout Modal / Drawer (new subscriptions) ── */}
       {checkoutPlan && (() => {
         const modalPrice = `$${billing === 'mensual' ? checkoutPlan.monthly : checkoutPlan.yearly} USD/${billing === 'mensual' ? t('mo') : t('yr')}`
         const billingLabel = billing === 'mensual' ? 'Suscripción mensual' : 'Suscripción anual'
@@ -339,7 +492,6 @@ export default function PlanesPage() {
             {/* Desktop: centered modal / Mobile: bottom drawer */}
             <div
               className={
-                // Mobile: drawer from bottom
                 'absolute inset-x-0 bottom-0 lg:relative lg:inset-auto ' +
                 'lg:flex lg:items-center lg:justify-center lg:min-h-full lg:p-4'
               }
@@ -347,14 +499,10 @@ export default function PlanesPage() {
               <div
                 className={
                   'relative bg-white w-full ' +
-                  // Mobile: drawer style
                   'rounded-t-2xl max-h-[95vh] overflow-y-auto ' +
-                  // Desktop: modal style
                   'lg:rounded-2xl lg:max-w-[480px] lg:max-h-[90vh] lg:shadow-2xl ' +
-                  // Mobile animation: slide up
                   'transition-transform duration-300 ease-out ' +
                   (modalVisible ? 'translate-y-0' : 'translate-y-full') + ' ' +
-                  // Desktop animation: fade in (override transform)
                   'lg:translate-y-0 lg:transition-opacity lg:duration-200 ' +
                   (modalVisible ? 'lg:opacity-100' : 'lg:opacity-0')
                 }
@@ -377,7 +525,6 @@ export default function PlanesPage() {
                   {/* Loading skeleton */}
                   {checkoutLoading && !clientSecret && !checkoutError && (
                     <div className="space-y-4">
-                      {/* Plan summary skeleton */}
                       <div className="flex items-center justify-between p-4 rounded-xl bg-gray-50 border border-gray-100">
                         <div className="flex items-center gap-2.5">
                           <div className="w-6 h-6 rounded-md" style={{ background: '#0F766E' }} />
@@ -388,7 +535,6 @@ export default function PlanesPage() {
                         </div>
                         <p className="text-xl font-bold text-gray-900">{modalPrice}</p>
                       </div>
-                      {/* Payment form skeleton */}
                       <div className="space-y-3 animate-pulse">
                         <div className="h-11 bg-gray-100 rounded-lg" />
                         <div className="h-11 bg-gray-100 rounded-lg" />
@@ -398,7 +544,6 @@ export default function PlanesPage() {
                         </div>
                         <div className="h-11 bg-gray-100 rounded-lg" />
                       </div>
-                      {/* Button skeleton */}
                       <div className="h-12 rounded-xl opacity-40" style={{ background: '#0F766E' }} />
                     </div>
                   )}
