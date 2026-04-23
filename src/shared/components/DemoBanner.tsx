@@ -27,17 +27,21 @@ export default function DemoBanner() {
   }
 
   return (
-    <div className="bg-teal-50 border-b border-teal-100 px-4 py-2.5 flex items-center justify-center gap-3 text-sm no-print">
-      <span className="text-teal-800">
-        🎯 Cargamos datos de ejemplo para que explores la plataforma — los valores son de referencia, editálos con tus costos reales.
-      </span>
-      <button onClick={handleClean} disabled={cleaning}
-        className="text-xs font-semibold text-teal-700 hover:text-teal-900 underline whitespace-nowrap">
-        {cleaning ? 'Limpiando...' : 'Limpiar datos de demo'}
-      </button>
-      <button onClick={() => setShow(false)} className="p-0.5 rounded hover:bg-teal-50 flex-shrink-0">
-        <X size={14} className="text-teal-500" />
-      </button>
+    <div className="bg-emerald-50 border-b border-emerald-100 px-4 py-2 flex items-center justify-between gap-3 no-print">
+      <p className="text-xs text-emerald-700 flex items-center gap-2 flex-1 min-w-0">
+        <span className="text-base flex-shrink-0">🎯</span>
+        <span className="truncate sm:hidden">Datos de ejemplo cargados</span>
+        <span className="hidden sm:inline">Cargamos datos de ejemplo para que explores la plataforma — editálos con tus costos reales.</span>
+      </p>
+      <div className="flex items-center gap-3 flex-shrink-0">
+        <button onClick={handleClean} disabled={cleaning}
+          className="text-xs font-semibold text-emerald-700 underline whitespace-nowrap">
+          {cleaning ? 'Limpiando...' : 'Limpiar datos'}
+        </button>
+        <button onClick={() => setShow(false)} className="text-emerald-400 hover:text-emerald-600">
+          <X size={14} />
+        </button>
+      </div>
     </div>
   )
 }

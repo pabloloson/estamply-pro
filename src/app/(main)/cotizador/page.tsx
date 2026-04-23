@@ -348,10 +348,10 @@ export default function CotizadorPage() {
       </div>
 
       {/* Main technique tabs: Sublimación | DTF | Vinilo | Serigrafía */}
-      <div className="flex gap-1.5 p-1.5 rounded-xl bg-[#F3F3F1] mb-4 overflow-x-auto no-scrollbar">
+      <div className="flex gap-0.5 p-1 rounded-xl bg-[#F3F3F1] overflow-x-auto no-scrollbar mb-4">
         {cotizadorTabs.map(tab => (
           <button key={tab.id} type="button" onClick={() => setCotizadorTab(tab.id)}
-            className={`flex-shrink-0 whitespace-nowrap px-3 lg:px-5 py-2.5 text-xs lg:text-[13px] font-semibold rounded-lg transition-all ${
+            className={`flex-shrink-0 whitespace-nowrap px-3.5 lg:px-5 py-2 text-[13px] font-semibold rounded-lg transition-all ${
               cotizadorTab === tab.id
                 ? 'bg-white text-gray-900 shadow-sm'
                 : 'text-gray-500 hover:text-gray-700'
