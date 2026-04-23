@@ -152,13 +152,16 @@ export default function ClientsPage() {
         <div><h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
           <p className="text-gray-500 text-sm mt-1">{t('totalClients', { count: clients.length })}</p></div>
         <div className="flex gap-2">
-          <button onClick={handleExportar} className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#E5E5E3] text-sm font-medium text-gray-600 hover:bg-[#F8F7F4] transition-colors">
+          <button onClick={handleExportar} className="hidden lg:flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#E5E5E3] text-sm font-medium text-gray-600 hover:bg-[#F8F7F4] transition-colors">
             <Download size={14} /> Exportar
           </button>
-          <button onClick={() => { setImportModal(true); setImportStep(1); setImportData([]); setImportResult(null) }} className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#E5E5E3] text-sm font-medium text-gray-600 hover:bg-[#F8F7F4] transition-colors">
+          <button onClick={() => { setImportModal(true); setImportStep(1); setImportData([]); setImportResult(null) }} className="hidden lg:flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#E5E5E3] text-sm font-medium text-gray-600 hover:bg-[#F8F7F4] transition-colors">
             <Upload size={14} /> {t('importClients')}
           </button>
-          <button onClick={() => { setModal({}) }} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0F766E] text-white text-sm font-semibold hover:bg-[#0D9488] transition-colors">
+          <button onClick={() => { setModal({}) }} className="lg:hidden w-10 h-10 rounded-xl bg-[#0F766E] text-white flex items-center justify-center hover:bg-[#0D9488] transition-colors">
+            <Plus size={20} />
+          </button>
+          <button onClick={() => { setModal({}) }} className="hidden lg:flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0F766E] text-white text-sm font-semibold hover:bg-[#0D9488] transition-colors">
             <Plus size={16} /> {t('newClient')}
           </button>
         </div>

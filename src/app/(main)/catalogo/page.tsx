@@ -194,11 +194,13 @@ export default function CatalogoPage() {
           <p className="text-gray-500 text-sm mt-1 hidden md:block">{t('subtitle')}</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => setShowCats(true)} className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#E5E5E3] text-sm font-medium text-gray-600 hover:bg-[#F8F7F4] transition-colors">
-            <FolderOpen size={14} /> <span className="hidden sm:inline">{t('categories')}</span>
+          <button onClick={() => setShowCats(true)} className="hidden lg:flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#E5E5E3] text-sm font-medium text-gray-600 hover:bg-[#F8F7F4] transition-colors">
+            <FolderOpen size={14} /> {t('categories')}
           </button>
           <button onClick={() => setCatModal({ cost_mode: 'manual', unit_cost: 0, selling_price: 0, manage_stock: false, current_stock: 0, min_stock: 0, visible_in_catalog: true, photos: [] })}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0F766E] text-white text-sm font-semibold hover:bg-[#0D9488] transition-colors"><Plus size={16} /> <span className="hidden sm:inline">{t('addProduct')}</span></button>
+            className="lg:hidden w-10 h-10 rounded-xl bg-[#0F766E] text-white flex items-center justify-center hover:bg-[#0D9488] transition-colors"><Plus size={20} /></button>
+          <button onClick={() => setCatModal({ cost_mode: 'manual', unit_cost: 0, selling_price: 0, manage_stock: false, current_stock: 0, min_stock: 0, visible_in_catalog: true, photos: [] })}
+            className="hidden lg:flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0F766E] text-white text-sm font-semibold hover:bg-[#0D9488] transition-colors"><Plus size={16} /> {t('addProduct')}</button>
         </div>
       </div>
 

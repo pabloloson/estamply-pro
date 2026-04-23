@@ -113,7 +113,9 @@ export default function PromocionesPage() {
         <div><h1 className="text-2xl font-bold text-gray-900">Promociones</h1>
           <p className="text-gray-500 text-sm mt-1">Descuentos y cupones para tu catálogo web.</p></div>
         <button onClick={() => tab === 'promos' ? setPromoModal({ discount_type: 'percentage', discount_value: 0, product_ids: [], show_countdown: false, starts_at: new Date().toISOString().slice(0, 10), ends_at: '' }) : setCouponModal({ discount_type: 'percentage', discount_value: 0, code: '' })}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0F766E] text-white text-sm font-semibold hover:bg-[#0D9488] transition-colors"><Plus size={16} /> {tab === 'promos' ? 'Crear promoción' : 'Crear cupón'}</button>
+          className="lg:hidden w-10 h-10 rounded-xl bg-[#0F766E] text-white flex items-center justify-center hover:bg-[#0D9488] transition-colors"><Plus size={20} /></button>
+        <button onClick={() => tab === 'promos' ? setPromoModal({ discount_type: 'percentage', discount_value: 0, product_ids: [], show_countdown: false, starts_at: new Date().toISOString().slice(0, 10), ends_at: '' }) : setCouponModal({ discount_type: 'percentage', discount_value: 0, code: '' })}
+          className="hidden lg:flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0F766E] text-white text-sm font-semibold hover:bg-[#0D9488] transition-colors"><Plus size={16} /> {tab === 'promos' ? 'Crear promoción' : 'Crear cupón'}</button>
       </div>
 
       {/* Tabs */}

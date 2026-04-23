@@ -608,7 +608,11 @@ export default function PresupuestoPage() {
               <p className="text-sm text-gray-400 mt-0.5">{savedPresupuestos.length} presupuesto{savedPresupuestos.length !== 1 ? 's' : ''}</p>
             </div>
             <button onClick={() => { clearItems(); setLoadedPresupuestoId(null); setPublicLink(''); setClientId(''); setNewClientName(''); setCreatingNew(true) }}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0F766E] text-white text-sm font-semibold hover:bg-[#0D9488] transition-colors">
+              className="lg:hidden w-10 h-10 rounded-xl bg-[#0F766E] text-white flex items-center justify-center hover:bg-[#0D9488] transition-colors">
+              <Plus size={20} />
+            </button>
+            <button onClick={() => { clearItems(); setLoadedPresupuestoId(null); setPublicLink(''); setClientId(''); setNewClientName(''); setCreatingNew(true) }}
+              className="hidden lg:flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0F766E] text-white text-sm font-semibold hover:bg-[#0D9488] transition-colors">
               <Plus size={16} /> {t('newQuote')}
             </button>
           </div>
