@@ -109,8 +109,8 @@ export default function ProductPicker({ products, value, onChange }: ProductPick
                 key={p.id}
                 type="button"
                 className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
-                  i === highlightIdx ? 'bg-purple-50' : 'hover:bg-gray-50'
-                } ${p.id === value ? 'font-semibold text-purple-700' : 'text-gray-700'}`}
+                  i === highlightIdx ? 'bg-teal-50' : 'hover:bg-gray-50'
+                } ${p.id === value ? 'font-semibold text-teal-800' : 'text-gray-700'}`}
                 onMouseEnter={() => setHighlightIdx(i)}
                 onClick={() => handleSelect(p.id)}
               >

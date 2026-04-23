@@ -94,7 +94,7 @@ export function RollVisual({ rollWidth, designW, designH, cols, rows, quantity, 
 
       <div className="text-center leading-tight">
         <p className="text-sm font-bold text-gray-700">
-          Consumo: <span className="text-purple-600">{fmtConsumo(consumoCm)} de rollo (ancho {rollWidth} cm)</span>
+          Consumo: <span className="text-teal-700">{fmtConsumo(consumoCm)} de rollo (ancho {rollWidth} cm)</span>
         </p>
         <p className="text-[10px] text-gray-400 mt-0.5">
           {quantity} diseños de {designW}&times;{designH} cm

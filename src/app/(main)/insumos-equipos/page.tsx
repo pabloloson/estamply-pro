@@ -61,7 +61,7 @@ export default function InsumosEquiposPage() {
     await supabase.from('equipment').delete().eq('id', id); load()
   }
 
-  if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>
+  if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-teal-200 border-t-teal-700 rounded-full animate-spin" /></div>
 
   return (
     <div>
@@ -73,7 +73,7 @@ export default function InsumosEquiposPage() {
       {/* Tabs */}
       <div className="flex gap-1 p-1 rounded-xl mb-6 w-fit" style={{ background: '#F3F4F6' }}>
         {TABS.map(t => (
-          <button key={t} onClick={() => setTab(t)} className={`px-5 py-2 text-sm font-semibold rounded-lg transition-all ${tab === t ? 'tab-active text-purple-700' : 'text-gray-500'}`}>{t}</button>
+          <button key={t} onClick={() => setTab(t)} className={`px-5 py-2 text-sm font-semibold rounded-lg transition-all ${tab === t ? 'tab-active text-teal-800' : 'text-gray-500'}`}>{t}</button>
         ))}
       </div>
 
@@ -82,7 +82,7 @@ export default function InsumosEquiposPage() {
         <div className="card overflow-hidden">
           <div className="p-5 border-b border-gray-100 flex items-center justify-between">
             <div className="flex items-center gap-2"><Cpu size={18} className="text-gray-400" /><span className="font-semibold text-gray-800">Equipos del Taller</span></div>
-            <button onClick={() => setModalEquip({ type: 'press_flat', cost: 0, lifespan_uses: 10000 })} className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}>
+            <button onClick={() => setModalEquip({ type: 'press_flat', cost: 0, lifespan_uses: 10000 })} className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#0F766E' }}>
               <Plus size={14} /> Agregar
             </button>
           </div>
@@ -117,7 +117,7 @@ export default function InsumosEquiposPage() {
       {tab === 'Insumos' && (
         <div className="space-y-4">
           <div className="flex rounded-full p-1 gap-1 w-fit" style={{ background: '#F1F1F1' }}>
-            {([['subli', 'Sublimación', '#6C5CE7'], ['dtf', 'DTF Textil', '#E17055'], ['dtf_uv', 'DTF UV', '#00B894'], ['vinyl', 'Vinilo Textil', '#E84393'], ['vinyl_adhesivo', 'V. Autoadhesivo', '#D63384'], ['serigrafia', 'Serigrafía', '#FDCB6E']] as const).map(([id, label, color]) => (
+            {([['subli', 'Sublimación', '#0F766E'], ['dtf', 'DTF Textil', '#E17055'], ['dtf_uv', 'DTF UV', '#00B894'], ['vinyl', 'Vinilo Textil', '#E84393'], ['vinyl_adhesivo', 'V. Autoadhesivo', '#D63384'], ['serigrafia', 'Serigrafía', '#FDCB6E']] as const).map(([id, label, color]) => (
               <button key={id} onClick={() => setInsumoTab(id)} className="px-4 py-1.5 rounded-full text-xs font-semibold transition-all"
                 style={insumoTab === id ? { background: '#fff', color, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' } : { color: '#888' }}>{label}</button>
             ))}
@@ -126,11 +126,11 @@ export default function InsumosEquiposPage() {
           {insumoTab === 'subli' && (
             <div className="card p-5">
               <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{ background: '#6C5CE7' }} /><span className="font-semibold text-gray-800">Insumos Sublimación</span></div>
+                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{ background: '#0F766E' }} /><span className="font-semibold text-gray-800">Insumos Sublimación</span></div>
                 <div className="flex rounded-full p-0.5 gap-0.5" style={{ background: '#F1F1F1' }}>
                   {(['hojas', 'rollo'] as const).map(f => (
                     <button key={f} onClick={() => setWs({ ...ws, subli_papel_formato: f })} className="px-3 py-1 rounded-full text-xs font-semibold transition-all"
-                      style={(ws.subli_papel_formato ?? 'hojas') === f ? { background: '#fff', color: '#6C5CE7', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' } : { color: '#888' }}>{f === 'hojas' ? 'Hojas' : 'Rollo'}</button>
+                      style={(ws.subli_papel_formato ?? 'hojas') === f ? { background: '#fff', color: '#0F766E', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' } : { color: '#888' }}>{f === 'hojas' ? 'Hojas' : 'Rollo'}</button>
                   ))}
                 </div>
               </div>
@@ -224,7 +224,7 @@ export default function InsumosEquiposPage() {
             <button onClick={() => setWs({ ...ws, vinyl_materiales: [...(ws.vinyl_materiales ?? []), { aplicacion: 'textil', acabado: 'Liso', precio_metro: 0, ancho_rollo: 50, proveedor: '', colores: ['Blanco', 'Negro'] }] })} className="flex items-center gap-1.5 text-sm px-4 py-2.5 rounded-xl font-semibold text-white" style={{ background: '#E84393' }}><Plus size={14} /> Agregar material</button>
           </>)}
 
-          <button onClick={saveSettings} disabled={saving} className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: '#6C5CE7' }}>
+          <button onClick={saveSettings} disabled={saving} className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: '#0F766E' }}>
             <Save size={15} />{saving ? 'Guardando...' : 'Guardar cambios'}
           </button>
         </div>
@@ -261,7 +261,7 @@ export default function InsumosEquiposPage() {
               )}
             </div>
           </div>
-          <button onClick={saveSettings} disabled={saving} className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: '#6C5CE7' }}>
+          <button onClick={saveSettings} disabled={saving} className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: '#0F766E' }}>
             <Save size={15} />{saving ? 'Guardando...' : 'Guardar regla'}
           </button>
         </div>
@@ -287,7 +287,7 @@ export default function InsumosEquiposPage() {
             </div>
             <div className="flex gap-3 mt-6">
               <button onClick={() => setModalEquip(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">Cancelar</button>
-              <button onClick={saveEquipment} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: '#6C5CE7' }}>{saving ? 'Guardando...' : 'Guardar'}</button>
+              <button onClick={saveEquipment} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: '#0F766E' }}>{saving ? 'Guardando...' : 'Guardar'}</button>
             </div>
           </div>
         </div>

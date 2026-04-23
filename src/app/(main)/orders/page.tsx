@@ -29,7 +29,7 @@ const SC: Record<string, { bg: string; text: string }> = {
   ready: { bg: '#EAF3DE', text: '#27500A' }, delivered: { bg: '#F1EFE8', text: '#444441' },
 }
 const TL: Record<string, string> = { subli: 'Subli', dtf: 'DTF Textil', dtf_uv: 'DTF UV', vinyl: 'Vinilo Textil', vinyl_adhesivo: 'V. Autoadhesivo', serigrafia: 'Serigrafía' }
-const TC: Record<string, string> = { subli: '#6C5CE7', dtf: '#E17055', dtf_uv: '#00B894', vinyl: '#E84393', vinyl_adhesivo: '#D63384', serigrafia: '#FDCB6E' }
+const TC: Record<string, string> = { subli: '#0F766E', dtf: '#E17055', dtf_uv: '#00B894', vinyl: '#E84393', vinyl_adhesivo: '#D63384', serigrafia: '#FDCB6E' }
 const NEXT: Record<string, string> = { pending: 'production', production: 'ready', ready: 'delivered' }
 
 
@@ -57,7 +57,7 @@ function DragCard({ id, children }: { id: string; children: React.ReactNode }) {
 
 function DropCol({ id, children }: { id: string; children: React.ReactNode }) {
   const { setNodeRef, isOver } = useDroppable({ id })
-  return <div ref={setNodeRef} className={`rounded-xl p-2 min-h-[200px] transition-all min-w-[70vw] snap-center md:min-w-0 ${isOver ? 'ring-2 ring-purple-300' : ''}`} style={{ background: '#F5F5F5' }}>{children}</div>
+  return <div ref={setNodeRef} className={`rounded-xl p-2 min-h-[200px] transition-all min-w-[70vw] snap-center md:min-w-0 ${isOver ? 'ring-2 ring-teal-300' : ''}`} style={{ background: '#F5F5F5' }}>{children}</div>
 }
 
 export default function OrdersPage() {
@@ -406,12 +406,12 @@ export default function OrdersPage() {
           {editingLink ? (
             <div className="flex gap-2">
               <input className="input-base text-sm flex-1" value={linkVal} onChange={e => setLinkVal(e.target.value)} placeholder="URL de archivos (Google Drive, Dropbox...)" />
-              <button onClick={() => { setFilesLink(order.id, linkVal); setEditingLink(false) }} className="px-3 py-1 rounded-lg text-xs font-semibold text-white" style={{ background: '#6C5CE7' }}>OK</button>
+              <button onClick={() => { setFilesLink(order.id, linkVal); setEditingLink(false) }} className="px-3 py-1 rounded-lg text-xs font-semibold text-white" style={{ background: '#0F766E' }}>OK</button>
               <button onClick={() => setEditingLink(false)} className="text-xs text-gray-400">✕</button>
             </div>
           ) : order.files_link ? (
             <div className="flex items-center justify-between">
-              <a href={order.files_link} target="_blank" rel="noopener noreferrer" className="text-sm text-purple-600 hover:text-purple-700 font-medium flex items-center gap-1"><ExternalLink size={13} /> Abrir archivos</a>
+              <a href={order.files_link} target="_blank" rel="noopener noreferrer" className="text-sm text-teal-700 hover:text-teal-800 font-medium flex items-center gap-1"><ExternalLink size={13} /> Abrir archivos</a>
               <button onClick={() => { setLinkVal(order.files_link || ''); setEditingLink(true) }} className="text-xs text-gray-400 hover:text-gray-600">Editar</button>
             </div>
           ) : (
@@ -452,7 +452,7 @@ export default function OrdersPage() {
                       }
                       await supabase.from('orders').update({ materiales_listos: true }).eq('id', order.id)
                       loadMaterials(order.id)
-                    }} className="text-xs text-purple-500 font-medium">✓ Tengo todo</button>
+                    }} className="text-xs text-teal-600 font-medium">✓ Tengo todo</button>
                   </div>
                 )}
                 {orderMaterials[order.id].every(m => m.disponible) && (
@@ -460,7 +460,7 @@ export default function OrdersPage() {
                 )}
               </div>
             ) : <p className="text-xs text-gray-400 italic">Este pedido no requiere materiales.</p>
-          ) : <div className="flex items-center justify-center py-3"><div className="w-4 h-4 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>}
+          ) : <div className="flex items-center justify-center py-3"><div className="w-4 h-4 border-2 border-teal-200 border-t-teal-700 rounded-full animate-spin" /></div>}
         </div>
 
         {/* Production checklist (digital) */}
@@ -480,7 +480,7 @@ export default function OrdersPage() {
                       ...prev,
                       [order.id]: { ...(prev[order.id] || {}), [step.key]: !checked }
                     }))}
-                    className="w-4 h-4 rounded border-gray-300 text-purple-600" />
+                    className="w-4 h-4 rounded border-gray-300 text-teal-700" />
                   <span className={`text-sm ${checked ? 'text-gray-400 line-through' : 'text-gray-700'}`}>{step.label}</span>
                 </label>
               )
@@ -533,10 +533,10 @@ export default function OrdersPage() {
             <div className="mt-3 flex gap-2 items-end">
               <input type="number" className="input-base text-sm py-1 flex-1" min={0} value={payAmount} onChange={e => setPayAmount(Number(e.target.value))} placeholder={String(Math.max(saldo, 0))} />
               <select className="input-base text-sm py-1 w-28" value={payMethod} onChange={e => setPayMethod(e.target.value)}><option value="efectivo">Efectivo</option><option value="transferencia">Transfer.</option><option value="mercadopago">MP</option><option value="otro">Otro</option></select>
-              <button onClick={() => regPay(order.id)} className="px-3 py-1 rounded-lg text-xs font-semibold text-white" style={{ background: '#6C5CE7' }}>OK</button>
+              <button onClick={() => regPay(order.id)} className="px-3 py-1 rounded-lg text-xs font-semibold text-white" style={{ background: '#0F766E' }}>OK</button>
               <button onClick={() => setPayingOrder(null)} className="text-xs text-gray-400">✕</button>
             </div>
-          ) : saldo > 0 ? <button onClick={() => { setPayingOrder(order.id); setPayAmount(Math.max(saldo, 0)) }} className="mt-3 flex items-center gap-1 text-xs font-semibold text-purple-600"><Plus size={12} /> {t('registerPayment')}</button> : null}
+          ) : saldo > 0 ? <button onClick={() => { setPayingOrder(order.id); setPayAmount(Math.max(saldo, 0)) }} className="mt-3 flex items-center gap-1 text-xs font-semibold text-teal-700"><Plus size={12} /> {t('registerPayment')}</button> : null}
         </div>}
 
         {/* FECHA DE ENTREGA */}
@@ -685,7 +685,7 @@ export default function OrdersPage() {
   const finalizados = filteredOrders.filter(o => o.status === 'delivered')
   const detailOrder = orders.find(o => o.id === detailPanel)
 
-  if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>
+  if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-teal-200 border-t-teal-700 rounded-full animate-spin" /></div>
 
   return (
     <div>
@@ -708,7 +708,7 @@ export default function OrdersPage() {
       : view === 'list' ? (
         <div className="space-y-6">
           {activos.length > 0 && <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3 flex items-center gap-2">Activos <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-600 font-bold">{activos.length}</span></p>
+            <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3 flex items-center gap-2">Activos <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-teal-50 text-teal-700 font-bold">{activos.length}</span></p>
             <div className="space-y-2">{activos.map(o => <Card key={o.id} order={o} />)}</div>
           </div>}
           {finalizados.length > 0 && <div>

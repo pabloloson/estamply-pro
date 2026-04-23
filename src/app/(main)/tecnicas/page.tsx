@@ -25,7 +25,7 @@ function opSummary(op: Operator, fmtCurrency: (n: number) => string): string {
 }
 
 const TEC_LABELS: Record<string, string> = { subli: 'Subli', dtf: 'DTF Textil', dtf_uv: 'DTF UV', vinyl: 'Vinilo Textil', vinyl_adhesivo: 'Vinilo Autoadhesivo', serigrafia: 'Serigrafía' }
-const TEC_COLORS: Record<string, string> = { subli: '#6C5CE7', dtf: '#E17055', dtf_uv: '#00B894', vinyl: '#E84393', vinyl_adhesivo: '#D63384', serigrafia: '#FDCB6E' }
+const TEC_COLORS: Record<string, string> = { subli: '#0F766E', dtf: '#E17055', dtf_uv: '#00B894', vinyl: '#E84393', vinyl_adhesivo: '#D63384', serigrafia: '#FDCB6E' }
 
 function DiscountTable({ tiers, onChange }: { tiers: DiscountTier[]; onChange: (t: DiscountTier[]) => void }) {
   const updateHasta = (i: number, v: number) => {
@@ -54,7 +54,7 @@ function DiscountTable({ tiers, onChange }: { tiers: DiscountTier[]; onChange: (
         <td className="px-2 py-1"><button onClick={() => remove(i)} className="p-0.5 rounded hover:bg-red-50"><Trash2 size={10} className="text-red-400" /></button></td>
       </tr>))}
     </tbody></table>
-    <button onClick={() => onChange([...tiers, { desde: (tiers.at(-1)?.hasta ?? 0) + 1, hasta: 9999, porcentaje: 0 }])} className="flex items-center gap-1 text-[10px] px-2 py-0.5 mt-1 rounded font-semibold text-purple-600 hover:bg-purple-50"><Plus size={9} /> Agregar tramo</button>
+    <button onClick={() => onChange([...tiers, { desde: (tiers.at(-1)?.hasta ?? 0) + 1, hasta: 9999, porcentaje: 0 }])} className="flex items-center gap-1 text-[10px] px-2 py-0.5 mt-1 rounded font-semibold text-teal-700 hover:bg-teal-50"><Plus size={9} /> Agregar tramo</button>
   </div>)
 }
 
@@ -140,7 +140,7 @@ export default function ProduccionPage() {
   }
   async function delOperator(id: string) { if (confirm('¿Eliminar operario?')) { await supabase.from('operators').delete().eq('id', id); load() } }
 
-  if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>
+  if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-teal-200 border-t-teal-700 rounded-full animate-spin" /></div>
 
   const sortedTecs = [...tecnicas].sort((a, b) => ALL_TECNICA_SLUGS.indexOf(a.slug) - ALL_TECNICA_SLUGS.indexOf(b.slug))
   const activeTec = tecnicas.find(t => t.id === activeTab)
@@ -326,7 +326,7 @@ export default function ProduccionPage() {
 
             <div className="flex gap-3 mt-4">
               <button onClick={() => setOpModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">{tc('cancel')}</button>
-              <button onClick={saveOperator} disabled={!opModal.name?.trim()} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#6C5CE7' }}>{t('saveButton')}</button>
+              <button onClick={saveOperator} disabled={!opModal.name?.trim()} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#0F766E' }}>{t('saveButton')}</button>
             </div>
           </div>
         </div>

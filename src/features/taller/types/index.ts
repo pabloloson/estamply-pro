@@ -18,7 +18,7 @@ export const TECNICA_LABELS: Record<TecnicaSlug, string> = {
   subli: 'Sublimación', dtf: 'DTF Textil', dtf_uv: 'DTF UV', vinyl: 'Vinilo Textil', vinyl_adhesivo: 'Vinilo Autoadhesivo', serigrafia: 'Serigrafía',
 }
 export const TECNICA_COLORS: Record<TecnicaSlug, string> = {
-  subli: '#6C5CE7', dtf: '#E17055', dtf_uv: '#00B894', vinyl: '#E84393', vinyl_adhesivo: '#D63384', serigrafia: '#FDCB6E',
+  subli: '#0F766E', dtf: '#E17055', dtf_uv: '#00B894', vinyl: '#E84393', vinyl_adhesivo: '#D63384', serigrafia: '#FDCB6E',
 }
 
 export interface Tecnica {
@@ -199,7 +199,7 @@ export const DEFAULT_SERIGRAFIA_CONFIG: SerigrafiaConfig = {
 }
 
 export const TECHNIQUE_DEFAULTS: Record<TecnicaSlug, { nombre: string; color: string; config: TecnicaConfig; activa: boolean }> = {
-  subli: { nombre: 'Sublimación', color: '#6C5CE7', config: DEFAULT_SUBLI_CONFIG, activa: true },
+  subli: { nombre: 'Sublimación', color: '#0F766E', config: DEFAULT_SUBLI_CONFIG, activa: true },
   dtf: { nombre: 'DTF Textil', color: '#E17055', config: DEFAULT_DTF_CONFIG, activa: true },
   dtf_uv: { nombre: 'DTF UV', color: '#00B894', config: DEFAULT_DTF_UV_CONFIG, activa: false },
   vinyl: { nombre: 'Vinilo Textil', color: '#E84393', config: DEFAULT_VINYL_CONFIG, activa: true },

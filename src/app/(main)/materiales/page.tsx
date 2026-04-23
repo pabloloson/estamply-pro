@@ -27,12 +27,12 @@ const TIPO_LABELS: Record<InsumoTipo, string> = {
   tinta_serigrafica: 'Tinta serigráfica', servicio_impresion: 'Servicio tercerizado', emulsion: 'Emulsión', otro: 'Otro',
 }
 const TIPO_COLORS: Record<InsumoTipo, string> = {
-  papel: '#6C5CE7', tinta: '#00B894', film: '#E17055', polvo: '#FDCB6E', vinilo: '#E84393',
+  papel: '#0F766E', tinta: '#00B894', film: '#E17055', polvo: '#FDCB6E', vinilo: '#E84393',
   tinta_serigrafica: '#e67e22', servicio_impresion: '#3498db', emulsion: '#9b59b6', otro: '#636e72',
 }
 const TECNICA_FILTER_TABS = [
   { id: '', label: 'Todos' },
-  { id: 'subli', label: 'Sublimación', color: '#6C5CE7' },
+  { id: 'subli', label: 'Sublimación', color: '#0F766E' },
   { id: 'dtf', label: 'DTF Textil', color: '#E17055' },
   { id: 'dtf_uv', label: 'DTF UV', color: '#00B894' },
   { id: 'vinyl', label: 'Vinilo Textil', color: '#E84393' },
@@ -197,7 +197,7 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
     return true
   })
 
-  if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>
+  if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-teal-200 border-t-teal-700 rounded-full animate-spin" /></div>
 
   return (
     <div>
@@ -212,7 +212,7 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
 
         <div className="flex gap-1 mb-6">
           <button onClick={() => setTab('base')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'base' ? 'bg-gray-800 text-white shadow-md' : 'bg-gray-100 text-gray-600'}`}>{t('baseProducts')}</button>
-          <button onClick={() => setTab('insumos')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'insumos' ? 'text-white shadow-md' : 'bg-gray-100 text-gray-600'}`} style={tab === 'insumos' ? { background: '#6C5CE7' } : {}}>{t('insumos')}</button>
+          <button onClick={() => setTab('insumos')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'insumos' ? 'text-white shadow-md' : 'bg-gray-100 text-gray-600'}`} style={tab === 'insumos' ? { background: '#0F766E' } : {}}>{t('insumos')}</button>
         </div>
       </>)}
 
@@ -230,7 +230,7 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
             <button onClick={() => setShowCats(true)} className="flex items-center gap-1.5 whitespace-nowrap text-sm px-3 py-1.5 rounded-lg font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50">
               <FolderOpen size={14} /> Categorías
             </button>
-            <button onClick={() => setModal({ time_subli: 0, time_dtf: 0, time_vinyl: 0, base_cost: 0 } as Partial<Product>)} className="flex items-center gap-1.5 whitespace-nowrap text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={14} /> Agregar</button>
+            <button onClick={() => setModal({ time_subli: 0, time_dtf: 0, time_vinyl: 0, base_cost: 0 } as Partial<Product>)} className="flex items-center gap-1.5 whitespace-nowrap text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#0F766E' }}><Plus size={14} /> Agregar</button>
           </div>
         </div>
         {/* Desktop filters */}
@@ -260,7 +260,7 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
             <input className="input-base text-sm w-full" style={{ paddingLeft: 40 }} placeholder="Buscar..." value={searchProduct} onChange={e => setSearchProduct(e.target.value)} />
           </div>
-          <button onClick={() => setModal({ time_subli: 0, time_dtf: 0, time_vinyl: 0, base_cost: 0 } as Partial<Product>)} className="h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 text-white" style={{ background: '#6C5CE7' }}><Plus size={18} /></button>
+          <button onClick={() => setModal({ time_subli: 0, time_dtf: 0, time_vinyl: 0, base_cost: 0 } as Partial<Product>)} className="h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 text-white" style={{ background: '#0F766E' }}><Plus size={18} /></button>
         </div>
         {/* Mobile cards */}
         <div className="md:hidden space-y-2">
@@ -307,7 +307,7 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
                 <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50">
                   <td className="px-4 py-3 font-medium text-gray-800">{p.name}</td>
                   <td className="px-4 py-3 text-gray-600">{fmtCurrency(p.base_cost)}</td>
-                  <td className="px-4 py-3 hidden lg:table-cell">{cat ? <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-purple-50 text-purple-600">{cat.name}</span> : <span className="text-xs text-gray-300">—</span>}</td>
+                  <td className="px-4 py-3 hidden lg:table-cell">{cat ? <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-teal-50 text-teal-700">{cat.name}</span> : <span className="text-xs text-gray-300">—</span>}</td>
                   <td className="px-4 py-3 hidden lg:table-cell">{vars.length > 0 ? (
                     <div className="flex flex-wrap gap-1">
                       {(vars.length <= 5 ? vars : vars.slice(0, 4)).map(v => (
@@ -350,7 +350,7 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
                 style={filterTecnica === tf.id ? { background: tf.color || '#374151' } : {}}>{tf.label}</button>
             ))}
           </div>
-          <button onClick={() => openNewInsumo()} className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={14} /> {tc('add')}</button>
+          <button onClick={() => openNewInsumo()} className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#0F766E' }}><Plus size={14} /> {tc('add')}</button>
         </div>
         <div className="hidden md:block relative mt-3 mb-4 max-w-[400px]">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
@@ -366,7 +366,7 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
             <input className="input-base text-sm w-full" style={{ paddingLeft: 40 }} placeholder="Buscar..." value={searchInsumo} onChange={e => setSearchInsumo(e.target.value)} />
           </div>
-          <button onClick={() => openNewInsumo()} className="h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 text-white" style={{ background: '#6C5CE7' }}><Plus size={18} /></button>
+          <button onClick={() => openNewInsumo()} className="h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 text-white" style={{ background: '#0F766E' }}><Plus size={18} /></button>
         </div>
         {/* Mobile cards */}
         <div className="md:hidden space-y-2">
@@ -460,7 +460,7 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
                       {[['local', 'Local'], ['USD', 'USD']].map(([v, l]) => (
                         <button key={v} type="button" onClick={() => setModal({ ...modal, moneda: v })}
                           className={`px-3 py-0.5 rounded-full text-[10px] font-semibold transition-all ${(modal.moneda || 'local') === v ? 'text-white shadow-sm' : 'text-gray-500'}`}
-                          style={(modal.moneda || 'local') === v ? { background: '#6C5CE7' } : {}}>{l}</button>
+                          style={(modal.moneda || 'local') === v ? { background: '#0F766E' } : {}}>{l}</button>
                       ))}
                     </div>
                   </div>
@@ -490,7 +490,7 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
                       const { data } = await supabase.from('categories').insert({ name: inlineCat.name.trim(), margen_sugerido: inlineCat.margen_sugerido }).select('id').single()
                       if (data) { setModal({ ...modal, category_id: data.id }); await load() }
                       setInlineCat(null)
-                    }} className="px-4 py-2 rounded-lg text-xs font-semibold text-white" style={{ background: '#6C5CE7' }}>Crear categoría</button>
+                    }} className="px-4 py-2 rounded-lg text-xs font-semibold text-white" style={{ background: '#0F766E' }}>Crear categoría</button>
                     <button type="button" onClick={() => setInlineCat(null)} className="text-xs font-medium text-gray-400 hover:text-gray-600">Cancelar</button>
                   </div>
                 </div>
@@ -528,7 +528,7 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
                       if (error) { console.error('Press insert error:', error); return }
                       if (data) { setModal({ ...modal, press_equipment_id: data.id }); await load(); setPressCreatedHint(true); setTimeout(() => setPressCreatedHint(false), 6000) }
                       setInlinePress(null)
-                    }} className="px-4 py-2 rounded-lg text-xs font-semibold text-white" style={{ background: '#6C5CE7' }}>Crear plancha</button>
+                    }} className="px-4 py-2 rounded-lg text-xs font-semibold text-white" style={{ background: '#0F766E' }}>Crear plancha</button>
                     <button type="button" onClick={() => setInlinePress(null)} className="text-xs font-medium text-gray-400 hover:text-gray-600">Cancelar</button>
                   </div>
                 </div>
@@ -536,12 +536,12 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
               {pressCreatedHint && (
                 <div className="p-3 rounded-lg bg-green-50 border border-green-100 flex items-start gap-2 text-xs">
                   <span className="text-green-600 font-medium flex-shrink-0">✓</span>
-                  <p className="text-green-700">Plancha creada. Completá el valor y vida útil en <a href="/settings/equipamiento" target="_blank" rel="noopener" className="font-semibold text-purple-600 hover:underline">Equipamiento →</a> para calcular la amortización.</p>
+                  <p className="text-green-700">Plancha creada. Completá el valor y vida útil en <a href="/settings/equipamiento" target="_blank" rel="noopener" className="font-semibold text-teal-700 hover:underline">Equipamiento →</a> para calcular la amortización.</p>
                 </div>
               )}
               <div><label className="block text-sm font-semibold text-gray-600 mb-2">Tiempos de planchado (seg/unidad)</label>
                 <div className="grid grid-cols-3 gap-2">
-                  {[['time_subli', 'Subli', '#6C5CE7'], ['time_dtf', 'DTF Textil', '#E17055'], ['time_vinyl', 'Vinilo Textil', '#E84393']].map(([k, l, c]) => (
+                  {[['time_subli', 'Subli', '#0F766E'], ['time_dtf', 'DTF Textil', '#E17055'], ['time_vinyl', 'Vinilo Textil', '#E84393']].map(([k, l, c]) => (
                     <div key={k}><label className="block text-xs font-medium mb-1" style={{ color: c as string }}>{l as string}</label>
                       <NumericInput className="input-base text-center" value={(modal as Record<string, number>)[k as string] || 0} onChange={v => setModal({ ...modal, [k as string]: v })} /></div>
                   ))}
@@ -580,7 +580,7 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
                       if (error) { console.error('Supplier insert error:', error); return }
                       if (data) { setModal({ ...modal, supplier_id: data.id }); await load(); setSupplierCreatedHint(true); setTimeout(() => setSupplierCreatedHint(false), 6000) }
                       setInlineSupplier(null)
-                    }} className="px-4 py-2 rounded-lg text-xs font-semibold text-white" style={{ background: '#6C5CE7' }}>Crear proveedor</button>
+                    }} className="px-4 py-2 rounded-lg text-xs font-semibold text-white" style={{ background: '#0F766E' }}>Crear proveedor</button>
                     <button type="button" onClick={() => setInlineSupplier(null)} className="text-xs font-medium text-gray-400 hover:text-gray-600">Cancelar</button>
                   </div>
                 </div>
@@ -588,7 +588,7 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
               {supplierCreatedHint && (
                 <div className="p-3 rounded-lg bg-green-50 border border-green-100 flex items-start gap-2 text-xs">
                   <span className="text-green-600 font-medium flex-shrink-0">✓</span>
-                  <p className="text-green-700">Proveedor creado. Completá los datos de contacto en <a href="/settings/proveedores" target="_blank" rel="noopener" className="font-semibold text-purple-600 hover:underline">Configuración → Proveedores →</a></p>
+                  <p className="text-green-700">Proveedor creado. Completá los datos de contacto en <a href="/settings/proveedores" target="_blank" rel="noopener" className="font-semibold text-teal-700 hover:underline">Configuración → Proveedores →</a></p>
                 </div>
               )}
 
@@ -641,7 +641,7 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
                           {(modal.variant_options || []).length > 0 && (
                             <div className="flex flex-wrap gap-1.5 mb-2">
                               {(modal.variant_options || []).map((opt, i) => (
-                                <span key={i} className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 text-xs font-medium">
+                                <span key={i} className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-teal-50 text-teal-800 text-xs font-medium">
                                   {opt}
                                   <button type="button" onClick={() => setModal({ ...modal, variant_options: (modal.variant_options || []).filter((_, j) => j !== i) })} className="hover:text-red-500">×</button>
                                 </span>
@@ -667,7 +667,7 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
                               <span className="text-[11px] text-gray-400">Sugerencias: </span>
                               {unusedSuggestions.map(s => (
                                 <button key={s} type="button" onClick={() => addOption(s)}
-                                  className="text-[11px] text-gray-400 hover:text-purple-600 hover:underline mr-1">
+                                  className="text-[11px] text-gray-400 hover:text-teal-700 hover:underline mr-1">
                                   {s}
                                 </button>
                               ))}
@@ -682,7 +682,7 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
             </div>
             <div className="flex gap-3 mt-6">
               <button onClick={() => setModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">{tc('cancel')}</button>
-              <button onClick={saveProduct} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: '#6C5CE7' }}>{saving ? tc('saving') : tc('save')}</button>
+              <button onClick={saveProduct} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: '#0F766E' }}>{saving ? tc('saving') : tc('save')}</button>
             </div>
           </div>
         </div>
@@ -717,7 +717,7 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
                   {[['local', 'Local'], ['USD', 'USD']].map(([v, l]) => (
                     <button key={v} type="button" onClick={() => setInsModal({ ...insModal, moneda: v as 'local' | 'USD' })}
                       className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${(insModal.moneda || 'local') === v ? 'text-white shadow-sm' : 'text-gray-500'}`}
-                      style={(insModal.moneda || 'local') === v ? { background: '#6C5CE7' } : {}}>
+                      style={(insModal.moneda || 'local') === v ? { background: '#0F766E' } : {}}>
                       {l}
                     </button>
                   ))}
@@ -732,7 +732,7 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
                     <div className="flex gap-2">
                       {(['hojas', 'rollo'] as const).map(f => (
                         <button key={f} type="button" onClick={() => up({ formato: f })}
-                          className={`px-3 py-1 rounded-full text-xs font-semibold ${c.formato === f ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-500'}`}>{f === 'hojas' ? 'Hojas' : 'Rollo'}</button>))}
+                          className={`px-3 py-1 rounded-full text-xs font-semibold ${c.formato === f ? 'bg-teal-50 text-teal-800' : 'bg-gray-100 text-gray-500'}`}>{f === 'hojas' ? 'Hojas' : 'Rollo'}</button>))}
                     </div>
                     {c.formato === 'hojas' ? (
                       <div className="grid grid-cols-2 gap-3">
@@ -789,7 +789,7 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
                       {colores.length > 0 && (
                         <div className="flex flex-wrap gap-1.5 mb-2">
                           {colores.map((col: string, ci: number) => (
-                            <span key={ci} className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 text-xs font-medium">
+                            <span key={ci} className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-teal-50 text-teal-800 text-xs font-medium">
                               {col}
                               <button type="button" onClick={() => up({ colores: colores.filter((_: string, j: number) => j !== ci) })} className="hover:text-red-500">×</button>
                             </span>
@@ -817,7 +817,7 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
                             <span className="text-[11px] text-gray-400">Sugerencias: </span>
                             {suggestions.map(s => (
                               <button key={s} type="button" onClick={() => up({ colores: [...colores, s] })}
-                                className="text-[11px] text-gray-400 hover:text-purple-600 hover:underline mr-1">{s}</button>
+                                className="text-[11px] text-gray-400 hover:text-teal-700 hover:underline mr-1">{s}</button>
                             ))}
                           </div>
                         ) : null
@@ -895,7 +895,7 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
                       if (error) { console.error('Supplier insert error:', error); return }
                       if (data) { setInsModal({ ...insModal, supplier_id: data.id } as Partial<Insumo>); await load(); setInsSupplierHint(true); setTimeout(() => setInsSupplierHint(false), 6000) }
                       setInsSupplier(null)
-                    }} className="px-4 py-2 rounded-lg text-xs font-semibold text-white" style={{ background: '#6C5CE7' }}>Crear proveedor</button>
+                    }} className="px-4 py-2 rounded-lg text-xs font-semibold text-white" style={{ background: '#0F766E' }}>Crear proveedor</button>
                     <button type="button" onClick={() => setInsSupplier(null)} className="text-xs font-medium text-gray-400 hover:text-gray-600">Cancelar</button>
                   </div>
                 </div>
@@ -903,13 +903,13 @@ export default function MaterialesPage({ forceTab, hideChrome }: { forceTab?: 'b
               {insSupplierHint && (
                 <div className="p-3 rounded-lg bg-green-50 border border-green-100 flex items-start gap-2 text-xs">
                   <span className="text-green-600 font-medium flex-shrink-0">✓</span>
-                  <p className="text-green-700">Proveedor creado. Completá los datos de contacto en <a href="/settings/proveedores" target="_blank" rel="noopener" className="font-semibold text-purple-600 hover:underline">Configuración → Proveedores →</a></p>
+                  <p className="text-green-700">Proveedor creado. Completá los datos de contacto en <a href="/settings/proveedores" target="_blank" rel="noopener" className="font-semibold text-teal-700 hover:underline">Configuración → Proveedores →</a></p>
                 </div>
               )}
             </div>
             <div className="flex gap-3 mt-6">
               <button onClick={() => { setInsModal(null); setInsSupplier(null); setInsSupplierHint(false) }} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">{tc('cancel')}</button>
-              <button onClick={saveInsumo} disabled={saving || !insModal.nombre?.trim()} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#6C5CE7' }}>{saving ? tc('saving') : tc('save')}</button>
+              <button onClick={saveInsumo} disabled={saving || !insModal.nombre?.trim()} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#0F766E' }}>{saving ? tc('saving') : tc('save')}</button>
             </div>
           </div>
         </div>

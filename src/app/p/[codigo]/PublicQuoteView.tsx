@@ -131,14 +131,14 @@ export default function PublicQuoteView({ presupuesto }: Props) {
         <div className="flex justify-center mb-4">
           <button onClick={handlePrintPdf}
             className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold text-white shadow-lg"
-            style={{ background: '#6C5CE7', boxShadow: '0 4px 20px rgba(108,92,231,0.35)' }}>
+            style={{ background: '#0F766E', boxShadow: '0 4px 20px rgba(15,118,110,0.35)' }}>
             <FileDown size={16} /> Descargar PDF
           </button>
         </div>
 
         {/* Quote document — on-screen preview */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="h-2" style={{ background: 'linear-gradient(90deg, #6C5CE7, #a29bfe)' }} />
+          <div className="h-2" style={{ background: 'linear-gradient(90deg, #0F766E, #a29bfe)' }} />
 
           {/* Header */}
           <div className="px-8 pt-7 pb-5 flex items-start justify-between gap-6 border-b border-gray-100">
@@ -147,7 +147,7 @@ export default function PublicQuoteView({ presupuesto }: Props) {
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={biz.business_logo_url} alt="Logo" className="w-16 h-16 object-contain rounded-xl flex-shrink-0" />
               ) : displayName ? (
-                <div className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(135deg, #6C5CE7, #a29bfe)' }}>
+                <div className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(135deg, #0F766E, #a29bfe)' }}>
                   <span className="text-white font-black text-xl">{displayName[0].toUpperCase()}</span>
                 </div>
               ) : null}
@@ -245,7 +245,7 @@ export default function PublicQuoteView({ presupuesto }: Props) {
               Generado con Estamply
             </a>
           </div>
-          <div className="h-1" style={{ background: 'linear-gradient(90deg, #6C5CE7, #a29bfe)' }} />
+          <div className="h-1" style={{ background: 'linear-gradient(90deg, #0F766E, #a29bfe)' }} />
         </div>
 
         {/* Bottom download */}

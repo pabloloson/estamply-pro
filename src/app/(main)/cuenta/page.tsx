@@ -108,7 +108,7 @@ export default function CuentaPage() {
 
   if (loading) return (
     <div className="flex items-center justify-center h-64">
-      <div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" />
+      <div className="w-8 h-8 border-2 border-teal-200 border-t-teal-700 rounded-full animate-spin" />
     </div>
   )
 
@@ -146,7 +146,7 @@ export default function CuentaPage() {
 
         <button onClick={save} disabled={saveState === 'saving'}
           className={`mt-5 flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors ${saveState === 'saved' ? 'bg-green-500' : saveState === 'error' ? 'bg-red-500' : ''}`}
-          style={saveState !== 'saved' && saveState !== 'error' ? { background: '#6C5CE7' } : {}}>
+          style={saveState !== 'saved' && saveState !== 'error' ? { background: '#0F766E' } : {}}>
           {saveState === 'saving' ? <><Loader2 size={14} className="animate-spin" /> {t('saving')}</> : saveState === 'saved' ? <><Check size={14} /> {t('saved')}</> : saveState === 'error' ? t('saveError') : <><Save size={14} /> {t('save')}</>}
         </button>
       </div>
@@ -160,7 +160,7 @@ export default function CuentaPage() {
           </h2>
           {!showPwChange && (
             <button onClick={() => setShowPwChange(true)}
-              className="text-sm font-semibold text-purple-600 hover:text-purple-700">
+              className="text-sm font-semibold text-teal-700 hover:text-teal-800">
               {t('changePassword')}
             </button>
           )}
@@ -186,7 +186,7 @@ export default function CuentaPage() {
             <div className="flex gap-2">
               <button onClick={changePassword} disabled={pwState === 'saving'}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white"
-                style={{ background: '#6C5CE7' }}>
+                style={{ background: '#0F766E' }}>
                 {pwState === 'saving' ? <Loader2 size={14} className="animate-spin" /> : <Lock size={14} />}
                 {t('savePassword')}
               </button>
@@ -210,7 +210,7 @@ export default function CuentaPage() {
           <div className="flex items-center gap-3">
             <span className="text-sm text-gray-500">{t('currentPlan')}</span>
             {planLabel && planStatus !== 'trial' ? (
-              <span className="px-3 py-1 rounded-full text-sm font-bold text-white" style={{ background: '#6C5CE7' }}>{planLabel}</span>
+              <span className="px-3 py-1 rounded-full text-sm font-bold text-white" style={{ background: '#0F766E' }}>{planLabel}</span>
             ) : (
               <span className="text-sm font-medium text-gray-400">—</span>
             )}
@@ -230,7 +230,7 @@ export default function CuentaPage() {
             <div className="p-4 rounded-xl bg-amber-50/60 border border-amber-100">
               <p className="text-sm text-gray-600 mb-3">{t('trialCta')}</p>
               <a href="/planes"
-                className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700">
+                className="flex items-center gap-1.5 text-sm font-semibold text-teal-700 hover:text-teal-800">
                 <ArrowRight size={14} />
                 {t('choosePlan')}
               </a>
@@ -238,7 +238,7 @@ export default function CuentaPage() {
           )}
           {planStatus === 'active' && (
             <div className="flex gap-2">
-              <button onClick={handlePortal} disabled={redirecting} className="text-sm font-semibold text-purple-600 hover:text-purple-700 disabled:opacity-50">
+              <button onClick={handlePortal} disabled={redirecting} className="text-sm font-semibold text-teal-700 hover:text-teal-800 disabled:opacity-50">
                 {redirecting ? 'Redirigiendo...' : t('changePlan')}
               </button>
               <span className="text-gray-300">·</span>
@@ -249,7 +249,7 @@ export default function CuentaPage() {
           )}
           {(planStatus === 'expired' || planStatus === 'cancelled') && (
             <a href="/planes"
-              className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700">
+              className="flex items-center gap-1.5 text-sm font-semibold text-teal-700 hover:text-teal-800">
               <ArrowRight size={14} />
               {t('reactivatePlan')}
             </a>

@@ -17,13 +17,13 @@ const COUNTRY_NAMES: Record<string, string> = {
 }
 
 const PLAN_COLORS: Record<string, string> = {
-  emprendedor: '#94A3B8', pro: '#6C5CE7', crecimiento: '#6C5CE7', negocio: '#E17055', trial: '#FDCB6E', expired: '#EF4444',
+  emprendedor: '#94A3B8', pro: '#0F766E', crecimiento: '#0F766E', negocio: '#E17055', trial: '#FDCB6E', expired: '#EF4444',
 }
 const PLAN_LABELS: Record<string, string> = {
   emprendedor: 'Emprendedor ($9)', pro: 'Pro ($17)', crecimiento: 'Pro ($17)', negocio: 'Negocio ($29)', trial: 'Trial', expired: 'Expirado',
 }
 
-const DONUT_COLORS = ['#6C5CE7', '#E17055', '#00B894', '#E84393', '#FDCB6E', '#636e72', '#3498db', '#94A3B8']
+const DONUT_COLORS = ['#0F766E', '#E17055', '#00B894', '#E84393', '#FDCB6E', '#636e72', '#3498db', '#94A3B8']
 
 interface DashboardData {
   totalTalleres: number
@@ -50,7 +50,7 @@ export default function AdminDashboard() {
       .catch(() => setLoading(false))
   }, [])
 
-  if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>
+  if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-teal-200 border-t-teal-700 rounded-full animate-spin" /></div>
   if (!data) return <div className="text-center py-16 text-gray-400">Error cargando datos</div>
 
   const paidCount = (data.planCounts['pro'] || 0) + (data.planCounts['crecimiento'] || 0) + (data.planCounts['negocio'] || 0)
@@ -93,7 +93,7 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div className="bg-white rounded-2xl p-5 border border-gray-100">
           <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-purple-50"><Users size={16} className="text-purple-600" /></div>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-teal-50"><Users size={16} className="text-teal-700" /></div>
             <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Talleres</span>
           </div>
           <p className="text-3xl font-black text-gray-900">{data.totalTalleres}</p>
@@ -138,7 +138,7 @@ export default function AdminDashboard() {
                 <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#9CA3AF' }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 10, fill: '#9CA3AF' }} axisLine={false} tickLine={false} allowDecimals={false} />
                 <Tooltip />
-                <Bar dataKey="count" fill="#6C5CE7" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="count" fill="#0F766E" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -205,7 +205,7 @@ export default function AdminDashboard() {
             <div key={step.label} className="flex items-center gap-3">
               <span className="text-sm text-gray-600 w-32">{step.label}</span>
               <div className="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden">
-                <div className="h-full rounded-full flex items-center px-3" style={{ width: `${step.pct}%`, background: '#6C5CE7', minWidth: '2rem' }}>
+                <div className="h-full rounded-full flex items-center px-3" style={{ width: `${step.pct}%`, background: '#0F766E', minWidth: '2rem' }}>
                   <span className="text-[10px] font-bold text-white">{step.value}</span>
                 </div>
               </div>
@@ -223,7 +223,7 @@ export default function AdminDashboard() {
             const displayName = p.workshop_name || p.full_name || (p.email || '').split('@')[0] || 'Sin nombre'
             return (
               <a key={p.id} href={`/admin/talleres/${p.id}`} className="flex items-center gap-3 py-2.5 px-2 rounded-lg border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors cursor-pointer">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0" style={{ background: '#6C5CE7' }}>
+                <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0" style={{ background: '#0F766E' }}>
                   {displayName[0].toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">

@@ -186,7 +186,7 @@ export default function SettingsPage() {
 
   if (loading) return (
     <div className="flex items-center justify-center h-64">
-      <div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" />
+      <div className="w-8 h-8 border-2 border-teal-200 border-t-teal-700 rounded-full animate-spin" />
     </div>
   )
 
@@ -317,7 +317,7 @@ export default function SettingsPage() {
 
         <button onClick={save} disabled={saveState === 'saving'}
           className={`mt-6 flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors ${saveState === 'saved' ? 'bg-green-500' : saveState === 'error' ? 'bg-red-500' : ''}`}
-          style={saveState !== 'saved' && saveState !== 'error' ? { background: '#6C5CE7' } : {}}>
+          style={saveState !== 'saved' && saveState !== 'error' ? { background: '#0F766E' } : {}}>
           {saveState === 'saving' ? <><Loader2 size={14} className="animate-spin" /> Guardando...</> : saveState === 'saved' ? <><Check size={14} /> Guardado</> : saveState === 'error' ? 'Error al guardar' : <><Save size={14} /> Guardar</>}
         </button>
       </div>
@@ -332,14 +332,14 @@ export default function SettingsPage() {
         <p className="text-xs text-gray-400 mb-4">{t('webCatalogSubtitle')}</p>
         <div className="space-y-4">
           {!!(ws as Record<string, unknown>).catalog_slug && (
-            <div className="p-3 rounded-xl bg-purple-50 border border-purple-100">
+            <div className="p-3 rounded-xl bg-teal-50 border border-teal-100">
               <p className="text-xs text-gray-500 mb-1">Tu catálogo:</p>
-              <p className="text-sm font-semibold text-purple-700 truncate mb-2">estamply.app/catalogo/{(ws as Record<string, unknown>).catalog_slug as string}</p>
+              <p className="text-sm font-semibold text-teal-800 truncate mb-2">estamply.app/catalogo/{(ws as Record<string, unknown>).catalog_slug as string}</p>
               <div className="flex gap-2 flex-wrap">
                 <button onClick={() => { navigator.clipboard.writeText(`https://www.estamply.app/catalogo/${(ws as Record<string, unknown>).catalog_slug}`); alert('Link copiado') }}
-                  className="text-xs px-2.5 py-1 rounded-lg font-semibold text-purple-600 bg-purple-100 hover:bg-purple-200">Copiar</button>
-                <a href={`/catalogo/${(ws as Record<string, unknown>).catalog_slug}`} target="_blank" className="text-xs px-2.5 py-1 rounded-lg font-semibold text-purple-600 bg-purple-100 hover:bg-purple-200">Ver</a>
-                <button onClick={() => setShowQR(true)} className="text-xs px-2.5 py-1 rounded-lg font-semibold text-purple-600 bg-purple-100 hover:bg-purple-200 flex items-center gap-1"><QrCode size={12} />QR</button>
+                  className="text-xs px-2.5 py-1 rounded-lg font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100">Copiar</button>
+                <a href={`/catalogo/${(ws as Record<string, unknown>).catalog_slug}`} target="_blank" className="text-xs px-2.5 py-1 rounded-lg font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100">Ver</a>
+                <button onClick={() => setShowQR(true)} className="text-xs px-2.5 py-1 rounded-lg font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 flex items-center gap-1"><QrCode size={12} />QR</button>
               </div>
             </div>
           )}
@@ -365,7 +365,7 @@ export default function SettingsPage() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">{t('coverImage')}</label>
-            <label className="flex flex-col items-center justify-center py-6 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-purple-300 transition-colors">
+            <label className="flex flex-col items-center justify-center py-6 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-teal-300 transition-colors">
               {(ws as Record<string, unknown>).banner_url ? (
                 <div className="relative w-full px-4">
                   <img src={(ws as Record<string, unknown>).banner_url as string} alt="Portada" className="w-full h-32 object-cover rounded-lg" />
@@ -391,7 +391,7 @@ export default function SettingsPage() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">{t('brandColor')}</label>
-            <input type="color" className="w-10 h-10 rounded-lg border border-gray-200 cursor-pointer" value={(ws as Record<string, unknown>).brand_color as string || '#6C5CE7'}
+            <input type="color" className="w-10 h-10 rounded-lg border border-gray-200 cursor-pointer" value={(ws as Record<string, unknown>).brand_color as string || '#0F766E'}
               onChange={e => setWs({ ...ws, brand_color: e.target.value } as WorkshopSettings)} />
           </div>
           <div>
@@ -407,7 +407,7 @@ export default function SettingsPage() {
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium text-gray-700">{t('announcementBar')}</label>
               <button type="button" onClick={() => setWs({ ...ws, anuncio_activo: !(ws as Record<string, unknown>).anuncio_activo } as WorkshopSettings)}
-                className="relative w-9 h-5 rounded-full transition-colors" style={{ background: (ws as Record<string, unknown>).anuncio_activo ? '#6C5CE7' : '#D1D5DB' }}>
+                className="relative w-9 h-5 rounded-full transition-colors" style={{ background: (ws as Record<string, unknown>).anuncio_activo ? '#0F766E' : '#D1D5DB' }}>
                 <span className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform" style={{ transform: (ws as Record<string, unknown>).anuncio_activo ? 'translateX(16px)' : 'translateX(0)' }} />
               </button>
             </div>
@@ -416,7 +416,7 @@ export default function SettingsPage() {
                 onChange={e => setWs({ ...ws, anuncio_texto: e.target.value } as WorkshopSettings)} />
               <div className="grid grid-cols-2 gap-3">
                 <div><label className="block text-[10px] text-gray-500 mb-1">Color fondo</label>
-                  <input type="color" className="w-8 h-8 rounded border border-gray-200 cursor-pointer" value={(ws as Record<string, unknown>).anuncio_color_fondo as string || '#6C5CE7'}
+                  <input type="color" className="w-8 h-8 rounded border border-gray-200 cursor-pointer" value={(ws as Record<string, unknown>).anuncio_color_fondo as string || '#0F766E'}
                     onChange={e => setWs({ ...ws, anuncio_color_fondo: e.target.value } as WorkshopSettings)} /></div>
                 <div><label className="block text-[10px] text-gray-500 mb-1">Color texto</label>
                   <input type="color" className="w-8 h-8 rounded border border-gray-200 cursor-pointer" value={(ws as Record<string, unknown>).anuncio_color_texto as string || '#FFFFFF'}
@@ -454,20 +454,20 @@ export default function SettingsPage() {
 
       <button onClick={saveWs} disabled={saveState === 'saving'}
         className={`mt-6 flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors ${saveState === 'saved' ? 'bg-green-500' : saveState === 'error' ? 'bg-red-500' : ''}`}
-        style={saveState !== 'saved' && saveState !== 'error' ? { background: '#6C5CE7' } : {}}>
+        style={saveState !== 'saved' && saveState !== 'error' ? { background: '#0F766E' } : {}}>
         {saveState === 'saving' ? <><Loader2 size={14} className="animate-spin" /> Guardando...</> : saveState === 'saved' ? <><Check size={14} /> Guardado</> : saveState === 'error' ? 'Error al guardar' : <><Save size={14} /> Guardar</>}
       </button>
       {/* Mobile: preview link */}
       {!!(ws as Record<string, unknown>).catalog_slug && (
         <a href={`/catalogo/${(ws as Record<string, unknown>).catalog_slug}`} target="_blank" rel="noopener"
-          className="mt-3 md:hidden flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-purple-600 border border-purple-200 hover:bg-purple-50">
+          className="mt-3 md:hidden flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-teal-700 border border-teal-200 hover:bg-teal-50">
           Vista previa →
         </a>
       )}
       </div>{/* close form column */}
       {/* Desktop preview */}
       {(() => {
-        const previewColor = (ws as Record<string, unknown>).brand_color as string || '#6C5CE7'
+        const previewColor = (ws as Record<string, unknown>).brand_color as string || '#0F766E'
         const previewBanner = (ws as Record<string, unknown>).banner_url as string || ''
         const previewName = (ws as Record<string, unknown>).nombre_tienda as string || profile.business_name || 'Mi Taller'
         const previewDesc = (ws as Record<string, unknown>).descripcion_tienda as string || ''
@@ -615,7 +615,7 @@ export default function SettingsPage() {
       <div className="border-t border-gray-100 pt-4">
         <button onClick={saveWs} disabled={saveState === 'saving'}
           className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors ${saveState === 'saved' ? 'bg-green-500' : saveState === 'error' ? 'bg-red-500' : ''}`}
-          style={saveState !== 'saved' && saveState !== 'error' ? { background: '#6C5CE7' } : {}}>
+          style={saveState !== 'saved' && saveState !== 'error' ? { background: '#0F766E' } : {}}>
           {saveState === 'saving' ? <><Loader2 size={14} className="animate-spin" /> {t('saving')}</> : saveState === 'saved' ? <><Check size={14} /> {t('saved')}</> : saveState === 'error' ? t('saveError') : <><Save size={14} /> {t('saveBtn')}</>}
         </button>
       </div>
@@ -642,7 +642,7 @@ export default function SettingsPage() {
         <div className="flex flex-wrap gap-2 justify-center">
           {SUGERENCIAS.map(s => (
             <button key={s} onClick={() => setCondicionesDefault([...condicionesDefault, { text: s, activa: true }])}
-              className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:border-purple-300 hover:text-purple-600 transition-colors text-left">{s}</button>
+              className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:border-teal-300 hover:text-teal-700 transition-colors text-left">{s}</button>
           ))}
         </div>
       </div>
@@ -668,7 +668,7 @@ export default function SettingsPage() {
             <span className="text-[11px] text-gray-400">Sugerencias:</span>
             {availableSugg.map(s => (
               <button key={s} onClick={() => setCondicionesDefault([...condicionesDefault, { text: s, activa: true }])}
-                className="text-[11px] text-gray-400 hover:text-purple-600 hover:underline">{s.slice(0, 40)}...</button>
+                className="text-[11px] text-gray-400 hover:text-teal-700 hover:underline">{s.slice(0, 40)}...</button>
             ))}
           </div>
         )}
@@ -676,10 +676,10 @@ export default function SettingsPage() {
     )}
 
     <button onClick={() => setCondicionesDefault([...condicionesDefault, { text: '', activa: true }])}
-      className="flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700 mb-6"><Plus size={14} /> Agregar condición</button>
+      className="flex items-center gap-1.5 text-sm font-semibold text-teal-700 hover:text-teal-800 mb-6"><Plus size={14} /> Agregar condición</button>
     <button onClick={saveWs} disabled={saveState === 'saving'}
       className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors ${saveState === 'saved' ? 'bg-green-500' : saveState === 'error' ? 'bg-red-500' : ''}`}
-      style={saveState !== 'saved' && saveState !== 'error' ? { background: '#6C5CE7' } : {}}>
+      style={saveState !== 'saved' && saveState !== 'error' ? { background: '#0F766E' } : {}}>
       {saveState === 'saving' ? <><Loader2 size={14} className="animate-spin" /> Guardando...</> : saveState === 'saved' ? <><Check size={14} /> Guardado</> : saveState === 'error' ? 'Error' : <><Save size={14} /> Guardar</>}
     </button>
   </div>
@@ -700,7 +700,7 @@ export default function SettingsPage() {
       <div><h2 className="text-xl font-bold text-gray-900 mb-1">Medios de pago</h2>
         <p className="text-sm text-gray-400">Configurá cómo pagan tus clientes.</p></div>
       <button onClick={() => setEditingMedio({ nombre: '', tipo_ajuste: 'sin_ajuste', porcentaje: 0 })}
-        className="flex items-center gap-1.5 whitespace-nowrap text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={14} /> Agregar</button>
+        className="flex items-center gap-1.5 whitespace-nowrap text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#0F766E' }}><Plus size={14} /> Agregar</button>
     </div>
     {/* Mobile cards */}
     <div className="md:hidden space-y-2">
@@ -757,7 +757,7 @@ export default function SettingsPage() {
 
       {activeSection === 'descuentos' && (() => {
         const DISC_TECNICAS = [
-          { key: 'descuentos_subli', label: 'Sublimación', color: '#6C5CE7' },
+          { key: 'descuentos_subli', label: 'Sublimación', color: '#0F766E' },
           { key: 'descuentos_dtf', label: 'DTF Textil', color: '#E17055' },
           { key: 'descuentos_dtf_uv', label: 'DTF UV', color: '#00B894' },
           { key: 'descuentos_vinyl', label: 'Vinilo (Textil + Autoadhesivo)', color: '#E84393' },
@@ -787,7 +787,7 @@ export default function SettingsPage() {
           if (tiers.length === 0) return (
             <div className="text-center py-4">
               <p className="text-sm text-gray-400 mb-2">Sin descuentos configurados.</p>
-              <button onClick={() => addTier(discKey)} className="text-sm font-semibold text-purple-600"><Plus size={12} className="inline mr-1" />Agregar primer tramo</button>
+              <button onClick={() => addTier(discKey)} className="text-sm font-semibold text-teal-700"><Plus size={12} className="inline mr-1" />Agregar primer tramo</button>
             </div>
           )
           return (<div>
@@ -804,7 +804,7 @@ export default function SettingsPage() {
                 <td className="py-1.5"><button onClick={() => removeTier(discKey, i)} className="p-1 rounded hover:bg-red-50"><Trash2 size={12} className="text-gray-300 hover:text-red-500" /></button></td>
               </tr>))}
             </tbody></table>
-            <button onClick={() => addTier(discKey)} className="flex items-center gap-1 text-sm font-semibold text-purple-600 hover:text-purple-700 mt-2"><Plus size={12} /> Agregar tramo</button>
+            <button onClick={() => addTier(discKey)} className="flex items-center gap-1 text-sm font-semibold text-teal-700 hover:text-teal-800 mt-2"><Plus size={12} /> Agregar tramo</button>
           </div>)
         }
 
@@ -821,7 +821,7 @@ export default function SettingsPage() {
                   <p className="text-xs text-gray-400 mt-0.5">{ws.descuento_global_enabled ? 'El mismo descuento se aplica a todas las técnicas.' : 'Cada técnica tiene sus propios descuentos.'}</p>
                 </div>
                 <button type="button" onClick={() => setWs({ ...ws, descuento_global_enabled: !ws.descuento_global_enabled } as WorkshopSettings)}
-                  className="relative w-11 h-6 rounded-full transition-colors" style={{ background: ws.descuento_global_enabled ? '#6C5CE7' : '#D1D5DB' }}>
+                  className="relative w-11 h-6 rounded-full transition-colors" style={{ background: ws.descuento_global_enabled ? '#0F766E' : '#D1D5DB' }}>
                   <span className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform" style={{ transform: ws.descuento_global_enabled ? 'translateX(20px)' : 'translateX(0)' }} />
                 </button>
               </div>
@@ -860,7 +860,7 @@ export default function SettingsPage() {
 
             <button onClick={saveWs} disabled={saveState === 'saving'}
               className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors ${saveState === 'saved' ? 'bg-green-500' : saveState === 'error' ? 'bg-red-500' : ''}`}
-              style={saveState !== 'saved' && saveState !== 'error' ? { background: '#6C5CE7' } : {}}>
+              style={saveState !== 'saved' && saveState !== 'error' ? { background: '#0F766E' } : {}}>
               {saveState === 'saving' ? <><Loader2 size={14} className="animate-spin" /> Guardando...</> : saveState === 'saved' ? '✓ Guardado' : saveState === 'error' ? 'Error' : <><Save size={14} /> Guardar</>}
             </button>
           </div>
@@ -899,7 +899,7 @@ export default function SettingsPage() {
           <div><h2 className="text-xl font-bold text-gray-900 mb-1">{t('usersPermissions')}</h2>
             <p className="text-sm text-gray-400">{t('usersSubtitle')}</p></div>
           <button onClick={() => setInviteModal({ nombre: '', email: '', password: '', nivel: 'solo_precios', secciones: {} })}
-            className="flex items-center gap-1.5 whitespace-nowrap text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={14} /> Invitar</button>
+            className="flex items-center gap-1.5 whitespace-nowrap text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#0F766E' }}><Plus size={14} /> Invitar</button>
         </div>
 
         {/* Mobile cards */}
@@ -907,7 +907,7 @@ export default function SettingsPage() {
           <div className="card p-4">
             <div className="flex items-center justify-between">
               <div><p className="font-semibold text-gray-800">{ownerName || 'Dueño'}</p></div>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">👑 Dueño</span>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-50 text-teal-800">👑 Dueño</span>
             </div>
             <div className="mt-1.5 text-xs text-gray-400 space-y-0.5">
               <p>Visibilidad: <span className="text-gray-600">Completa</span></p>
@@ -933,9 +933,9 @@ export default function SettingsPage() {
           <table className="w-full"><thead><tr className="border-b border-gray-100">
             {['Usuario', 'Rol', 'Visibilidad', 'Secciones', 'Estado', ''].map(h => <th key={h} className={`text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3 ${h === 'Secciones' ? 'hidden lg:table-cell' : ''}`}>{h}</th>)}
           </tr></thead><tbody>
-            <tr className="border-b border-gray-50 bg-purple-50/30">
+            <tr className="border-b border-gray-50 bg-teal-50/30">
               <td className="px-4 py-3"><span className="font-medium text-gray-800">{ownerName || 'Dueño'}</span></td>
-              <td className="px-4 py-3"><span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">👑 Dueño</span></td>
+              <td className="px-4 py-3"><span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-50 text-teal-800">👑 Dueño</span></td>
               <td className="px-4 py-3 text-sm text-gray-500">Completa</td>
               <td className="px-4 py-3 text-sm text-gray-500 hidden lg:table-cell">Todas</td>
               <td className="px-4 py-3"><span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700">Activo</span></td>
@@ -962,20 +962,20 @@ export default function SettingsPage() {
       })()}
 
       {activeSection === 'productos' && (
-        <Suspense fallback={<div className="flex items-center justify-center h-32"><div className="w-6 h-6 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>}>
+        <Suspense fallback={<div className="flex items-center justify-center h-32"><div className="w-6 h-6 border-2 border-teal-200 border-t-teal-700 rounded-full animate-spin" /></div>}>
           <MaterialesPage forceTab="base" hideChrome />
         </Suspense>
       )}
 
       {(activeSection === 'insumos' || activeSection === 'materiales') && (
-        <Suspense fallback={<div className="flex items-center justify-center h-32"><div className="w-6 h-6 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>}>
+        <Suspense fallback={<div className="flex items-center justify-center h-32"><div className="w-6 h-6 border-2 border-teal-200 border-t-teal-700 rounded-full animate-spin" /></div>}>
           <MaterialesPage forceTab="insumos" hideChrome />
         </Suspense>
       )}
 
       {activeSection === 'equipamiento' && (
         <div>
-          <Suspense fallback={<div className="flex items-center justify-center h-32"><div className="w-6 h-6 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>}>
+          <Suspense fallback={<div className="flex items-center justify-center h-32"><div className="w-6 h-6 border-2 border-teal-200 border-t-teal-700 rounded-full animate-spin" /></div>}>
             <EquipamientoPage />
           </Suspense>
         </div>
@@ -1084,7 +1084,7 @@ export default function SettingsPage() {
       <div className="border-t border-gray-100 pt-4">
         <button onClick={saveWs} disabled={saveState === 'saving'}
           className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors ${saveState === 'saved' ? 'bg-green-500' : saveState === 'error' ? 'bg-red-500' : ''}`}
-          style={saveState !== 'saved' && saveState !== 'error' ? { background: '#6C5CE7' } : {}}>
+          style={saveState !== 'saved' && saveState !== 'error' ? { background: '#0F766E' } : {}}>
           {saveState === 'saving' ? <><Loader2 size={14} className="animate-spin" /> Guardando...</> : saveState === 'saved' ? <><Check size={14} /> Guardado</> : saveState === 'error' ? 'Error' : <><Save size={14} /> Guardar</>}
         </button>
       </div>
@@ -1094,7 +1094,7 @@ export default function SettingsPage() {
 
       {activeSection === 'tecnicas' && (
         <div>
-          <Suspense fallback={<div className="flex items-center justify-center h-32"><div className="w-6 h-6 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>}>
+          <Suspense fallback={<div className="flex items-center justify-center h-32"><div className="w-6 h-6 border-2 border-teal-200 border-t-teal-700 rounded-full animate-spin" /></div>}>
             <TecnicasPage />
           </Suspense>
         </div>
@@ -1110,7 +1110,7 @@ export default function SettingsPage() {
             <div><h2 className="text-xl font-bold text-gray-900 mb-1">Proveedores</h2>
               <p className="text-sm text-gray-400">Gestioná tus proveedores de materiales.</p></div>
             <button onClick={newSup}
-              className="flex items-center gap-1.5 whitespace-nowrap text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={14} /> Agregar</button>
+              className="flex items-center gap-1.5 whitespace-nowrap text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#0F766E' }}><Plus size={14} /> Agregar</button>
           </div>
           {/* Desktop search */}
           <div className="hidden md:block relative mb-4 max-w-[400px]">
@@ -1126,7 +1126,7 @@ export default function SettingsPage() {
                 <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                 <input className="input-base text-sm w-full" style={{ paddingLeft: 40 }} placeholder="Buscar..." value={searchSupplier} onChange={e => setSearchSupplier(e.target.value)} />
               </div>
-              <button onClick={newSup} className="h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 text-white" style={{ background: '#6C5CE7' }}><Plus size={18} /></button>
+              <button onClick={newSup} className="h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 text-white" style={{ background: '#0F766E' }}><Plus size={18} /></button>
             </div>
           </div>
           {/* Mobile cards */}
@@ -1195,7 +1195,7 @@ export default function SettingsPage() {
           <div className="flex items-start justify-between gap-3 mb-4">
             <div><h2 className="text-xl font-bold text-gray-900 mb-1">Guía de talles</h2>
               <p className="text-sm text-gray-400">Tablas de medidas para tus clientes.</p></div>
-            <button onClick={newGuia} className="flex items-center gap-1.5 whitespace-nowrap text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={14} /> Nueva tabla</button>
+            <button onClick={newGuia} className="flex items-center gap-1.5 whitespace-nowrap text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#0F766E' }}><Plus size={14} /> Nueva tabla</button>
           </div>
 
           {guiasTalles.length === 0 ? (
@@ -1282,8 +1282,8 @@ export default function SettingsPage() {
                     ['solo_precios', tp('pricesOnly').split(' — ')[0], tp('pricesOnly').split(' — ')[1] || tp('pricesOnly')],
                     ['solo_produccion', tp('productionOnly').split(' — ')[0], tp('productionOnly').split(' — ')[1] || tp('productionOnly')],
                   ].map(([v, l, d]) => (
-                    <label key={v} className={`flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-colors ${inviteModal.nivel === v ? 'bg-purple-50 border border-purple-200' : 'border border-gray-100 hover:bg-gray-50'}`}>
-                      <input type="radio" name="nivel" checked={inviteModal.nivel === v} onChange={() => setInviteModal({ ...inviteModal, nivel: v })} className="mt-0.5 text-purple-600" />
+                    <label key={v} className={`flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-colors ${inviteModal.nivel === v ? 'bg-teal-50 border border-teal-200' : 'border border-gray-100 hover:bg-gray-50'}`}>
+                      <input type="radio" name="nivel" checked={inviteModal.nivel === v} onChange={() => setInviteModal({ ...inviteModal, nivel: v })} className="mt-0.5 text-teal-700" />
                       <div><p className="text-sm font-medium text-gray-800">{l}</p><p className="text-xs text-gray-400">{d}</p></div>
                     </label>
                   ))}
@@ -1296,7 +1296,7 @@ export default function SettingsPage() {
                 <div className="grid grid-cols-2 gap-1.5">
                   {[['inicio', 'Inicio'], ['cotizador', 'Cotizador'], ['presupuestos', 'Presupuestos'], ['pedidos', 'Pedidos'], ['clientes', 'Clientes'], ['catalogo', 'Catálogo'], ['promociones', 'Promociones'], ['estadisticas', 'Estadísticas'], ['configuracion', 'Configuración']].map(([k, l]) => (
                     <label key={k} className="flex items-center gap-2 cursor-pointer py-1">
-                      <input type="checkbox" checked={!!inviteModal.secciones[k]} onChange={() => toggleSection(k)} className="rounded border-gray-300 text-purple-600" />
+                      <input type="checkbox" checked={!!inviteModal.secciones[k]} onChange={() => toggleSection(k)} className="rounded border-gray-300 text-teal-700" />
                       <span className="text-sm text-gray-700">{l}</span>
                     </label>
                   ))}
@@ -1321,7 +1321,7 @@ export default function SettingsPage() {
                   }
                   setInviting(false)
                 }}
-                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#6C5CE7' }}>{inviting ? (isEdit ? 'Guardando...' : 'Invitando...') : (isEdit ? tp('save') : tp('invite'))}</button>
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#0F766E' }}>{inviting ? (isEdit ? 'Guardando...' : 'Invitando...') : (isEdit ? tp('save') : tp('invite'))}</button>
             </div>
           </div>
         </div>
@@ -1346,7 +1346,7 @@ export default function SettingsPage() {
                     <button onClick={() => setEditingGuia({ ...editingGuia, imagen_referencia: null })} className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/50 flex items-center justify-center text-white hover:bg-black/70"><X size={12} /></button>
                   </div>
                 ) : (
-                  <label className="flex flex-col items-center justify-center py-6 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-purple-300 transition-colors">
+                  <label className="flex flex-col items-center justify-center py-6 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-teal-300 transition-colors">
                     <Upload size={24} className="text-gray-300 mb-2" />
                     <span className="text-sm text-gray-500">Arrastrá o hacé clic para subir</span>
                     <span className="text-xs text-gray-400 mt-1">Diagrama de la prenda con medidas señaladas</span>
@@ -1371,7 +1371,7 @@ export default function SettingsPage() {
                       {editingGuia.columnas.length > 1 && <button onClick={() => setEditingGuia({ ...editingGuia, columnas: editingGuia.columnas.filter((_, i) => i !== ci) })} className="text-gray-300 hover:text-red-400"><X size={10} /></button>}
                     </div>
                   ))}
-                  <button onClick={() => setEditingGuia({ ...editingGuia, columnas: [...editingGuia.columnas, 'Medida'] })} className="text-xs px-2 py-1 rounded bg-purple-50 text-purple-600 font-semibold">+</button>
+                  <button onClick={() => setEditingGuia({ ...editingGuia, columnas: [...editingGuia.columnas, 'Medida'] })} className="text-xs px-2 py-1 rounded bg-teal-50 text-teal-700 font-semibold">+</button>
                 </div>
               </div>
               <div>
@@ -1397,7 +1397,7 @@ export default function SettingsPage() {
                   </tbody></table>
                 </div>
                 <button onClick={() => { const empty: Record<string, string> = { talle: '' }; editingGuia.columnas.forEach(c => empty[c] = ''); setEditingGuia({ ...editingGuia, filas: [...editingGuia.filas, empty] }) }}
-                  className="text-xs font-semibold text-purple-600 mt-2">+ Agregar fila</button>
+                  className="text-xs font-semibold text-teal-700 mt-2">+ Agregar fila</button>
               </div>
             </div>
             <div className="flex gap-3 mt-5">
@@ -1412,7 +1412,7 @@ export default function SettingsPage() {
                   if (data) setGuiasTalles(prev => [...prev, data as typeof guiasTalles[0]])
                 }
                 setEditingGuia(null)
-              }} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#6C5CE7' }}>Guardar</button>
+              }} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#0F766E' }}>Guardar</button>
             </div>
           </div>
         </div>
@@ -1433,7 +1433,7 @@ export default function SettingsPage() {
                 <div className="flex gap-2">
                   {[['sin_ajuste', 'Sin ajuste'], ['descuento', 'Descuento'], ['recargo', 'Recargo']].map(([v, l]) => (
                     <button key={v} type="button" onClick={() => setEditingMedio({ ...editingMedio, tipo_ajuste: v })}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${editingMedio.tipo_ajuste === v ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-500'}`}>{l}</button>
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${editingMedio.tipo_ajuste === v ? 'bg-teal-700 text-white' : 'bg-gray-100 text-gray-500'}`}>{l}</button>
                   ))}
                 </div></div>
               {editingMedio.tipo_ajuste !== 'sin_ajuste' && (
@@ -1454,7 +1454,7 @@ export default function SettingsPage() {
                   if (data) setMediosPago(prev => [...prev, data])
                 }
                 setEditingMedio(null)
-              }} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#6C5CE7' }}>Guardar</button>
+              }} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#0F766E' }}>Guardar</button>
             </div>
           </div>
         </div>
@@ -1491,7 +1491,7 @@ export default function SettingsPage() {
                 setEditingSupplier(null)
                 const { data: sup } = await supabase.from('suppliers').select('*').order('name')
                 if (sup) setSuppliers(sup)
-              }} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#6C5CE7' }}>
+              }} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#0F766E' }}>
                 {editingSupplier.id ? 'Guardar' : 'Crear'}
               </button>
             </div>
@@ -1515,7 +1515,7 @@ export default function SettingsPage() {
                 link.download = `qr-catalogo-${(ws as Record<string, unknown>).catalog_slug}.png`
                 link.href = canvas.toDataURL('image/png')
                 link.click()
-              }} className="flex-1 py-2 rounded-xl text-sm font-semibold text-white" style={{ background: '#6C5CE7' }}>Descargar PNG</button>
+              }} className="flex-1 py-2 rounded-xl text-sm font-semibold text-white" style={{ background: '#0F766E' }}>Descargar PNG</button>
             </div>
           </div>
         </div>

@@ -20,10 +20,10 @@ function fmtK(n: number) { return n >= 1000000 ? `$${(n / 1000000).toFixed(1)}M`
 function pct(cur: number, prev: number) { return prev === 0 ? (cur > 0 ? 100 : 0) : Math.round(((cur - prev) / prev) * 100) }
 
 const TL: Record<string, string> = { subli: 'Sublimación', dtf: 'DTF Textil', dtf_uv: 'DTF UV', vinyl: 'Vinilo Textil', vinyl_adhesivo: 'V. Autoadhesivo', serigrafia: 'Serigrafía' }
-const TC: Record<string, string> = { subli: '#6C5CE7', dtf: '#E17055', dtf_uv: '#00B894', vinyl: '#E84393', vinyl_adhesivo: '#D63384', serigrafia: '#FDCB6E' }
+const TC: Record<string, string> = { subli: '#0F766E', dtf: '#E17055', dtf_uv: '#00B894', vinyl: '#E84393', vinyl_adhesivo: '#D63384', serigrafia: '#FDCB6E' }
 // SL moved inside component to use translations
-const SC: Record<string, string> = { pending: '#FDCB6E', production: '#6C5CE7', ready: '#00B894', delivered: '#636e72' }
-const DONUT_COLORS = ['#6C5CE7', '#E17055', '#00B894', '#E84393', '#FDCB6E', '#636e72']
+const SC: Record<string, string> = { pending: '#FDCB6E', production: '#0F766E', ready: '#00B894', delivered: '#636e72' }
+const DONUT_COLORS = ['#0F766E', '#E17055', '#00B894', '#E84393', '#FDCB6E', '#636e72']
 
 type Order = Record<string, unknown>
 type Pres = Record<string, unknown>
@@ -395,7 +395,7 @@ export default function EstadisticasPage() {
     </>)
   }
 
-  if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>
+  if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-teal-200 border-t-teal-700 rounded-full animate-spin" /></div>
 
   if (orders.length === 0 && presupuestos.length === 0) return <EmptyState icon="📊" title="Todavía no hay datos para mostrar." description="Las estadísticas se generan a partir de tus presupuestos y pedidos. Empezá a cotizar y vas a ver tus métricas acá." actionLabel="Ir al Cotizador" actionHref="/cotizador" />
 
@@ -407,14 +407,14 @@ export default function EstadisticasPage() {
         <div className="flex items-center gap-2 flex-wrap">
           {/* Period dropdown */}
           <div className="relative">
-            <button onClick={() => setPeriodOpen(!periodOpen)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-purple-600 text-white shadow-sm">
+            <button onClick={() => setPeriodOpen(!periodOpen)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-teal-700 text-white shadow-sm">
               {label} <span className="text-[9px] opacity-70">▾</span>
             </button>
             {periodOpen && (
               <div className="absolute right-0 top-full mt-1 w-52 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
                 {PERIOD_OPTIONS.map(o => (
                   <button key={o.id} onClick={() => { if (o.id !== 'custom') { setPeriod(o.id); setPeriodOpen(false) } else { setPeriod('custom') } }}
-                    className={`w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 ${period === o.id ? 'font-bold text-purple-600' : 'text-gray-700'}`}>
+                    className={`w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 ${period === o.id ? 'font-bold text-teal-700' : 'text-gray-700'}`}>
                     {o.label} {period === o.id && '✓'}
                   </button>
                 ))}
@@ -422,7 +422,7 @@ export default function EstadisticasPage() {
                   <div className="px-3 py-2 border-t border-gray-100 space-y-2">
                     <input type="date" className="input-base text-xs !py-1" value={customFrom} onChange={e => setCustomFrom(e.target.value)} />
                     <input type="date" className="input-base text-xs !py-1" value={customTo} onChange={e => setCustomTo(e.target.value)} />
-                    <button onClick={() => setPeriodOpen(false)} className="w-full py-1 rounded text-xs font-semibold text-white" style={{ background: '#6C5CE7' }}>Aplicar</button>
+                    <button onClick={() => setPeriodOpen(false)} className="w-full py-1 rounded text-xs font-semibold text-white" style={{ background: '#0F766E' }}>Aplicar</button>
                   </div>
                 )}
               </div>
@@ -440,14 +440,14 @@ export default function EstadisticasPage() {
       {/* Tabs */}
       <div className="flex gap-1 mb-6 overflow-x-auto pb-1 -mt-2">
         {([['resumen', 'Resumen'], ['ventas', 'Ventas'], ['productos', 'Productos'], ['clientes', 'Clientes'], ['avanzado', 'Avanzado']] as const).map(([id, label]) => (
-          <button key={id} onClick={() => setStatsTab(id)} className={`px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all ${statsTab === id ? 'text-white shadow-md' : 'bg-gray-100 text-gray-600'}`} style={statsTab === id ? { background: '#6C5CE7' } : {}}>{label}</button>
+          <button key={id} onClick={() => setStatsTab(id)} className={`px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all ${statsTab === id ? 'text-white shadow-md' : 'bg-gray-100 text-gray-600'}`} style={statsTab === id ? { background: '#0F766E' } : {}}>{label}</button>
         ))}
       </div>
 
       {/* Summary cards — Resumen */}
       {statsTab === 'resumen' && <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         {[
-          { label: t('revenue'), value: fmt(facturacion), change: pct(facturacion, facPrev), hasPrev: facPrev > 0, icon: DollarSign, color: '#6C5CE7', sub: facPrev > 0 ? `vs ${fmt(facPrev)} anterior` : '' },
+          { label: t('revenue'), value: fmt(facturacion), change: pct(facturacion, facPrev), hasPrev: facPrev > 0, icon: DollarSign, color: '#0F766E', sub: facPrev > 0 ? `vs ${fmt(facPrev)} anterior` : '' },
           { label: t('orders'), value: String(pedidos), change: pct(pedidos, pedPrev), hasPrev: pedPrev > 0, icon: ShoppingBag, color: '#E17055', sub: `${pedidosCompleted} completados${pedidosInProcess > 0 ? `, ${pedidosInProcess} en proceso` : ''}` },
           { label: t('avgTicket'), value: fmt(ticket), change: pct(ticket, ticketPrev), hasPrev: ticketPrev > 0, icon: BarChart3, color: '#00B894', sub: pedidos > 0 ? `Mín: ${fmt(ticketMin)} — Máx: ${fmt(ticketMax)}` : '' },
           { label: t('quotesCount'), value: String(presCount), change: pct(presCount, presPrev), hasPrev: presPrev > 0, icon: FileText, color: '#E84393', sub: `${convertedCount} convertidos (${convRate}%)` },
@@ -491,7 +491,7 @@ export default function EstadisticasPage() {
                 const d = payload[0].payload as { name: string; value: number; orders: number }
                 return <div className="bg-white p-2 rounded-lg shadow-lg border border-gray-200 text-xs"><p className="font-semibold text-gray-800">{d.name}</p><p className="text-gray-600">{fmt(d.value)}</p><p className="text-gray-400">{d.orders} pedido{d.orders !== 1 ? 's' : ''}</p></div>
               }} />
-              <Bar dataKey="value" fill="#6C5CE7" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="value" fill="#0F766E" radius={[4, 4, 0, 0]} />
               <Line type="monotone" dataKey="trend" stroke="#a29bfe" strokeWidth={2} dot={false} strokeDasharray="4 4" />
             </ComposedChart>
           </ResponsiveContainer>
@@ -509,9 +509,9 @@ export default function EstadisticasPage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
           <div className="p-3 rounded-lg bg-gray-50"><p className="text-xs text-gray-500">{t('revenue')}</p><p className="text-lg font-black text-gray-900">{fmt(facConCosto)}</p></div>
           <div className="p-3 rounded-lg bg-gray-50"><p className="text-xs text-gray-500">{t('costs')}</p><p className="text-lg font-black text-gray-900">{fmt(costos)}</p></div>
-          <div className="p-3 rounded-lg bg-gray-50"><p className="text-xs text-gray-500">{t('grossMargin')}</p><p className="text-lg font-black" style={{ color: '#6C5CE7' }}>{fmt(facConCosto - costos)}</p><p className="text-xs font-semibold" style={{ color: '#6C5CE7' }}>{margen}%</p></div>
+          <div className="p-3 rounded-lg bg-gray-50"><p className="text-xs text-gray-500">{t('grossMargin')}</p><p className="text-lg font-black" style={{ color: '#0F766E' }}>{fmt(facConCosto - costos)}</p><p className="text-xs font-semibold" style={{ color: '#0F766E' }}>{margen}%</p></div>
         </div>
-        {facConCosto > 0 && <div className="flex h-4 rounded-full overflow-hidden bg-gray-100 mb-2"><div style={{ width: `${margen}%`, background: '#6C5CE7' }} /><div style={{ width: `${100 - margen}%`, background: '#E0DCF8' }} /></div>}
+        {facConCosto > 0 && <div className="flex h-4 rounded-full overflow-hidden bg-gray-100 mb-2"><div style={{ width: `${margen}%`, background: '#0F766E' }} /><div style={{ width: `${100 - margen}%`, background: '#E0DCF8' }} /></div>}
         <div className="flex gap-4 text-xs text-gray-500"><span>■ {t('profit')} {margen}%</span><span className="text-gray-300">□ {t('costs')} {100 - margen}%</span></div>
         {sinCosto > 0 && <p className="text-xs text-amber-600 mt-2">⚠️ {sinCosto} {t('noCostWarning')}</p>}
       </div>
@@ -530,7 +530,7 @@ export default function EstadisticasPage() {
             <div className="text-center py-6">
               <DollarSign size={24} className="mx-auto text-gray-300 mb-2" />
               <p className="text-sm text-gray-500">Cargá los costos de tus productos para ver cuáles son más rentables</p>
-              <button onClick={() => router.push('/catalogo')} className="mt-2 text-xs font-semibold text-purple-600 hover:text-purple-800">Ir al Catálogo →</button>
+              <button onClick={() => router.push('/catalogo')} className="mt-2 text-xs font-semibold text-teal-700 hover:text-teal-900">Ir al Catálogo →</button>
             </div>
           )}
         </div>
@@ -566,7 +566,7 @@ export default function EstadisticasPage() {
                 return (
                   <tr key={n} className="border-b border-gray-50">
                     <td className="px-2 py-2 text-gray-400 font-bold">{i + 1}</td>
-                    <td className="px-2 py-2 font-medium text-gray-800">{n === 'Sin cliente' ? <span className="text-amber-600 flex items-center gap-1 cursor-pointer" onClick={() => router.push('/orders')}>⚠ Sin cliente</span> : <span className="cursor-pointer hover:text-purple-600" onClick={() => router.push('/clients')}>{n}</span>}</td>
+                    <td className="px-2 py-2 font-medium text-gray-800">{n === 'Sin cliente' ? <span className="text-amber-600 flex items-center gap-1 cursor-pointer" onClick={() => router.push('/orders')}>⚠ Sin cliente</span> : <span className="cursor-pointer hover:text-teal-700" onClick={() => router.push('/clients')}>{n}</span>}</td>
                     <td className="px-2 py-2 text-gray-600">{v.pedidos}</td>
                     <td className="px-2 py-2 font-semibold text-gray-800">{fmt(v.revenue)}</td>
                     {showCosts && <td className="px-2 py-2">{m !== null ? <span className={m >= 40 ? 'text-green-600' : m >= 20 ? 'text-amber-600' : 'text-red-500'}>{m}%</span> : <span className="text-gray-300">—</span>}</td>}
@@ -584,13 +584,13 @@ export default function EstadisticasPage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
           <div className="p-3 rounded-lg bg-gray-50"><p className="text-xs text-gray-500">{t('created')}</p><p className="text-lg font-black text-gray-900">{curPres.length}</p></div>
           <div className="p-3 rounded-lg bg-gray-50"><p className="text-xs text-gray-500">{t('converted')}</p><p className="text-lg font-black text-gray-900">{convertedCount}</p></div>
-          <div className="p-3 rounded-lg bg-gray-50"><p className="text-xs text-gray-500">{t('rate')}</p><p className="text-lg font-black" style={{ color: '#6C5CE7' }}>{convRate}%</p>
+          <div className="p-3 rounded-lg bg-gray-50"><p className="text-xs text-gray-500">{t('rate')}</p><p className="text-lg font-black" style={{ color: '#0F766E' }}>{convRate}%</p>
             {prevConvRate > 0 && <p className={`text-xs ${convRate >= prevConvRate ? 'text-green-600' : 'text-red-500'}`}>{convRate >= prevConvRate ? '↑' : '↓'} {Math.abs(convRate - prevConvRate)}pp</p>}
           </div>
         </div>
         {curPres.length > 0 && (
           <div className="flex h-4 rounded-full overflow-hidden bg-gray-100">
-            <div style={{ width: `${Math.min(convRate, 100)}%`, background: '#6C5CE7' }} />
+            <div style={{ width: `${Math.min(convRate, 100)}%`, background: '#0F766E' }} />
             <div style={{ width: `${100 - Math.min(convRate, 100)}%`, background: '#E0DCF8' }} />
           </div>
         )}
@@ -619,7 +619,7 @@ export default function EstadisticasPage() {
                       <span className="text-gray-500">{step.count} ({step.pct}%) · {fmt(step.amount)}</span>
                     </div>
                     <div className="h-6 rounded-lg overflow-hidden" style={{ background: '#F3F4F6' }}>
-                      <div className="h-full rounded-lg transition-all" style={{ width: `${step.pct}%`, background: i === 0 ? '#6C5CE7' : '#a29bfe' }} />
+                      <div className="h-full rounded-lg transition-all" style={{ width: `${step.pct}%`, background: i === 0 ? '#0F766E' : '#a29bfe' }} />
                     </div>
                     {i < steps.length - 1 && steps[i].count > steps[i + 1].count && (
                       <p className="text-[10px] text-red-400 mt-0.5 ml-1">↓ Perdidos: {steps[i].count - steps[i + 1].count} ({100 - steps[i + 1].pct}%)</p>
@@ -665,7 +665,7 @@ export default function EstadisticasPage() {
                 <div key={d.name} className="flex items-center gap-3">
                   <span className="text-xs font-medium text-gray-600 w-20">{d.name}</span>
                   <div className="flex-1 h-5 bg-gray-100 rounded-full overflow-hidden">
-                    <div className="h-full rounded-full transition-all" style={{ width: `${(d.value / maxVal) * 100}%`, background: d === bestDay ? '#22C55E' : d === worstDay ? '#D1D5DB' : '#6C5CE7' }} />
+                    <div className="h-full rounded-full transition-all" style={{ width: `${(d.value / maxVal) * 100}%`, background: d === bestDay ? '#22C55E' : d === worstDay ? '#D1D5DB' : '#0F766E' }} />
                   </div>
                   <span className="text-xs font-semibold text-gray-700 w-20 text-right">{fmt(d.value)}</span>
                 </div>
@@ -686,10 +686,10 @@ export default function EstadisticasPage() {
               <p className="text-lg font-black text-green-700">{newClients.count}</p>
               <p className="text-xs text-green-600">{fmt(newClients.revenue)}</p>
             </div>
-            <div className="p-3 rounded-lg bg-purple-50 border border-purple-100">
-              <p className="text-[10px] text-purple-600 uppercase font-semibold">Recurrentes</p>
-              <p className="text-lg font-black text-purple-700">{recurringClients.count}</p>
-              <p className="text-xs text-purple-600">{fmt(recurringClients.revenue)}</p>
+            <div className="p-3 rounded-lg bg-teal-50 border border-teal-100">
+              <p className="text-[10px] text-teal-700 uppercase font-semibold">Recurrentes</p>
+              <p className="text-lg font-black text-teal-800">{recurringClients.count}</p>
+              <p className="text-xs text-teal-700">{fmt(recurringClients.revenue)}</p>
             </div>
           </div>
           {(newClients.revenue + recurringClients.revenue) > 0 && (
@@ -757,7 +757,7 @@ export default function EstadisticasPage() {
               <XAxis dataKey="name" tick={{ fontSize: 11 }} />
               <YAxis tickFormatter={v => `${v}%`} tick={{ fontSize: 11 }} width={40} domain={[0, 100]} />
               <Tooltip formatter={(v) => `${v}%`} />
-              <Line type="monotone" dataKey="margin" stroke="#6C5CE7" strokeWidth={2.5} dot={{ fill: '#6C5CE7', r: 4 }} />
+              <Line type="monotone" dataKey="margin" stroke="#0F766E" strokeWidth={2.5} dot={{ fill: '#0F766E', r: 4 }} />
             </LineChart>
           </ResponsiveContainer>
           <div className="flex gap-6 mt-3 text-sm text-gray-500 flex-wrap">
@@ -775,7 +775,7 @@ export default function EstadisticasPage() {
           <div className="flex-1"><label className="block text-xs text-gray-500 mb-1">{t('periodA')}</label><input type="date" className="input-base text-sm" value={cmpA} onChange={e => setCmpA(e.target.value)} /></div>
           <span className="text-gray-400 text-sm hidden sm:block pb-2">vs</span>
           <div className="flex-1"><label className="block text-xs text-gray-500 mb-1">{t('periodB')}</label><input type="date" className="input-base text-sm" value={cmpB} onChange={e => setCmpB(e.target.value)} /></div>
-          <button onClick={() => setShowCmp(true)} disabled={!cmpA || !cmpB} className="px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#6C5CE7' }}>{t('compare')}</button>
+          <button onClick={() => setShowCmp(true)} disabled={!cmpA || !cmpB} className="px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#0F766E' }}>{t('compare')}</button>
         </div>
         {showCmp && cmpA && cmpB && (() => {
           const a = calcPeriodMetrics(new Date(cmpA), new Date(new Date(cmpA).getTime() + 30 * 86400000))

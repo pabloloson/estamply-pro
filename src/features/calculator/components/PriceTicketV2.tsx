@@ -36,7 +36,7 @@ interface PriceTicketV2Props {
 }
 
 const TECHNIQUE_COLORS: Record<string, string> = {
-  subli: '#6C5CE7',
+  subli: '#0F766E',
   dtf: '#E17055',
   vinyl: '#E84393',
 }

@@ -146,7 +146,7 @@ export default function ClientsPage() {
     XLSX.writeFile(wb, `clientes_${new Date().toISOString().split('T')[0]}.xlsx`)
   }
 
-  if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>
+  if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-teal-200 border-t-teal-700 rounded-full animate-spin" /></div>
 
   return (
     <div>
@@ -160,7 +160,7 @@ export default function ClientsPage() {
           <button onClick={() => { setImportModal(true); setImportStep(1); setImportData([]); setImportResult(null) }} className="flex items-center gap-1.5 px-3 py-2 rounded-xl whitespace-nowrap text-xs sm:text-sm font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50">
             <Upload size={14} /> {t('importClients')}
           </button>
-          <button onClick={() => { setModal({}) }} className="flex items-center gap-1.5 px-4 py-2 rounded-xl whitespace-nowrap text-xs sm:text-sm font-semibold text-white" style={{ background: '#6C5CE7', boxShadow: '0 4px 14px rgba(108,92,231,0.3)' }}>
+          <button onClick={() => { setModal({}) }} className="flex items-center gap-1.5 px-4 py-2 rounded-xl whitespace-nowrap text-xs sm:text-sm font-semibold text-white" style={{ background: '#0F766E', boxShadow: '0 4px 14px rgba(15,118,110,0.3)' }}>
             <Plus size={15} /> {t('newClient')}
           </button>
         </div>
@@ -187,7 +187,7 @@ export default function ClientsPage() {
                 <div key={c.id} className="bg-white rounded-xl border border-gray-100 p-4" onClick={() => router.push(`/clients/${c.id}`)}>
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0" style={{ background: 'linear-gradient(135deg, #6C5CE7, #a29bfe)' }}>
+                      <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0" style={{ background: 'linear-gradient(135deg, #0F766E, #a29bfe)' }}>
                         {c.name[0]?.toUpperCase() || '?'}
                       </div>
                       <div>
@@ -234,7 +234,7 @@ export default function ClientsPage() {
                     <tr key={c.id} className="border-b border-gray-50 hover:bg-gray-50 cursor-pointer" onClick={() => router.push(`/clients/${c.id}`)}>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-bold text-sm flex-shrink-0">
+                          <div className="w-8 h-8 rounded-full bg-teal-50 flex items-center justify-center text-teal-700 font-bold text-sm flex-shrink-0">
                             {c.name[0]?.toUpperCase()}
                           </div>
                           <div>
@@ -361,7 +361,7 @@ export default function ClientsPage() {
             )}
             <div className="flex gap-3 mt-6">
               <button onClick={() => { setModal(null); setDupWarning(null) }} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">{tc('cancel')}</button>
-              <button onClick={() => save()} disabled={saving || !modal.name?.trim()} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#6C5CE7' }}>
+              <button onClick={() => save()} disabled={saving || !modal.name?.trim()} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#0F766E' }}>
                 {saving ? tc('saving') : tc('save')}
               </button>
             </div>
@@ -392,10 +392,10 @@ export default function ClientsPage() {
                   const wb = XLSX.utils.book_new()
                   XLSX.utils.book_append_sheet(wb, ws, 'Plantilla')
                   XLSX.writeFile(wb, 'plantilla_clientes.xlsx')
-                }} className="flex items-center gap-2 text-sm text-purple-600 hover:text-purple-700 font-medium">
+                }} className="flex items-center gap-2 text-sm text-teal-700 hover:text-teal-800 font-medium">
                   <Download size={14} /> Descargar plantilla de ejemplo (.xlsx)
                 </button>
-                <label className="flex flex-col items-center justify-center py-8 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-purple-300 transition-colors">
+                <label className="flex flex-col items-center justify-center py-8 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-teal-300 transition-colors">
                   <Upload size={24} className="text-gray-300 mb-2" />
                   <span className="text-sm text-gray-500">Seleccionar archivo</span>
                   <span className="text-xs text-gray-400 mt-1">.csv, .xlsx, .xls</span>
@@ -513,7 +513,7 @@ export default function ClientsPage() {
                     setImporting(false)
                     setImportStep(3)
                     load()
-                  }} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#6C5CE7' }}>{importing ? 'Importando...' : `Importar ${importData.length} clientes`}</button>
+                  }} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#0F766E' }}>{importing ? 'Importando...' : `Importar ${importData.length} clientes`}</button>
                 </div>
               </div>
             )}
@@ -528,7 +528,7 @@ export default function ClientsPage() {
                   {importResult.skipped > 0 && <p className="text-gray-500">⏭️ {importResult.skipped} duplicados omitidos</p>}
                   {importResult.errors > 0 && <p className="text-red-500">❌ {importResult.errors} filas con errores</p>}
                 </div>
-                <button onClick={() => setImportModal(false)} className="w-full py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: '#6C5CE7' }}>Ver clientes</button>
+                <button onClick={() => setImportModal(false)} className="w-full py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: '#0F766E' }}>Ver clientes</button>
               </div>
             )}
           </div>

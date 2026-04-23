@@ -87,7 +87,7 @@ export default function ClientDetailPage() {
     rejected: { label: 'Rechazado', bg: '#FEE2E2', text: '#DC2626' },
   }
 
-  if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>
+  if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-teal-200 border-t-teal-700 rounded-full animate-spin" /></div>
   if (!client) return <div className="text-center py-16 text-gray-400">Cliente no encontrado</div>
 
   const totalGastado = orders.reduce((s, o) => s + o.total_price, 0)
@@ -107,7 +107,7 @@ export default function ClientDetailPage() {
       <div className="card p-5 mb-6">
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-3">
-            <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-bold text-lg flex-shrink-0">
+            <div className="w-12 h-12 rounded-full bg-teal-50 flex items-center justify-center text-teal-700 font-bold text-lg flex-shrink-0">
               {client.name[0]?.toUpperCase()}
             </div>
             <div>
@@ -167,7 +167,7 @@ export default function ClientDetailPage() {
       <div className="card p-5 mb-6">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Presupuestos ({presupuestos.length})</h3>
-          <Link href="/presupuesto" className="flex items-center gap-1 text-xs font-semibold text-[#6C5CE7] hover:text-[#5A4BD1]"><Plus size={12} /> Nuevo presupuesto</Link>
+          <Link href="/presupuesto" className="flex items-center gap-1 text-xs font-semibold text-[#0F766E] hover:text-[#5A4BD1]"><Plus size={12} /> Nuevo presupuesto</Link>
         </div>
         {presupuestos.length > 0 ? (
           <div className="space-y-2">
@@ -262,7 +262,7 @@ export default function ClientDetailPage() {
               // Reload client data
               const { data: c } = await supabase.from('clients').select('*').eq('id', id).single()
               if (c) setClient(c)
-            }} className="w-full mt-6 py-2.5 rounded-xl font-semibold text-sm text-white disabled:opacity-40" style={{ background: '#6C5CE7' }}>
+            }} className="w-full mt-6 py-2.5 rounded-xl font-semibold text-sm text-white disabled:opacity-40" style={{ background: '#0F766E' }}>
               {saving ? 'Guardando...' : 'Guardar cambios'}
             </button>
           </div>

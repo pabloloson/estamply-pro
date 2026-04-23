@@ -17,7 +17,7 @@ export default function TrackingPage() {
       {/* KPI Cards — placeholder */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {[
-          { label: 'Visitas hoy', value: '—', desc: 'landing page', icon: Eye, color: '#6C5CE7' },
+          { label: 'Visitas hoy', value: '—', desc: 'landing page', icon: Eye, color: '#0F766E' },
           { label: 'Registros hoy', value: '—', desc: 'nuevos talleres', icon: UserPlus, color: '#00B894' },
           { label: 'Conv. Trial', value: '—', desc: 'visita → registro', icon: ArrowRight, color: '#E17055' },
           { label: 'Conv. Pago', value: '—', desc: 'trial → pago', icon: TrendingUp, color: '#E84393' },
@@ -51,12 +51,12 @@ export default function TrackingPage() {
             <div className="max-w-md space-y-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">PostHog Project API Key</label>
-                <input type="text" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-purple-300"
+                <input type="text" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-teal-300"
                   placeholder="phc_xxxxxxxxxxxxxxxxxxxx" value={apiKey} onChange={e => setApiKey(e.target.value)} />
               </div>
               <div className="flex gap-2">
                 <button onClick={() => { setSaved(true); setTimeout(() => setSaved(false), 2000) }}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white" style={{ background: '#6C5CE7' }}>
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white" style={{ background: '#0F766E' }}>
                   <Save size={14} /> {saved ? 'Guardado ✓' : 'Guardar'}
                 </button>
                 <a href="https://posthog.com" target="_blank" rel="noopener noreferrer"
@@ -84,7 +84,7 @@ export default function TrackingPage() {
               <ul className="space-y-1">
                 {section.items.map(item => (
                   <li key={item} className="text-xs text-gray-500 flex items-center gap-1.5">
-                    <div className="w-1 h-1 rounded-full bg-purple-400 flex-shrink-0" />
+                    <div className="w-1 h-1 rounded-full bg-teal-400 flex-shrink-0" />
                     {item}
                   </li>
                 ))}

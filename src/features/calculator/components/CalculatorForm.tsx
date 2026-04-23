@@ -3,7 +3,7 @@
 import type { Technique, Product } from '../types'
 
 const techniques: { id: Technique; label: string; color: string }[] = [
-  { id: 'subli', label: 'Sublimación', color: '#6C5CE7' },
+  { id: 'subli', label: 'Sublimación', color: '#0F766E' },
   { id: 'dtf', label: 'DTF Textil', color: '#E17055' },
   { id: 'dtf_uv', label: 'DTF UV', color: '#00B894' },
   { id: 'vinyl', label: 'Vinilo Textil', color: '#E84393' },
@@ -36,7 +36,7 @@ export function CalculatorForm({
   quantity, setQuantity, designWidth, setDesignWidth, designHeight, setDesignHeight,
   margin, setMargin, merma, setMerma, peelTime, setPeelTime,
 }: CalculatorFormProps) {
-  const activeColor = techniques.find(t => t.id === technique)?.color || '#6C5CE7'
+  const activeColor = techniques.find(t => t.id === technique)?.color || '#0F766E'
 
   return (
     <div className="flex-1 space-y-5">

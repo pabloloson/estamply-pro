@@ -28,7 +28,7 @@ function layout(content: string, locale: string = 'es') {
 
 function btn(text: string, href: string) {
   return `<table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0"><tr><td align="center">
-<a href="${href}" style="display:inline-block;padding:12px 32px;background:#6C5CE7;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;font-size:14px">${text}</a>
+<a href="${href}" style="display:inline-block;padding:12px 32px;background:#0F766E;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;font-size:14px">${text}</a>
 </td></tr></table>`
 }
 

@@ -54,7 +54,7 @@ export default function InventarioPage() {
     await supabase.from('products').delete().eq('id', id); load()
   }
 
-  if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>
+  if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-teal-200 border-t-teal-700 rounded-full animate-spin" /></div>
 
   return (
     <div>
@@ -66,7 +66,7 @@ export default function InventarioPage() {
       <div className="card overflow-hidden">
         <div className="p-5 border-b border-gray-100 flex items-center justify-between">
           <div className="flex items-center gap-2"><Package size={18} className="text-gray-400" /><span className="font-semibold text-gray-800">Catálogo de Productos</span></div>
-          <button onClick={() => setModal({ time_subli: 0, time_dtf: 0, time_vinyl: 0, base_cost: 0 })} className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}>
+          <button onClick={() => setModal({ time_subli: 0, time_dtf: 0, time_vinyl: 0, base_cost: 0 })} className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#0F766E' }}>
             <Plus size={14} /> Agregar
           </button>
         </div>
@@ -86,7 +86,7 @@ export default function InventarioPage() {
                     <td className="px-5 py-3 text-sm text-gray-500">{press?.name ?? <span className="text-gray-300">—</span>}</td>
                     <td className="px-5 py-3">
                       <div className="flex gap-1 flex-wrap">
-                        {p.time_subli > 0 && <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: 'rgba(108,92,231,0.1)', color: '#6C5CE7' }}>S: {p.time_subli}s</span>}
+                        {p.time_subli > 0 && <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: 'rgba(15,118,110,0.1)', color: '#0F766E' }}>S: {p.time_subli}s</span>}
                         {p.time_dtf > 0 && <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: 'rgba(225,112,85,0.1)', color: '#E17055' }}>D: {p.time_dtf}s</span>}
                         {p.time_vinyl > 0 && <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: 'rgba(232,67,147,0.1)', color: '#E84393' }}>V: {p.time_vinyl}s</span>}
                         {!p.time_subli && !p.time_dtf && !p.time_vinyl && <span className="text-xs text-gray-300">—</span>}
@@ -134,7 +134,7 @@ export default function InventarioPage() {
               <div>
                 <label className="block text-sm font-semibold text-gray-600 mb-2">Tiempos de planchado (segundos/unidad)</label>
                 <div className="grid grid-cols-3 gap-2">
-                  {[['time_subli', 'Sublimación', '#6C5CE7'], ['time_dtf', 'DTF Textil', '#E17055'], ['time_vinyl', 'Vinilo Textil', '#E84393']].map(([key, label, color]) => (
+                  {[['time_subli', 'Sublimación', '#0F766E'], ['time_dtf', 'DTF Textil', '#E17055'], ['time_vinyl', 'Vinilo Textil', '#E84393']].map(([key, label, color]) => (
                     <div key={key}><label className="block text-xs font-medium mb-1" style={{ color: color as string }}>{label as string}</label>
                       <input type="number" min={0} step={1} value={(modal as Record<string, number>)[key as string] || 0} onChange={e => setModal({ ...modal, [key as string]: parseInt(e.target.value) || 0 })} className="input-base text-center" /></div>
                   ))}
@@ -143,7 +143,7 @@ export default function InventarioPage() {
             </div>
             <div className="flex gap-3 mt-6">
               <button onClick={() => setModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">Cancelar</button>
-              <button onClick={saveProduct} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: '#6C5CE7' }}>{saving ? 'Guardando...' : 'Guardar'}</button>
+              <button onClick={saveProduct} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: '#0F766E' }}>{saving ? 'Guardando...' : 'Guardar'}</button>
             </div>
           </div>
         </div>

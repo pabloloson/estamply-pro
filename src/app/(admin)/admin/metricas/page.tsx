@@ -33,7 +33,7 @@ export default function MetricasPage() {
     }).catch(() => setLoading(false))
   }, [])
 
-  if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>
+  if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-teal-200 border-t-teal-700 rounded-full animate-spin" /></div>
 
   const total = data?.totalTalleres || 0
   const active = data?.onboardingCompleted || 0
@@ -85,7 +85,7 @@ export default function MetricasPage() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {[
-          { label: 'DAU', value: dau, desc: 'usuarios activos hoy', icon: Users, color: 'purple' },
+          { label: 'DAU', value: dau, desc: 'usuarios activos hoy', icon: Users, color: 'teal' },
           { label: 'WAU', value: wau, desc: 'activos esta semana', icon: Calendar, color: 'blue' },
           { label: 'MAU', value: mau, desc: 'activos este mes', icon: Activity, color: 'green' },
           { label: 'DAU/MAU', value: `${stickiness}%`, desc: 'stickiness', icon: Percent, color: 'amber' },
@@ -114,7 +114,7 @@ export default function MetricasPage() {
                 <span className="text-gray-500 font-semibold">{f.pct}% usa</span>
               </div>
               <div className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden">
-                <div className="h-full rounded-full transition-all" style={{ width: `${f.pct}%`, background: '#6C5CE7' }} />
+                <div className="h-full rounded-full transition-all" style={{ width: `${f.pct}%`, background: '#0F766E' }} />
               </div>
             </div>
           ))}
@@ -160,7 +160,7 @@ export default function MetricasPage() {
                     {[c.m1, c.m2, c.m3, c.m4, c.m5, c.m6].map((v, j) => (
                       <td key={j} className="px-3 py-2 text-center">
                         <span className="text-xs font-semibold px-2 py-0.5 rounded" style={{
-                          background: `rgba(108, 92, 231, ${v / 100 * 0.3})`,
+                          background: `rgba(15, 118, 110, ${v / 100 * 0.3})`,
                           color: v > 60 ? '#4C1D95' : '#6B7280',
                         }}>{v}%</span>
                       </td>

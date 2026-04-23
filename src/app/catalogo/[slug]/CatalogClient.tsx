@@ -66,7 +66,7 @@ export default function PublicCatalogPage() {
       setShop({
         nombre: (s.nombre_tienda as string) || (s.nombre_taller as string) || (p.business_name as string) || 'Mi Taller',
         logo: (s.logo_url as string) || (p.business_logo_url as string) || null,
-        color: (s.brand_color as string) || '#6C5CE7',
+        color: (s.brand_color as string) || '#0F766E',
         description: (s.descripcion_tienda as string) || (s.brand_description as string) || '',
         whatsapp: (p.business_phone as string) || '',
         instagram: (p.business_instagram as string) || '',
@@ -81,7 +81,7 @@ export default function PublicCatalogPage() {
         anuncio: {
           activo: !!(s.anuncio_activo) && !!(s.anuncio_texto),
           texto: (s.anuncio_texto as string) || '',
-          bgColor: (s.anuncio_color_fondo as string) || (s.brand_color as string) || '#6C5CE7',
+          bgColor: (s.anuncio_color_fondo as string) || (s.brand_color as string) || '#0F766E',
           textColor: (s.anuncio_color_texto as string) || '#FFFFFF',
         },
         mediosPago: [],
@@ -218,7 +218,7 @@ function CatalogContent({ shop, products, categories, sizeGuides, activePromos }
       <div className="max-w-5xl mx-auto px-4 pt-3 flex gap-2 items-center">
         <div className="flex-1 relative">
           <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder={tc('webCatalog', 'searchProducts')}
-            className="w-full px-3 py-2 pl-9 rounded-lg border border-gray-200 text-sm bg-white focus:outline-none focus:border-purple-300" />
+            className="w-full px-3 py-2 pl-9 rounded-lg border border-gray-200 text-sm bg-white focus:outline-none focus:border-teal-300" />
           <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
           {search && <button onClick={() => setSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><X size={14} /></button>}
         </div>
@@ -494,7 +494,7 @@ function ProductDetail({ product, shop, sizeGuides, onClose, promoPrice }: { pro
                 <div className="fixed bottom-20 left-4 right-4 z-50 max-w-lg mx-auto">
                   <div className="bg-gray-800 text-white text-sm font-medium px-4 py-3 rounded-xl shadow-lg flex items-center justify-between">
                     <span>Producto agregado al pedido</span>
-                    <button onClick={() => { setAddToast(false); onClose() }} className="text-xs font-semibold text-purple-300 hover:text-white ml-3 whitespace-nowrap">Ver pedido →</button>
+                    <button onClick={() => { setAddToast(false); onClose() }} className="text-xs font-semibold text-teal-400 hover:text-white ml-3 whitespace-nowrap">Ver pedido →</button>
                   </div>
                 </div>
               )}
@@ -688,8 +688,8 @@ function CartScreen({ shop, onClose }: { shop: ShopInfo; onClose: () => void }) 
                     const pct = m.tipo_ajuste === 'descuento' ? -m.porcentaje : m.tipo_ajuste === 'recargo' ? m.porcentaje : 0
                     const mTotal = total + Math.round(total * pct / 100)
                     return (
-                      <label key={m.id} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${selectedMedioPago === m.id ? 'border-purple-300 bg-purple-50' : 'border-gray-100 hover:bg-gray-50'}`}>
-                        <input type="radio" name="medioPago" checked={selectedMedioPago === m.id} onChange={() => setSelectedMedioPago(m.id)} className="text-purple-600" />
+                      <label key={m.id} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${selectedMedioPago === m.id ? 'border-teal-300 bg-teal-50' : 'border-gray-100 hover:bg-gray-50'}`}>
+                        <input type="radio" name="medioPago" checked={selectedMedioPago === m.id} onChange={() => setSelectedMedioPago(m.id)} className="text-teal-700" />
                         <span className="flex-1 text-sm font-medium text-gray-800">{m.nombre}
                           {pct !== 0 && <span className={`ml-1.5 text-xs ${pct < 0 ? 'text-green-600' : 'text-red-500'}`}>{pct > 0 ? '+' : ''}{pct}%</span>}
                         </span>

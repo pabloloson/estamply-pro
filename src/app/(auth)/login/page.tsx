@@ -28,7 +28,7 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen">
       {/* Left Panel */}
-      <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12" style={{ background: 'linear-gradient(135deg, #6C5CE7 0%, #a29bfe 100%)' }}>
+      <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12" style={{ background: 'linear-gradient(135deg, #0F766E 0%, #a29bfe 100%)' }}>
         <div className="flex items-center gap-3">
           <Image src="/logo-icon.png" alt="Estamply" width={40} height={40} className="rounded-xl bg-white/20 p-1" />
           <span className="text-white font-bold text-xl">Estamply</span>
@@ -103,14 +103,14 @@ export default function LoginPage() {
           </form>
 
           <p className="mt-4 text-center">
-            <Link href="/forgot-password" style={{ color: '#6C5CE7' }} className="text-sm font-medium hover:underline">
+            <Link href="/forgot-password" style={{ color: '#0F766E' }} className="text-sm font-medium hover:underline">
               {to('forgotPassword')}
             </Link>
           </p>
 
           <p className="mt-4 text-center text-sm text-gray-500">
             {to('noAccount')}{' '}
-            <Link href="/signup" style={{ color: '#6C5CE7' }} className="font-medium hover:underline">
+            <Link href="/signup" style={{ color: '#0F766E' }} className="font-medium hover:underline">
               {to('createFreeAccount')}
             </Link>
           </p>

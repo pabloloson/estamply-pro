@@ -183,7 +183,7 @@ export default function CatalogoPage() {
   const catMargin = (catModal?.selling_price || 0) > 0 && (catModal?.unit_cost || 0) > 0
     ? Math.round((((catModal?.selling_price || 0) - (catModal?.unit_cost || 0)) / (catModal?.selling_price || 1)) * 100) : 0
 
-  if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>
+  if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-teal-200 border-t-teal-700 rounded-full animate-spin" /></div>
 
   return (
     <div onClick={() => stockPopover && setStockPopover(null)}>
@@ -198,7 +198,7 @@ export default function CatalogoPage() {
             <FolderOpen size={14} /> <span className="hidden sm:inline">{t('categories')}</span>
           </button>
           <button onClick={() => setCatModal({ cost_mode: 'manual', unit_cost: 0, selling_price: 0, manage_stock: false, current_stock: 0, min_stock: 0, visible_in_catalog: true, photos: [] })}
-            className="flex items-center gap-1.5 whitespace-nowrap text-xs sm:text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={14} /> <span className="hidden sm:inline">{t('addProduct')}</span></button>
+            className="flex items-center gap-1.5 whitespace-nowrap text-xs sm:text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#0F766E' }}><Plus size={14} /> <span className="hidden sm:inline">{t('addProduct')}</span></button>
         </div>
       </div>
 
@@ -206,7 +206,7 @@ export default function CatalogoPage() {
       <div className="hidden md:flex gap-1.5 mb-3 flex-wrap items-center">
         {filterOptions.map(([id, label]) => (
           <button key={id} onClick={() => setCatFilter(id)}
-            className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${catFilter === id ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-500'}`}>{label}</button>
+            className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${catFilter === id ? 'bg-teal-700 text-white' : 'bg-gray-100 text-gray-500'}`}>{label}</button>
         ))}
         {categories.length > 0 && (
           <select value={catCategoryFilter} onChange={e => setCatCategoryFilter(e.target.value)}
@@ -221,8 +221,8 @@ export default function CatalogoPage() {
       {/* Mobile: Filtros button + Search in one row */}
       <div className="md:hidden flex gap-2 mb-2">
         <button onClick={() => setMobileFiltersOpen(true)}
-          className={`flex-shrink-0 px-3 py-2 rounded-lg text-xs font-semibold border transition-all flex items-center gap-1.5 ${activeFilterCount > 0 ? 'border-purple-300 text-purple-600 bg-purple-50' : 'border-gray-200 text-gray-500'}`}>
-          Filtros{activeFilterCount > 0 && <span className="w-4 h-4 rounded-full bg-purple-600 text-white text-[9px] flex items-center justify-center">{activeFilterCount}</span>}
+          className={`flex-shrink-0 px-3 py-2 rounded-lg text-xs font-semibold border transition-all flex items-center gap-1.5 ${activeFilterCount > 0 ? 'border-teal-300 text-teal-700 bg-teal-50' : 'border-gray-200 text-gray-500'}`}>
+          Filtros{activeFilterCount > 0 && <span className="w-4 h-4 rounded-full bg-teal-700 text-white text-[9px] flex items-center justify-center">{activeFilterCount}</span>}
         </button>
         <div className="relative flex-1">
           <input type="text" value={search} onChange={e => setSearch(e.target.value)}
@@ -234,13 +234,13 @@ export default function CatalogoPage() {
       {activeFilterCount > 0 && (
         <div className="md:hidden flex gap-1.5 flex-wrap mb-2">
           {catFilter !== 'all' && (
-            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-purple-100 text-purple-600 flex items-center gap-1">
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 flex items-center gap-1">
               {filterOptions.find(([id]) => id === catFilter)?.[1]}
               <button onClick={() => setCatFilter('all')}>✕</button>
             </span>
           )}
           {catCategoryFilter && (
-            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-purple-100 text-purple-600 flex items-center gap-1">
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 flex items-center gap-1">
               {catCategoryFilter === 'none' ? 'Sin categoría' : categories.find(c => c.id === catCategoryFilter)?.name}
               <button onClick={() => setCatCategoryFilter('')}>✕</button>
             </span>
@@ -272,22 +272,22 @@ export default function CatalogoPage() {
                 <div className="flex gap-1.5 flex-wrap">
                   {filterOptions.map(([id, label]) => (
                     <button key={id} onClick={() => setCatFilter(id)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-semibold ${catFilter === id ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-500'}`}>{label}</button>
+                      className={`px-3 py-1.5 rounded-full text-xs font-semibold ${catFilter === id ? 'bg-teal-700 text-white' : 'bg-gray-100 text-gray-500'}`}>{label}</button>
                   ))}
                 </div>
               </div>
               {categories.length > 0 && <div>
                 <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">Categoría</p>
                 <div className="flex gap-1.5 flex-wrap">
-                  <button onClick={() => setCatCategoryFilter('')} className={`px-3 py-1.5 rounded-full text-xs font-semibold ${!catCategoryFilter ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-500'}`}>Todas</button>
+                  <button onClick={() => setCatCategoryFilter('')} className={`px-3 py-1.5 rounded-full text-xs font-semibold ${!catCategoryFilter ? 'bg-teal-700 text-white' : 'bg-gray-100 text-gray-500'}`}>Todas</button>
                   {categories.map(c => (
-                    <button key={c.id} onClick={() => setCatCategoryFilter(c.id)} className={`px-3 py-1.5 rounded-full text-xs font-semibold ${catCategoryFilter === c.id ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-500'}`}>{c.name}</button>
+                    <button key={c.id} onClick={() => setCatCategoryFilter(c.id)} className={`px-3 py-1.5 rounded-full text-xs font-semibold ${catCategoryFilter === c.id ? 'bg-teal-700 text-white' : 'bg-gray-100 text-gray-500'}`}>{c.name}</button>
                   ))}
-                  <button onClick={() => setCatCategoryFilter('none')} className={`px-3 py-1.5 rounded-full text-xs font-semibold ${catCategoryFilter === 'none' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-500'}`}>Sin categoría</button>
+                  <button onClick={() => setCatCategoryFilter('none')} className={`px-3 py-1.5 rounded-full text-xs font-semibold ${catCategoryFilter === 'none' ? 'bg-teal-700 text-white' : 'bg-gray-100 text-gray-500'}`}>Sin categoría</button>
                 </div>
               </div>}
             </div>
-            <button onClick={() => setMobileFiltersOpen(false)} className="w-full mt-5 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: '#6C5CE7' }}>Aplicar</button>
+            <button onClick={() => setMobileFiltersOpen(false)} className="w-full mt-5 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: '#0F766E' }}>Aplicar</button>
             {activeFilterCount > 0 && (
               <button onClick={() => { setCatFilter('all'); setCatCategoryFilter(''); setMobileFiltersOpen(false) }}
                 className="w-full mt-2 text-xs text-gray-400 hover:text-gray-600 text-center">Limpiar filtros</button>
@@ -410,11 +410,11 @@ export default function CatalogoPage() {
                             <div className="absolute left-0 top-full mt-1 w-48 py-2 bg-white rounded-lg z-50" onClick={e => e.stopPropagation()}
                               style={{ border: '1px solid #e5e5e5', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
                               <p className="px-3 py-1 text-xs font-semibold text-gray-500 border-b border-gray-100 mb-1 pb-1.5">Stock: {p.current_stock} u.</p>
-                              <button onClick={() => { setStockPopover(null); setStockModal({ product: p, type: 'produce', qty: 0, note: '', movements: [] }) }} className="w-full text-left px-3 py-1.5 text-sm hover:bg-purple-50 text-gray-700 transition-colors">+ Producir</button>
-                              <button onClick={() => { setStockPopover(null); setStockModal({ product: p, type: 'sell', qty: 0, note: '', movements: [] }) }} className="w-full text-left px-3 py-1.5 text-sm hover:bg-purple-50 text-gray-700 transition-colors">− Vender</button>
-                              <button onClick={() => { setStockPopover(null); setStockModal({ product: p, type: 'adjust', qty: p.current_stock, note: '', movements: [] }) }} className="w-full text-left px-3 py-1.5 text-sm hover:bg-purple-50 text-gray-700 transition-colors">⟳ Ajustar</button>
+                              <button onClick={() => { setStockPopover(null); setStockModal({ product: p, type: 'produce', qty: 0, note: '', movements: [] }) }} className="w-full text-left px-3 py-1.5 text-sm hover:bg-teal-50 text-gray-700 transition-colors">+ Producir</button>
+                              <button onClick={() => { setStockPopover(null); setStockModal({ product: p, type: 'sell', qty: 0, note: '', movements: [] }) }} className="w-full text-left px-3 py-1.5 text-sm hover:bg-teal-50 text-gray-700 transition-colors">− Vender</button>
+                              <button onClick={() => { setStockPopover(null); setStockModal({ product: p, type: 'adjust', qty: p.current_stock, note: '', movements: [] }) }} className="w-full text-left px-3 py-1.5 text-sm hover:bg-teal-50 text-gray-700 transition-colors">⟳ Ajustar</button>
                               <div className="border-t border-gray-100 mt-1 pt-1">
-                                <button onClick={() => { setStockPopover(null); openHistory(p) }} className="w-full text-left px-3 py-1.5 text-sm hover:bg-purple-50 text-gray-400 transition-colors">📋 Historial</button>
+                                <button onClick={() => { setStockPopover(null); openHistory(p) }} className="w-full text-left px-3 py-1.5 text-sm hover:bg-teal-50 text-gray-400 transition-colors">📋 Historial</button>
                               </div>
                             </div>
                           )}
@@ -459,13 +459,13 @@ export default function CatalogoPage() {
                     <div key={i} className="relative w-16 h-16 rounded-lg overflow-hidden border border-gray-200 group">
                       <img src={url} alt="" className="w-full h-full object-cover" />
                       <button onClick={() => removePhoto(i)} className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"><X size={14} className="text-white" /></button>
-                      {i === 0 && <span className="absolute bottom-0 left-0 right-0 text-[8px] text-center bg-purple-600 text-white">{t('main')}</span>}
+                      {i === 0 && <span className="absolute bottom-0 left-0 right-0 text-[8px] text-center bg-teal-700 text-white">{t('main')}</span>}
                     </div>
                   ))}
                   {(catModal.photos || []).length < 3 && (
                     <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading}
-                      className="w-16 h-16 rounded-lg border-2 border-dashed border-gray-200 flex items-center justify-center hover:border-purple-300 transition-colors">
-                      {uploading ? <div className="w-4 h-4 border-2 border-purple-300 border-t-purple-600 rounded-full animate-spin" /> : <Upload size={16} className="text-gray-300" />}
+                      className="w-16 h-16 rounded-lg border-2 border-dashed border-gray-200 flex items-center justify-center hover:border-teal-300 transition-colors">
+                      {uploading ? <div className="w-4 h-4 border-2 border-teal-300 border-t-teal-700 rounded-full animate-spin" /> : <Upload size={16} className="text-gray-300" />}
                     </button>
                   )}
                 </div>
@@ -517,14 +517,14 @@ export default function CatalogoPage() {
                     {['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'].map(s => {
                       const active = (catModal.sizes || []).includes(s)
                       return <button key={s} type="button" onClick={() => setCatModal({ ...catModal, sizes: active ? (catModal.sizes || []).filter(x => x !== s) : [...(catModal.sizes || []), s] })}
-                        className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${active ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-500'}`}>{s}</button>
+                        className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${active ? 'bg-teal-700 text-white' : 'bg-gray-100 text-gray-500'}`}>{s}</button>
                     })}
                     <button type="button" onClick={() => { const t = prompt('Talle personalizado:'); if (t?.trim()) setCatModal({ ...catModal, sizes: [...(catModal.sizes || []), t.trim()] }) }}
                       className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-gray-50 text-gray-400 hover:bg-gray-100">+ Otro</button>
                   </div>
                   {(catModal.sizes || []).filter(s => !['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'].includes(s)).map((s, i) => (
-                    <span key={i} className="inline-flex items-center gap-1 mt-1 mr-1 px-2 py-0.5 rounded bg-purple-50 text-purple-700 text-xs">{s}
-                      <button onClick={() => setCatModal({ ...catModal, sizes: (catModal.sizes || []).filter(x => x !== s) })} className="text-purple-400 hover:text-purple-600"><X size={10} /></button></span>
+                    <span key={i} className="inline-flex items-center gap-1 mt-1 mr-1 px-2 py-0.5 rounded bg-teal-50 text-teal-800 text-xs">{s}
+                      <button onClick={() => setCatModal({ ...catModal, sizes: (catModal.sizes || []).filter(x => x !== s) })} className="text-teal-500 hover:text-teal-700"><X size={10} /></button></span>
                   ))}
                 </div>
                 <div>
@@ -540,7 +540,7 @@ export default function CatalogoPage() {
                       </div>
                     ))}
                     <button type="button" onClick={() => setCatModal({ ...catModal, colors: [...(catModal.colors || []), { name: '', hex: '#000000' }] })}
-                      className="text-xs font-semibold text-purple-600 hover:text-purple-700 flex items-center gap-1"><Plus size={12} /> {t('addColor')}</button>
+                      className="text-xs font-semibold text-teal-700 hover:text-teal-800 flex items-center gap-1"><Plus size={12} /> {t('addColor')}</button>
                   </div>
                 </div>
               </div>
@@ -573,10 +573,10 @@ export default function CatalogoPage() {
                   ] as const).map(([val, label, desc]) => {
                     const current = catModal.manage_stock ? 'stock' : ((catModal as Record<string, unknown>).disponibilidad === 'pedido' ? 'pedido' : 'disponible')
                     return (
-                      <label key={val} className={`flex items-start gap-3 p-3 rounded-lg cursor-pointer border transition-all ${current === val ? 'border-purple-300 bg-purple-50' : 'border-gray-100 hover:bg-gray-50'}`}>
+                      <label key={val} className={`flex items-start gap-3 p-3 rounded-lg cursor-pointer border transition-all ${current === val ? 'border-teal-300 bg-teal-50' : 'border-gray-100 hover:bg-gray-50'}`}>
                         <input type="radio" name="disponibilidad" checked={current === val}
                           onChange={() => setCatModal({ ...catModal, manage_stock: val === 'stock', ...(val === 'pedido' ? { disponibilidad: 'pedido' } as Record<string, unknown> : { disponibilidad: val } as Record<string, unknown>) })}
-                          className="mt-0.5 text-purple-600" />
+                          className="mt-0.5 text-teal-700" />
                         <div>
                           <p className="text-sm font-medium text-gray-800">{label}</p>
                           <p className="text-[10px] text-gray-400">{desc}</p>
@@ -597,7 +597,7 @@ export default function CatalogoPage() {
 
               <div className="border-t border-gray-100 pt-4">
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" className="rounded border-gray-300 text-purple-600" checked={catModal.visible_in_catalog ?? true}
+                  <input type="checkbox" className="rounded border-gray-300 text-teal-700" checked={catModal.visible_in_catalog ?? true}
                     onChange={() => setCatModal({ ...catModal, visible_in_catalog: !catModal.visible_in_catalog })} />
                   <span className="text-sm text-gray-700">{t('visibleInCatalog')}</span>
                 </label>
@@ -605,7 +605,7 @@ export default function CatalogoPage() {
             </div>
             <div className="flex gap-3 mt-6">
               <button onClick={() => setCatModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">{tc('cancel')}</button>
-              <button onClick={saveCatalogProduct} disabled={saving || !catModal.name?.trim()} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#6C5CE7' }}>{saving ? tc('saving') : t('saveProduct')}</button>
+              <button onClick={saveCatalogProduct} disabled={saving || !catModal.name?.trim()} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#0F766E' }}>{saving ? tc('saving') : t('saveProduct')}</button>
             </div>
           </div>
         </div>
@@ -645,7 +645,7 @@ export default function CatalogoPage() {
               </div>
               <div className="flex gap-3 mt-5">
                 <button onClick={() => setStockModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">{tc('cancel')}</button>
-                <button onClick={doStockAction} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: '#6C5CE7' }}>{tc('confirm')}</button>
+                <button onClick={doStockAction} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: '#0F766E' }}>{tc('confirm')}</button>
               </div>
             </>)}
           </div>

@@ -67,7 +67,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
                   {s.items.map(item => (
                     <Link key={item.id} href={`/settings/${item.id}`}
                       className={`block px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                        section === item.id ? 'bg-purple-50 text-purple-700 font-medium' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'
+                        section === item.id ? 'bg-teal-50 text-teal-800 font-medium' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'
                       }`}>
                       {item.label}
                     </Link>

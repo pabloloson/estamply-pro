@@ -17,7 +17,7 @@ interface Props {
 }
 
 const SL: Record<string, string> = { pending: 'Pendiente', production: 'En producción', ready: 'Listo' }
-const SC: Record<string, string> = { pending: '#FDCB6E', production: '#6C5CE7', ready: '#00B894' }
+const SC: Record<string, string> = { pending: '#FDCB6E', production: '#0F766E', ready: '#00B894' }
 
 export default function DashboardClient({ shopName, orders, payments, presupuestos, setupCounts, exchangeRate }: Props) {
   const t = useTranslations('dashboard')
@@ -85,9 +85,9 @@ export default function DashboardClient({ shopName, orders, payments, presupuest
             const isFirst = !step.done && steps.slice(0, i).every(s => s.done)
             return (
               <Link key={i} href={step.href}
-                className={`block p-5 rounded-xl border-2 transition-all ${step.done ? 'border-green-100 bg-green-50/50 opacity-70' : isFirst ? 'border-purple-200 bg-white shadow-sm' : 'border-gray-100 bg-white'}`}>
+                className={`block p-5 rounded-xl border-2 transition-all ${step.done ? 'border-green-100 bg-green-50/50 opacity-70' : isFirst ? 'border-teal-200 bg-white shadow-sm' : 'border-gray-100 bg-white'}`}>
                 <div className="flex items-start gap-4">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0 ${step.done ? 'bg-green-100' : isFirst ? 'bg-purple-50' : 'bg-gray-50'}`}>
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0 ${step.done ? 'bg-green-100' : isFirst ? 'bg-teal-50' : 'bg-gray-50'}`}>
                     {step.done ? <Check size={18} className="text-green-600" /> : step.icon}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -189,7 +189,7 @@ export default function DashboardClient({ shopName, orders, payments, presupuest
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[
             { label: 'Facturación hoy', value: fmt(todayRev), sub: `vs ${fmt(yesterdayRev)} ayer`, icon: DollarSign, color: '#22C55E', href: '/estadisticas' },
-            { label: 'Pedidos hoy', value: String(todayOrders.length), sub: `${todayOrders.length - todayCompleted} nuevos, ${todayCompleted} completados`, icon: ShoppingBag, color: '#6C5CE7', href: '/orders' },
+            { label: 'Pedidos hoy', value: String(todayOrders.length), sub: `${todayOrders.length - todayCompleted} nuevos, ${todayCompleted} completados`, icon: ShoppingBag, color: '#0F766E', href: '/orders' },
             { label: 'Por cobrar', value: fmt(totalPorCobrar), sub: `${pendingColl.length} pedido${pendingColl.length !== 1 ? 's' : ''}`, icon: Clock, color: '#F59E0B', href: '/orders', highlight: totalPorCobrar > 100000 },
             { label: 'Conversión', value: `${convRate}%`, sub: `${convConverted} de ${convTotal}`, icon: TrendingUp, color: '#3B82F6', href: '/estadisticas' },
           ].map(c => (
@@ -213,7 +213,7 @@ export default function DashboardClient({ shopName, orders, payments, presupuest
           <div className="flex items-end gap-1 h-16">
             {last7.map((d, i) => (
               <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                <div className="w-full rounded-t" style={{ height: `${Math.max((d.value / max7) * 56, 2)}px`, background: '#6C5CE7', opacity: i === 6 ? 1 : 0.5 }} title={`${d.day}: ${fmt(d.value)}`} />
+                <div className="w-full rounded-t" style={{ height: `${Math.max((d.value / max7) * 56, 2)}px`, background: '#0F766E', opacity: i === 6 ? 1 : 0.5 }} title={`${d.day}: ${fmt(d.value)}`} />
                 <span className="text-[9px] text-gray-400">{d.day}</span>
               </div>
             ))}
@@ -227,7 +227,7 @@ export default function DashboardClient({ shopName, orders, payments, presupuest
         <div className="card p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-bold text-gray-800">{t('activeOrders')}</h2>
-            <Link href="/orders" className="text-xs text-purple-600 font-semibold hover:text-purple-800">{t('viewAll')} →</Link>
+            <Link href="/orders" className="text-xs text-teal-700 font-semibold hover:text-teal-900">{t('viewAll')} →</Link>
           </div>
           <div className="space-y-1">
             {(['pending', 'production', 'ready'] as const).map(s => (

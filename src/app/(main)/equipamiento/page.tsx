@@ -20,12 +20,12 @@ interface Equipment {
 interface InsumoRef { id: string; nombre: string; tipo: string; config: Record<string, unknown> }
 
 const CLASIF_LABELS: Record<string, string> = { impresora: 'Impresora', plotter: 'Plotter', plancha: 'Plancha', horno: 'Horno', pulpo: 'Pulpo' }
-const CLASIF_COLORS: Record<string, string> = { impresora: '#E17055', plotter: '#00B894', plancha: '#6C5CE7', horno: '#F97316', pulpo: '#FDCB6E' }
+const CLASIF_COLORS: Record<string, string> = { impresora: '#E17055', plotter: '#00B894', plancha: '#0F766E', horno: '#F97316', pulpo: '#FDCB6E' }
 const CLASIF_TABS = [
   { id: '', label: 'Todos' },
   { id: 'impresora', label: 'Impresoras', color: '#E17055' },
   { id: 'plotter', label: 'Plotters', color: '#00B894' },
-  { id: 'plancha', label: 'Planchas', color: '#6C5CE7' },
+  { id: 'plancha', label: 'Planchas', color: '#0F766E' },
   { id: 'horno', label: 'Hornos', color: '#F97316' },
   { id: 'pulpo', label: 'Pulpos', color: '#FDCB6E' },
 ]
@@ -39,7 +39,7 @@ const TYPES_BY_CLASIF: Record<string, Array<[string, string]>> = {
 }
 
 const TEC_LABELS: Record<string, string> = { subli: 'Subli', dtf: 'DTF Textil', dtf_uv: 'DTF UV', vinyl: 'Vinilo Textil', vinyl_adhesivo: 'Vinilo Autoadhesivo', serigrafia: 'Serigrafía' }
-const TEC_COLORS: Record<string, string> = { subli: '#6C5CE7', dtf: '#E17055', dtf_uv: '#00B894', vinyl: '#E84393', vinyl_adhesivo: '#D63384', serigrafia: '#FDCB6E' }
+const TEC_COLORS: Record<string, string> = { subli: '#0F766E', dtf: '#E17055', dtf_uv: '#00B894', vinyl: '#E84393', vinyl_adhesivo: '#D63384', serigrafia: '#FDCB6E' }
 const ALL_TECS = ['subli', 'dtf', 'dtf_uv', 'vinyl', 'vinyl_adhesivo', 'serigrafia']
 
 // Insumos associated per equipment type
@@ -116,7 +116,7 @@ export default function EquipamientoPage() {
   const modalAmort = modal && (modal.lifespan_uses || 0) > 0 ? Math.round((modal.cost || 0) / (modal.lifespan_uses || 1)) : 0
   const modalTypes = TYPES_BY_CLASIF[modal?.clasificacion || 'plancha'] || TYPES_BY_CLASIF.plancha
 
-  if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>
+  if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-teal-200 border-t-teal-700 rounded-full animate-spin" /></div>
 
   return (
     <div>
@@ -125,7 +125,7 @@ export default function EquipamientoPage() {
         <div><h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
           <p className="text-gray-500 text-sm mt-1">{t('subtitle')}</p></div>
         <button onClick={() => setModal(newEquip())}
-          className="flex items-center gap-1.5 whitespace-nowrap text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}>
+          className="flex items-center gap-1.5 whitespace-nowrap text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#0F766E' }}>
           <Plus size={14} /> Agregar
         </button>
       </div>
@@ -156,7 +156,7 @@ export default function EquipamientoPage() {
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
           <input className="input-base text-sm w-full" style={{ paddingLeft: 40 }} placeholder="Buscar..." value={searchEquip} onChange={e => setSearchEquip(e.target.value)} />
         </div>
-        <button onClick={() => setModal(newEquip())} className="h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 text-white" style={{ background: '#6C5CE7' }}><Plus size={18} /></button>
+        <button onClick={() => setModal(newEquip())} className="h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 text-white" style={{ background: '#0F766E' }}><Plus size={18} /></button>
       </div>
 
       {/* Mobile cards */}
@@ -298,7 +298,7 @@ export default function EquipamientoPage() {
                         {[['local', 'Local'], ['USD', 'USD']].map(([v, l]) => (
                           <button key={v} type="button" onClick={() => setModal({ ...modal, moneda: v })}
                             className={`px-3 py-0.5 rounded-full text-[10px] font-semibold transition-all ${(modal.moneda || 'local') === v ? 'text-white shadow-sm' : 'text-gray-500'}`}
-                            style={(modal.moneda || 'local') === v ? { background: '#6C5CE7' } : {}}>{l}</button>
+                            style={(modal.moneda || 'local') === v ? { background: '#0F766E' } : {}}>{l}</button>
                         ))}
                       </div>
                     </div>
@@ -364,7 +364,7 @@ export default function EquipamientoPage() {
                           ))}
                         </div>
                         {assignable.length === 0 && (
-                          <p className="text-xs text-gray-400 mt-2">💡 ¿No tenés insumos cargados? Crealos en <a href="/settings/insumos" target="_blank" rel="noopener" className="font-semibold text-purple-600 hover:underline">Insumos →</a></p>
+                          <p className="text-xs text-gray-400 mt-2">💡 ¿No tenés insumos cargados? Crealos en <a href="/settings/insumos" target="_blank" rel="noopener" className="font-semibold text-teal-700 hover:underline">Insumos →</a></p>
                         )}
                       </>)
                     })()}
@@ -400,7 +400,7 @@ export default function EquipamientoPage() {
                         const { data } = await supabase.from('suppliers').insert({ name: inlineSupplier.name.trim(), user_id: userId }).select('id').single()
                         if (data) { setModal({ ...modal, supplier_id: data.id }); await load() }
                         setInlineSupplier(null)
-                      }} className="px-4 py-2 rounded-lg text-xs font-semibold text-white" style={{ background: '#6C5CE7' }}>Crear proveedor</button>
+                      }} className="px-4 py-2 rounded-lg text-xs font-semibold text-white" style={{ background: '#0F766E' }}>Crear proveedor</button>
                       <button type="button" onClick={() => setInlineSupplier(null)} className="text-xs font-medium text-gray-400 hover:text-gray-600">Cancelar</button>
                     </div>
                   </div>
@@ -414,7 +414,7 @@ export default function EquipamientoPage() {
             </div>
             <div className="flex gap-3 mt-6">
               <button onClick={() => { setModal(null); setInlineSupplier(null) }} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">{tc('cancel')}</button>
-              <button onClick={saveEquip} disabled={saving || !modal.name?.trim()} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#6C5CE7' }}>{saving ? tc('saving') : tc('save')}</button>
+              <button onClick={saveEquip} disabled={saving || !modal.name?.trim()} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#0F766E' }}>{saving ? tc('saving') : tc('save')}</button>
             </div>
           </div>
         </div>

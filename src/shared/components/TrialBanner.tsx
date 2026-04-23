@@ -33,15 +33,15 @@ export default function TrialBanner() {
   if (!show || dismissed) return null
 
   return (
-    <div className={`flex items-center justify-center gap-3 px-4 py-2 text-sm ${expired ? 'bg-amber-50 text-amber-700' : 'bg-purple-50 text-purple-700'}`}>
+    <div className={`flex items-center justify-center gap-3 px-4 py-2 text-sm ${expired ? 'bg-amber-50 text-amber-700' : 'bg-teal-50 text-teal-800'}`}>
       <p className="font-medium">
         {expired ? t('trialExpired') : t('trialBanner', { days: daysLeft ?? 0 })}
       </p>
-      <a href="/planes" className={`text-xs font-bold px-3 py-1 rounded-full ${expired ? 'bg-amber-100 text-amber-800 hover:bg-amber-200' : 'bg-purple-100 text-purple-800 hover:bg-purple-200'}`}>
+      <a href="/planes" className={`text-xs font-bold px-3 py-1 rounded-full ${expired ? 'bg-amber-100 text-amber-800 hover:bg-amber-200' : 'bg-teal-50 text-teal-900 hover:bg-teal-100'}`}>
         {expired ? t('viewPlans') : t('choosePlan')}
       </a>
       {!expired && (
-        <button onClick={() => setDismissed(true)} className="p-0.5 rounded hover:bg-purple-100 ml-1"><X size={14} /></button>
+        <button onClick={() => setDismissed(true)} className="p-0.5 rounded hover:bg-teal-50 ml-1"><X size={14} /></button>
       )}
     </div>
   )

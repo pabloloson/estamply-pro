@@ -48,7 +48,7 @@ export default function CategoryModal({ categories, onSave, onDelete, onClose }:
                 <div className="inline-flex rounded-md border border-gray-200 overflow-hidden">
                   {[['margin', 'Margen'], ['markup', 'Markup']].map(([v, l]) => (
                     <button key={v} type="button" onClick={() => setEditing({ ...editing, pricing_mode: v as 'margin' | 'markup' })}
-                      className={`px-2 py-0.5 text-[10px] font-semibold ${(editing.pricing_mode || 'margin') === v ? 'bg-purple-600 text-white' : 'text-gray-400'}`}>{l}</button>
+                      className={`px-2 py-0.5 text-[10px] font-semibold ${(editing.pricing_mode || 'margin') === v ? 'bg-teal-700 text-white' : 'text-gray-400'}`}>{l}</button>
                   ))}
                 </div>
               </div>
@@ -57,11 +57,11 @@ export default function CategoryModal({ categories, onSave, onDelete, onClose }:
             </div>
             <div className="flex gap-2">
               <button onClick={() => setEditing(null)} className="flex-1 py-2 rounded-lg text-sm font-semibold text-gray-500 border border-gray-200">Cancelar</button>
-              <button onClick={async () => { await onSave(editing); setEditing(null) }} className="flex-1 py-2 rounded-lg text-sm font-semibold text-white" style={{ background: '#6C5CE7' }}>Guardar</button>
+              <button onClick={async () => { await onSave(editing); setEditing(null) }} className="flex-1 py-2 rounded-lg text-sm font-semibold text-white" style={{ background: '#0F766E' }}>Guardar</button>
             </div>
           </div>
         ) : (
-          <button onClick={() => setEditing({ name: '', margen_sugerido: 50 })} className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-semibold border-2 border-dashed border-gray-200 text-gray-400 hover:border-purple-300 hover:text-purple-500 transition-colors">
+          <button onClick={() => setEditing({ name: '', margen_sugerido: 50 })} className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-semibold border-2 border-dashed border-gray-200 text-gray-400 hover:border-teal-300 hover:text-teal-600 transition-colors">
             <Plus size={14} /> Nueva categoría
           </button>
         )}

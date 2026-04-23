@@ -107,7 +107,7 @@ export default function CotizadorPage() {
   const hasDtf = !!(dtfTextil || dtfUv)
 
   const cotizadorTabs: { id: CotizadorTab; label: string; color: string }[] = []
-  if (tecnicas.find(t => t.slug === 'subli' && t.activa)) cotizadorTabs.push({ id: 'subli', label: 'Sublimación', color: '#6C5CE7' })
+  if (tecnicas.find(t => t.slug === 'subli' && t.activa)) cotizadorTabs.push({ id: 'subli', label: 'Sublimación', color: '#0F766E' })
   if (hasDtf) cotizadorTabs.push({ id: 'dtf_unified', label: 'DTF', color: '#E17055' })
   const hasVinyl = tecnicas.some(t => (t.slug === 'vinyl' || t.slug === 'vinyl_adhesivo') && t.activa)
   if (hasVinyl) cotizadorTabs.push({ id: 'vinyl_unified', label: 'Vinilo', color: '#E84393' })
@@ -331,7 +331,7 @@ export default function CotizadorPage() {
   }
 
   const activeTabMeta = cotizadorTabs.find(t => t.id === cotizadorTab) ?? cotizadorTabs[0]
-  const activeColor = activeTabMeta?.color ?? '#6C5CE7'
+  const activeColor = activeTabMeta?.color ?? '#0F766E'
   const isVinyl = resolvedSlug === 'vinyl' || resolvedSlug === 'vinyl_adhesivo'
   const isSerigrafia = resolvedSlug === 'serigrafia'
   const needsDesignSize = !isVinyl && !isSerigrafia
@@ -341,7 +341,7 @@ export default function CotizadorPage() {
     <div className="max-w-6xl mx-auto px-4 py-6">
       <div className="flex items-start justify-between mb-6">
         <div><h1 className="text-2xl font-black text-gray-900">{t('title')}</h1><p className="text-sm text-gray-500 mt-0.5">{t('newQuotation')}</p></div>
-        <Link href="/presupuesto" className="relative flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm text-white" style={{ backgroundColor: '#6C5CE7', boxShadow: '0 4px 14px rgba(108,92,231,0.35)' }}>
+        <Link href="/presupuesto" className="relative flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm text-white" style={{ backgroundColor: '#0F766E', boxShadow: '0 4px 14px rgba(15,118,110,0.35)' }}>
           <ShoppingCart size={16} /> Presupuesto
           {items.length > 0 && <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center text-xs font-black text-white" style={{ backgroundColor: '#E84393' }}>{items.length}</span>}
         </Link>
@@ -751,14 +751,14 @@ export default function CotizadorPage() {
                 <NumericInput className="input-base" min={1} value={saveProductModal.price} onChange={v => setSaveProductModal({ ...saveProductModal, price: v })} errorMessage="El precio mínimo es 1" /></div>
               {showCosts && <p className="text-xs text-gray-400">Costo: {result ? fmt(Math.round(result.costoTotal)) : '—'} /unidad</p>}
               <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" className="rounded border-gray-300 text-purple-600" checked={saveProductModal.visible}
+                <input type="checkbox" className="rounded border-gray-300 text-teal-700" checked={saveProductModal.visible}
                   onChange={() => setSaveProductModal({ ...saveProductModal, visible: !saveProductModal.visible })} />
                 <span className="text-sm text-gray-700">Visible en catálogo web</span>
               </label>
             </div>
             <div className="flex gap-3 mt-5">
               <button onClick={() => setSaveProductModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">{tc('cancel')}</button>
-              <button onClick={doSaveProduct} disabled={!saveProductModal.name.trim()} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#6C5CE7' }}>{tc('save')}</button>
+              <button onClick={doSaveProduct} disabled={!saveProductModal.name.trim()} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#0F766E' }}>{tc('save')}</button>
             </div>
           </div>
         </div>

@@ -35,8 +35,8 @@ export function PriceTicket({ result, technique, quantity, designWidth, designHe
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-gray-700">Resumen del pedido</h3>
         <span className="text-xs px-2 py-1 rounded-full font-medium" style={{
-          background: technique === 'subli' ? 'rgba(108,92,231,0.1)' : technique === 'dtf' ? 'rgba(225,112,85,0.1)' : 'rgba(232,67,147,0.1)',
-          color: technique === 'subli' ? '#6C5CE7' : technique === 'dtf' ? '#E17055' : '#E84393',
+          background: technique === 'subli' ? 'rgba(15,118,110,0.1)' : technique === 'dtf' ? 'rgba(225,112,85,0.1)' : 'rgba(232,67,147,0.1)',
+          color: technique === 'subli' ? '#0F766E' : technique === 'dtf' ? '#E17055' : '#E84393',
         }}>
           {{ subli: 'Sublimación', dtf: 'DTF Textil', dtf_uv: 'DTF UV', vinyl: 'Vinilo Textil', vinyl_adhesivo: 'V. Autoadhesivo', serigrafia: 'Serigrafía' }[technique] || technique} × {quantity}
         </span>
@@ -67,7 +67,7 @@ export function PriceTicket({ result, technique, quantity, designWidth, designHe
       {/* Suggested Price - BIG */}
       <div className="text-center">
         <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Precio sugerido lote</p>
-        <p className="text-4xl font-bold" style={{ color: technique === 'subli' ? '#6C5CE7' : technique === 'dtf' ? '#E17055' : '#E84393' }}>
+        <p className="text-4xl font-bold" style={{ color: technique === 'subli' ? '#0F766E' : technique === 'dtf' ? '#E17055' : '#E84393' }}>
           {fmt(result.suggestedPrice)}
         </p>
         <p className="text-sm text-gray-400 mt-1">

@@ -61,7 +61,7 @@ export default function TallerDetailPage() {
     setActionLoading(false)
   }
 
-  if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>
+  if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-teal-200 border-t-teal-700 rounded-full animate-spin" /></div>
   if (!data?.profile) return <div className="text-center py-16 text-gray-400">Taller no encontrado</div>
 
   const p = data.profile
@@ -79,7 +79,7 @@ export default function TallerDetailPage() {
       <div className="bg-white rounded-2xl p-6 border border-gray-100 mb-4">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-bold text-white" style={{ background: '#6C5CE7' }}>
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-bold text-white" style={{ background: '#0F766E' }}>
               {(p.workshop_name || p.full_name || '?')[0].toUpperCase()}
             </div>
             <div>
@@ -106,7 +106,7 @@ export default function TallerDetailPage() {
               <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10 min-w-[160px]">
                 {['emprendedor', 'crecimiento', 'negocio'].map(plan => (
                   <button key={plan} onClick={() => { doAction('change-plan', { plan }); setShowPlanDropdown(false) }}
-                    className={`w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 ${p.plan === plan ? 'font-bold text-purple-600' : 'text-gray-700'}`}>
+                    className={`w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 ${p.plan === plan ? 'font-bold text-teal-700' : 'text-gray-700'}`}>
                     {PLAN_LABELS[plan]} {p.plan === plan && '✓'}
                   </button>
                 ))}
@@ -119,7 +119,7 @@ export default function TallerDetailPage() {
       {/* Metrics */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
         {[
-          { icon: Package, label: 'Productos', value: data.productCount, color: '#6C5CE7' },
+          { icon: Package, label: 'Productos', value: data.productCount, color: '#0F766E' },
           { icon: ShoppingBag, label: 'Pedidos', value: data.orderCount, color: '#E17055' },
           { icon: Users, label: 'Clientes', value: data.clientCount, color: '#00B894' },
           { icon: FileText, label: 'Presupuestos', value: data.presupuestoCount, color: '#E84393' },
@@ -160,9 +160,9 @@ export default function TallerDetailPage() {
             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Usuarios del taller</h3>
             <div className="space-y-2">
               <div className="flex items-center gap-2 py-1">
-                <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white" style={{ background: '#6C5CE7' }}>{(p.full_name || '?')[0]}</div>
+                <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white" style={{ background: '#0F766E' }}>{(p.full_name || '?')[0]}</div>
                 <div className="flex-1">
-                  <p className="text-sm text-gray-800">{p.full_name} <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-50 text-purple-600 font-bold ml-1">Dueño</span></p>
+                  <p className="text-sm text-gray-800">{p.full_name} <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-teal-50 text-teal-700 font-bold ml-1">Dueño</span></p>
                   <p className="text-xs text-gray-400">{p.email}</p>
                 </div>
               </div>

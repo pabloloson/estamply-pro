@@ -311,7 +311,7 @@ export default function LandingContent({ defaultLang, showLanguageBanner = false
 
       {/* ── HERO ── */}
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 -z-10" style={{ background: 'radial-gradient(ellipse 80% 50% at 50% -20%, rgba(108,99,255,0.08), transparent), radial-gradient(ellipse 60% 40% at 80% 50%, rgba(45,212,191,0.06), transparent)' }} />
+        <div className="absolute inset-0 -z-10" style={{ background: 'radial-gradient(ellipse 80% 50% at 50% -20%, rgba(15,118,110,0.08), transparent), radial-gradient(ellipse 60% 40% at 80% 50%, rgba(45,212,191,0.06), transparent)' }} />
         <div className="max-w-6xl mx-auto px-4 pt-16 pb-12 lg:pt-20 lg:pb-16">
           <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-16">
             <div className="flex-1 text-center lg:text-left">
@@ -363,8 +363,8 @@ export default function LandingContent({ defaultLang, showLanguageBanner = false
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-10">
             {t.pain.items.map((item, i) => (
               <Section key={i} delay={i * 80}>
-                <div className="group flex items-start gap-4 p-5 bg-white rounded-2xl border border-gray-100 hover:border-l-4 hover:border-l-purple-400 hover:shadow-md transition-all cursor-default">
-                  <span className="text-3xl flex-shrink-0 w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-purple-50 transition">{item.icon}</span>
+                <div className="group flex items-start gap-4 p-5 bg-white rounded-2xl border border-gray-100 hover:border-l-4 hover:border-l-teal-400 hover:shadow-md transition-all cursor-default">
+                  <span className="text-3xl flex-shrink-0 w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-teal-50 transition">{item.icon}</span>
                   <p className="text-gray-600 text-sm leading-relaxed pt-2">{item.text}</p>
                 </div>
               </Section>
@@ -396,7 +396,7 @@ export default function LandingContent({ defaultLang, showLanguageBanner = false
                   <div className={`flex flex-col ${isEven ? 'md:flex-row' : 'md:flex-row-reverse'} items-center gap-8 lg:gap-12`}>
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-3">
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(108,99,255,0.1)' }}>
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(15,118,110,0.1)' }}>
                           <Icon size={20} style={{ color: '#6C63FF' }} />
                         </div>
                         <h3 className="text-xl font-bold tracking-tight">{f.title}</h3>
@@ -417,7 +417,7 @@ export default function LandingContent({ defaultLang, showLanguageBanner = false
       </section>
 
       {/* ── CATALOG HIGHLIGHT ── */}
-      <section className="py-16 lg:py-20" style={{ background: 'linear-gradient(135deg, rgba(108,99,255,0.04), rgba(45,212,191,0.06))' }}>
+      <section className="py-16 lg:py-20" style={{ background: 'linear-gradient(135deg, rgba(15,118,110,0.04), rgba(45,212,191,0.06))' }}>
         <div className="max-w-5xl mx-auto px-4">
           <Section>
             <div className="flex flex-col md:flex-row items-center gap-10">
@@ -461,7 +461,7 @@ export default function LandingContent({ defaultLang, showLanguageBanner = false
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {t.audience.segments.map((s, i) => (
               <Section key={i} delay={i * 120}>
-                <div className={`relative p-6 rounded-2xl bg-white border-2 transition-all hover:shadow-lg h-full flex flex-col ${s.badge ? 'border-purple-300 shadow-md' : 'border-gray-100 hover:border-gray-200'}`}>
+                <div className={`relative p-6 rounded-2xl bg-white border-2 transition-all hover:shadow-lg h-full flex flex-col ${s.badge ? 'border-teal-300 shadow-md' : 'border-gray-100 hover:border-gray-200'}`}>
                   {s.badge && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[10px] font-bold text-white" style={{ background: '#6C63FF' }}>{s.badge}</div>
                   )}
@@ -486,7 +486,7 @@ export default function LandingContent({ defaultLang, showLanguageBanner = false
           <Section delay={150}>
             <div className="flex flex-wrap justify-center gap-3">
               {t.techniques.items.map((tech, i) => (
-                <div key={i} className="flex items-center gap-2 px-5 py-3 bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-purple-200 transition-all cursor-default">
+                <div key={i} className="flex items-center gap-2 px-5 py-3 bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-teal-200 transition-all cursor-default">
                   <span className="text-xl">{TECHNIQUE_ICONS[i]}</span>
                   <span className="font-bold text-gray-700">{tech}</span>
                 </div>
@@ -515,7 +515,7 @@ export default function LandingContent({ defaultLang, showLanguageBanner = false
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-stretch">
             {t.pricing.plans.map((plan, i) => (
               <Section key={i} delay={i * 100}>
-                <div className={`relative p-6 rounded-2xl bg-white border-2 h-full flex flex-col ${plan.popular ? 'border-purple-400 shadow-xl md:scale-105' : 'border-gray-100'}`}>
+                <div className={`relative p-6 rounded-2xl bg-white border-2 h-full flex flex-col ${plan.popular ? 'border-teal-400 shadow-xl md:scale-105' : 'border-gray-100'}`}>
                   {plan.popular && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-[10px] font-bold text-white uppercase tracking-wider" style={{ background: '#6C63FF' }}>
                       {lang === 'es' ? 'Más popular' : 'Mais popular'}
@@ -571,7 +571,7 @@ export default function LandingContent({ defaultLang, showLanguageBanner = false
               {t.social.quote}
             </blockquote>
             <div className="mt-6 flex flex-col items-center gap-2">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-teal-400 flex items-center justify-center text-white font-bold text-lg">P</div>
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-teal-600 to-teal-400 flex items-center justify-center text-white font-bold text-lg">P</div>
               <div>
                 <p className="font-bold text-white">{t.social.author}</p>
                 <p className="text-sm text-gray-400">{t.social.role}</p>
@@ -584,7 +584,7 @@ export default function LandingContent({ defaultLang, showLanguageBanner = false
 
       {/* ── FINAL CTA ── */}
       <section className="py-16 lg:py-20 relative overflow-hidden">
-        <div className="absolute inset-0 -z-10" style={{ background: 'linear-gradient(135deg, rgba(108,99,255,0.06), rgba(45,212,191,0.06))' }} />
+        <div className="absolute inset-0 -z-10" style={{ background: 'linear-gradient(135deg, rgba(15,118,110,0.06), rgba(45,212,191,0.06))' }} />
         <Section>
           <div className="max-w-3xl mx-auto px-4 text-center">
             <h2 className="text-3xl lg:text-4xl font-extrabold tracking-tight">{t.finalCta.title}</h2>

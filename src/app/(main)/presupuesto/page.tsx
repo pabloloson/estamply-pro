@@ -603,7 +603,7 @@ export default function PresupuestoPage() {
               <p className="text-sm text-gray-400 mt-0.5">{savedPresupuestos.length} presupuesto{savedPresupuestos.length !== 1 ? 's' : ''}</p>
             </div>
             <button onClick={() => { clearItems(); setLoadedPresupuestoId(null); setPublicLink(''); setClientId(''); setNewClientName(''); setCreatingNew(true) }}
-              className="flex items-center gap-1.5 whitespace-nowrap text-xs sm:text-sm px-4 py-2 rounded-xl font-semibold text-white" style={{ background: '#6C5CE7' }}>
+              className="flex items-center gap-1.5 whitespace-nowrap text-xs sm:text-sm px-4 py-2 rounded-xl font-semibold text-white" style={{ background: '#0F766E' }}>
               {t('newQuote')}
             </button>
           </div>
@@ -626,7 +626,7 @@ export default function PresupuestoPage() {
                       <p className="text-xs text-gray-400">{p.client_name || clients.find(c => c.id === p.client_id)?.name || tc('noClient')}</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <p className="font-bold text-sm" style={{ color: '#6C5CE7' }}>{fmtCurrency(p.total)}</p>
+                      <p className="font-bold text-sm" style={{ color: '#0F766E' }}>{fmtCurrency(p.total)}</p>
                       <button onClick={async (e) => { e.stopPropagation(); if (confirm(`¿Eliminar presupuesto #${p.codigo}?`)) { await supabase.from('presupuestos').delete().eq('id', p.id); reloadList() } }} className="p-1 rounded hover:bg-red-50"><Trash2 size={13} className="text-gray-300 hover:text-red-500" /></button>
                     </div>
                   </div>
@@ -659,7 +659,7 @@ export default function PresupuestoPage() {
                       <td className="px-4 py-3 font-bold text-gray-800 text-sm">{fmtCurrency(p.total)}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          <a href={`/p/${p.codigo}`} target="_blank" rel="noopener" onClick={e => e.stopPropagation()} className="text-xs text-purple-500 hover:text-purple-700">{t('viewPublic')}</a>
+                          <a href={`/p/${p.codigo}`} target="_blank" rel="noopener" onClick={e => e.stopPropagation()} className="text-xs text-teal-600 hover:text-teal-800">{t('viewPublic')}</a>
                           <button onClick={async (e) => { e.stopPropagation(); if (confirm(`¿Eliminar #${p.codigo}?`)) { await supabase.from('presupuestos').delete().eq('id', p.id); reloadList() } }} className="p-1 rounded hover:bg-red-50"><Trash2 size={13} className="text-gray-300 hover:text-red-500" /></button>
                         </div>
                       </td>
@@ -671,13 +671,13 @@ export default function PresupuestoPage() {
             </div>
           </>) : (
             <div className="card flex flex-col items-center justify-center py-16 gap-4">
-              <div className="w-16 h-16 rounded-full flex items-center justify-center bg-purple-50"><FileText size={28} className="text-purple-300" /></div>
+              <div className="w-16 h-16 rounded-full flex items-center justify-center bg-teal-50"><FileText size={28} className="text-teal-400" /></div>
               <div className="text-center">
                 <p className="text-gray-700 font-semibold">No tenés presupuestos todavía</p>
                 <p className="text-gray-400 text-sm mt-1">Creá tu primer presupuesto para empezar a cotizar para tus clientes</p>
               </div>
               <button onClick={() => { clearItems(); setLoadedPresupuestoId(null); setPublicLink(''); setClientId(''); setNewClientName(''); setCreatingNew(true) }}
-                className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: '#6C5CE7' }}>+ Nuevo presupuesto</button>
+                className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: '#0F766E' }}>+ Nuevo presupuesto</button>
             </div>
           )}
         </>) : (<>
@@ -707,7 +707,7 @@ export default function PresupuestoPage() {
             {/* ── LEFT: Quote Document ── */}
             <div className="flex-1">
               <div className="print-page bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden" id="quote-document">
-                <div className="h-2" style={{ background: 'linear-gradient(90deg, #6C5CE7, #a29bfe)' }} />
+                <div className="h-2" style={{ background: 'linear-gradient(90deg, #0F766E, #a29bfe)' }} />
 
                 {/* Header — responsive: stacked on mobile, side-by-side on desktop */}
                 <div className="px-4 sm:px-8 pt-6 pb-5 border-b border-gray-100">
@@ -718,7 +718,7 @@ export default function PresupuestoPage() {
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={bizProfile.business_logo_url} alt="Logo" className="w-12 h-12 sm:w-16 sm:h-16 object-contain rounded-xl flex-shrink-0" />
                       ) : tallerName ? (
-                        <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(135deg, #6C5CE7, #a29bfe)' }}>
+                        <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(135deg, #0F766E, #a29bfe)' }}>
                           <span className="text-white font-black text-lg sm:text-xl">{tallerName[0].toUpperCase()}</span>
                         </div>
                       ) : null}
@@ -737,7 +737,7 @@ export default function PresupuestoPage() {
                     {/* Quote number */}
                     <div className="text-left sm:text-right flex-shrink-0">
                       <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-0.5">Presupuesto</p>
-                      <p className="text-xl sm:text-2xl font-black" style={{ color: '#6C5CE7' }}>#{quoteNumber}</p>
+                      <p className="text-xl sm:text-2xl font-black" style={{ color: '#0F766E' }}>#{quoteNumber}</p>
                       <p className="text-xs text-gray-500 mt-1">{quoteDate}</p>
                       <div className="mt-0.5">
                         {editingValidez ? (
@@ -794,8 +794,8 @@ export default function PresupuestoPage() {
                       /* ── Selected client card ── */
                       <div className="flex items-center justify-between p-3 rounded-xl bg-white border border-gray-200">
                         <div className="flex items-center gap-2.5 min-w-0">
-                          <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#6C5CE715' }}>
-                            <User size={14} style={{ color: '#6C5CE7' }} />
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#0F766E15' }}>
+                            <User size={14} style={{ color: '#0F766E' }} />
                           </div>
                           <div className="min-w-0">
                             <p className="font-medium text-sm text-gray-900 truncate">{selectedClient?.name}</p>
@@ -819,7 +819,7 @@ export default function PresupuestoPage() {
                               onFocus={() => setClientDropdownOpen(true)} />
                           </div>
                           <button type="button" onClick={() => { setShowNewClientForm(true); setClientDropdownOpen(false); setNewClientName(clientSearch) }}
-                            className="flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap" style={{ background: '#6C5CE715', color: '#6C5CE7' }}>
+                            className="flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap" style={{ background: '#0F766E15', color: '#0F766E' }}>
                             <Plus size={13} /> Nuevo
                           </button>
                         </div>
@@ -839,10 +839,10 @@ export default function PresupuestoPage() {
                                 </div>
                               </button>
                             )) : clientSearch.trim() ? (
-                              <button type="button" className="w-full flex items-center gap-2 px-3 py-3 hover:bg-purple-50 text-left transition-colors"
+                              <button type="button" className="w-full flex items-center gap-2 px-3 py-3 hover:bg-teal-50 text-left transition-colors"
                                 onClick={() => { setShowNewClientForm(true); setClientDropdownOpen(false); setNewClientName(clientSearch) }}>
-                                <Plus size={14} style={{ color: '#6C5CE7' }} />
-                                <span className="text-sm" style={{ color: '#6C5CE7' }}>Crear &ldquo;{clientSearch}&rdquo; como nuevo cliente</span>
+                                <Plus size={14} style={{ color: '#0F766E' }} />
+                                <span className="text-sm" style={{ color: '#0F766E' }}>Crear &ldquo;{clientSearch}&rdquo; como nuevo cliente</span>
                               </button>
                             ) : null}
                           </div>
@@ -870,7 +870,7 @@ export default function PresupuestoPage() {
                               <button type="button" onClick={() => { setShowNewClientForm(false); setNewClientName(''); setNewClientPhone(''); setNewClientEmail('') }}
                                 className="flex-1 py-2 rounded-lg text-xs font-semibold text-gray-500 hover:bg-gray-50 border border-gray-200">Cancelar</button>
                               <button type="button" onClick={createAndAssignClient} disabled={!newClientName.trim() || savingNewClient}
-                                className="flex-1 py-2 rounded-lg text-xs font-bold text-white disabled:opacity-40" style={{ background: '#6C5CE7' }}>
+                                className="flex-1 py-2 rounded-lg text-xs font-bold text-white disabled:opacity-40" style={{ background: '#0F766E' }}>
                                 {savingNewClient ? 'Creando...' : 'Crear y asignar'}
                               </button>
                             </div>
@@ -905,7 +905,7 @@ export default function PresupuestoPage() {
                       </div>
                       <div className="flex gap-2 justify-end">
                         <button onClick={() => setEditingItemId(null)} className="px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-500 border border-gray-200">Cancelar</button>
-                        <button onClick={() => saveEdit(item.id)} className="px-3 py-1.5 rounded-lg text-xs font-bold text-white" style={{ background: '#6C5CE7' }}>Guardar</button>
+                        <button onClick={() => saveEdit(item.id)} className="px-3 py-1.5 rounded-lg text-xs font-bold text-white" style={{ background: '#0F766E' }}>Guardar</button>
                       </div>
                     </div>
                   ) : (
@@ -913,7 +913,7 @@ export default function PresupuestoPage() {
                       <div className="flex items-center justify-between">
                         <span className="font-bold text-sm text-gray-800">{fmtCurrency(item.subtotal)}</span>
                         <div className="flex items-center gap-1 no-print">
-                          <button onClick={() => startEdit(item)} className="w-6 h-6 rounded flex items-center justify-center text-gray-300 hover:text-purple-500"><Pencil size={11} /></button>
+                          <button onClick={() => startEdit(item)} className="w-6 h-6 rounded flex items-center justify-center text-gray-300 hover:text-teal-600"><Pencil size={11} /></button>
                           <button onClick={() => { if (confirm('¿Eliminar este item?')) removeItem(item.id) }} className="w-6 h-6 rounded flex items-center justify-center text-gray-300 hover:text-red-500"><Trash2 size={12} /></button>
                         </div>
                       </div>
@@ -926,10 +926,10 @@ export default function PresupuestoPage() {
                         return hasValues ? (
                           <div className="mt-2 flex items-center gap-2">
                             <p className="text-xs text-gray-400">{Object.entries(item.variantBreakdown || {}).filter(([,v]) => v > 0).map(([k,v]) => `${k} ×${v}`).join(' · ')}</p>
-                            <button onClick={() => openBreakdown(item)} className="text-xs text-purple-500">✏️</button>
+                            <button onClick={() => openBreakdown(item)} className="text-xs text-teal-600">✏️</button>
                           </div>
                         ) : (
-                          <button onClick={() => openBreakdown(item)} className="text-xs text-purple-500 font-medium mt-2">
+                          <button onClick={() => openBreakdown(item)} className="text-xs text-teal-600 font-medium mt-2">
                             📐 Desglosar por {(getItemVariant(item)?.name || '').toLowerCase()}
                           </button>
                         )
@@ -948,7 +948,7 @@ export default function PresupuestoPage() {
                               <div key={opt} className="flex items-center justify-between">
                                 <label className="text-sm font-medium text-gray-600 w-12">{opt}</label>
                                 <input type="number" min={0}
-                                  className="w-20 text-center text-sm border border-gray-200 rounded-md px-2 py-1.5 bg-white focus:border-purple-400 focus:outline-none"
+                                  className="w-20 text-center text-sm border border-gray-200 rounded-md px-2 py-1.5 bg-white focus:border-teal-400 focus:outline-none"
                                   value={(item.variantBreakdown || {})[opt] || 0}
                                   onChange={e => updateItem(item.id, { variantBreakdown: { ...(item.variantBreakdown || {}), [opt]: Number(e.target.value) || 0 } })} />
                               </div>
@@ -1009,10 +1009,10 @@ export default function PresupuestoPage() {
                               return hasValues ? (
                                 <div className="mt-0.5 flex items-center gap-2">
                                   <p className="text-[10px] text-gray-400">{Object.entries(item.variantBreakdown || {}).filter(([,v]) => v > 0).map(([k,v]) => `${k} ×${v}`).join(' · ')}</p>
-                                  <button onClick={() => openBreakdown(item)} className="text-[10px] text-purple-500 no-print">✏️</button>
+                                  <button onClick={() => openBreakdown(item)} className="text-[10px] text-teal-600 no-print">✏️</button>
                                 </div>
                               ) : (
-                                <button onClick={() => openBreakdown(item)} className="text-[10px] text-purple-500 font-medium mt-0.5 no-print">
+                                <button onClick={() => openBreakdown(item)} className="text-[10px] text-teal-600 font-medium mt-0.5 no-print">
                                   📐 Desglosar por {(getItemVariant(item)?.name || '').toLowerCase()}
                                 </button>
                               )
@@ -1023,7 +1023,7 @@ export default function PresupuestoPage() {
                           <td className="py-3 text-right font-bold text-gray-800 align-top">{fmtCurrency(item.subtotal)}</td>
                           <td className="py-3 no-print align-top">
                             <div className="flex gap-0.5">
-                              <button onClick={() => startEdit(item)} className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-300 hover:text-purple-500 hover:bg-purple-50"><Pencil size={12} /></button>
+                              <button onClick={() => startEdit(item)} className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-300 hover:text-teal-600 hover:bg-teal-50"><Pencil size={12} /></button>
                               <button onClick={() => { if (confirm('¿Eliminar este item?')) removeItem(item.id) }} className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50"><Trash2 size={13} /></button>
                             </div>
                           </td>
@@ -1070,19 +1070,19 @@ export default function PresupuestoPage() {
                 {/* Add items buttons — visible on ALL screens */}
                 <div className="px-4 sm:px-8 py-3">
                   <div className="no-print grid grid-cols-3 gap-2">
-                    <Link href="/cotizador" className="flex flex-col items-center justify-center gap-1.5 min-h-[70px] py-3 rounded-xl border border-dashed border-gray-200 hover:border-purple-300 hover:bg-purple-50/30 transition-colors text-center">
+                    <Link href="/cotizador" className="flex flex-col items-center justify-center gap-1.5 min-h-[70px] py-3 rounded-xl border border-dashed border-gray-200 hover:border-teal-300 hover:bg-teal-50/30 transition-colors text-center">
                       <Calculator size={22} className="text-gray-400" />
                       <span className="text-[10px] font-semibold text-gray-500 leading-tight">Desde cotizador</span>
                     </Link>
-                    <button type="button" onClick={() => { setShowAddPanel('catalog'); loadCatalog() }} className="flex flex-col items-center justify-center gap-1.5 min-h-[70px] py-3 rounded-xl border border-dashed border-gray-200 hover:border-purple-300 hover:bg-purple-50/30 transition-colors">
+                    <button type="button" onClick={() => { setShowAddPanel('catalog'); loadCatalog() }} className="flex flex-col items-center justify-center gap-1.5 min-h-[70px] py-3 rounded-xl border border-dashed border-gray-200 hover:border-teal-300 hover:bg-teal-50/30 transition-colors">
                       <ShoppingCart size={22} className="text-gray-400" />
                       <span className="text-[10px] font-semibold text-gray-500 leading-tight">Desde catálogo</span>
                     </button>
-                    <button type="button" onClick={() => setShowAddPanel('free')} className="flex flex-col items-center justify-center gap-1.5 min-h-[70px] py-3 rounded-xl border border-gray-200 hover:border-purple-400 transition-colors" style={{ background: '#6C5CE708' }}>
-                      <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: '#6C5CE715' }}>
-                        <Plus size={16} style={{ color: '#6C5CE7' }} />
+                    <button type="button" onClick={() => setShowAddPanel('free')} className="flex flex-col items-center justify-center gap-1.5 min-h-[70px] py-3 rounded-xl border border-gray-200 hover:border-teal-400 transition-colors" style={{ background: '#0F766E08' }}>
+                      <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: '#0F766E15' }}>
+                        <Plus size={16} style={{ color: '#0F766E' }} />
                       </div>
-                      <span className="text-[10px] font-semibold leading-tight" style={{ color: '#6C5CE7' }}>+ Item libre</span>
+                      <span className="text-[10px] font-semibold leading-tight" style={{ color: '#0F766E' }}>+ Item libre</span>
                     </button>
                   </div>
                   {showAddPanel === 'free' && (
@@ -1094,11 +1094,11 @@ export default function PresupuestoPage() {
                           <input type="number" className="input-base text-sm" min={1} value={freeItem.cantidad} onChange={e => setFreeItem({ ...freeItem, cantidad: Number(e.target.value) || 1 })} /></div>
                         <div className="flex-1"><label className="block text-xs font-medium text-gray-500 mb-1">Precio unitario *</label>
                           <input type="number" className="input-base text-sm" min={0} value={freeItem.precioUnit || ''} onChange={e => setFreeItem({ ...freeItem, precioUnit: Number(e.target.value) })} /></div>
-                        {freeItem.precioUnit > 0 && freeItem.cantidad > 0 && <div className="pt-5 text-right whitespace-nowrap"><span className="text-sm font-bold" style={{ color: '#6C5CE7' }}>{fmtCurrency(freeItem.cantidad * freeItem.precioUnit)}</span></div>}
+                        {freeItem.precioUnit > 0 && freeItem.cantidad > 0 && <div className="pt-5 text-right whitespace-nowrap"><span className="text-sm font-bold" style={{ color: '#0F766E' }}>{fmtCurrency(freeItem.cantidad * freeItem.precioUnit)}</span></div>}
                       </div>
                       <div className="flex gap-2 justify-end">
                         <button onClick={() => { setShowAddPanel(null); setFreeItem({ nombre: '', cantidad: 1, precioUnit: 0 }) }} className="px-3 py-2 rounded-lg text-xs font-semibold text-gray-500 border border-gray-200">Cancelar</button>
-                        <button onClick={addFreeItem} disabled={!freeItem.nombre.trim() || freeItem.precioUnit <= 0} className="px-4 py-2 rounded-lg text-xs font-bold text-white disabled:opacity-40" style={{ background: '#6C5CE7' }}>Agregar</button>
+                        <button onClick={addFreeItem} disabled={!freeItem.nombre.trim() || freeItem.precioUnit <= 0} className="px-4 py-2 rounded-lg text-xs font-bold text-white disabled:opacity-40" style={{ background: '#0F766E' }}>Agregar</button>
                       </div>
                     </div>
                   )}
@@ -1119,15 +1119,15 @@ export default function PresupuestoPage() {
                       </>) : (<>
                         <div className="flex items-center justify-between">
                           <div><p className="font-medium text-sm text-gray-900">{selectedCatalogProduct.name}</p><p className="text-xs text-gray-400">{fmtCurrency(selectedCatalogProduct.selling_price)} c/u</p></div>
-                          <button onClick={() => setSelectedCatalogProduct(null)} className="text-xs text-purple-500">Cambiar</button>
+                          <button onClick={() => setSelectedCatalogProduct(null)} className="text-xs text-teal-600">Cambiar</button>
                         </div>
                         <div className="flex items-center gap-3">
                           <div className="w-20"><label className="block text-xs text-gray-500 mb-1">Cantidad</label><input type="number" className="input-base text-sm" min={1} value={catalogQty} onChange={e => setCatalogQty(Number(e.target.value) || 1)} /></div>
-                          <div className="pt-4"><span className="text-sm font-bold" style={{ color: '#6C5CE7' }}>= {fmtCurrency(catalogQty * selectedCatalogProduct.selling_price)}</span></div>
+                          <div className="pt-4"><span className="text-sm font-bold" style={{ color: '#0F766E' }}>= {fmtCurrency(catalogQty * selectedCatalogProduct.selling_price)}</span></div>
                         </div>
                         <div className="flex gap-2 justify-end">
                           <button onClick={() => { setShowAddPanel(null); setSelectedCatalogProduct(null); setCatalogQty(1) }} className="px-3 py-2 rounded-lg text-xs font-semibold text-gray-500 border border-gray-200">Cancelar</button>
-                          <button onClick={addCatalogItem} className="px-4 py-2 rounded-lg text-xs font-bold text-white" style={{ background: '#6C5CE7' }}>Agregar</button>
+                          <button onClick={addCatalogItem} className="px-4 py-2 rounded-lg text-xs font-bold text-white" style={{ background: '#0F766E' }}>Agregar</button>
                         </div>
                       </>)}
                     </div>
@@ -1139,9 +1139,9 @@ export default function PresupuestoPage() {
                   <div className="flex justify-end">
                     <div className="w-60 space-y-1.5">
                       <div className="flex justify-between text-sm text-gray-500"><span>Subtotal</span><span className="font-medium text-gray-700">{fmtCurrency(totalVenta)}</span></div>
-                      <div className="flex justify-between pt-2" style={{ borderTop: '2px solid #6C5CE7' }}>
+                      <div className="flex justify-between pt-2" style={{ borderTop: '2px solid #0F766E' }}>
                         <span className="font-black text-gray-900">TOTAL</span>
-                        <span className="font-black text-xl" style={{ color: '#6C5CE7' }}>{fmtCurrency(totalVenta)}</span>
+                        <span className="font-black text-xl" style={{ color: '#0F766E' }}>{fmtCurrency(totalVenta)}</span>
                       </div>
                     </div>
                   </div>
@@ -1165,7 +1165,7 @@ export default function PresupuestoPage() {
                           <button onClick={() => setCondiciones(condiciones.filter((_, j) => j !== i))} className="p-1 rounded hover:bg-red-50 text-gray-300 hover:text-red-500 mt-1"><X size={12} /></button>
                         </div>
                       ))}
-                      <button onClick={() => setCondiciones([...condiciones, ''])} className="flex items-center gap-1 text-xs text-purple-500 font-semibold"><Plus size={12} /> Agregar condición</button>
+                      <button onClick={() => setCondiciones([...condiciones, ''])} className="flex items-center gap-1 text-xs text-teal-600 font-semibold"><Plus size={12} /> Agregar condición</button>
                     </div>
                   ) : null}
                   <div className={`text-xs text-gray-500 leading-relaxed print:hidden ${editingCondiciones ? 'hidden' : ''}`}>
@@ -1183,7 +1183,7 @@ export default function PresupuestoPage() {
                     Generado con Estamply
                   </p>
                 </div>
-                <div className="h-1" style={{ background: 'linear-gradient(90deg, #6C5CE7, #a29bfe)' }} />
+                <div className="h-1" style={{ background: 'linear-gradient(90deg, #0F766E, #a29bfe)' }} />
               </div>
             </div>
 
@@ -1240,7 +1240,7 @@ export default function PresupuestoPage() {
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">{t('deliveryDate')}</label>
                   <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)}
-                    className="w-full rounded-[10px] border-2 border-transparent bg-[#F3F4F6] px-3 text-sm outline-none focus:border-[#6C5CE7] focus:shadow-[0_0_0_3px_rgba(108,92,231,0.1)] transition-all"
+                    className="w-full rounded-[10px] border-2 border-transparent bg-[#F3F4F6] px-3 text-sm outline-none focus:border-[#0F766E] focus:shadow-[0_0_0_3px_rgba(15,118,110,0.1)] transition-all"
                     style={{ height: '44px', maxHeight: '44px', WebkitAppearance: 'none', appearance: 'none' }} />
                 </div>
                 <div>
@@ -1248,7 +1248,7 @@ export default function PresupuestoPage() {
                   <div className="flex gap-1 mb-2">
                     {(['percent', 'fixed'] as const).map(m => (
                       <button key={m} type="button" onClick={() => setAdvanceMode(m)}
-                        className={`px-3 py-1 rounded-full text-xs font-semibold ${advanceMode === m ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-500'}`}>
+                        className={`px-3 py-1 rounded-full text-xs font-semibold ${advanceMode === m ? 'bg-teal-50 text-teal-800' : 'bg-gray-100 text-gray-500'}`}>
                         {m === 'percent' ? 'Porcentaje %' : 'Monto fijo $'}
                       </button>
                     ))}
@@ -1273,7 +1273,7 @@ export default function PresupuestoPage() {
                 </div>
                 <button type="button" disabled={submitting || items.length === 0} onClick={handleConfirmarPedido}
                   className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-white text-sm transition-all disabled:opacity-40"
-                  style={{ background: '#6C5CE7', boxShadow: submitting ? 'none' : '0 4px 14px rgba(108,92,231,0.35)' }}>
+                  style={{ background: '#0F766E', boxShadow: submitting ? 'none' : '0 4px 14px rgba(15,118,110,0.35)' }}>
                   {submitting ? <><Loader2 size={15} className="animate-spin" /> {tc('loading')}</> : t('confirmOrder')}
                 </button>
               </div>

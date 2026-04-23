@@ -52,7 +52,7 @@ function DiscountTable({ title, tiers, onChange }: {
     <div className="card overflow-hidden">
       <div className="p-4 border-b border-gray-100 flex items-center justify-between">
         <span className="font-semibold text-gray-800 text-sm">{title}</span>
-        <button onClick={addRow} className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}>
+        <button onClick={addRow} className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#0F766E' }}>
           <Plus size={12} /> Fila
         </button>
       </div>
@@ -173,7 +173,7 @@ export default function BaseDeCostosPage() {
 
   if (loading) return (
     <div className="flex items-center justify-center h-64">
-      <div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" />
+      <div className="w-8 h-8 border-2 border-teal-200 border-t-teal-700 rounded-full animate-spin" />
     </div>
   )
 
@@ -189,7 +189,7 @@ export default function BaseDeCostosPage() {
       {/* Tabs */}
       <div className="flex gap-1 p-1 rounded-xl mb-6 w-fit" style={{ background: '#F3F4F6' }}>
         {TABS.map(t => (
-          <button key={t} onClick={() => setTab(t)} className={`px-5 py-2 text-sm font-semibold rounded-lg transition-all ${tab === t ? 'tab-active text-purple-700' : 'text-gray-500'}`}>
+          <button key={t} onClick={() => setTab(t)} className={`px-5 py-2 text-sm font-semibold rounded-lg transition-all ${tab === t ? 'tab-active text-teal-800' : 'text-gray-500'}`}>
             {t}
           </button>
         ))}
@@ -203,7 +203,7 @@ export default function BaseDeCostosPage() {
               <Package size={18} className="text-gray-400" />
               <span className="font-semibold text-gray-800">Catálogo de Productos</span>
             </div>
-            <button onClick={() => setModalProduct({ time_subli: 0, time_dtf: 0, time_vinyl: 0, base_cost: 0 })} className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}>
+            <button onClick={() => setModalProduct({ time_subli: 0, time_dtf: 0, time_vinyl: 0, base_cost: 0 })} className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#0F766E' }}>
               <Plus size={14} /> Agregar
             </button>
           </div>
@@ -224,7 +224,7 @@ export default function BaseDeCostosPage() {
                     <td className="px-5 py-3 text-gray-500 text-sm">{p.category}</td>
                     <td className="px-5 py-3">
                       <div className="flex gap-1 flex-wrap">
-                        {p.time_subli > 0 && <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: 'rgba(108,92,231,0.1)', color: '#6C5CE7' }}>S: {p.time_subli}m</span>}
+                        {p.time_subli > 0 && <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: 'rgba(15,118,110,0.1)', color: '#0F766E' }}>S: {p.time_subli}m</span>}
                         {p.time_dtf > 0 && <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: 'rgba(225,112,85,0.1)', color: '#E17055' }}>D: {p.time_dtf}m</span>}
                         {p.time_vinyl > 0 && <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: 'rgba(232,67,147,0.1)', color: '#E84393' }}>V: {p.time_vinyl}m</span>}
                         {!p.time_subli && !p.time_dtf && !p.time_vinyl && <span className="text-xs text-gray-300">—</span>}
@@ -253,7 +253,7 @@ export default function BaseDeCostosPage() {
               <Cpu size={18} className="text-gray-400" />
               <span className="font-semibold text-gray-800">Equipos del Taller</span>
             </div>
-            <button onClick={() => setModalEquip({ type: 'press_flat', cost: 0, lifespan_uses: 10000 })} className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}>
+            <button onClick={() => setModalEquip({ type: 'press_flat', cost: 0, lifespan_uses: 10000 })} className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#0F766E' }}>
               <Plus size={14} /> Agregar
             </button>
           </div>
@@ -294,7 +294,7 @@ export default function BaseDeCostosPage() {
         <div className="space-y-4">
           {/* Sub-tabs */}
           <div className="flex rounded-full p-1 gap-1 w-fit" style={{ background: '#F1F1F1' }}>
-            {([['subli', 'Sublimación', '#6C5CE7'], ['dtf', 'DTF Textil', '#E17055'], ['dtf_uv', 'DTF UV', '#00B894'], ['vinyl', 'Vinilo Textil', '#E84393'], ['vinyl_adhesivo', 'V. Autoadhesivo', '#D63384'], ['serigrafia', 'Serigrafía', '#FDCB6E']] as const).map(([id, label, color]) => (
+            {([['subli', 'Sublimación', '#0F766E'], ['dtf', 'DTF Textil', '#E17055'], ['dtf_uv', 'DTF UV', '#00B894'], ['vinyl', 'Vinilo Textil', '#E84393'], ['vinyl_adhesivo', 'V. Autoadhesivo', '#D63384'], ['serigrafia', 'Serigrafía', '#FDCB6E']] as const).map(([id, label, color]) => (
               <button
                 key={id}
                 onClick={() => setInsumoTab(id)}
@@ -314,7 +314,7 @@ export default function BaseDeCostosPage() {
           <div className="card p-5">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full" style={{ background: '#6C5CE7' }} />
+                <div className="w-3 h-3 rounded-full" style={{ background: '#0F766E' }} />
                 <span className="font-semibold text-gray-800">Insumos Sublimación</span>
               </div>
               {/* Formato toggle */}
@@ -325,7 +325,7 @@ export default function BaseDeCostosPage() {
                     onClick={() => setWs({ ...ws, subli_papel_formato: f })}
                     className="px-3 py-1 rounded-full text-xs font-semibold transition-all"
                     style={(ws.subli_papel_formato ?? 'hojas') === f
-                      ? { background: '#fff', color: '#6C5CE7', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }
+                      ? { background: '#fff', color: '#0F766E', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }
                       : { color: '#888' }
                     }
                   >
@@ -516,7 +516,7 @@ export default function BaseDeCostosPage() {
           </button>
           </>)}
 
-          <button onClick={saveSettings} disabled={saving} className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: '#6C5CE7' }}>
+          <button onClick={saveSettings} disabled={saving} className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: '#0F766E' }}>
             <Save size={15} />{saving ? 'Guardando...' : 'Guardar cambios'}
           </button>
         </div>
@@ -531,7 +531,7 @@ export default function BaseDeCostosPage() {
             <DiscountTable title="DTF" tiers={ws.descuentos_dtf} onChange={tiers => setWs({ ...ws, descuentos_dtf: tiers })} />
             <DiscountTable title="Vinilo" tiers={ws.descuentos_vinyl} onChange={tiers => setWs({ ...ws, descuentos_vinyl: tiers })} />
           </div>
-          <button onClick={saveSettings} disabled={saving} className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: '#6C5CE7' }}>
+          <button onClick={saveSettings} disabled={saving} className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: '#0F766E' }}>
             <Save size={15} />{saving ? 'Guardando...' : 'Guardar descuentos'}
           </button>
         </div>
@@ -640,7 +640,7 @@ export default function BaseDeCostosPage() {
               )}
             </div>
           </div>
-          <button onClick={saveSettings} disabled={saving} className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: '#6C5CE7' }}>
+          <button onClick={saveSettings} disabled={saving} className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: '#0F766E' }}>
             <Save size={15} />{saving ? 'Guardando...' : 'Guardar regla'}
           </button>
         </div>
@@ -663,7 +663,7 @@ export default function BaseDeCostosPage() {
               <div>
                 <label className="block text-sm font-semibold text-gray-600 mb-2">Tiempos de producción (min/unidad)</label>
                 <div className="grid grid-cols-3 gap-2">
-                  {[['time_subli', 'Sublimación', '#6C5CE7'], ['time_dtf', 'DTF', '#E17055'], ['time_vinyl', 'Vinilo Textil', '#E84393']].map(([key, label, color]) => (
+                  {[['time_subli', 'Sublimación', '#0F766E'], ['time_dtf', 'DTF', '#E17055'], ['time_vinyl', 'Vinilo Textil', '#E84393']].map(([key, label, color]) => (
                     <div key={key}>
                       <label className="block text-xs font-medium mb-1" style={{ color }}>{label}</label>
                       <input type="number" min={0} step={0.5} value={(modalProduct as Record<string, number>)[key] || 0} onChange={e => setModalProduct({ ...modalProduct, [key]: parseFloat(e.target.value) || 0 })} className="input-base text-center" />
@@ -681,7 +681,7 @@ export default function BaseDeCostosPage() {
             </div>
             <div className="flex gap-3 mt-6">
               <button onClick={() => setModalProduct(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">Cancelar</button>
-              <button onClick={saveProduct} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: '#6C5CE7' }}>{saving ? 'Guardando...' : 'Guardar'}</button>
+              <button onClick={saveProduct} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: '#0F766E' }}>{saving ? 'Guardando...' : 'Guardar'}</button>
             </div>
           </div>
         </div>
@@ -707,7 +707,7 @@ export default function BaseDeCostosPage() {
             </div>
             <div className="flex gap-3 mt-6">
               <button onClick={() => setModalEquip(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">Cancelar</button>
-              <button onClick={saveEquipment} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: '#6C5CE7' }}>{saving ? 'Guardando...' : 'Guardar'}</button>
+              <button onClick={saveEquipment} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: '#0F766E' }}>{saving ? 'Guardando...' : 'Guardar'}</button>
             </div>
           </div>
         </div>

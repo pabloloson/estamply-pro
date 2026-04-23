@@ -58,8 +58,8 @@ export function SheetVisual({ sheetW, sheetH, designW, designH, cols, rows, rota
           return (
             <rect key={i} x={r.x + pad} y={r.y + pad}
               width={Math.max(dW - pad * 2, 0.5)} height={Math.max(dH - pad * 2, 0.5)}
-              fill={isUsed ? 'rgba(108,92,231,0.22)' : 'transparent'}
-              stroke={isUsed ? '#6C5CE7' : '#D0CAE8'}
+              fill={isUsed ? 'rgba(15,118,110,0.22)' : 'transparent'}
+              stroke={isUsed ? '#0F766E' : '#D0CAE8'}
               strokeWidth={isUsed ? sw : sw * 0.5}
               strokeDasharray={isUsed ? 'none' : `${dW * 0.1} ${dW * 0.08}`}
               rx={Math.min(dW, dH) * 0.04} />
@@ -71,7 +71,7 @@ export function SheetVisual({ sheetW, sheetH, designW, designH, cols, rows, rota
 
       <div className="text-center leading-tight">
         <p className="text-sm font-bold text-gray-700">
-          Consumo estimado: <span style={{ color: '#6C5CE7' }}>{sheetsNeeded} {sheetsNeeded === 1 ? 'hoja' : 'hojas'} {sheetW}×{sheetH} cm</span>
+          Consumo estimado: <span style={{ color: '#0F766E' }}>{sheetsNeeded} {sheetsNeeded === 1 ? 'hoja' : 'hojas'} {sheetW}×{sheetH} cm</span>
         </p>
         <p className="text-[10px] text-gray-400 mt-0.5">
           {usedOnFirstSheet} de {perSheet} posiciones usadas

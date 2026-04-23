@@ -27,16 +27,16 @@ export default function DemoBanner() {
   }
 
   return (
-    <div className="bg-purple-50 border-b border-purple-100 px-4 py-2.5 flex items-center justify-center gap-3 text-sm no-print">
-      <span className="text-purple-700">
+    <div className="bg-teal-50 border-b border-teal-100 px-4 py-2.5 flex items-center justify-center gap-3 text-sm no-print">
+      <span className="text-teal-800">
         🎯 Cargamos datos de ejemplo para que explores la plataforma — los valores son de referencia, editálos con tus costos reales.
       </span>
       <button onClick={handleClean} disabled={cleaning}
-        className="text-xs font-semibold text-purple-600 hover:text-purple-800 underline whitespace-nowrap">
+        className="text-xs font-semibold text-teal-700 hover:text-teal-900 underline whitespace-nowrap">
         {cleaning ? 'Limpiando...' : 'Limpiar datos de demo'}
       </button>
-      <button onClick={() => setShow(false)} className="p-0.5 rounded hover:bg-purple-100 flex-shrink-0">
-        <X size={14} className="text-purple-400" />
+      <button onClick={() => setShow(false)} className="p-0.5 rounded hover:bg-teal-50 flex-shrink-0">
+        <X size={14} className="text-teal-500" />
       </button>
     </div>
   )

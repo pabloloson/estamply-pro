@@ -60,7 +60,7 @@ export default function ProductPageClient() {
       const { data: prof } = await supabase.from('profiles').select('business_name,business_phone').eq('id', userId).single()
       setShop({
         nombre: (s.nombre_tienda as string) || (prof?.business_name as string) || 'Mi Taller',
-        color: (s.brand_color as string) || '#6C5CE7',
+        color: (s.brand_color as string) || '#0F766E',
         whatsapp: (prof?.business_phone as string) || '',
         waMensaje: (s.wa_mensaje as string) || '',
       })
@@ -213,7 +213,7 @@ export default function ProductPageClient() {
                 <div className="fixed bottom-20 left-4 right-4 z-50 max-w-lg mx-auto">
                   <div className="bg-gray-800 text-white text-sm font-medium px-4 py-3 rounded-xl shadow-lg flex items-center justify-between">
                     <span>Producto agregado al pedido</span>
-                    <Link href={`/catalogo/${slug}`} className="text-xs font-semibold text-purple-300 hover:text-white ml-3 whitespace-nowrap">Ver pedido →</Link>
+                    <Link href={`/catalogo/${slug}`} className="text-xs font-semibold text-teal-400 hover:text-white ml-3 whitespace-nowrap">Ver pedido →</Link>
                   </div>
                 </div>
               )}

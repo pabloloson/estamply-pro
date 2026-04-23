@@ -136,7 +136,7 @@ function getPhoneCode(countryCode: string): string {
 }
 
 const TECHNIQUES = [
-  { slug: 'subli', label: 'Sublimación', color: '#6C5CE7' },
+  { slug: 'subli', label: 'Sublimación', color: '#0F766E' },
   { slug: 'dtf', label: 'DTF Textil', color: '#E17055' },
   { slug: 'dtf_uv', label: 'DTF UV', color: '#00B894' },
   { slug: 'vinyl', label: 'Vinilo Textil', color: '#E84393' },
@@ -253,7 +253,7 @@ export default function OnboardingWizard() {
     if (!existingTecs || existingTecs.length === 0) {
       // Seed default techniques
       const TECHNIQUE_DEFAULTS: Record<string, { nombre: string; color: string }> = {
-        subli: { nombre: 'Sublimación', color: '#6C5CE7' },
+        subli: { nombre: 'Sublimación', color: '#0F766E' },
         dtf: { nombre: 'DTF Textil', color: '#E17055' },
         dtf_uv: { nombre: 'DTF UV', color: '#00B894' },
         vinyl: { nombre: 'Vinilo Textil', color: '#E84393' },
@@ -328,7 +328,7 @@ export default function OnboardingWizard() {
       <div className="w-full max-w-lg mb-2">
         <p className="text-xs text-gray-400 font-semibold mb-2">{t('stepOf', { current: step, total: totalSteps })}</p>
         <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
-          <div className="h-full rounded-full transition-all duration-500" style={{ width: `${(step / totalSteps) * 100}%`, background: '#6C5CE7' }} />
+          <div className="h-full rounded-full transition-all duration-500" style={{ width: `${(step / totalSteps) * 100}%`, background: '#0F766E' }} />
         </div>
       </div>
 
@@ -346,10 +346,10 @@ export default function OnboardingWizard() {
                 const selected = selectedCountry === code
                 return (
                   <button key={code} type="button" onClick={() => { setSelectedCountry(code); setShowOtherCountries(false) }}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 text-left transition-all ${selected ? 'border-purple-500 bg-purple-50' : 'border-gray-100 hover:border-gray-200'}`}>
+                    className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 text-left transition-all ${selected ? 'border-teal-600 bg-teal-50' : 'border-gray-100 hover:border-gray-200'}`}>
                     <span className="text-2xl">{FLAGS[code]}</span>
-                    <span className={`text-sm font-medium ${selected ? 'text-purple-700' : 'text-gray-700'}`}>{c.name}</span>
-                    {selected && <Check size={16} className="text-purple-600 ml-auto" />}
+                    <span className={`text-sm font-medium ${selected ? 'text-teal-800' : 'text-gray-700'}`}>{c.name}</span>
+                    {selected && <Check size={16} className="text-teal-700 ml-auto" />}
                   </button>
                 )
               })}
@@ -375,7 +375,7 @@ export default function OnboardingWizard() {
 
             <button type="button" disabled={!canProceedStep1} onClick={() => setStep(2)}
               className="w-full mt-6 py-3 rounded-xl font-bold text-white text-sm disabled:opacity-40 flex items-center justify-center gap-2"
-              style={{ background: '#6C5CE7' }}>
+              style={{ background: '#0F766E' }}>
               {t('next')} <ChevronRight size={16} />
             </button>
           </div>
@@ -411,10 +411,10 @@ export default function OnboardingWizard() {
                     const active = selectedTechniques.includes(tec.slug)
                     return (
                       <button key={tec.slug} type="button" onClick={() => toggleTechnique(tec.slug)}
-                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 text-left transition-all ${active ? 'border-purple-500 bg-purple-50' : 'border-gray-100 hover:border-gray-200'}`}>
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 text-left transition-all ${active ? 'border-teal-600 bg-teal-50' : 'border-gray-100 hover:border-gray-200'}`}>
                         <div className="w-3 h-3 rounded-full" style={{ background: tec.color }} />
-                        <span className={`text-sm font-medium ${active ? 'text-purple-700' : 'text-gray-700'}`}>{tec.label}</span>
-                        {active && <Check size={16} className="text-purple-600 ml-auto" />}
+                        <span className={`text-sm font-medium ${active ? 'text-teal-800' : 'text-gray-700'}`}>{tec.label}</span>
+                        {active && <Check size={16} className="text-teal-700 ml-auto" />}
                       </button>
                     )
                   })}
@@ -428,7 +428,7 @@ export default function OnboardingWizard() {
               </button>
               <button type="button" disabled={!canProceedStep2} onClick={() => setStep(3)}
                 className="flex-1 py-3 rounded-xl font-bold text-white text-sm disabled:opacity-40 flex items-center justify-center gap-2"
-                style={{ background: '#6C5CE7' }}>
+                style={{ background: '#0F766E' }}>
                 {t('next')} <ChevronRight size={16} />
               </button>
             </div>
@@ -458,7 +458,7 @@ export default function OnboardingWizard() {
               </button>
               <button type="button" disabled={!canProceedStep3} onClick={() => setStep(4)}
                 className="flex-1 py-3 rounded-xl font-bold text-white text-sm disabled:opacity-40 flex items-center justify-center gap-2"
-                style={{ background: '#6C5CE7' }}>
+                style={{ background: '#0F766E' }}>
                 {t('next')} <ChevronRight size={16} />
               </button>
             </div>
@@ -474,20 +474,20 @@ export default function OnboardingWizard() {
 
             <div className="text-left bg-gray-50 rounded-xl p-5 mb-6 space-y-3">
               <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t('thingsToDo')}</p>
-              <a href="/cotizador" className="flex items-center gap-3 text-sm text-gray-700 hover:text-purple-600">
+              <a href="/cotizador" className="flex items-center gap-3 text-sm text-gray-700 hover:text-teal-700">
                 <span className="text-lg">📋</span> {t('quoteFirst')}
               </a>
-              <a href="/catalogo" className="flex items-center gap-3 text-sm text-gray-700 hover:text-purple-600">
+              <a href="/catalogo" className="flex items-center gap-3 text-sm text-gray-700 hover:text-teal-700">
                 <span className="text-lg">🛒</span> {t('addProducts')}
               </a>
-              <a href="/settings" className="flex items-center gap-3 text-sm text-gray-700 hover:text-purple-600">
+              <a href="/settings" className="flex items-center gap-3 text-sm text-gray-700 hover:text-teal-700">
                 <span className="text-lg">⚙️</span> {t('completeConfig')}
               </a>
             </div>
 
             <button type="button" onClick={finishOnboarding} disabled={saving}
               className="w-full py-3.5 rounded-xl font-bold text-white text-sm disabled:opacity-60 flex items-center justify-center gap-2"
-              style={{ background: '#6C5CE7', boxShadow: '0 4px 14px rgba(108,92,231,0.35)' }}>
+              style={{ background: '#0F766E', boxShadow: '0 4px 14px rgba(15,118,110,0.35)' }}>
               {saving ? 'Configurando tu taller...' : t('goToWorkshop')} {!saving && <ChevronRight size={16} />}
             </button>
           </div>

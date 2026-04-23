@@ -13,13 +13,13 @@ interface EmptyStateProps {
 
 export default function EmptyState({ icon, title, description, actionLabel, actionHref, onAction }: EmptyStateProps) {
   const button = (
-    <button onClick={onAction} className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white sm:w-auto w-full" style={{ background: '#6C5CE7' }}>
+    <button onClick={onAction} className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white sm:w-auto w-full" style={{ background: '#0F766E' }}>
       {actionLabel}
     </button>
   )
 
   const link = actionHref ? (
-    <Link href={actionHref} className="inline-block px-5 py-2.5 rounded-xl text-sm font-semibold text-white sm:w-auto w-full text-center" style={{ background: '#6C5CE7' }}>
+    <Link href={actionHref} className="inline-block px-5 py-2.5 rounded-xl text-sm font-semibold text-white sm:w-auto w-full text-center" style={{ background: '#0F766E' }}>
       {actionLabel}
     </Link>
   ) : null

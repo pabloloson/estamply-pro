@@ -142,7 +142,7 @@ model Tecnica {
   userId       String
   slug         String
   nombre       String
-  color        String?  @default("#6C5CE7")
+  color        String?  @default("#0F766E")
   config       Json     @default("{}")
   equipmentIds String[] @default([])
   insumoIds    String[] @default([])

@@ -67,9 +67,9 @@ export default function ImageUpload({ value, onChange, type = 'products', maxSiz
         </div>
       ) : (
         <button type="button" onClick={() => ref.current?.click()} disabled={uploading}
-          className={`${SIZES[size]} rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center hover:border-purple-300 transition-colors`}>
+          className={`${SIZES[size]} rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center hover:border-teal-300 transition-colors`}>
           {uploading
-            ? <Loader2 size={18} className="text-purple-400 animate-spin" />
+            ? <Loader2 size={18} className="text-teal-500 animate-spin" />
             : <Upload size={18} className="text-gray-300" />}
         </button>
       )}

@@ -161,7 +161,7 @@ export default function AbastecimientoPage() {
     localStorage.removeItem(LS_KEY)
   }
 
-  if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>
+  if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-teal-200 border-t-teal-700 rounded-full animate-spin" /></div>
 
   return (
     <div>
@@ -219,7 +219,7 @@ export default function AbastecimientoPage() {
                         <div key={item.nombre} className={`card p-4 flex items-start gap-3 transition-all ${checked[item.nombre] ? 'bg-green-50/50 opacity-60' : ''}`}>
                           <input type="checkbox" checked={checked[item.nombre] || false}
                             onChange={() => setChecked(prev => ({ ...prev, [item.nombre]: !prev[item.nombre] }))}
-                            className="w-5 h-5 rounded border-gray-300 text-purple-600 mt-0.5 flex-shrink-0 cursor-pointer" />
+                            className="w-5 h-5 rounded border-gray-300 text-teal-700 mt-0.5 flex-shrink-0 cursor-pointer" />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-2">
                               <p className={`font-semibold text-gray-800 ${checked[item.nombre] ? 'line-through text-gray-400' : ''}`}>{item.nombre}</p>
@@ -233,7 +233,7 @@ export default function AbastecimientoPage() {
                             </div>
                             <div className="mt-1 flex flex-wrap gap-1">
                               {uniquePedidos.map(pd => (
-                                <Link key={pd.id} href="/orders" className="text-[10px] text-purple-400 hover:text-purple-600 hover:underline">{pd.label}</Link>
+                                <Link key={pd.id} href="/orders" className="text-[10px] text-teal-500 hover:text-teal-700 hover:underline">{pd.label}</Link>
                               ))}
                             </div>
                           </div>
@@ -250,14 +250,14 @@ export default function AbastecimientoPage() {
           {allItems.length > 0 && !allItems.some(i => i.supplierId) && (
             <div className="p-4 rounded-xl bg-gray-50 border border-gray-100 flex items-start gap-3 mt-4">
               <span className="text-lg">💡</span>
-              <p className="text-xs text-gray-500">Asigná proveedores a tus productos en <Link href="/settings/proveedores" className="text-purple-500 hover:underline font-medium">Configuración → Proveedores</Link> para agrupar tu lista de compras y enviarla por WhatsApp.</p>
+              <p className="text-xs text-gray-500">Asigná proveedores a tus productos en <Link href="/settings/proveedores" className="text-teal-600 hover:underline font-medium">Configuración → Proveedores</Link> para agrupar tu lista de compras y enviarla por WhatsApp.</p>
             </div>
           )}
 
           {allChecked && (
             <div className="p-4 rounded-xl bg-green-50 border border-green-100 text-center space-y-2">
               <p className="text-sm font-semibold text-green-700">Todos los materiales marcados.</p>
-              <button onClick={handleFinalize} className="px-4 py-2 rounded-lg text-xs font-semibold text-white" style={{ background: '#6C5CE7' }}>Finalizar abastecimiento</button>
+              <button onClick={handleFinalize} className="px-4 py-2 rounded-lg text-xs font-semibold text-white" style={{ background: '#0F766E' }}>Finalizar abastecimiento</button>
             </div>
           )}
         </div>

@@ -101,7 +101,7 @@ export default function TalleresPage() {
         <div className="relative flex-1 max-w-xs">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input type="text" value={search} onChange={e => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-purple-300"
+            className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-teal-300"
             placeholder="Buscar taller, email..." />
         </div>
         <button onClick={exportCSV} disabled={talleres.length === 0}
@@ -112,7 +112,7 @@ export default function TalleresPage() {
 
       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
         {loading ? (
-          <div className="flex items-center justify-center py-16"><div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>
+          <div className="flex items-center justify-center py-16"><div className="w-8 h-8 border-2 border-teal-200 border-t-teal-700 rounded-full animate-spin" /></div>
         ) : talleres.length === 0 ? (
           <div className="text-center py-16 text-gray-400">No hay talleres</div>
         ) : (
@@ -130,7 +130,7 @@ export default function TalleresPage() {
                     onClick={() => router.push(`/admin/talleres/${t.id}`)}>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0" style={{ background: '#6C5CE7' }}>
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0" style={{ background: '#0F766E' }}>
                           {(t.workshop_name || t.full_name || '?')[0].toUpperCase()}
                         </div>
                         <div>

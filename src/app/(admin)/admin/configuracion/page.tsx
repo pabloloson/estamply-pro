@@ -46,7 +46,7 @@ export default function ConfiguracionPage() {
             <Settings size={18} className="text-gray-400" />
             <h3 className="font-bold text-gray-900">Planes y precios</h3>
           </div>
-          <button onClick={() => save('plans')} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white" style={{ background: '#6C5CE7' }}>
+          <button onClick={() => save('plans')} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white" style={{ background: '#0F766E' }}>
             {saved === 'plans' ? <><Check size={12} /> Guardado</> : <><Save size={12} /> Guardar</>}
           </button>
         </div>
@@ -59,7 +59,7 @@ export default function ConfiguracionPage() {
                   <h4 className="font-semibold text-gray-800">{plan.name}</h4>
                   <p className="text-xs text-gray-400">{plan.features.join(' · ')}</p>
                 </div>
-                <span className={`text-lg font-black ${plan.price === 0 ? 'text-gray-400' : 'text-purple-600'}`}>
+                <span className={`text-lg font-black ${plan.price === 0 ? 'text-gray-400' : 'text-teal-700'}`}>
                   {plan.price === 0 ? 'Gratis' : `$${plan.price}/mes`}
                 </span>
               </div>
@@ -94,7 +94,7 @@ export default function ConfiguracionPage() {
             <Clock size={18} className="text-gray-400" />
             <h3 className="font-bold text-gray-900">Duración del trial</h3>
           </div>
-          <button onClick={() => save('trial')} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white" style={{ background: '#6C5CE7' }}>
+          <button onClick={() => save('trial')} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white" style={{ background: '#0F766E' }}>
             {saved === 'trial' ? <><Check size={12} /> Guardado</> : <><Save size={12} /> Guardar</>}
           </button>
         </div>
@@ -128,7 +128,7 @@ export default function ConfiguracionPage() {
             <div className="flex gap-2 mt-2">
               <input type="text" className="flex-1 px-2 py-1.5 rounded-lg border border-gray-200 text-sm"
                 placeholder="phc_xxxxxxxxxxxxxxxxxxxx" value={posthogKey} onChange={e => setPosthogKey(e.target.value)} />
-              <button onClick={() => save('posthog')} className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white" style={{ background: '#6C5CE7' }}>
+              <button onClick={() => save('posthog')} className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white" style={{ background: '#0F766E' }}>
                 {saved === 'posthog' ? 'Guardado ✓' : 'Guardar'}
               </button>
             </div>
@@ -158,7 +158,7 @@ export default function ConfiguracionPage() {
               <div className="flex gap-2">
                 <input type="email" className="flex-1 px-2 py-1.5 rounded-lg border border-gray-200 text-sm"
                   placeholder="hello@estamply.app" value={emailFrom} onChange={e => setEmailFrom(e.target.value)} />
-                <button onClick={() => save('email')} className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white" style={{ background: '#6C5CE7' }}>
+                <button onClick={() => save('email')} className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white" style={{ background: '#0F766E' }}>
                   {saved === 'email' ? 'Guardado ✓' : 'Guardar'}
                 </button>
               </div>

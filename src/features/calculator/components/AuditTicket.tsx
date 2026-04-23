@@ -38,7 +38,7 @@ interface AuditTicketProps {
   timeBreakdown?: { prepMin: number; printMin: number; pressMin: number }
 }
 
-const COLORS: Record<string, string> = { subli: '#6C5CE7', dtf: '#E17055', dtf_uv: '#00B894', vinyl: '#E84393', serigrafia: '#FDCB6E' }
+const COLORS: Record<string, string> = { subli: '#0F766E', dtf: '#E17055', dtf_uv: '#00B894', vinyl: '#E84393', serigrafia: '#FDCB6E' }
 
 function fmt(n: number) {
   if (Math.abs(n) > 0 && Math.abs(n) < 1) return `$${n.toFixed(2).replace('.', ',')}`
@@ -92,7 +92,7 @@ function AddCostForm({ onConfirm, onCancel, suggestions = [] }: { onConfirm: (na
           <div className="absolute left-0 right-0 top-full mt-0.5 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-32 overflow-auto">
             {filtered.map(s => (
               <button key={s.name} type="button" onClick={() => pickSuggestion(s)}
-                className="w-full flex justify-between items-center px-3 py-1.5 text-xs hover:bg-purple-50 text-left">
+                className="w-full flex justify-between items-center px-3 py-1.5 text-xs hover:bg-teal-50 text-left">
                 <span className="text-gray-700">{s.name}</span>
                 <span className="text-gray-400">{fmt(s.costPerUse)}/uso</span>
               </button>
@@ -119,7 +119,7 @@ export default function AuditTicket(props: AuditTicketProps) {
     pricingMode = 'margin', onPricingModeChange, timeBreakdown,
   } = props
 
-  const color = COLORS[technique] || '#6C5CE7'
+  const color = COLORS[technique] || '#0F766E'
   const hasDiscount = descPorcentaje > 0
   const discountPct = Math.round(descPorcentaje * 100)
   const montoDescuento = precioSugerido - precioConDesc
@@ -206,14 +206,14 @@ export default function AuditTicket(props: AuditTicketProps) {
                 const displayValue = i in lineOverrides ? lineOverrides[i] : line.value
 
                 return (
-                  <div key={i} className={`flex justify-between items-center py-1.5 px-2 -mx-2 rounded-md cursor-pointer transition-colors ${isEditing ? 'bg-purple-50' : 'hover:bg-gray-50'}`}
+                  <div key={i} className={`flex justify-between items-center py-1.5 px-2 -mx-2 rounded-md cursor-pointer transition-colors ${isEditing ? 'bg-teal-50' : 'hover:bg-gray-50'}`}
                     onClick={() => { if (!isEditing) startEdit(line, i) }}>
                     <span className="text-sm text-gray-500 flex items-center gap-1">
                       {line.label}
                       {modified && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" />}
                     </span>
                     {isEditing ? (
-                      <input type="number" className="no-spinner w-20 text-right text-sm font-medium text-gray-800 bg-white border-b-2 border-purple-400 outline-none"
+                      <input type="number" className="no-spinner w-20 text-right text-sm font-medium text-gray-800 bg-white border-b-2 border-teal-400 outline-none"
                         autoFocus value={tempVal} onChange={e => setTempVal(e.target.value)}
                         onClick={e => e.stopPropagation()}
                         onBlur={() => commitEdit(line, i)}
@@ -231,14 +231,14 @@ export default function AuditTicket(props: AuditTicketProps) {
                 const perUnit = ec.modo === 'total' ? ec.amount / Math.max(quantity, 1) : ec.amount
                 const displayLabel = ec.modo === 'total' ? `${ec.name} (total ${fmt(ec.amount)})` : ec.name
                 return (
-                  <div key={`x-${i}`} className={`flex justify-between items-center py-1.5 px-2 -mx-2 rounded-md cursor-pointer transition-colors ${isEditingThis ? 'bg-purple-50' : 'hover:bg-gray-50'}`}
+                  <div key={`x-${i}`} className={`flex justify-between items-center py-1.5 px-2 -mx-2 rounded-md cursor-pointer transition-colors ${isEditingThis ? 'bg-teal-50' : 'hover:bg-gray-50'}`}
                     onClick={() => { if (!isEditingThis && onExtraCostsChange) { setTempVal(String(ec.amount)); setEditingExtra(i) } }}>
                     {isEditingThis ? (
                       <>
-                        <input type="text" className="text-sm text-gray-500 bg-transparent border-b border-purple-300 outline-none flex-1 mr-2" value={ec.name}
+                        <input type="text" className="text-sm text-gray-500 bg-transparent border-b border-teal-300 outline-none flex-1 mr-2" value={ec.name}
                           onClick={e => e.stopPropagation()}
                           onChange={e => { const u = [...extraCosts]; u[i] = { ...u[i], name: e.target.value }; onExtraCostsChange?.(u) }} />
-                        <input type="text" inputMode="decimal" className="no-spinner w-20 text-right text-sm font-medium text-gray-800 bg-white border-b-2 border-purple-400 outline-none"
+                        <input type="text" inputMode="decimal" className="no-spinner w-20 text-right text-sm font-medium text-gray-800 bg-white border-b-2 border-teal-400 outline-none"
                           autoFocus value={tempVal} onClick={e => e.stopPropagation()}
                           onChange={e => setTempVal(e.target.value)}
                           onBlur={() => { const u = [...extraCosts]; u[i] = { ...u[i], amount: parseFloat(tempVal) || 0 }; onExtraCostsChange?.(u); setEditingExtra(null) }}
@@ -272,7 +272,7 @@ export default function AuditTicket(props: AuditTicketProps) {
                   onConfirm={(name, amount, modo) => { onExtraCostsChange([...extraCosts, { name, amount, modo }]); setAddingCost(false) }}
                   onCancel={() => setAddingCost(false)} />
               ) : (
-                <button onClick={() => setAddingCost(true)} className="mt-2 flex items-center gap-1 text-[10px] font-medium text-gray-400 hover:text-purple-600 transition-colors">
+                <button onClick={() => setAddingCost(true)} className="mt-2 flex items-center gap-1 text-[10px] font-medium text-gray-400 hover:text-teal-700 transition-colors">
                   <Plus size={10} /> Agregar costo
                 </button>
               )
@@ -283,7 +283,7 @@ export default function AuditTicket(props: AuditTicketProps) {
               <span className="text-sm font-bold text-gray-800">{fmt(costoTotal + extraPerUnit)}</span>
             </div>
             {(hasOverrides || extraCosts.length > 0 || anyLineOverrides) && onResetOverrides && (
-              <button onClick={() => { onResetOverrides(); setLineOverrides({}) }} className="mt-1 text-[10px] text-purple-600 hover:text-purple-700 font-medium">↺ Restaurar predeterminados</button>
+              <button onClick={() => { onResetOverrides(); setLineOverrides({}) }} className="mt-1 text-[10px] text-teal-700 hover:text-teal-800 font-medium">↺ Restaurar predeterminados</button>
             )}
           </div>}
 
@@ -295,16 +295,16 @@ export default function AuditTicket(props: AuditTicketProps) {
                 <div className="inline-flex rounded-md border border-gray-200 overflow-hidden">
                   {[['margin', 'Margen'], ['markup', 'Markup']].map(([v, l]) => (
                     <button key={v} type="button" onClick={() => onPricingModeChange(v as 'margin' | 'markup')}
-                      className={`px-2 py-0.5 text-[10px] font-semibold ${pricingMode === v ? 'bg-purple-600 text-white' : 'text-gray-400 hover:bg-gray-50'}`}>{l}</button>
+                      className={`px-2 py-0.5 text-[10px] font-semibold ${pricingMode === v ? 'bg-teal-700 text-white' : 'text-gray-400 hover:bg-gray-50'}`}>{l}</button>
                   ))}
                 </div>
               )}
             </div>
-            <div className={`flex justify-between items-center py-1.5 px-2 -mx-2 rounded-md cursor-pointer transition-colors ${editingMargin ? 'bg-purple-50' : 'hover:bg-gray-50'}`}
+            <div className={`flex justify-between items-center py-1.5 px-2 -mx-2 rounded-md cursor-pointer transition-colors ${editingMargin ? 'bg-teal-50' : 'hover:bg-gray-50'}`}
               onClick={() => { if (!editingMargin) { setTempVal(String(margin)); setEditingMargin(true) } }}>
               <span className="text-sm text-gray-500">{pricingMode === 'markup' ? 'Markup' : 'Margen de ganancia'} (+{editingMargin ? '' : margin}%{editingMargin ? '' : ')'}
                 {editingMargin && (
-                  <input type="number" className="no-spinner w-10 text-center text-sm font-medium bg-white border-b-2 border-purple-400 outline-none mx-0.5"
+                  <input type="number" className="no-spinner w-10 text-center text-sm font-medium bg-white border-b-2 border-teal-400 outline-none mx-0.5"
                     autoFocus value={tempVal} onChange={e => setTempVal(e.target.value)}
                     onClick={e => e.stopPropagation()}
                     onBlur={() => { onMarginChange?.(Number(tempVal)); setEditingMargin(false) }}

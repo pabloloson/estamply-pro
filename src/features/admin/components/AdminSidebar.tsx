@@ -44,7 +44,7 @@ export default function AdminSidebar({ email }: { email: string }) {
         </nav>
         <div className="mt-auto px-3 py-3 border-t border-white/10">
           <p className="text-[10px] text-gray-500 truncate">{email}</p>
-          <Link href="/dashboard" className="text-[10px] text-purple-400 hover:text-purple-300 mt-1 block">← Volver al taller</Link>
+          <Link href="/dashboard" className="text-[10px] text-teal-500 hover:text-teal-400 mt-1 block">← Volver al taller</Link>
         </div>
       </aside>
 
@@ -86,7 +86,7 @@ export default function AdminSidebar({ email }: { email: string }) {
             </nav>
             <div className="mt-auto px-3 py-3 border-t border-white/10">
               <p className="text-[10px] text-gray-500 truncate">{email}</p>
-              <Link href="/dashboard" className="text-[10px] text-purple-400 hover:text-purple-300 mt-1 block">← Volver al taller</Link>
+              <Link href="/dashboard" className="text-[10px] text-teal-500 hover:text-teal-400 mt-1 block">← Volver al taller</Link>
             </div>
           </aside>
         </div>

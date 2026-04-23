@@ -13,7 +13,7 @@ function DiscountTable({ title, tiers, onChange }: { title: string; tiers: Disco
     <div className="card overflow-hidden">
       <div className="p-4 border-b border-gray-100 flex items-center justify-between">
         <span className="font-semibold text-gray-800 text-sm">{title}</span>
-        <button onClick={() => onChange([...tiers, { desde: 0, hasta: 9999, porcentaje: 0 }])} className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}><Plus size={12} /> Fila</button>
+        <button onClick={() => onChange([...tiers, { desde: 0, hasta: 9999, porcentaje: 0 }])} className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#0F766E' }}><Plus size={12} /> Fila</button>
       </div>
       <table className="w-full"><thead><tr className="border-b border-gray-100">
         {['Desde (u)', 'Hasta (u)', 'Descuento (%)', ''].map(h => <th key={h} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-2">{h}</th>)}
@@ -55,7 +55,7 @@ export default function EstrategiaPreciosPage() {
     setSaving(false); alert('Guardado ✓')
   }
 
-  if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>
+  if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-teal-200 border-t-teal-700 rounded-full animate-spin" /></div>
 
   const globalEnabled = ws.descuento_global_enabled ?? false
 
@@ -79,7 +79,7 @@ export default function EstrategiaPreciosPage() {
         <div className="card p-5">
           <div className="flex items-center gap-3 mb-4">
             <button type="button" onClick={() => setWs({ ...ws, descuento_global_enabled: !globalEnabled })}
-              className="relative w-11 h-6 rounded-full transition-colors" style={{ background: globalEnabled ? '#6C5CE7' : '#D1D5DB' }}>
+              className="relative w-11 h-6 rounded-full transition-colors" style={{ background: globalEnabled ? '#0F766E' : '#D1D5DB' }}>
               <span className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform" style={{ transform: globalEnabled ? 'translateX(20px)' : 'translateX(0)' }} />
             </button>
             <span className="text-sm font-semibold text-gray-700">Aplicar misma tabla de descuentos a todas las técnicas</span>
@@ -102,7 +102,7 @@ export default function EstrategiaPreciosPage() {
           )}
         </div>
 
-        <button onClick={save} disabled={saving} className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: '#6C5CE7' }}>
+        <button onClick={save} disabled={saving} className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: '#0F766E' }}>
           <Save size={15} />{saving ? 'Guardando...' : 'Guardar estrategia'}
         </button>
       </div>

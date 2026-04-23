@@ -59,7 +59,7 @@ export default function ComunicacionPage() {
           <div className="flex gap-1.5 flex-wrap">
             {SEGMENTS.map(s => (
               <button key={s.id} onClick={() => setSegment(s.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${segment === s.id ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${segment === s.id ? 'bg-teal-700 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
                 {s.label}
               </button>
             ))}
@@ -72,14 +72,14 @@ export default function ComunicacionPage() {
         {/* Subject */}
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-1">Asunto</label>
-          <input type="text" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-purple-300"
+          <input type="text" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-teal-300"
             placeholder="Novedades de Estamply..." value={subject} onChange={e => setSubject(e.target.value)} />
         </div>
 
         {/* Body */}
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-1">Mensaje</label>
-          <textarea className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-purple-300 resize-none"
+          <textarea className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-teal-300 resize-none"
             rows={8} placeholder="Escribí el contenido del email..." value={body} onChange={e => setBody(e.target.value)} />
         </div>
 
@@ -91,7 +91,7 @@ export default function ComunicacionPage() {
           </button>
           <button onClick={handleSendAll} disabled={!subject || !body || recipientCount === 0 || sending}
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-40"
-            style={{ background: '#6C5CE7' }}>
+            style={{ background: '#0F766E' }}>
             <Send size={14} /> {sending ? 'Enviando...' : sent ? 'Enviado ✓' : `Enviar a ${recipientCount} talleres`}
           </button>
         </div>

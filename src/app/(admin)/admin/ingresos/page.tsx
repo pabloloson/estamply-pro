@@ -77,7 +77,7 @@ export default function IngresosPage() {
 
         <div className="bg-white rounded-2xl p-5 border border-gray-100">
           <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-purple-50"><Users size={16} className="text-purple-600" /></div>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-teal-50"><Users size={16} className="text-teal-700" /></div>
             <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">LTV</span>
           </div>
           <p className="text-3xl font-black text-gray-900">${ltv} USD</p>
@@ -94,7 +94,7 @@ export default function IngresosPage() {
               <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#9CA3AF' }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 12, fill: '#9CA3AF' }} axisLine={false} tickLine={false} tickFormatter={v => `$${v}`} />
               <Tooltip formatter={(v) => [`$${v} USD`, 'MRR']} />
-              <Line type="monotone" dataKey="mrr" stroke="#6C5CE7" strokeWidth={2.5} dot={{ r: 4, fill: '#6C5CE7' }} />
+              <Line type="monotone" dataKey="mrr" stroke="#0F766E" strokeWidth={2.5} dot={{ r: 4, fill: '#0F766E' }} />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -121,7 +121,7 @@ export default function IngresosPage() {
             </tbody>
             <tfoot><tr className="border-t-2 border-gray-200">
               <td colSpan={3} className="px-3 py-2.5 text-sm font-bold text-gray-800">Total MRR</td>
-              <td className="px-3 py-2.5 text-sm font-black text-purple-600">${mrr}/mes</td>
+              <td className="px-3 py-2.5 text-sm font-black text-teal-700">${mrr}/mes</td>
             </tr></tfoot>
           </table>
         </div>

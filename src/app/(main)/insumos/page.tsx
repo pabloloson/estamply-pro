@@ -12,12 +12,12 @@ const TIPO_LABELS: Record<InsumoTipo, string> = {
   tinta_serigrafica: 'Tinta serigráfica', servicio_impresion: 'Servicio tercerizado', emulsion: 'Emulsión', otro: 'Otro',
 }
 const TIPO_COLORS: Record<InsumoTipo, string> = {
-  papel: '#6C5CE7', tinta: '#00B894', film: '#E17055', polvo: '#FDCB6E', vinilo: '#E84393',
+  papel: '#0F766E', tinta: '#00B894', film: '#E17055', polvo: '#FDCB6E', vinilo: '#E84393',
   tinta_serigrafica: '#e67e22', servicio_impresion: '#3498db', emulsion: '#9b59b6', otro: '#636e72',
 }
 const TECNICA_FILTER_TABS = [
   { id: '', label: 'Todos' },
-  { id: 'subli', label: 'Sublimación', color: '#6C5CE7' },
+  { id: 'subli', label: 'Sublimación', color: '#0F766E' },
   { id: 'dtf', label: 'DTF Textil', color: '#E17055' },
   { id: 'dtf_uv', label: 'DTF UV', color: '#00B894' },
   { id: 'vinyl', label: 'Vinilo Textil', color: '#E84393' },
@@ -130,14 +130,14 @@ export default function InsumosPage() {
     ? insumos.filter(i => i.tecnica_asociada === filterTecnica || i.tecnica_asociada === 'compartido')
     : insumos
 
-  if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>
+  if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-teal-200 border-t-teal-700 rounded-full animate-spin" /></div>
 
   return (
     <div>
       <div className="flex items-start justify-between mb-6">
         <div><h1 className="text-2xl font-bold text-gray-900">Insumos</h1>
           <p className="text-gray-500 text-sm mt-1">Materiales consumibles del taller</p></div>
-        <button onClick={() => openNew()} className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#6C5CE7' }}>
+        <button onClick={() => openNew()} className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#0F766E' }}>
           <Plus size={14} /> Agregar insumo
         </button>
       </div>
@@ -219,7 +219,7 @@ export default function InsumosPage() {
                   <div className="flex gap-2">
                     {(['hojas', 'rollo'] as const).map(f => (
                       <button key={f} type="button" onClick={() => up({ formato: f })}
-                        className={`px-3 py-1 rounded-full text-xs font-semibold ${c.formato === f ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-500'}`}>{f === 'hojas' ? 'Hojas' : 'Rollo'}</button>))}
+                        className={`px-3 py-1 rounded-full text-xs font-semibold ${c.formato === f ? 'bg-teal-50 text-teal-800' : 'bg-gray-100 text-gray-500'}`}>{f === 'hojas' ? 'Hojas' : 'Rollo'}</button>))}
                   </div>
                   {c.formato === 'hojas' ? (
                     <div className="grid grid-cols-2 gap-3">
@@ -284,7 +284,7 @@ export default function InsumosPage() {
                           <button onClick={() => up({ colores: colores.filter((_: string, j: number) => j !== ci) })} className="text-gray-300 hover:text-red-400"><X size={10} /></button>
                         </div>
                       ))}
-                      <button onClick={() => up({ colores: [...colores, ''] })} className="text-xs px-2 py-0.5 rounded bg-purple-50 text-purple-600 font-semibold"><Plus size={10} /></button>
+                      <button onClick={() => up({ colores: [...colores, ''] })} className="text-xs px-2 py-0.5 rounded bg-teal-50 text-teal-700 font-semibold"><Plus size={10} /></button>
                     </div>
                   </div>
                 </>)
@@ -338,7 +338,7 @@ export default function InsumosPage() {
             </div>
             <div className="flex gap-3 mt-6">
               <button onClick={() => setModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">Cancelar</button>
-              <button onClick={saveInsumo} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: '#6C5CE7' }}>{saving ? 'Guardando...' : 'Guardar'}</button>
+              <button onClick={saveInsumo} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: '#0F766E' }}>{saving ? 'Guardando...' : 'Guardar'}</button>
             </div>
           </div>
         </div>
