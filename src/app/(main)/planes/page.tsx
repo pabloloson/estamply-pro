@@ -102,6 +102,9 @@ export default function PlanesPage() {
 
   async function openCheckout(plan: typeof PLANS[0]) {
     setCheckoutPlan(plan)
+    setModalVisible(false)
+    // Trigger animation on next frame
+    requestAnimationFrame(() => requestAnimationFrame(() => setModalVisible(true)))
     setCheckoutLoading(true)
     setCheckoutError(null)
     setClientSecret(null)
@@ -129,15 +132,20 @@ export default function PlanesPage() {
   }
 
   function closeCheckout() {
-    setCheckoutPlan(null)
-    setClientSecret(null)
-    setCheckoutError(null)
+    setModalVisible(false)
+    setTimeout(() => {
+      setCheckoutPlan(null)
+      setClientSecret(null)
+      setCheckoutError(null)
+    }, 300)
   }
 
+  // Track modal open for animation
+  const [modalVisible, setModalVisible] = useState(false)
+
   const handleSuccess = useCallback(() => {
-    setCheckoutPlan(null)
-    setClientSecret(null)
-    setSuccessBanner(true)
+    // Don't close modal — StripeCheckoutForm shows success state internally
+    // After 5s auto-close or user clicks "Ir al inicio"
     fetch('/api/me')
       .then(r => r.json())
       .then(data => {
@@ -290,59 +298,119 @@ export default function PlanesPage() {
         {t('footer')}
       </p>
 
-      {/* ── Checkout Modal ── */}
-      {checkoutPlan && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Backdrop */}
-          <div className="absolute inset-0 bg-black/40" onClick={closeCheckout} />
+      {/* ── Checkout Modal / Drawer ── */}
+      {checkoutPlan && (() => {
+        const modalPrice = `$${billing === 'mensual' ? checkoutPlan.monthly : checkoutPlan.yearly} USD/${billing === 'mensual' ? t('mo') : t('yr')}`
+        const billingLabel = billing === 'mensual' ? 'Suscripción mensual' : 'Suscripción anual'
 
-          {/* Modal */}
-          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
-            <button
+        return (
+          <div className="fixed inset-0 z-50">
+            {/* Backdrop */}
+            <div
+              className="absolute inset-0 bg-black/50 transition-opacity duration-200"
+              style={{ opacity: modalVisible ? 1 : 0 }}
               onClick={closeCheckout}
-              className="absolute top-4 right-4 p-1 rounded-lg hover:bg-gray-100"
+            />
+
+            {/* Desktop: centered modal / Mobile: bottom drawer */}
+            <div
+              className={
+                // Mobile: drawer from bottom
+                'absolute inset-x-0 bottom-0 lg:relative lg:inset-auto ' +
+                'lg:flex lg:items-center lg:justify-center lg:min-h-full lg:p-4'
+              }
             >
-              <X size={18} className="text-gray-400" />
-            </button>
+              <div
+                className={
+                  'relative bg-white w-full ' +
+                  // Mobile: drawer style
+                  'rounded-t-2xl max-h-[95vh] overflow-y-auto ' +
+                  // Desktop: modal style
+                  'lg:rounded-2xl lg:max-w-[480px] lg:max-h-[90vh] lg:shadow-2xl ' +
+                  // Mobile animation: slide up
+                  'transition-transform duration-300 ease-out ' +
+                  (modalVisible ? 'translate-y-0' : 'translate-y-full') + ' ' +
+                  // Desktop animation: fade in (override transform)
+                  'lg:translate-y-0 lg:transition-opacity lg:duration-200 ' +
+                  (modalVisible ? 'lg:opacity-100' : 'lg:opacity-0')
+                }
+              >
+                {/* Drag indicator (mobile only) */}
+                <div className="flex justify-center pt-3 pb-1 lg:hidden">
+                  <div className="w-10 h-1 rounded-full bg-gray-200" />
+                </div>
 
-            <h2 className="text-lg font-bold text-gray-900 mb-1">
-              {t('subscribeTo')} {PLAN_LABELS[checkoutPlan.key]}
-            </h2>
-            <p className="text-sm text-gray-500 mb-5">
-              {t('completePayment')}
-            </p>
-
-            {checkoutLoading && !clientSecret && (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 size={24} className="animate-spin text-teal-600" />
-              </div>
-            )}
-
-            {checkoutError && (
-              <div className="p-4 rounded-xl bg-red-50 border border-red-100">
-                <p className="text-sm text-red-700">{checkoutError}</p>
+                {/* Close button */}
                 <button
-                  onClick={() => openCheckout(checkoutPlan)}
-                  className="mt-2 text-sm font-semibold text-red-600 hover:underline"
+                  onClick={closeCheckout}
+                  className="absolute top-4 right-4 z-10 p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
                 >
-                  Reintentar
+                  <X size={18} className="text-gray-400" />
                 </button>
-              </div>
-            )}
 
-            {clientSecret && (
-              <StripeProvider clientSecret={clientSecret}>
-                <StripeCheckoutForm
-                  planName={PLAN_LABELS[checkoutPlan.key]}
-                  price={`$${billing === 'mensual' ? checkoutPlan.monthly : checkoutPlan.yearly} USD/${billing === 'mensual' ? t('mo') : t('yr')}`}
-                  onSuccess={handleSuccess}
-                  onCancel={closeCheckout}
-                />
-              </StripeProvider>
-            )}
+                {/* Content */}
+                <div className="p-5 lg:p-6">
+                  {/* Loading skeleton */}
+                  {checkoutLoading && !clientSecret && !checkoutError && (
+                    <div className="space-y-4">
+                      {/* Plan summary skeleton */}
+                      <div className="flex items-center justify-between p-4 rounded-xl bg-gray-50 border border-gray-100">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-6 h-6 rounded-md" style={{ background: '#0F766E' }} />
+                          <div>
+                            <p className="text-sm font-semibold text-gray-900">{PLAN_LABELS[checkoutPlan.key]}</p>
+                            <p className="text-xs text-gray-400">{billingLabel}</p>
+                          </div>
+                        </div>
+                        <p className="text-xl font-bold text-gray-900">{modalPrice}</p>
+                      </div>
+                      {/* Payment form skeleton */}
+                      <div className="space-y-3 animate-pulse">
+                        <div className="h-11 bg-gray-100 rounded-lg" />
+                        <div className="h-11 bg-gray-100 rounded-lg" />
+                        <div className="flex gap-3">
+                          <div className="h-11 bg-gray-100 rounded-lg flex-1" />
+                          <div className="h-11 bg-gray-100 rounded-lg flex-1" />
+                        </div>
+                        <div className="h-11 bg-gray-100 rounded-lg" />
+                      </div>
+                      {/* Button skeleton */}
+                      <div className="h-12 rounded-xl opacity-40" style={{ background: '#0F766E' }} />
+                    </div>
+                  )}
+
+                  {/* Error state */}
+                  {checkoutError && (
+                    <div className="py-6">
+                      <div className="p-4 rounded-xl bg-red-50 border border-red-100">
+                        <p className="text-sm text-red-700 mb-2">{checkoutError}</p>
+                        <button
+                          onClick={() => openCheckout(checkoutPlan)}
+                          className="text-sm font-semibold text-red-600 hover:underline"
+                        >
+                          Reintentar
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Payment form */}
+                  {clientSecret && (
+                    <StripeProvider clientSecret={clientSecret}>
+                      <StripeCheckoutForm
+                        planName={PLAN_LABELS[checkoutPlan.key]}
+                        price={modalPrice}
+                        billingLabel={billingLabel}
+                        onSuccess={handleSuccess}
+                      />
+                    </StripeProvider>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
-      )}
+        )
+      })()}
     </div>
   )
 }
