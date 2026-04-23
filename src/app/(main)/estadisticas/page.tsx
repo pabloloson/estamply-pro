@@ -412,8 +412,8 @@ export default function EstadisticasPage() {
   return (
     <div className="max-w-5xl mx-auto" id="stats-content">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
+      <div className="flex items-start justify-between gap-3 mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 tracking-tight">{t('title')}</h1>
         <div className="flex items-center gap-2 flex-wrap">
           {/* Period dropdown */}
           <div className="relative">

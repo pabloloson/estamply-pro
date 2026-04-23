@@ -602,7 +602,7 @@ export default function PresupuestoPage() {
 
         {/* ══ LIST VIEW: when no presupuesto is loaded ══ */}
         {items.length === 0 && !loadedPresupuestoId && !creatingNew ? (<>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 no-print">
+          <div className="flex items-start justify-between gap-3 mb-6 no-print">
             <div>
               <h1 className="text-2xl font-bold text-gray-900 tracking-tight">{t('title')}</h1>
               <p className="text-sm text-gray-400 mt-0.5">{savedPresupuestos.length} presupuesto{savedPresupuestos.length !== 1 ? 's' : ''}</p>

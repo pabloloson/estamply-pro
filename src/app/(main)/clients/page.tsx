@@ -148,10 +148,10 @@ export default function ClientsPage() {
 
   return (
     <div>
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-        <div><h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
-          <p className="text-gray-500 text-sm mt-1">{t('totalClients', { count: clients.length })}</p></div>
-        <div className="flex gap-2">
+      <div className="flex items-start justify-between gap-3 mb-6">
+        <div><h1 className="text-2xl font-bold text-gray-900 tracking-tight">{t('title')}</h1>
+          <p className="text-gray-400 text-sm mt-0.5">{t('totalClients', { count: clients.length })}</p></div>
+        <div className="flex gap-2 flex-shrink-0">
           <button onClick={handleExportar} className="hidden lg:flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#E5E5E3] text-sm font-medium text-gray-600 hover:bg-[#F8F7F4] transition-colors">
             <Download size={14} /> Exportar
           </button>
