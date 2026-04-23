@@ -4,8 +4,8 @@
 export const dynamic = 'force-dynamic'
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/db/client'
-import { Plus, Pencil, Trash2, X, Eye, EyeOff, AlertTriangle, Upload, Image as ImageIcon, FolderOpen, Star } from 'lucide-react'
-import EmptyState from '@/shared/components/EmptyState'
+import { Plus, Pencil, Trash2, X, Eye, EyeOff, AlertTriangle, Upload, Image as ImageIcon, FolderOpen, Star, Package } from 'lucide-react'
+
 import type { Category } from '@/features/taller/types'
 import CategoryModal from '@/features/taller/components/CategoryModal'
 import NumericInput from '@/shared/components/NumericInput'
@@ -194,11 +194,11 @@ export default function CatalogoPage() {
           <p className="text-gray-500 text-sm mt-1 hidden md:block">{t('subtitle')}</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => setShowCats(true)} className="flex items-center gap-1.5 whitespace-nowrap text-xs sm:text-sm px-3 py-1.5 rounded-lg font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50">
+          <button onClick={() => setShowCats(true)} className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#E5E5E3] text-sm font-medium text-gray-600 hover:bg-[#F8F7F4] transition-colors">
             <FolderOpen size={14} /> <span className="hidden sm:inline">{t('categories')}</span>
           </button>
           <button onClick={() => setCatModal({ cost_mode: 'manual', unit_cost: 0, selling_price: 0, manage_stock: false, current_stock: 0, min_stock: 0, visible_in_catalog: true, photos: [] })}
-            className="flex items-center gap-1.5 whitespace-nowrap text-xs sm:text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#0F766E' }}><Plus size={14} /> <span className="hidden sm:inline">{t('addProduct')}</span></button>
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0F766E] text-white text-sm font-semibold hover:bg-[#0D9488] transition-colors"><Plus size={16} /> <span className="hidden sm:inline">{t('addProduct')}</span></button>
         </div>
       </div>
 
@@ -364,7 +364,18 @@ export default function CatalogoPage() {
             </div>
           )
         })}
-        {filtered.length === 0 && (catalogProducts.length === 0 ? <EmptyState icon="👕" title="Cargá los productos de tu tienda." description="Productos terminados con diseño y precio de venta para tu catálogo web." actionLabel="+ Agregar producto" onAction={() => setCatModal({})} /> : <div className="text-center py-12 text-gray-400">No hay productos en esta vista.</div>)}
+        {filtered.length === 0 && (catalogProducts.length === 0 ? <div className="rounded-2xl border border-dashed border-[#E5E5E3] bg-[#FAFAF8] flex flex-col items-center justify-center py-20 gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-[#F0FDFA] flex items-center justify-center">
+                <Package size={24} className="text-[#0F766E]" />
+              </div>
+              <div className="text-center px-8">
+                <p className="text-sm font-semibold text-gray-700">Cargá los productos de tu tienda</p>
+                <p className="text-xs text-gray-400 mt-1 max-w-[280px]">Productos terminados con diseño y precio de venta para tu catálogo web</p>
+              </div>
+              <button onClick={() => setCatModal({})} className="mt-2 px-5 py-2.5 rounded-xl bg-[#0F766E] text-white text-sm font-semibold hover:bg-[#0D9488] transition-colors">
+                + Agregar producto
+              </button>
+            </div> : <div className="text-center py-12 text-gray-400">No hay productos en esta vista.</div>)}
       </div>
 
       {/* Product table */}
@@ -438,7 +449,18 @@ export default function CatalogoPage() {
               )
             })}
           </tbody></table>
-          {filtered.length === 0 && (catalogProducts.length === 0 ? <EmptyState icon="👕" title="Cargá los productos de tu tienda." description="Productos terminados con diseño y precio de venta para tu catálogo web." actionLabel="+ Agregar producto" onAction={() => setCatModal({})} /> : <div className="text-center py-12 text-gray-400">No hay productos en esta vista.</div>)}
+          {filtered.length === 0 && (catalogProducts.length === 0 ? <div className="rounded-2xl border border-dashed border-[#E5E5E3] bg-[#FAFAF8] flex flex-col items-center justify-center py-20 gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-[#F0FDFA] flex items-center justify-center">
+                <Package size={24} className="text-[#0F766E]" />
+              </div>
+              <div className="text-center px-8">
+                <p className="text-sm font-semibold text-gray-700">Cargá los productos de tu tienda</p>
+                <p className="text-xs text-gray-400 mt-1 max-w-[280px]">Productos terminados con diseño y precio de venta para tu catálogo web</p>
+              </div>
+              <button onClick={() => setCatModal({})} className="mt-2 px-5 py-2.5 rounded-xl bg-[#0F766E] text-white text-sm font-semibold hover:bg-[#0D9488] transition-colors">
+                + Agregar producto
+              </button>
+            </div> : <div className="text-center py-12 text-gray-400">No hay productos en esta vista.</div>)}
         </div>
       </div>
 

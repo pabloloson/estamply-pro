@@ -4,7 +4,7 @@
 export const dynamic = 'force-dynamic'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/db/client'
-import { Plus, Pencil, Trash2, X, Check, Search, Copy, MoreHorizontal, Share2 } from 'lucide-react'
+import { Plus, Pencil, Trash2, X, Check, Search, Copy, MoreHorizontal, Share2, Tag, Ticket } from 'lucide-react'
 import { useLocale } from '@/shared/context/LocaleContext'
 
 interface Promotion {
@@ -113,7 +113,7 @@ export default function PromocionesPage() {
         <div><h1 className="text-2xl font-bold text-gray-900">Promociones</h1>
           <p className="text-gray-500 text-sm mt-1">Descuentos y cupones para tu catálogo web.</p></div>
         <button onClick={() => tab === 'promos' ? setPromoModal({ discount_type: 'percentage', discount_value: 0, product_ids: [], show_countdown: false, starts_at: new Date().toISOString().slice(0, 10), ends_at: '' }) : setCouponModal({ discount_type: 'percentage', discount_value: 0, code: '' })}
-          className="flex items-center gap-1.5 whitespace-nowrap text-sm px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: '#0F766E' }}><Plus size={14} /> {tab === 'promos' ? 'Crear promoción' : 'Crear cupón'}</button>
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0F766E] text-white text-sm font-semibold hover:bg-[#0D9488] transition-colors"><Plus size={16} /> {tab === 'promos' ? 'Crear promoción' : 'Crear cupón'}</button>
       </div>
 
       {/* Tabs */}
@@ -125,10 +125,14 @@ export default function PromocionesPage() {
       {/* ══ PROMOTIONS TAB ══ */}
       {tab === 'promos' && (<>
         {promos.length === 0 ? (
-          <div className="card p-12 flex flex-col items-center justify-center gap-3">
-            <p className="text-4xl opacity-50">🏷️</p>
-            <p className="text-sm font-medium text-gray-700">Todavía no creaste promociones.</p>
-            <p className="text-xs text-gray-400">Creá descuentos para incentivar las ventas en tu catálogo.</p>
+          <div className="rounded-2xl border border-dashed border-[#E5E5E3] bg-[#FAFAF8] flex flex-col items-center justify-center py-20 gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-[#F0FDFA] flex items-center justify-center">
+              <Tag size={24} className="text-[#0F766E]" />
+            </div>
+            <div className="text-center px-8">
+              <p className="text-sm font-semibold text-gray-700">Todavía no creaste promociones</p>
+              <p className="text-xs text-gray-400 mt-1 max-w-[280px]">Creá descuentos para incentivar las ventas en tu catálogo</p>
+            </div>
             <button onClick={() => setPromoModal({ discount_type: 'percentage', discount_value: 0, product_ids: [], show_countdown: false, starts_at: new Date().toISOString().slice(0, 10), ends_at: '' })}
               className="mt-2 px-5 py-2.5 rounded-xl bg-[#0F766E] text-white text-sm font-semibold hover:bg-[#0D9488] transition-colors">+ Crear promoción</button>
           </div>
@@ -194,10 +198,14 @@ export default function PromocionesPage() {
       {/* ══ COUPONS TAB ══ */}
       {tab === 'cupones' && (<>
         {coupons.length === 0 ? (
-          <div className="card p-12 flex flex-col items-center justify-center gap-3">
-            <p className="text-4xl opacity-50">🎟️</p>
-            <p className="text-sm font-medium text-gray-700">Todavía no creaste cupones.</p>
-            <p className="text-xs text-gray-400">Creá códigos de descuento para compartir con tus clientes.</p>
+          <div className="rounded-2xl border border-dashed border-[#E5E5E3] bg-[#FAFAF8] flex flex-col items-center justify-center py-20 gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-[#F0FDFA] flex items-center justify-center">
+              <Ticket size={24} className="text-[#0F766E]" />
+            </div>
+            <div className="text-center px-8">
+              <p className="text-sm font-semibold text-gray-700">Todavía no creaste cupones</p>
+              <p className="text-xs text-gray-400 mt-1 max-w-[280px]">Creá códigos de descuento para compartir con tus clientes</p>
+            </div>
             <button onClick={() => setCouponModal({ discount_type: 'percentage', discount_value: 0, code: '' })}
               className="mt-2 px-5 py-2.5 rounded-xl bg-[#0F766E] text-white text-sm font-semibold hover:bg-[#0D9488] transition-colors">+ Crear cupón</button>
           </div>

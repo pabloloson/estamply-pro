@@ -7,7 +7,7 @@ import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/db/client'
 import { Plus, Pencil, Trash2, X, Users, Search, MessageCircle, Upload, Download, MoreVertical, FileText } from 'lucide-react'
-import EmptyState from '@/shared/components/EmptyState'
+
 import { useTranslations } from '@/shared/hooks/useTranslations'
 import { useLocale } from '@/shared/context/LocaleContext'
 import * as XLSX from 'xlsx'
@@ -152,14 +152,14 @@ export default function ClientsPage() {
         <div><h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
           <p className="text-gray-500 text-sm mt-1">{t('totalClients', { count: clients.length })}</p></div>
         <div className="flex gap-2">
-          <button onClick={handleExportar} className="flex items-center gap-1.5 px-3 py-2 rounded-xl whitespace-nowrap text-xs sm:text-sm font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50">
+          <button onClick={handleExportar} className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#E5E5E3] text-sm font-medium text-gray-600 hover:bg-[#F8F7F4] transition-colors">
             <Download size={14} /> Exportar
           </button>
-          <button onClick={() => { setImportModal(true); setImportStep(1); setImportData([]); setImportResult(null) }} className="flex items-center gap-1.5 px-3 py-2 rounded-xl whitespace-nowrap text-xs sm:text-sm font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50">
+          <button onClick={() => { setImportModal(true); setImportStep(1); setImportData([]); setImportResult(null) }} className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#E5E5E3] text-sm font-medium text-gray-600 hover:bg-[#F8F7F4] transition-colors">
             <Upload size={14} /> {t('importClients')}
           </button>
-          <button onClick={() => { setModal({}) }} className="flex items-center gap-1.5 px-4 py-2 rounded-xl whitespace-nowrap text-xs sm:text-sm font-semibold text-white bg-[#0F766E] hover:bg-[#0D9488] transition-colors shadow-sm">
-            <Plus size={15} /> {t('newClient')}
+          <button onClick={() => { setModal({}) }} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0F766E] text-white text-sm font-semibold hover:bg-[#0D9488] transition-colors">
+            <Plus size={16} /> {t('newClient')}
           </button>
         </div>
       </div>
@@ -171,7 +171,18 @@ export default function ClientsPage() {
 
       <div className="card overflow-hidden">
         {clients.length === 0 && !search ? (
-          <EmptyState icon="👥" title="Todavía no tenés clientes registrados." description="Los clientes se crean automáticamente cuando generás un presupuesto, o podés agregarlos manualmente." actionLabel="+ Agregar cliente" onAction={() => setModal({})} />
+          <div className="rounded-2xl border border-dashed border-[#E5E5E3] bg-[#FAFAF8] flex flex-col items-center justify-center py-20 gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-[#F0FDFA] flex items-center justify-center">
+              <Users size={24} className="text-[#0F766E]" />
+            </div>
+            <div className="text-center px-8">
+              <p className="text-sm font-semibold text-gray-700">No tenés clientes todavía</p>
+              <p className="text-xs text-gray-400 mt-1 max-w-[280px]">Agregá tu primer cliente para empezar a cotizar y facturar</p>
+            </div>
+            <button onClick={() => setModal({})} className="mt-2 px-5 py-2.5 rounded-xl bg-[#0F766E] text-white text-sm font-semibold hover:bg-[#0D9488] transition-colors">
+              + Nuevo cliente
+            </button>
+          </div>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3">
             <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center"><Users size={22} className="text-gray-400" /></div>

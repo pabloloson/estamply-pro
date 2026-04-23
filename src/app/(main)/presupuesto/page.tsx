@@ -608,8 +608,8 @@ export default function PresupuestoPage() {
               <p className="text-sm text-gray-400 mt-0.5">{savedPresupuestos.length} presupuesto{savedPresupuestos.length !== 1 ? 's' : ''}</p>
             </div>
             <button onClick={() => { clearItems(); setLoadedPresupuestoId(null); setPublicLink(''); setClientId(''); setNewClientName(''); setCreatingNew(true) }}
-              className="flex items-center gap-1.5 whitespace-nowrap text-xs sm:text-sm px-4 py-2 rounded-xl font-semibold text-white" style={{ background: '#0F766E' }}>
-              {t('newQuote')}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0F766E] text-white text-sm font-semibold hover:bg-[#0D9488] transition-colors">
+              <Plus size={16} /> {t('newQuote')}
             </button>
           </div>
 
@@ -675,14 +675,16 @@ export default function PresupuestoPage() {
               </div>
             </div>
           </>) : (
-            <div className="rounded-2xl border border-[#E5E5E3] bg-white flex flex-col items-center justify-center py-16 gap-4">
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-[#F0FDFA]"><FileText size={24} className="text-[#0F766E]" /></div>
-              <div className="text-center">
-                <p className="text-gray-700 font-semibold">No tenés presupuestos todavía</p>
-                <p className="text-gray-400 text-sm mt-1">Creá tu primer presupuesto para empezar a cotizar para tus clientes</p>
+            <div className="rounded-2xl border border-dashed border-[#E5E5E3] bg-[#FAFAF8] flex flex-col items-center justify-center py-20 gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-[#F0FDFA] flex items-center justify-center">
+                <FileText size={24} className="text-[#0F766E]" />
+              </div>
+              <div className="text-center px-8">
+                <p className="text-sm font-semibold text-gray-700">No tenés presupuestos todavía</p>
+                <p className="text-xs text-gray-400 mt-1 max-w-[280px]">Creá tu primer presupuesto para empezar a cotizar para tus clientes</p>
               </div>
               <button onClick={() => { clearItems(); setLoadedPresupuestoId(null); setPublicLink(''); setClientId(''); setNewClientName(''); setCreatingNew(true) }}
-                className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: '#0F766E' }}>+ Nuevo presupuesto</button>
+                className="mt-2 px-5 py-2.5 rounded-xl bg-[#0F766E] text-white text-sm font-semibold hover:bg-[#0D9488] transition-colors">+ Nuevo presupuesto</button>
             </div>
           )}
         </>) : (<>
