@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Settings2 } from 'lucide-react'
+import { Settings2, ChevronDown } from 'lucide-react'
 import type { Insumo, TecnicaSlug } from '@/features/taller/types'
 
 interface ProductionConfigProps {
@@ -75,10 +75,10 @@ export default function ProductionConfig({
   return (
     <div>
       <button type="button" onClick={() => setOpen(v => !v)}
-        className="flex items-center gap-1.5 text-xs font-semibold text-gray-400 hover:text-gray-600 transition-colors w-full py-1">
-        <Settings2 size={12} />
+        className="flex items-center gap-2 text-[12px] font-semibold text-gray-500 hover:text-gray-700 transition-colors w-full py-2">
+        <Settings2 size={14} className="text-gray-400" />
         <span className="uppercase tracking-wide">Configuración de producción</span>
-        <span className="ml-auto text-[10px]">{open ? '▾' : '▸'}</span>
+        <ChevronDown size={14} className={`ml-auto text-gray-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
       </button>
 
       <div className="overflow-hidden transition-all duration-200" style={{ maxHeight: open ? 500 : 0, opacity: open ? 1 : 0 }}>

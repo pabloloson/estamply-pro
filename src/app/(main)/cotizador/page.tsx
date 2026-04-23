@@ -340,21 +340,22 @@ export default function CotizadorPage() {
   return (
     <div className="max-w-6xl mx-auto px-4 py-6">
       <div className="flex items-start justify-between mb-6">
-        <div><h1 className="text-2xl font-black text-gray-900">{t('title')}</h1><p className="text-sm text-gray-500 mt-0.5">{t('newQuotation')}</p></div>
-        <Link href="/presupuesto" className="relative flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm text-white" style={{ backgroundColor: '#0F766E', boxShadow: '0 4px 14px rgba(15,118,110,0.35)' }}>
+        <div><h1 className="text-2xl font-bold text-gray-900 tracking-tight">{t('title')}</h1><p className="text-sm text-gray-400 mt-0.5">{t('newQuotation')}</p></div>
+        <Link href="/presupuesto" className="relative flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-[#0F766E] text-white hover:bg-[#0D9488] transition-colors shadow-sm">
           <ShoppingCart size={16} /> Presupuesto
           {items.length > 0 && <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center text-xs font-black text-white" style={{ backgroundColor: '#E84393' }}>{items.length}</span>}
         </Link>
       </div>
 
       {/* Main technique tabs: Sublimación | DTF | Vinilo | Serigrafía */}
-      <div className="flex rounded-full p-1 gap-1 mb-4 w-fit flex-wrap" style={{ backgroundColor: '#F1F1F1' }}>
+      <div className="flex gap-1 p-1 rounded-xl bg-[#F3F3F1] mb-4 w-fit flex-wrap">
         {cotizadorTabs.map(tab => (
           <button key={tab.id} type="button" onClick={() => setCotizadorTab(tab.id)}
-            className="px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-200"
-            style={cotizadorTab === tab.id
-              ? { backgroundColor: '#fff', color: tab.color, boxShadow: '0 1px 4px rgba(0,0,0,0.12)' }
-              : { backgroundColor: 'transparent', color: '#888' }}>
+            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+              cotizadorTab === tab.id
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}>
             {tab.label}
           </button>
         ))}
@@ -363,10 +364,13 @@ export default function CotizadorPage() {
       {/* DTF internal toggle: Textil / UV */}
       {cotizadorTab === 'dtf_unified' && dtfTextil && dtfUv && (
         <div className="flex gap-1 mb-4">
-          {([['dtf', 'DTF Textil', '#E17055'], ['dtf_uv', 'DTF UV', '#00B894']] as const).map(([slug, label, color]) => (
+          {([['dtf', 'DTF Textil'], ['dtf_uv', 'DTF UV']] as const).map(([slug, label]) => (
             <button key={slug} onClick={() => setDtfVariant(slug)}
-              className="px-3 py-1 rounded-lg text-xs font-semibold transition-all"
-              style={dtfVariant === slug ? { background: color, color: '#fff' } : { background: '#F1F1F1', color: '#888' }}>
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                dtfVariant === slug
+                  ? 'bg-[#0F766E] text-white shadow-sm'
+                  : 'bg-[#F3F3F1] text-gray-500 hover:text-gray-700'
+              }`}>
               {label}
             </button>
           ))}
@@ -375,10 +379,13 @@ export default function CotizadorPage() {
       {/* Vinyl internal toggle: Textil / Autoadhesivo */}
       {cotizadorTab === 'vinyl_unified' && tecnicas.some(t => t.slug === 'vinyl' && t.activa) && tecnicas.some(t => t.slug === 'vinyl_adhesivo' && t.activa) && (
         <div className="flex gap-1 mb-4">
-          {([['vinyl', 'Vinilo Textil', '#E84393'], ['vinyl_adhesivo', 'Vinilo Autoadhesivo', '#D63384']] as const).map(([slug, label, color]) => (
+          {([['vinyl', 'Vinilo Textil'], ['vinyl_adhesivo', 'Vinilo Autoadhesivo']] as const).map(([slug, label]) => (
             <button key={slug} onClick={() => setVinylVariant(slug)}
-              className="px-3 py-1 rounded-lg text-xs font-semibold transition-all"
-              style={vinylVariant === slug ? { background: color, color: '#fff' } : { background: '#F1F1F1', color: '#888' }}>
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                vinylVariant === slug
+                  ? 'bg-[#0F766E] text-white shadow-sm'
+                  : 'bg-[#F3F3F1] text-gray-500 hover:text-gray-700'
+              }`}>
               {label}
             </button>
           ))}
@@ -391,7 +398,7 @@ export default function CotizadorPage() {
         <div className="flex flex-col lg:flex-row gap-6">
           {/* LEFT */}
           <div className="lg:w-[400px] flex-shrink-0 space-y-4">
-            <div className="card p-5 space-y-5">
+            <div className="rounded-2xl border border-[#E5E5E3] bg-white p-5 space-y-5">
               <div><label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">{t('product')}</label>
                 <ProductPicker products={products} value={engine.productId} onChange={engine.setProductId} /></div>
 
@@ -418,8 +425,11 @@ export default function CotizadorPage() {
                   <div className="flex gap-2">
                     {[1, 2, 3, 4].map(n => (
                       <button key={n} type="button" onClick={() => engine.setNumZones(n)}
-                        className="w-9 h-9 rounded-lg text-sm font-bold transition-all"
-                        style={engine.numZones === n ? { backgroundColor: activeColor, color: '#fff' } : { backgroundColor: '#F1F1F1', color: '#666' }}>{n}</button>
+                        className={`w-9 h-9 rounded-lg text-sm font-semibold transition-all ${
+                          engine.numZones === n
+                            ? 'bg-[#0F766E] text-white shadow-sm'
+                            : 'bg-[#F3F3F1] text-gray-500 hover:bg-[#EBEBEA] hover:text-gray-700'
+                        }`}>{n}</button>
                     ))}
                   </div>
                 </div>
@@ -439,7 +449,7 @@ export default function CotizadorPage() {
                       return (
                         <div>
                           <button type="button" onClick={() => setShowSheetNesting(prev => ({ ...prev, 0: !prev[0] }))}
-                            className="flex items-center gap-1 text-[10px] font-medium text-gray-400 hover:text-gray-600 transition-colors">
+                            className="flex items-center gap-1 text-[11px] font-medium text-[#0F766E] hover:text-[#0D9488] transition-colors">
                             <LayoutGrid size={10} /> {showSheetNesting[0] ? t('hideDistribution') : '+ ' + t('viewDistribution')}
                           </button>
                           {showSheetNesting[0] && (
@@ -509,7 +519,7 @@ export default function CotizadorPage() {
                             return (
                               <div>
                                 <button type="button" onClick={() => setShowSheetNesting(prev => ({ ...prev, [zi]: !prev[zi] }))}
-                                  className="flex items-center gap-1 text-[10px] font-medium text-gray-400 hover:text-gray-600 transition-colors">
+                                  className="flex items-center gap-1 text-[11px] font-medium text-[#0F766E] hover:text-[#0D9488] transition-colors">
                                   <LayoutGrid size={10} /> {showSheetNesting[zi] ? t('hideDistribution') : '+ ' + t('viewDistribution')}
                                 </button>
                                 {showSheetNesting[zi] && (
@@ -530,7 +540,7 @@ export default function CotizadorPage() {
                           return (
                             <div>
                               <button type="button" onClick={() => setShowSheetNesting(prev => ({ ...prev, [zi]: !prev[zi] }))}
-                                className="flex items-center gap-1 text-[10px] font-medium text-gray-400 hover:text-gray-600 transition-colors">
+                                className="flex items-center gap-1 text-[11px] font-medium text-[#0F766E] hover:text-[#0D9488] transition-colors">
                                 <LayoutGrid size={10} /> {showSheetNesting[zi] ? t('hideDistribution') : '+ ' + t('viewDistribution')}
                               </button>
                               {showSheetNesting[zi] && (
@@ -554,8 +564,11 @@ export default function CotizadorPage() {
                   <div className="flex gap-2">
                     {[1, 2, 3, 4, 5, 6].map(n => (
                       <button key={n} type="button" onClick={() => engine.setNumColors(n)}
-                        className="w-9 h-9 rounded-lg text-sm font-bold transition-all"
-                        style={engine.numColors === n ? { backgroundColor: activeColor, color: '#fff' } : { backgroundColor: '#F1F1F1', color: '#666' }}>{n}</button>
+                        className={`w-9 h-9 rounded-lg text-sm font-semibold transition-all ${
+                          engine.numColors === n
+                            ? 'bg-[#0F766E] text-white shadow-sm'
+                            : 'bg-[#F3F3F1] text-gray-500 hover:bg-[#EBEBEA] hover:text-gray-700'
+                        }`}>{n}</button>
                     ))}
                   </div></div>
               )}
@@ -613,7 +626,7 @@ export default function CotizadorPage() {
 
             {product && (<>
               {/* Production config */}
-              <div className="card p-5">
+              <div className="rounded-2xl border border-[#E5E5E3] bg-white p-5">
                 <ProductionConfig
                   slug={resolvedSlug}
                   papelInsumos={papelInsumos}
@@ -643,15 +656,15 @@ export default function CotizadorPage() {
               </div>
 
               {/* Notas */}
-              <div className="card p-5">
-                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">{t('itemNotes')}</label>
+              <div className="rounded-2xl border border-[#E5E5E3] bg-white p-5">
+                <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">{t('itemNotes')}</label>
                 <input type="text" className="input-base text-sm" value={itemNotes} onChange={e => setItemNotes(e.target.value)}
                   placeholder={t('itemNotesPlaceholder')} />
               </div>
 
               {/* Serigrafía upsell */}
               {showCosts && isSerigrafia && result && !result.pedidoMinimoWarning && result.costoSetupTotal && (
-                <div className="card p-4 bg-amber-50 border-amber-100">
+                <div className="rounded-2xl p-4 bg-amber-50 border border-amber-100">
                   <p className="text-xs text-amber-700">
                     El costo de pantallas ({fmt(result.costoSetupTotal)}) se divide entre las unidades.
                     Con {engine.quantity * 2} u. bajaría a {fmt(Math.round(result.costoSetupTotal / (engine.quantity * 2)))}/u.
@@ -661,12 +674,11 @@ export default function CotizadorPage() {
 
               {/* Action buttons */}
               <button type="button" onClick={handleAddToCart} disabled={!result || !!result?.pedidoMinimoWarning}
-                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-white text-sm transition-all disabled:opacity-40"
-                style={{ backgroundColor: activeColor, boxShadow: `0 4px 20px ${activeColor}40` }}>
+                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-white text-sm bg-[#0F766E] hover:bg-[#0D9488] transition-all disabled:opacity-40 shadow-sm">
                 <ShoppingCart size={16} /> {t('addToQuote')}
               </button>
               <button type="button" onClick={handleSaveAsProduct} disabled={!result || !!result?.pedidoMinimoWarning}
-                className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold text-gray-400 hover:text-gray-600 transition-all disabled:opacity-30">
+                className="w-full flex items-center justify-center gap-1.5 mt-3 text-[12px] font-medium text-gray-400 hover:text-[#0F766E] transition-colors disabled:opacity-30">
                 {t('saveAsProduct')}
               </button>
             </>)}
