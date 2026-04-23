@@ -417,25 +417,28 @@ export default function EstadisticasPage() {
         <div className="flex items-center gap-2 flex-wrap">
           {/* Period dropdown */}
           <div className="relative">
-            <button onClick={() => setPeriodOpen(!periodOpen)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold bg-[#0F766E] text-white shadow-sm">
-              {label} <span className="text-[9px] opacity-70">▾</span>
+            <button onClick={() => setPeriodOpen(!periodOpen)} className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold bg-[#0F766E] text-white">
+              {label} <span className="text-white/70 text-xs">▾</span>
             </button>
             {periodOpen && (
-              <div className="absolute right-0 top-full mt-1 w-52 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                {PERIOD_OPTIONS.map(o => (
-                  <button key={o.id} onClick={() => { if (o.id !== 'custom') { setPeriod(o.id); setPeriodOpen(false) } else { setPeriod('custom') } }}
-                    className={`w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 ${period === o.id ? 'font-bold text-teal-700' : 'text-gray-700'}`}>
-                    {o.label} {period === o.id && '✓'}
-                  </button>
-                ))}
-                {period === 'custom' && (
-                  <div className="px-3 py-2 border-t border-gray-100 space-y-2">
-                    <input type="date" className="input-base text-xs !py-1" value={customFrom} onChange={e => setCustomFrom(e.target.value)} />
-                    <input type="date" className="input-base text-xs !py-1" value={customTo} onChange={e => setCustomTo(e.target.value)} />
-                    <button onClick={() => setPeriodOpen(false)} className="w-full py-1 rounded text-xs font-semibold text-white" style={{ background: '#0F766E' }}>Aplicar</button>
-                  </div>
-                )}
-              </div>
+              <>
+                <div className="fixed inset-0 z-[49]" onClick={() => setPeriodOpen(false)} />
+                <div className="absolute left-0 top-full mt-1 min-w-[200px] bg-white rounded-xl border border-[#E5E5E3] shadow-lg py-1.5 z-[50]">
+                  {PERIOD_OPTIONS.map(o => (
+                    <button key={o.id} onClick={() => { if (o.id !== 'custom') { setPeriod(o.id); setPeriodOpen(false) } else { setPeriod('custom') } }}
+                      className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${period === o.id ? 'text-[#0F766E] font-semibold bg-[#F0FDFA]' : 'text-gray-700 hover:bg-[#F8F7F4]'}`}>
+                      {o.label} {period === o.id && '✓'}
+                    </button>
+                  ))}
+                  {period === 'custom' && (
+                    <div className="px-4 py-3 border-t border-[#F3F3F1] space-y-2">
+                      <input type="date" className="input-base text-sm w-full" value={customFrom} onChange={e => setCustomFrom(e.target.value)} />
+                      <input type="date" className="input-base text-sm w-full" value={customTo} onChange={e => setCustomTo(e.target.value)} />
+                      <button onClick={() => setPeriodOpen(false)} className="w-full py-2 rounded-lg text-sm font-semibold text-white bg-[#0F766E] hover:bg-[#0D9488] transition-colors">Aplicar</button>
+                    </div>
+                  )}
+                </div>
+              </>
             )}
           </div>
           <button onClick={exportExcel} className="lg:hidden p-2 rounded-lg border border-[#E5E5E3] text-gray-600 hover:bg-[#F8F7F4] transition-colors"><Download size={16} /></button>
