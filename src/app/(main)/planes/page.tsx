@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic'
 import { useState, useEffect, useCallback } from 'react'
 import { Check, Loader2, Sparkles, X } from 'lucide-react'
 import { useTranslations } from '@/shared/hooks/useTranslations'
+import '@stripe/stripe-js' // Pre-load Stripe SDK when user visits /planes
 import { StripeProvider } from '@/shared/components/StripeProvider'
 import StripeCheckoutForm from '@/shared/components/StripeCheckoutForm'
 
