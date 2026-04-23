@@ -12,23 +12,26 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing planLookupKey' }, { status: 400 })
     }
 
-    const session = await auth()
+    // 1. Run auth + priceId in parallel (~500ms total instead of ~1000ms)
+    const [session, priceId] = await Promise.all([
+      auth(),
+      getPriceId(planLookupKey),
+    ])
+
     if (!session?.user?.id || !session.user.email) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
     }
-
-    // 1. Get price ID from cache (0ms after first call)
-    const priceId = await getPriceId(planLookupKey)
     if (!priceId) {
       return NextResponse.json({ error: `Price not found for: ${planLookupKey}` }, { status: 404 })
     }
 
-    // 2. Get or create Stripe customer (only hits Stripe on first subscription)
+    // 2. Get profile (needs userId from auth)
     const profile = await prisma.profile.findUnique({ where: { userId: session.user.id } })
     if (!profile) {
       return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
     }
 
+    // 3. Get or create Stripe customer
     let customerId = profile.stripeCustomerId
     if (!customerId) {
       const customer = await stripe.customers.create({
@@ -42,17 +45,15 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    // 3. Cancel incomplete subs to avoid conflicts
-    try {
-      const existingSubs = await stripe.subscriptions.list({
-        customer: customerId, status: 'incomplete', limit: 10,
-      })
-      await Promise.all(
-        existingSubs.data.map(sub => stripe.subscriptions.cancel(sub.id))
-      )
-    } catch { /* ignore cleanup errors */ }
+    // 4. Cancel incomplete subs + create new sub in parallel
+    //    Cleanup doesn't need to finish before creation — Stripe handles concurrent subs fine.
+    //    But we fire cleanup to avoid accumulating garbage.
+    const cleanupPromise = stripe.subscriptions.list({
+      customer: customerId, status: 'incomplete', limit: 10,
+    }).then(subs =>
+      Promise.all(subs.data.map(sub => stripe.subscriptions.cancel(sub.id)))
+    ).catch(() => {})
 
-    // 4. Create subscription (~800ms)
     const subscription = await stripe.subscriptions.create({
       customer: customerId,
       items: [{ price: priceId }],
@@ -61,7 +62,10 @@ export async function POST(req: NextRequest) {
       metadata: { userId: session.user.id },
     })
 
-    // 4. Get invoice ID
+    // Let cleanup finish in background (don't await)
+    cleanupPromise.catch(() => {})
+
+    // 5. Get invoice + client secret
     const invoiceId = typeof subscription.latest_invoice === 'string'
       ? subscription.latest_invoice
       : subscription.latest_invoice?.id
@@ -70,7 +74,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No invoice on subscription' }, { status: 500 })
     }
 
-    // 6. Retrieve invoice with payments expanded (~400ms)
     const invoice = await stripe.invoices.retrieve(invoiceId, {
       expand: ['payments.data.payment.payment_intent'],
     })

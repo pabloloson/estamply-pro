@@ -2,7 +2,7 @@
 'use client'
 
 export const dynamic = 'force-dynamic'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Check, Loader2, Sparkles, X } from 'lucide-react'
 import { useTranslations } from '@/shared/hooks/useTranslations'
 import '@stripe/stripe-js' // Pre-load Stripe SDK when user visits /planes
@@ -101,10 +101,26 @@ export default function PlanesPage() {
     }
   }, [])
 
+  // Pre-fetch clientSecret on hover to reduce perceived wait time
+  const prefetchRef = useRef<{ key: string; promise: Promise<{ clientSecret?: string; error?: string }> } | null>(null)
+
+  function prefetchPlan(plan: typeof PLANS[0]) {
+    const lookupKey = `${plan.key}_${billing}`
+    // Don't re-fetch if already prefetching same plan
+    if (prefetchRef.current?.key === lookupKey) return
+    prefetchRef.current = {
+      key: lookupKey,
+      promise: fetch('/api/stripe-subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planLookupKey: lookupKey }),
+      }).then(r => r.json()).catch(() => ({ error: 'Error de conexión' })),
+    }
+  }
+
   async function openCheckout(plan: typeof PLANS[0]) {
     setCheckoutPlan(plan)
     setModalVisible(false)
-    // Trigger animation on next frame
     requestAnimationFrame(() => requestAnimationFrame(() => setModalVisible(true)))
     setCheckoutLoading(true)
     setCheckoutError(null)
@@ -112,14 +128,21 @@ export default function PlanesPage() {
 
     const lookupKey = `${plan.key}_${billing}`
     try {
-      const res = await fetch('/api/stripe-subscribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ planLookupKey: lookupKey }),
-      })
-      const data = await res.json()
+      // Reuse prefetched promise if available, otherwise fetch now
+      let data: { clientSecret?: string; error?: string }
+      if (prefetchRef.current?.key === lookupKey) {
+        data = await prefetchRef.current.promise
+      } else {
+        const res = await fetch('/api/stripe-subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ planLookupKey: lookupKey }),
+        })
+        data = await res.json()
+      }
+      prefetchRef.current = null
 
-      if (!res.ok) {
+      if (data.error || !data.clientSecret) {
         setCheckoutError(data.error || 'Error al crear la suscripción')
         setCheckoutLoading(false)
         return
@@ -280,6 +303,8 @@ export default function PlanesPage() {
               ) : (
                 <button
                   onClick={() => openCheckout(plan)}
+                  onMouseEnter={() => prefetchPlan(plan)}
+                  onTouchStart={() => prefetchPlan(plan)}
                   disabled={!!checkoutPlan}
                   className={`w-full py-2.5 rounded-xl text-sm font-bold text-white transition-opacity disabled:opacity-50 ${
                     plan.popular ? '' : 'opacity-90 hover:opacity-100'
