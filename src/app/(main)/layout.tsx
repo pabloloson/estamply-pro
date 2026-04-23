@@ -34,10 +34,12 @@ export default async function MainLayout({ children }: { children: React.ReactNo
       <div className="flex min-h-screen bg-[#FAFAF8]">
         <Sidebar workshopName={workshopName} />
         <div className="flex-1 flex flex-col min-w-0 overflow-x-hidden">
-          <TrialBanner />
-          <DemoBanner />
-          <main className="flex-1 px-3 pt-16 pb-4 lg:px-8 lg:pb-8 lg:pt-8">
-            {children}
+          <main className="flex-1 pt-14 lg:pt-0">
+            <TrialBanner />
+            <DemoBanner />
+            <div className="px-3 pb-4 lg:px-8 lg:pb-8 lg:pt-8">
+              {children}
+            </div>
           </main>
         </div>
       </div>
