@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
 
     const priceId = prices.data[0].id
 
-    // Create subscription — DO NOT use expand, retrieve invoice separately
+    // Create subscription — no expand, retrieve invoice + PI separately
     console.log('[stripe-subscribe] creating sub, customer:', customerId, 'price:', priceId)
     const subscription = await stripe.subscriptions.create({
       customer: customerId,
@@ -86,55 +86,34 @@ export async function POST(req: NextRequest) {
     })
     console.log('[stripe-subscribe] sub created:', subscription.id, 'status:', subscription.status)
 
-    // Get the invoice ID from the subscription
+    // Retrieve the latest invoice separately
     const invoiceId = typeof subscription.latest_invoice === 'string'
       ? subscription.latest_invoice
       : subscription.latest_invoice?.id
-    console.log('[stripe-subscribe] invoiceId:', invoiceId)
 
     if (!invoiceId) {
-      return NextResponse.json({ error: 'No invoice on subscription' }, { status: 500 })
+      console.error('[stripe-subscribe] No invoice on subscription', subscription.id)
+      return NextResponse.json({ error: 'No invoice' }, { status: 500 })
     }
 
-    // Retrieve the invoice with payment_intent expanded
-    const invoice = await stripe.invoices.retrieve(invoiceId, {
-      expand: ['payment_intent'],
-    })
-    console.log('[stripe-subscribe] invoice:', invoice.id, 'status:', invoice.status, 'amount_due:', invoice.amount_due)
+    const invoice = await stripe.invoices.retrieve(invoiceId) as any
+    console.log('[stripe-subscribe] invoice:', invoice.id, 'payment_intent:', invoice.payment_intent)
 
-    // Get client_secret from the expanded payment_intent
-    let clientSecret: string | null = null
-    const pi = (invoice as any).payment_intent
+    // Get the PaymentIntent from the invoice
+    const paymentIntentId = typeof invoice.payment_intent === 'string'
+      ? invoice.payment_intent
+      : invoice.payment_intent?.id
 
-    console.log('[stripe-subscribe] payment_intent:', typeof pi, pi ? (typeof pi === 'string' ? pi : pi.id) : 'null')
-
-    if (pi && typeof pi === 'object' && pi.client_secret) {
-      clientSecret = pi.client_secret
-    } else if (typeof pi === 'string') {
-      // Fallback: retrieve PaymentIntent directly
-      console.log('[stripe-subscribe] retrieving PI directly:', pi)
-      const fullPi = await stripe.paymentIntents.retrieve(pi)
-      clientSecret = fullPi.client_secret
+    if (!paymentIntentId) {
+      console.error('[stripe-subscribe] No payment_intent on invoice', invoice.id)
+      return NextResponse.json({ error: 'No payment intent' }, { status: 500 })
     }
 
-    if (!clientSecret) {
-      // Last resort: check if invoice has no amount due (free plan?)
-      console.error('[stripe-subscribe] NO client_secret. Full invoice dump:', JSON.stringify({
-        id: invoice.id,
-        status: invoice.status,
-        amount_due: invoice.amount_due,
-        amount_paid: invoice.amount_paid,
-        payment_intent: pi,
-        subscription: (invoice as any).subscription,
-      }))
-      return NextResponse.json({
-        error: 'Could not get payment secret. Check server logs for details.',
-      }, { status: 500 })
-    }
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId)
+    console.log('[stripe-subscribe] clientSecret obtained for', subscription.id)
 
-    console.log('[stripe-subscribe] SUCCESS, returning clientSecret')
     return NextResponse.json({
-      clientSecret,
+      clientSecret: paymentIntent.client_secret,
       subscriptionId: subscription.id,
     })
   } catch (error: unknown) {
