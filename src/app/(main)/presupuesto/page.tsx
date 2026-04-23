@@ -708,23 +708,42 @@ export default function PresupuestoPage() {
             <div className="flex-1">
               <div className="print-page bg-white rounded-2xl border border-[#E5E5E3] overflow-hidden" id="quote-document">
 
-                {/* Header — responsive: stacked on mobile, side-by-side on desktop */}
-                <div className="px-4 sm:px-8 pt-6 pb-5 border-b border-gray-100">
-                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                    {/* Business info */}
+                {/* Header — mobile: compact, desktop: side-by-side */}
+                {/* Mobile header */}
+                <div className="sm:hidden px-4 pt-5 pb-4 border-b border-[#F3F3F1]">
+                  <div className="flex items-center gap-3 mb-3">
+                    {bizProfile?.business_logo_url ? (
+                      <img src={bizProfile.business_logo_url} alt="Logo" className="w-9 h-9 object-contain rounded-xl flex-shrink-0" />
+                    ) : tallerName ? (
+                      <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-[#F0FDFA]">
+                        <span className="text-[#0F766E] font-semibold text-xs">{tallerName[0].toUpperCase()}</span>
+                      </div>
+                    ) : null}
+                    <div>
+                      <p className="font-semibold text-gray-900 text-sm">{tallerName || 'Mi Taller'}</p>
+                      {bizProfile?.business_phone && <p className="text-[11px] text-gray-400">{bizProfile.business_phone}</p>}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-gray-400 pt-2 border-t border-[#F3F3F1]">
+                    <span className="font-semibold text-gray-700">#{quoteNumber}</span>
+                    <span>{quoteDate} · {validezDias} días</span>
+                  </div>
+                </div>
+                {/* Desktop header */}
+                <div className="hidden sm:block px-8 pt-6 pb-5 border-b border-[#E5E5E3]">
+                  <div className="flex items-start justify-between">
                     <div className="flex items-start gap-3">
                       {bizProfile?.business_logo_url ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={bizProfile.business_logo_url} alt="Logo" className="w-12 h-12 sm:w-16 sm:h-16 object-contain rounded-xl flex-shrink-0" />
+                        <img src={bizProfile.business_logo_url} alt="Logo" className="w-16 h-16 object-contain rounded-xl flex-shrink-0" />
                       ) : tallerName ? (
-                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center flex-shrink-0 bg-[#F0FDFA]">
-                          <span className="text-[#0F766E] font-semibold text-sm sm:text-base">{tallerName[0].toUpperCase()}</span>
+                        <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 bg-[#F0FDFA]">
+                          <span className="text-[#0F766E] font-semibold text-base">{tallerName[0].toUpperCase()}</span>
                         </div>
                       ) : null}
                       <div>
-                        <h2 className="font-black text-gray-900 text-base sm:text-lg leading-tight">{tallerName || 'Mi Taller'}</h2>
+                        <h2 className="font-bold text-gray-900 text-lg leading-tight">{tallerName || 'Mi Taller'}</h2>
                         {bizProfile?.business_cuit && <p className="text-[11px] text-gray-500 mt-0.5">CUIT: {bizProfile.business_cuit}</p>}
-                        <div className="mt-1.5 space-y-0.5 hidden sm:block">
+                        <div className="mt-1.5 space-y-0.5">
                           {bizProfile?.business_address && <p className="text-xs text-gray-500 flex items-center gap-1.5"><MapPin size={10} />{bizProfile.business_address}</p>}
                           {bizProfile?.business_phone && <p className="text-xs text-gray-500 flex items-center gap-1.5"><Phone size={10} />{bizProfile.business_phone}</p>}
                           {bizProfile?.business_email && <p className="text-xs text-gray-500 flex items-center gap-1.5"><Mail size={10} />{bizProfile.business_email}</p>}
@@ -733,14 +752,13 @@ export default function PresupuestoPage() {
                         </div>
                       </div>
                     </div>
-                    {/* Quote number */}
-                    <div className="text-left sm:text-right flex-shrink-0">
+                    <div className="text-right flex-shrink-0">
                       <p className="text-xs text-gray-400 uppercase tracking-wide">Presupuesto</p>
                       <p className="text-sm font-bold text-gray-900 mt-0.5">#{quoteNumber}</p>
                       <p className="text-xs text-gray-500 mt-1">{quoteDate}</p>
                       <div className="mt-0.5">
                         {editingValidez ? (
-                          <div className="flex items-center gap-1 sm:justify-end no-print">
+                          <div className="flex items-center gap-1 justify-end no-print">
                             <span className="text-xs text-gray-400">Válido por</span>
                             <input type="number" className="w-12 text-xs text-center border rounded px-1 py-0.5" min={1} value={validezDias}
                               onChange={e => setValidezDias(Number(e.target.value))} onBlur={() => setEditingValidez(false)} autoFocus />
@@ -908,18 +926,22 @@ export default function PresupuestoPage() {
                       </div>
                     </div>
                   ) : (
-                    <div key={item.id} className="py-3 border-b border-gray-100 last:border-0">
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-sm text-gray-800">{fmtCurrency(item.subtotal)}</span>
-                        <div className="flex items-center gap-1 no-print">
-                          <button onClick={() => startEdit(item)} className="w-6 h-6 rounded flex items-center justify-center text-gray-300 hover:text-teal-600"><Pencil size={11} /></button>
-                          <button onClick={() => { if (confirm('¿Eliminar este item?')) removeItem(item.id) }} className="w-6 h-6 rounded flex items-center justify-center text-gray-300 hover:text-red-500"><Trash2 size={12} /></button>
+                    <div key={item.id} className="py-3 border-b border-[#F3F3F1] last:border-0">
+                      <div className="flex items-start justify-between">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold text-gray-900">{item.nombre}</p>
+                          <p className="text-xs text-gray-400 mt-0.5">
+                            {[TECHNIQUE_LABELS[item.tecnica], item.notas].filter(Boolean).join(' · ')} — Cant: {item.cantidad} × {fmtCurrency(item.precioUnit)}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0 ml-3">
+                          <span className="text-sm font-semibold text-gray-900">{fmtCurrency(item.subtotal)}</span>
+                          <div className="flex items-center gap-0.5 no-print">
+                            <button onClick={() => startEdit(item)} className="w-6 h-6 rounded flex items-center justify-center text-gray-300 hover:text-[#0F766E]"><Pencil size={11} /></button>
+                            <button onClick={() => { if (confirm('¿Eliminar este item?')) removeItem(item.id) }} className="w-6 h-6 rounded flex items-center justify-center text-gray-300 hover:text-red-500"><Trash2 size={12} /></button>
+                          </div>
                         </div>
                       </div>
-                      <p className="font-medium text-sm text-gray-800 mt-1">{item.nombre}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">
-                        {[TECHNIQUE_LABELS[item.tecnica], item.notas].filter(Boolean).join(' · ')}{TECHNIQUE_LABELS[item.tecnica] || item.notas ? ' — ' : ''}Cant: {item.cantidad} × {fmtCurrency(item.precioUnit)}
-                      </p>
                       {getItemVariant(item) && breakdownOpen !== item.id && (() => {
                         const hasValues = item.variantBreakdown && Object.values(item.variantBreakdown).some(v => v > 0)
                         return hasValues ? (
@@ -1068,18 +1090,18 @@ export default function PresupuestoPage() {
 
                 {/* Add items buttons — visible on ALL screens */}
                 <div className="px-4 sm:px-8 py-3">
-                  <div className="no-print grid grid-cols-3 gap-2">
-                    <Link href="/cotizador" className="flex flex-col items-center justify-center gap-2 py-4 rounded-xl border border-[#E5E5E3] text-gray-400 hover:text-[#0F766E] hover:border-[#0F766E] hover:bg-[#F0FDFA] transition-all text-center">
+                  <div className="no-print grid grid-cols-3 gap-1.5 sm:gap-2">
+                    <Link href="/cotizador" className="flex flex-col items-center justify-center gap-1.5 py-3 sm:py-4 rounded-xl border border-[#E5E5E3] text-gray-400 hover:text-[#0F766E] hover:border-[#0F766E] hover:bg-[#F0FDFA] transition-all text-center">
                       <Calculator size={18} />
-                      <span className="text-xs font-medium">Desde cotizador</span>
+                      <span className="text-[10px] sm:text-xs font-medium text-center leading-tight">Desde cotizador</span>
                     </Link>
-                    <button type="button" onClick={() => { setShowAddPanel('catalog'); loadCatalog() }} className="flex flex-col items-center justify-center gap-2 py-4 rounded-xl border border-[#E5E5E3] text-gray-400 hover:text-[#0F766E] hover:border-[#0F766E] hover:bg-[#F0FDFA] transition-all">
+                    <button type="button" onClick={() => { setShowAddPanel('catalog'); loadCatalog() }} className="flex flex-col items-center justify-center gap-1.5 py-3 sm:py-4 rounded-xl border border-[#E5E5E3] text-gray-400 hover:text-[#0F766E] hover:border-[#0F766E] hover:bg-[#F0FDFA] transition-all">
                       <ShoppingBag size={18} />
-                      <span className="text-xs font-medium">Desde catálogo</span>
+                      <span className="text-[10px] sm:text-xs font-medium text-center leading-tight">Desde catálogo</span>
                     </button>
-                    <button type="button" onClick={() => setShowAddPanel('free')} className="flex flex-col items-center justify-center gap-2 py-4 rounded-xl border border-[#E5E5E3] text-gray-400 hover:text-[#0F766E] hover:border-[#0F766E] hover:bg-[#F0FDFA] transition-all">
+                    <button type="button" onClick={() => setShowAddPanel('free')} className="flex flex-col items-center justify-center gap-1.5 py-3 sm:py-4 rounded-xl border border-[#E5E5E3] text-gray-400 hover:text-[#0F766E] hover:border-[#0F766E] hover:bg-[#F0FDFA] transition-all">
                       <Plus size={18} />
-                      <span className="text-xs font-medium">Ítem libre</span>
+                      <span className="text-[10px] sm:text-xs font-medium text-center leading-tight">Ítem libre</span>
                     </button>
                   </div>
                   {showAddPanel === 'free' && (
@@ -1184,7 +1206,7 @@ export default function PresupuestoPage() {
             {/* ── RIGHT: Actions ── */}
             <div className="lg:w-72 space-y-4 no-print">
               {/* Share */}
-              <div className="card p-5 space-y-3">
+              <div className="rounded-2xl border border-[#E5E5E3] bg-white p-4 sm:p-5 space-y-3">
                 <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">{t('share')}</p>
                 {/* WhatsApp — primary */}
                 <button disabled={savingLink} onClick={async () => {
@@ -1229,13 +1251,12 @@ export default function PresupuestoPage() {
               </div>
 
               {/* Confirm — CORRECCIÓN 2: help text for seña */}
-              <div className="card p-5 space-y-4">
+              <div className="rounded-2xl border border-[#E5E5E3] bg-white p-4 sm:p-5 space-y-4">
                 <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">{t('confirmAsOrder')}</p>
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">{t('deliveryDate')}</label>
                   <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)}
-                    className="w-full rounded-[10px] border-2 border-transparent bg-[#F3F4F6] px-3 text-sm outline-none focus:border-[#0F766E] focus:shadow-[0_0_0_3px_rgba(15,118,110,0.1)] transition-all"
-                    style={{ height: '44px', maxHeight: '44px', WebkitAppearance: 'none', appearance: 'none' }} />
+                    className="input-base text-sm" />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">{t('deposit')}</label>
