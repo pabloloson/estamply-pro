@@ -2,7 +2,7 @@
 'use client'
 
 export const dynamic = 'force-dynamic'
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { createClient } from '@/lib/db/client'
 import { ChevronDown, ChevronUp, MessageCircle, Trash2, Calendar, Plus, LayoutList, LayoutGrid, X, ExternalLink, Printer, Search, ClipboardList } from 'lucide-react'
 import EmptyState from '@/shared/components/EmptyState'
@@ -372,8 +372,8 @@ export default function OrdersPage() {
     return (
       <div className="space-y-4">
         {/* DETALLE DEL PEDIDO */}
-        <div className="rounded-lg border border-gray-100 p-4">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-3">{t('orderDetail')}</p>
+        <div className="rounded-xl border border-[#E5E5E3] p-4">
+          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-3">{t('orderDetail')}</p>
           {(order.items || []).length > 0 ? (
             <div className="space-y-3">
               {(order.items as OrderItem[]).map((item, i) => (
@@ -401,8 +401,8 @@ export default function OrdersPage() {
         </div>
 
         {/* ARCHIVOS */}
-        <div className="rounded-lg border border-gray-100 p-4">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">{t('files')}</p>
+        <div className="rounded-xl border border-[#E5E5E3] p-4">
+          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-2">{t('files')}</p>
           {editingLink ? (
             <div className="flex gap-2">
               <input className="input-base text-sm flex-1" value={linkVal} onChange={e => setLinkVal(e.target.value)} placeholder="URL de archivos (Google Drive, Dropbox...)" />
@@ -420,9 +420,9 @@ export default function OrdersPage() {
         </div>
 
         {/* MATERIALES */}
-        <div className="rounded-lg border border-gray-100 p-4">
+        <div className="rounded-xl border border-[#E5E5E3] p-4">
           <div className="flex items-center justify-between mb-3">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Materiales</p>
+            <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Materiales</p>
             {orderMaterials[order.id] && orderMaterials[order.id].length > 0 && (
               <span className="text-[10px] text-gray-400">{orderMaterials[order.id].filter(m => m.disponible).length}/{orderMaterials[order.id].length} disponibles</span>
             )}
@@ -434,7 +434,7 @@ export default function OrdersPage() {
                   <label key={mat.id} className="flex items-center gap-2.5 cursor-pointer">
                     <input type="checkbox" checked={mat.disponible}
                       onChange={() => toggleMaterial(mat.id, order.id, !mat.disponible)}
-                      className="w-4 h-4 rounded border-gray-300 text-green-600" />
+                      className="w-4 h-4 rounded border-gray-300 text-[#0F766E] accent-[#0F766E] cursor-pointer" />
                     <div className="flex-1 flex items-center justify-between min-w-0">
                       <span className={`text-sm ${mat.disponible ? 'text-gray-400 line-through' : 'text-gray-700'}`}>
                         {mat.nombre} × {mat.cantidad} {mat.unidad}
@@ -464,8 +464,8 @@ export default function OrdersPage() {
         </div>
 
         {/* Production checklist (digital) */}
-        <div className="rounded-lg border border-gray-100 p-4">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-3">Control de producción</p>
+        <div className="rounded-xl border border-[#E5E5E3] p-4">
+          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-3">Control de producción</p>
           <div className="space-y-2">
             {[
               { key: 'diseno', label: 'Diseño verificado' },
@@ -480,7 +480,7 @@ export default function OrdersPage() {
                       ...prev,
                       [order.id]: { ...(prev[order.id] || {}), [step.key]: !checked }
                     }))}
-                    className="w-4 h-4 rounded border-gray-300 text-teal-700" />
+                    className="w-4 h-4 rounded border-gray-300 text-[#0F766E] accent-[#0F766E] cursor-pointer" />
                   <span className={`text-sm ${checked ? 'text-gray-400 line-through' : 'text-gray-700'}`}>{step.label}</span>
                 </label>
               )
@@ -495,11 +495,11 @@ export default function OrdersPage() {
 
         {/* PAGOS — saldo prominente + detalle colapsado */}
         {showPrices && <div className="rounded-lg border border-gray-100 p-4">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-3">{t('payments')}</p>
+          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-3">{t('payments')}</p>
           {/* Prominent saldo */}
-          <div className={`rounded-lg p-3 mb-3 text-center ${saldo <= 0 ? 'bg-green-50 border border-green-100' : 'bg-amber-50 border border-amber-100'}`}>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-0.5">{saldo <= 0 ? 'Estado' : 'Saldo a cobrar'}</p>
-            <p className={`text-xl font-black ${saldo <= 0 ? 'text-green-600' : 'text-gray-800'}`}>{saldo <= 0 ? 'Pagado completo ✓' : fmtCurrency(saldo)}</p>
+          <div className={`rounded-xl p-4 mb-3 text-center ${saldo <= 0 ? 'bg-emerald-50 border border-emerald-100' : 'bg-[#F0FDFA] border border-[#CCFBF1]'}`}>
+            <p className={`text-[10px] font-semibold uppercase tracking-wider ${saldo <= 0 ? 'text-emerald-600/60' : 'text-[#0F766E]/60'}`}>{saldo <= 0 ? 'Estado' : 'Saldo a cobrar'}</p>
+            <p className={`text-2xl font-black mt-1 tabular-nums ${saldo <= 0 ? 'text-emerald-600' : 'text-[#0F766E]'}`}>{saldo <= 0 ? 'Pagado completo ✓' : fmtCurrency(saldo)}</p>
           </div>
           {/* Collapsible detail */}
           {(() => {
@@ -536,15 +536,15 @@ export default function OrdersPage() {
               <button onClick={() => regPay(order.id)} className="px-3 py-1 rounded-lg text-xs font-semibold text-white" style={{ background: '#0F766E' }}>OK</button>
               <button onClick={() => setPayingOrder(null)} className="text-xs text-gray-400">✕</button>
             </div>
-          ) : saldo > 0 ? <button onClick={() => { setPayingOrder(order.id); setPayAmount(Math.max(saldo, 0)) }} className="mt-3 flex items-center gap-1 text-xs font-semibold text-teal-700"><Plus size={12} /> {t('registerPayment')}</button> : null}
+          ) : saldo > 0 ? <button onClick={() => { setPayingOrder(order.id); setPayAmount(Math.max(saldo, 0)) }} className="mt-3 flex items-center gap-1 text-sm font-medium text-[#0F766E] hover:text-[#0D9488] transition-colors"><Plus size={12} /> {t('registerPayment')}</button> : null}
         </div>}
 
         {/* FECHA DE ENTREGA */}
         {(() => {
           const [editingDate, setEditingDate] = useState(false)
           return (
-            <div className="rounded-lg border border-gray-100 p-4">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">{t('deliveryDate')}</p>
+            <div className="rounded-xl border border-[#E5E5E3] p-4">
+              <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-2">{t('deliveryDate')}</p>
               {editingDate ? (
                 <div className="flex items-center gap-2">
                   <input type="date" className="input-base text-sm py-1 w-44" value={order.due_date || ''} onChange={e => { setDueDate(order.id, e.target.value); setEditingDate(false) }} autoFocus />
@@ -566,25 +566,30 @@ export default function OrdersPage() {
         })()}
 
         {/* ESTADO */}
-        <div className="rounded-lg border border-gray-100 p-4">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-3">{t('status')}</p>
-          <div className="flex items-center gap-1 mb-3">
+        <div className="rounded-xl border border-[#E5E5E3] p-4">
+          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-3">{t('status')}</p>
+          <div className="flex items-center gap-0 mb-3">
             {STATES.map((s, i) => {
               const si = STATES.indexOf(order.status as typeof STATES[number])
               const done = i <= si
+              const currentColor = SC[order.status]?.text || '#6B7280'
               return (
-                <div key={s} className="flex items-center">
-                  <div className={`w-3.5 h-3.5 rounded-full border-2 ${done ? '' : 'bg-white'}`} style={done ? { background: SC[s].text, borderColor: SC[s].text } : { borderColor: '#D1D5DB' }} />
-                  {i < STATES.length - 1 && <div className="w-8 h-0.5" style={{ background: i < si ? SC[STATES[i + 1]].text : '#E5E7EB' }} />}
-                </div>
+                <React.Fragment key={s}>
+                  <div className="w-3 h-3 rounded-full" style={{ background: done ? currentColor : '#E5E5E3' }} />
+                  {i < STATES.length - 1 && <div className="flex-1 h-0.5" style={{ background: i < si ? currentColor : '#E5E5E3' }} />}
+                </React.Fragment>
               )
             })}
           </div>
           <div className="flex gap-1.5 flex-wrap">
             {STATES.map(s => (
               <button key={s} onClick={() => setStatus(order.id, s)} disabled={order.status === s}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${order.status === s ? 'ring-2 ring-offset-1' : 'opacity-50 hover:opacity-100'}`}
-                style={{ background: SC[s].bg, color: SC[s].text }}>
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  order.status === s
+                    ? 'text-white'
+                    : 'text-gray-400 border border-[#E5E5E3] hover:border-gray-300'
+                }`}
+                style={order.status === s ? { background: SC[s].text } : {}}>
                 {order.status === s && '✓ '}{SL[s]}
               </button>
             ))}
@@ -597,7 +602,7 @@ export default function OrdersPage() {
             <button onClick={() => openWa(order)} className="flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg" style={{ color: '#25d366', background: '#25d36608', border: '1px solid #25d36620' }}><MessageCircle size={13} /> WhatsApp</button>
           )}
           <div className="flex-1" />
-          <button onClick={() => delOrder(order.id)} className="flex items-center gap-1 text-xs text-red-400 hover:text-red-600 px-2 py-1 rounded-lg hover:bg-red-50"><Trash2 size={12} /> Eliminar</button>
+          <button onClick={() => delOrder(order.id)} className="flex items-center gap-1 text-xs text-gray-400 hover:text-red-500 px-2 py-1 rounded-lg transition-colors"><Trash2 size={12} /> Eliminar</button>
         </div>
       </div>
     )
@@ -731,7 +736,7 @@ export default function OrdersPage() {
               return (
                 <DropCol key={state} id={state}>
                   <div className="flex items-center justify-between px-2 py-2 mb-1">
-                    <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full" style={{ background: sc.text }} /><span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: sc.text }}>{SL[state]}</span></div>
+                    <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full" style={{ background: sc.text }} /><span className="text-[11px] font-bold uppercase tracking-wider" style={{ color: sc.text }}>{SL[state]}</span></div>
                     <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold bg-white/60" style={{ color: sc.text }}>{so.length}</span>
                   </div>
                   {so.length > 0 && !isDel && showPrices && <p className="text-[10px] text-gray-400 px-2 -mt-0.5 mb-2">{fmtCurrency(so.reduce((s, o) => s + o.total_price, 0))}</p>}
@@ -742,7 +747,7 @@ export default function OrdersPage() {
                       return (
                         <DragCard key={order.id} id={order.id}>
                           <div onClick={() => setDetailPanel(order.id)}
-                            className={`p-3 rounded-lg bg-white shadow-sm cursor-pointer hover:shadow-md transition-all ${od ? 'border-l-4 border-l-red-500' : 'border border-transparent'}`}>
+                            className={`p-3.5 rounded-xl bg-white cursor-pointer hover:shadow-sm transition-shadow ${od ? 'border-l-4 border-l-red-500 border border-[#E5E5E3]' : 'border border-[#E5E5E3]'}`}>
                             <div className="flex items-center justify-between">
                               <p className="font-semibold text-gray-800 text-sm truncate flex items-center gap-1.5">{order.clients?.name || <span className="text-gray-400 italic">Cliente no asignado</span>}{order.materiales_listos === false && <span className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" title="Faltan materiales" />}</p>
                               <div className="relative group">
