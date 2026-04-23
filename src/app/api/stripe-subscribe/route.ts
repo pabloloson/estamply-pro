@@ -13,10 +13,8 @@ export async function POST(req: NextRequest) {
 
     const session = await auth()
     if (!session?.user?.id || !session.user.email) {
-      console.log('[stripe-subscribe] not authenticated')
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
     }
-    console.log('[stripe-subscribe] user:', session.user.id, session.user.email)
 
     if (!planLookupKey || typeof planLookupKey !== 'string') {
       return NextResponse.json({ error: 'Missing planLookupKey' }, { status: 400 })
@@ -26,13 +24,8 @@ export async function POST(req: NextRequest) {
     if (!profile) {
       return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
     }
-    console.log('[stripe-subscribe] profile:', {
-      stripeCustomerId: profile.stripeCustomerId,
-      stripeSubscriptionId: profile.stripeSubscriptionId,
-      planStatus: profile.planStatus,
-    })
 
-    // Cancel ALL incomplete/active subscriptions for this customer to avoid duplicates
+    // Cancel ALL existing subscriptions for this customer
     if (profile.stripeCustomerId) {
       try {
         const existingSubs = await stripe.subscriptions.list({
@@ -68,60 +61,53 @@ export async function POST(req: NextRequest) {
 
     // Look up the price
     const prices = await stripe.prices.list({ lookup_keys: [planLookupKey], active: true, limit: 1 })
-    console.log('[stripe-subscribe] prices:', prices.data.map(p => ({ id: p.id, key: p.lookup_key, amount: p.unit_amount })))
     if (!prices.data.length) {
       return NextResponse.json({ error: `Price not found for: ${planLookupKey}` }, { status: 404 })
     }
 
-    const priceId = prices.data[0].id
-
-    // Create subscription — no expand, retrieve invoice + PI separately
-    console.log('[stripe-subscribe] creating sub, customer:', customerId, 'price:', priceId)
+    // Create subscription with immediate payment (no trial)
     const subscription = await stripe.subscriptions.create({
       customer: customerId,
-      items: [{ price: priceId }],
+      items: [{ price: prices.data[0].id }],
       payment_behavior: 'default_incomplete',
       payment_settings: { save_default_payment_method: 'on_subscription' },
       metadata: { userId: session.user.id },
     })
     console.log('[stripe-subscribe] sub created:', subscription.id, 'status:', subscription.status)
 
-    // Retrieve the latest invoice separately
+    // Get invoice ID
     const invoiceId = typeof subscription.latest_invoice === 'string'
       ? subscription.latest_invoice
       : subscription.latest_invoice?.id
 
     if (!invoiceId) {
-      console.error('[stripe-subscribe] No invoice on subscription', subscription.id)
-      return NextResponse.json({ error: 'No invoice' }, { status: 500 })
+      return NextResponse.json({ error: 'No invoice on subscription' }, { status: 500 })
     }
 
-    const invoice = await stripe.invoices.retrieve(invoiceId) as any
-    console.log('[stripe-subscribe] invoice:', invoice.id, 'payment_intent:', invoice.payment_intent)
+    // Retrieve the invoice — in Stripe SDK v22 (API 2024+), the client_secret
+    // is in invoice.confirmation_secret.client_secret, NOT invoice.payment_intent
+    const invoice = await stripe.invoices.retrieve(invoiceId)
+    console.log('[stripe-subscribe] invoice:', invoice.id, 'confirmation_secret:', invoice.confirmation_secret)
 
-    // Get the PaymentIntent from the invoice
-    const paymentIntentId = typeof invoice.payment_intent === 'string'
-      ? invoice.payment_intent
-      : invoice.payment_intent?.id
+    const clientSecret = invoice.confirmation_secret?.client_secret
 
-    if (!paymentIntentId) {
-      console.error('[stripe-subscribe] No payment_intent on invoice', invoice.id)
-      return NextResponse.json({ error: 'No payment intent' }, { status: 500 })
+    if (!clientSecret) {
+      console.error('[stripe-subscribe] No confirmation_secret on invoice:', {
+        id: invoice.id,
+        status: invoice.status,
+        confirmation_secret: invoice.confirmation_secret,
+      })
+      return NextResponse.json({ error: 'No client secret on invoice' }, { status: 500 })
     }
 
-    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId)
-    console.log('[stripe-subscribe] clientSecret obtained for', subscription.id)
-
+    console.log('[stripe-subscribe] SUCCESS')
     return NextResponse.json({
-      clientSecret: paymentIntent.client_secret,
+      clientSecret,
       subscriptionId: subscription.id,
     })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error)
     console.error('[stripe-subscribe] ERROR:', message)
-    if (error instanceof Error && error.stack) {
-      console.error('[stripe-subscribe] stack:', error.stack)
-    }
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }
