@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { logout } from '@/app/actions/auth'
 import {
@@ -65,7 +64,8 @@ export function Sidebar({ workshopName = 'Mi Taller' }: SidebarProps) {
       {/* ── Logo area ── */}
       <div className="px-5 pt-6 pb-5">
         <div className="flex flex-col gap-1.5">
-          <Image src="/logo-full.png" alt="Estamply" width={850} height={213} priority style={{ height: 30, width: 'auto' }} />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo-full.png" alt="Estamply" style={{ height: 30, width: 'auto' }} />
           <span className="text-[11.5px] text-gray-400 block leading-tight truncate">
             {workshopName}
           </span>
@@ -116,7 +116,8 @@ export function Sidebar({ workshopName = 'Mi Taller' }: SidebarProps) {
 
       {/* Mobile header */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#EBEBEA] px-4 py-3 flex items-center justify-between">
-        <Image src="/logo-full.png" alt="Estamply" width={850} height={213} style={{ height: 26, width: 'auto' }} />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo-full.png" alt="Estamply" style={{ height: 26, width: 'auto' }} />
         <div className="flex items-center gap-2">
           {items.length > 0 && (
             <Link
