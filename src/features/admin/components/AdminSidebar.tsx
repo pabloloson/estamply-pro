@@ -25,11 +25,8 @@ export default function AdminSidebar({ email }: { email: string }) {
       <aside className="hidden lg:flex w-56 flex-shrink-0 flex-col p-4 text-white" style={{ background: '#0F172A' }}>
         <div className="flex items-center gap-2.5 px-3 py-4 mb-4">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo-icon.png" alt="Estamply" width={32} height={32} className="rounded-lg" />
-          <div>
-            <span className="font-bold text-sm">Estamply</span>
-            <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Admin</p>
-          </div>
+          <img src="/logo-full.png" alt="Estamply" height={28} style={{ height: 28, width: 'auto', filter: 'brightness(0) invert(1)' }} />
+          <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider ml-1">Admin</p>
         </div>
         <nav className="flex-1 space-y-0.5">
           {NAV.map(({ href, label, icon: Icon }) => {
@@ -52,8 +49,8 @@ export default function AdminSidebar({ email }: { email: string }) {
       <div className="lg:hidden fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 py-3" style={{ background: '#0F172A' }}>
         <div className="flex items-center gap-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo-icon.png" alt="" width={24} height={24} className="rounded" />
-          <span className="font-bold text-white text-sm">Admin</span>
+          <img src="/logo-full.png" alt="Estamply" height={22} style={{ height: 22, width: 'auto', filter: 'brightness(0) invert(1)' }} />
+          <span className="font-bold text-white text-xs uppercase tracking-wider">Admin</span>
         </div>
         <button onClick={() => setOpen(!open)} className="text-white p-1">
           {open ? <X size={20} /> : <Menu size={20} />}
@@ -67,11 +64,8 @@ export default function AdminSidebar({ email }: { email: string }) {
           <aside className="absolute left-0 top-0 bottom-0 w-64 flex flex-col p-4 text-white" style={{ background: '#0F172A' }} onClick={e => e.stopPropagation()}>
             <div className="flex items-center gap-2.5 px-3 py-4 mb-4">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/logo-icon.png" alt="Estamply" width={32} height={32} className="rounded-lg" />
-              <div>
-                <span className="font-bold text-sm">Estamply</span>
-                <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Admin</p>
-              </div>
+              <img src="/logo-full.png" alt="Estamply" height={28} style={{ height: 28, width: 'auto', filter: 'brightness(0) invert(1)' }} />
+              <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider ml-1">Admin</p>
             </div>
             <nav className="flex-1 space-y-0.5">
               {NAV.map(({ href, label, icon: Icon }) => {

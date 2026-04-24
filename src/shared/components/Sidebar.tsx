@@ -64,19 +64,11 @@ export function Sidebar({ workshopName = 'Mi Taller' }: SidebarProps) {
     <div className="flex flex-col h-full">
       {/* ── Logo area ── */}
       <div className="px-5 pt-6 pb-5">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden"
-               style={{ background: '#0F766E' }}>
-            <Image src="/logo-icon.png" alt="Estamply" width={22} height={22} priority />
-          </div>
-          <div className="min-w-0">
-            <span className="font-semibold text-[15px] text-gray-900 block leading-tight tracking-tight">
-              Estamply
-            </span>
-            <span className="text-[11.5px] text-gray-400 block leading-tight truncate mt-0.5">
-              {workshopName}
-            </span>
-          </div>
+        <div className="flex flex-col gap-1.5">
+          <Image src="/logo-full.png" alt="Estamply" width={120} height={30} priority style={{ height: 28, width: 'auto' }} />
+          <span className="text-[11.5px] text-gray-400 block leading-tight truncate">
+            {workshopName}
+          </span>
         </div>
       </div>
 
@@ -124,13 +116,7 @@ export function Sidebar({ workshopName = 'Mi Taller' }: SidebarProps) {
 
       {/* Mobile header */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#EBEBEA] px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden"
-               style={{ background: '#0F766E' }}>
-            <Image src="/logo-icon.png" alt="Estamply" width={18} height={18} />
-          </div>
-          <span className="font-semibold text-gray-900 text-[15px] tracking-tight">Estamply</span>
-        </div>
+        <Image src="/logo-full.png" alt="Estamply" width={110} height={28} style={{ height: 24, width: 'auto' }} />
         <div className="flex items-center gap-2">
           {items.length > 0 && (
             <Link
