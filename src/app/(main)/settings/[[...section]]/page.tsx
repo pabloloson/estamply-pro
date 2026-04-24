@@ -336,7 +336,7 @@ export default function SettingsPage() {
               <p className="text-xs text-gray-500 mb-1">Tu catálogo:</p>
               <p className="text-sm font-semibold text-teal-800 truncate mb-2">estamply.app/catalogo/{(ws as Record<string, unknown>).catalog_slug as string}</p>
               <div className="flex gap-2 flex-wrap">
-                <button onClick={() => { navigator.clipboard.writeText(`https://www.estamply.app/catalogo/${(ws as Record<string, unknown>).catalog_slug}`); alert('Link copiado') }}
+                <button onClick={() => { navigator.clipboard.writeText(`https://estamply.app/catalogo/${(ws as Record<string, unknown>).catalog_slug}`); alert('Link copiado') }}
                   className="text-xs px-2.5 py-1 rounded-lg font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100">Copiar</button>
                 <a href={`/catalogo/${(ws as Record<string, unknown>).catalog_slug}`} target="_blank" className="text-xs px-2.5 py-1 rounded-lg font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100">Ver</a>
                 <button onClick={() => setShowQR(true)} className="text-xs px-2.5 py-1 rounded-lg font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 flex items-center gap-1"><QrCode size={12} />QR</button>
@@ -1504,7 +1504,7 @@ export default function SettingsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)' }} onClick={() => setShowQR(false)}>
           <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl max-h-[90dvh] overflow-y-auto text-center" onClick={e => e.stopPropagation()}>
             <h3 className="font-bold text-gray-900 mb-4">QR de tu catálogo</h3>
-            <QRCodeCanvas id="catalog-qr" value={`https://www.estamply.app/catalogo/${(ws as Record<string, unknown>).catalog_slug}`} size={300} level="M" />
+            <QRCodeCanvas id="catalog-qr" value={`https://estamply.app/catalogo/${(ws as Record<string, unknown>).catalog_slug}`} size={300} level="M" />
             <p className="text-xs text-gray-400 mt-3">estamply.app/catalogo/{(ws as Record<string, unknown>).catalog_slug as string}</p>
             <div className="flex gap-3 mt-4">
               <button onClick={() => setShowQR(false)} className="flex-1 py-2 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">Cerrar</button>

@@ -226,8 +226,8 @@ export default function LandingContent({ defaultLang = 'es', showLanguageBanner 
             {[["Funciones","#funciones"],["Precios","#precios"],["FAQ","#faq"]].map(([t,h])=><a key={t} href={h} style={{ fontSize: 14, color: "#475569", textDecoration: "none", fontWeight: 500 }}>{t}</a>)}
           </div>
           <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-            <Link href="/login" style={{ fontSize: 14, color: "#475569", textDecoration: "none", fontWeight: 500 }}>Iniciar sesión</Link>
-            <Link href="/signup" className="cta" style={{ padding: "8px 18px", fontSize: 13, borderRadius: 7 }}>Empezar gratis</Link>
+            <Link href="https://app.estamply.app/login" style={{ fontSize: 14, color: "#475569", textDecoration: "none", fontWeight: 500 }}>Iniciar sesión</Link>
+            <Link href="https://app.estamply.app/signup" className="cta" style={{ padding: "8px 18px", fontSize: 13, borderRadius: 7 }}>Empezar gratis</Link>
           </div>
         </div>
       </nav>
@@ -244,7 +244,7 @@ export default function LandingContent({ defaultLang = 'es', showLanguageBanner 
               <R delay={0.1}><p style={{ fontSize: 18, color: "#475569", lineHeight: 1.65, marginBottom: 32, maxWidth: 460 }}>Cotiza con precisión, envía presupuestos profesionales, gestiona pedidos, vende desde tu catálogo web y sabe cuánto ganas de verdad. Todo en un solo lugar.</p></R>
               <R delay={0.15}>
                 <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 14 }}>
-                  <Link href="/signup" className="cta">Empezar gratis — 7 días {I.arr}</Link>
+                  <Link href="https://app.estamply.app/signup" className="cta">Empezar gratis — 7 días {I.arr}</Link>
                   <a href="#funciones" className="cta-g">Ver cómo funciona</a>
                 </div>
                 <p style={{ fontSize: 13, color: "#64748B" }}>Sin tarjeta de crédito · Cancela cuando quieras</p>
@@ -400,7 +400,7 @@ export default function LandingContent({ defaultLang = 'es', showLanguageBanner 
               <R delay={0.1}><div style={{ marginBottom: 28 }}>{catalogBullets.map((b,i)=><div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 10 }}><span style={{ flexShrink: 0, marginTop: 1 }}>{I.check}</span><span style={{ fontSize: 14, color: "#CBD8E8", lineHeight: 1.55 }}>{b}</span></div>)}</div></R>
               <R delay={0.15}>
                 <div style={{ borderLeft: "2px solid #5EEAD4", paddingLeft: 14, marginBottom: 28 }}><p style={{ fontStyle: "italic", fontSize: 17, color: "#E2E8F0", lineHeight: 1.5 }}>Tu catálogo vende mientras vos estás estampando.</p></div>
-                <Link href="/signup" className="cta">Empezar gratis — 7 días {I.arr}</Link>
+                <Link href="https://app.estamply.app/signup" className="cta">Empezar gratis — 7 días {I.arr}</Link>
               </R>
             </div>
             <R delay={0.2} y={40} style={{ flex: "1 1 45%" }}>
@@ -464,7 +464,7 @@ export default function LandingContent({ defaultLang = 'es', showLanguageBanner 
                   <span style={{ fontSize: 13, color: f.startsWith("Todo")?tealLight:"#334155", fontWeight: f.startsWith("Todo")?600:400, lineHeight: 1.5 }}>{f}</span>
                 </div>)}
               </div>
-              <Link href="/signup" className="cta" style={{ width: "100%", justifyContent: "center", background: pl.pop?teal:"transparent", color: pl.pop?"#fff":teal, border: pl.pop?"none":`1.5px solid ${teal}` }}>Empezar gratis</Link>
+              <Link href="https://app.estamply.app/signup" className="cta" style={{ width: "100%", justifyContent: "center", background: pl.pop?teal:"transparent", color: pl.pop?"#fff":teal, border: pl.pop?"none":`1.5px solid ${teal}` }}>Empezar gratis</Link>
             </div></R>)}
           </div>
 
@@ -548,7 +548,7 @@ export default function LandingContent({ defaultLang = 'es', showLanguageBanner 
         <div style={{ ...w, textAlign: "center", position: "relative" }}>
           <R><h2 style={{ fontSize: "clamp(26px,4vw,38px)", fontWeight: 800, color: "#fff", lineHeight: 1.15, letterSpacing: "-0.02em", marginBottom: 14 }}>Cada día sin Estamply es un día<br/>que seguís improvisando.</h2></R>
           <R delay={0.05}><p style={{ fontSize: 17, color: "#A3B8D6", marginBottom: 28 }}>Empieza gratis. Descubre cuánto puedes ganar cuando dejas de adivinar.</p></R>
-          <R delay={0.1}><Link href="/signup" className="cta" style={{ fontSize: 15, padding: "15px 36px" }}>Empezar gratis — 7 días sin compromiso {I.arr}</Link><p style={{ fontSize: 13, color: "#7B8FB3", marginTop: 14 }}>Sin tarjeta de crédito · Cancela cuando quieras</p></R>
+          <R delay={0.1}><Link href="https://app.estamply.app/signup" className="cta" style={{ fontSize: 15, padding: "15px 36px" }}>Empezar gratis — 7 días sin compromiso {I.arr}</Link><p style={{ fontSize: 13, color: "#7B8FB3", marginTop: 14 }}>Sin tarjeta de crédito · Cancela cuando quieras</p></R>
         </div>
       </section>
 
@@ -567,7 +567,7 @@ export default function LandingContent({ defaultLang = 'es', showLanguageBanner 
               <a href="#funciones" style={{ display: "block", fontSize: 13, color: "#475569", textDecoration: "none", marginBottom: 8 }}>Funciones</a>
               <a href="#precios" style={{ display: "block", fontSize: 13, color: "#475569", textDecoration: "none", marginBottom: 8 }}>Precios</a>
               <a href="#faq" style={{ display: "block", fontSize: 13, color: "#475569", textDecoration: "none", marginBottom: 8 }}>FAQ</a>
-              <Link href="/login" style={{ display: "block", fontSize: 13, color: "#475569", textDecoration: "none", marginBottom: 8 }}>Iniciar sesión</Link>
+              <Link href="https://app.estamply.app/login" style={{ display: "block", fontSize: 13, color: "#475569", textDecoration: "none", marginBottom: 8 }}>Iniciar sesión</Link>
             </div>
             <div>
               <h4 style={{ fontSize: 12, fontWeight: 700, color: "#0F172A", marginBottom: 12, letterSpacing: "0.03em" }}>Legal</h4>

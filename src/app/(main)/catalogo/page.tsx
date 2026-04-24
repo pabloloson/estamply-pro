@@ -284,13 +284,13 @@ export default function CatalogoPage() {
             estamply.app/catalogo/{catalogSlug}
           </span>
           <button
-            onClick={() => { navigator.clipboard.writeText(`https://www.estamply.app/catalogo/${catalogSlug}`); setLinkCopied(true); setTimeout(() => setLinkCopied(false), 2000) }}
+            onClick={() => { navigator.clipboard.writeText(`https://estamply.app/catalogo/${catalogSlug}`); setLinkCopied(true); setTimeout(() => setLinkCopied(false), 2000) }}
             className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white border border-[#E5E5E3] text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors flex-shrink-0"
           >
             <Copy size={12} /> {linkCopied ? '¡Copiado!' : 'Copiar'}
           </button>
           <a
-            href={`https://wa.me/?text=${encodeURIComponent('Mirá mi catálogo: https://www.estamply.app/catalogo/' + catalogSlug)}`}
+            href={`https://wa.me/?text=${encodeURIComponent('Mirá mi catálogo: https://estamply.app/catalogo/' + catalogSlug)}`}
             target="_blank"
             className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#25D366] text-white text-xs font-medium hover:bg-[#20BD5A] transition-colors flex-shrink-0"
           >

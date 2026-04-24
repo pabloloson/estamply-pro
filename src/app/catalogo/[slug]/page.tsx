@@ -25,8 +25,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const nombre = (s.nombre_tienda as string) || prof?.businessName || 'Mi Taller'
   const description = (s.descripcion_tienda as string) || (s.brand_description as string) || 'Catálogo de productos personalizados'
-  const image = (s.banner_url as string) || prof?.businessLogoUrl || 'https://www.estamply.app/logo-icon.png'
-  const url = `https://www.estamply.app/catalogo/${slug}`
+  const image = (s.banner_url as string) || prof?.businessLogoUrl || 'https://estamply.app/logo-icon.png'
+  const url = `https://estamply.app/catalogo/${slug}`
 
   return {
     title: nombre,

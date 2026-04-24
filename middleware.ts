@@ -2,50 +2,91 @@ import { auth } from "@/auth"
 import { NextResponse } from "next/server"
 
 const APP_HOST = 'app.estamply.app'
+const LANDING_HOST = 'estamply.app'
 
-const publicRoutes = ['/', '/login', '/signup', '/onboarding', '/br']
-const publicPrefixes = ['/p/', '/catalogo/', '/api/']
+// Routes that belong to the app (served on app.estamply.app)
+const appRoutes = [
+  '/login', '/signup', '/register', '/onboarding',
+  '/dashboard', '/cotizador', '/presupuesto', '/orders', '/clients',
+  '/materiales', '/equipamiento', '/tecnicas', '/settings',
+  '/estadisticas', '/promociones', '/catalogo', '/cuenta',
+  '/planes', '/admin', '/base-de-costos', '/compras',
+  '/estrategia-precios', '/insumos', '/insumos-equipos',
+  '/inventario', '/reglas-de-venta',
+]
+
+// Routes that belong to the landing (served on estamply.app)
+const landingRoutes = ['/', '/br', '/precios', '/features', '/blog', '/contacto', '/legal', '/privacidad']
+
+// Prefixes that are always public
+const publicPrefixes = ['/p/', '/api/']
 
 export default auth((req) => {
   const { pathname } = req.nextUrl
   const host = (req.headers.get('host') || '').toLowerCase()
   const isAppSubdomain = host.startsWith('app.')
   const isLocalhost = host.startsWith('localhost') || host.startsWith('127.0.0.1')
+  const isWww = host.startsWith('www.')
   const isLoggedIn = !!req.auth
 
-  // Main domain — redirect app routes to app subdomain
-  if (!isAppSubdomain && !isLocalhost) {
-    const appRedirectRoutes = ['/login', '/signup', '/register', '/admin', '/dashboard',
-      '/cotizador', '/presupuesto', '/orders', '/clients', '/materiales',
-      '/equipamiento', '/tecnicas', '/settings', '/estadisticas', '/promociones', '/onboarding']
-    const shouldRedirectToApp = appRedirectRoutes.some(r => pathname === r || pathname.startsWith(r + '/'))
+  // ── www.estamply.app → estamply.app (301) ──
+  if (isWww) {
+    const url = new URL(req.url)
+    url.hostname = LANDING_HOST
+    url.port = ''
+    return NextResponse.redirect(url, 301)
+  }
 
-    if (shouldRedirectToApp) {
+  // ── Landing domain (estamply.app) ──
+  if (!isAppSubdomain && !isLocalhost) {
+    const isAppRoute = appRoutes.some(r => pathname === r || pathname.startsWith(r + '/'))
+
+    if (isAppRoute) {
       const appUrl = new URL(req.url)
       appUrl.hostname = APP_HOST
       appUrl.port = ''
       if (pathname === '/register') appUrl.pathname = '/signup'
       return NextResponse.redirect(appUrl, 301)
     }
+
+    // Everything else on the landing domain passes through (/, /br, /precios, etc.)
     return NextResponse.next()
   }
 
-  // App subdomain / localhost — auth logic
+  // ── App subdomain (app.estamply.app) or localhost ──
+
+  // Redirect landing-only routes to landing domain
+  if (!isLocalhost && landingRoutes.includes(pathname)) {
+    const landingUrl = new URL(req.url)
+    landingUrl.hostname = LANDING_HOST
+    landingUrl.port = ''
+    return NextResponse.redirect(landingUrl, 301)
+  }
+
   // Admin routes: skip middleware, let layout handle
   if (pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) {
     return NextResponse.next()
   }
 
-  const isPublicRoute = publicRoutes.includes(pathname)
+  // Public prefixes (/p/, /api/) always pass through
   const isPublicPrefix = publicPrefixes.some(prefix => pathname.startsWith(prefix))
+  if (isPublicPrefix) return NextResponse.next()
 
-  if (isPublicRoute || isPublicPrefix) {
-    if (isLoggedIn && (pathname === '/login' || pathname === '/signup')) {
-      return NextResponse.redirect(new URL('/dashboard', req.nextUrl))
-    }
-    return NextResponse.next()
+  // Auth pages: public but redirect to dashboard if already logged in
+  const isAuthPage = pathname === '/login' || pathname === '/signup'
+  if (isAuthPage) {
+    return isLoggedIn
+      ? NextResponse.redirect(new URL('/dashboard', req.nextUrl))
+      : NextResponse.next()
   }
 
+  // Onboarding is public (accessed right after signup)
+  if (pathname === '/onboarding') return NextResponse.next()
+
+  // Catalogo routes on app subdomain are public
+  if (pathname.startsWith('/catalogo')) return NextResponse.next()
+
+  // Everything else requires auth
   if (!isLoggedIn) {
     return NextResponse.redirect(new URL('/login', req.nextUrl))
   }

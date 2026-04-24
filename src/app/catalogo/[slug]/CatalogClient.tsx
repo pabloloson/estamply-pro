@@ -323,7 +323,7 @@ function CatalogContent({ shop, products, categories, sizeGuides, activePromos }
               {shop.whatsapp && <a href={`https://wa.me/${shop.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener" className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-300 transition-colors" title={shop.whatsapp}><MessageCircle size={16} /></a>}
             </div>
           )}
-          <p className="text-xs text-gray-400 flex items-center justify-center gap-1.5">{tc('webCatalog', 'poweredBy')} <img src="/logo-icon.png" alt="" className="inline-block w-3.5 h-3.5" /><a href="https://www.estamply.app" className="font-semibold hover:text-gray-500">Estamply</a></p>
+          <p className="text-xs text-gray-400 flex items-center justify-center gap-1.5">{tc('webCatalog', 'poweredBy')} <img src="/logo-icon.png" alt="" className="inline-block w-3.5 h-3.5" /><a href="https://estamply.app" className="font-semibold hover:text-gray-500">Estamply</a></p>
         </div>
       </div>
 
@@ -602,7 +602,7 @@ function CartScreen({ shop, onClose }: { shop: ShopInfo; onClose: () => void }) 
     } catch { /* continue without presupuesto */ }
     // Build WhatsApp URL (user clicks it directly — no popup blocked)
     const lines = items.map(i => `• ${i.quantity}× ${i.name}${i.variant ? ` (${i.variant})` : ''} — ${fmt(i.price * i.quantity)}`).join('\n')
-    const presLink = codigo ? `\n\n📄 Ver presupuesto: https://www.estamply.app/p/${codigo}` : ''
+    const presLink = codigo ? `\n\n📄 Ver presupuesto: https://estamply.app/p/${codigo}` : ''
     const medioLine = medio && ajustePct !== 0 ? `\n💳 Medio de pago: ${medio.nombre} (${ajustePct > 0 ? '+' : ''}${ajustePct}%)` : medio ? `\n💳 Medio de pago: ${medio.nombre}` : ''
     const msg = `Hola! Hice un pedido desde tu catálogo web:\n\n${lines}${medioLine}\n\n💰 Total: ${fmt(totalFinal)}${presLink}\n\nNombre: ${nombre}`
     const waUrl = `https://wa.me/${shop.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`
