@@ -1,5 +1,6 @@
 import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
+import Google from "next-auth/providers/google"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import { prisma } from "@/lib/db/prisma"
 import bcrypt from "bcryptjs"
@@ -12,6 +13,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     error: "/login",
   },
   providers: [
+    Google({
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    }),
     Credentials({
       name: "credentials",
       credentials: {
@@ -39,6 +44,35 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
+    async signIn({ user, account }) {
+      // For Google sign-ins, ensure a profile exists
+      if (account?.provider === "google" && user.id) {
+        const existingProfile = await prisma.profile.findUnique({
+          where: { userId: user.id },
+        })
+        if (!existingProfile) {
+          await prisma.profile.create({
+            data: {
+              id: user.id,
+              userId: user.id,
+              email: user.email!,
+              fullName: user.name || '',
+              onboardingCompleted: false,
+              trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+              plan: 'pro',
+              planStatus: 'trial',
+            },
+          })
+        }
+      }
+      return true
+    },
+    async redirect({ url, baseUrl }) {
+      // If the url starts with the base, use it; otherwise default to dashboard
+      if (url.startsWith(baseUrl)) return url
+      if (url.startsWith('/')) return `${baseUrl}${url}`
+      return `${baseUrl}/dashboard`
+    },
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id

@@ -70,6 +70,10 @@ export async function signup(formData: FormData) {
   }
 }
 
+export async function googleLogin() {
+  await signIn("google", { redirectTo: "/dashboard" })
+}
+
 export async function logout() {
   await signOut({ redirectTo: "/login" })
 }

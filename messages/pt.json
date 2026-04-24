@@ -15,6 +15,8 @@
     "creating": "Criando conta...",
     "create": "Criar conta",
     "hasAccount": "Já tem conta?",
+    "continueWithGoogle": "Continuar com Google",
+    "orDivider": "ou",
     "features": { "calculator": "Calculadora inteligente com custos exatos", "performance": "Rendimento em R$/hora por técnica", "secure": "Seus dados seguros na nuvem" }
   },
   "common": { "save": "Salvar", "cancel": "Cancelar", "delete": "Excluir", "edit": "Editar", "back": "Voltar", "search": "Buscar", "loading": "Carregando...", "confirm": "Confirmar", "close": "Fechar", "all": "Todos", "active": "Ativo", "saving": "Salvando...", "noData": "Sem dados", "add": "Adicionar", "noClient": "Sem cliente" },
