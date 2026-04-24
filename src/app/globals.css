@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -11,8 +11,8 @@
   --bg-app: #FAFAF8;
   --bg-card: #FFFFFF;
   --bg-input: #F8F7F4;
-  --text-primary: #1A1A1A;
-  --text-secondary: #6B7280;
+  --text-primary: #334155;
+  --text-secondary: #475569;
   --border-default: #E5E5E3;
   --border-subtle: #F3F3F1;
 }
@@ -27,7 +27,7 @@ html {
 }
 
 body {
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   background-color: var(--bg-app);
   color: var(--text-primary);
   overflow-x: hidden;
@@ -69,7 +69,7 @@ body {
   padding: 10px 14px;
   width: 100%;
   font-size: 14px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
   outline: none;
 }
@@ -89,7 +89,7 @@ body {
   border: none;
   cursor: pointer;
   font-size: 14px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   width: 100%;
   transition: background-color 0.2s ease, transform 0.1s ease;
   letter-spacing: 0.01em;
