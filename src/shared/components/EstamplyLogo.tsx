@@ -16,16 +16,12 @@ interface EstamplyLogoProps {
  */
 export function EstamplyLogo({ variant = 'icon', size = 32, className = '' }: EstamplyLogoProps) {
   if (variant === 'full') {
-    // Full logo: stamp icon + "estamply" text
-    // Original aspect ratio of logo-full.png is approximately 4:1
-    const height = size
-    const width = Math.round(height * 4)
     return (
       <Image
         src="/logo-full.png"
         alt="Estamply"
-        width={width}
-        height={height}
+        width={850}
+        height={213}
         className={className}
         priority
         style={{ height: size, width: 'auto' }}

@@ -33,7 +33,7 @@ export default function SignupPage() {
     <div className="flex min-h-screen">
       {/* Left panel - teal gradient with features */}
       <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12" style={{ background: 'linear-gradient(135deg, #0F766E 0%, #a29bfe 100%)' }}>
-        <Image src="/logo-full.png" alt="Estamply" width={160} height={40} style={{ height: 36, width: 'auto' }} className="brightness-0 invert" />
+        <Image src="/logo-full.png" alt="Estamply" width={850} height={213} style={{ height: 36, width: 'auto' }} className="brightness-0 invert" />
         <div>
           <h1 className="text-4xl font-bold text-white leading-tight mb-6">
             El cerebro de tu taller de personalización
@@ -63,7 +63,7 @@ export default function SignupPage() {
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white">
         <div className="w-full max-w-sm">
           <div className="lg:hidden flex items-center gap-2 mb-8">
-            <Image src="/logo-full.png" alt="Estamply" width={140} height={35} style={{ height: 30, width: 'auto' }} />
+            <Image src="/logo-full.png" alt="Estamply" width={850} height={213} style={{ height: 30, width: 'auto' }} />
           </div>
 
           <h2 className="text-2xl font-bold text-gray-900 mb-1">{to('createAccount')}</h2>
