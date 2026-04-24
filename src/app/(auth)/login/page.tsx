@@ -29,7 +29,7 @@ export default function LoginPage() {
     <div className="flex min-h-screen">
       {/* Left Panel */}
       <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12" style={{ background: 'linear-gradient(160deg, #0F766E 0%, #0D5E58 100%)' }}>
-        <img src="/logo-estamply-login.png" alt="Estamply" style={{ height: 28, width: 'auto' }} />
+        <img src="/logo-estamply-login.png" alt="Estamply" style={{ height: 32, width: 128, objectFit: 'contain', objectPosition: 'left' }} />
 
         <div>
           <h1 className="text-4xl font-bold text-white leading-tight mb-6">
