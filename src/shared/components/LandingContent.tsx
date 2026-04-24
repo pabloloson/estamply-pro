@@ -360,8 +360,8 @@ export default function LandingContent({ defaultLang = 'es', showLanguageBanner 
 
           <div className="f2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
             {[
-              { lb: "Presupuestos profesionales", t: "Presupuestos que te hacen ver como un negocio serio", c: "Genera presupuestos con tu logo, compártelos por WhatsApp o email. Tu cliente los confirma y se convierten en pedido.", q: "Cuando te ven profesional, te regatean menos." },
-              { lb: "Gestión de pedidos", t: "Cada pedido en su lugar. Ninguno se pierde.", c: "Tablero Kanban con 4 estados, datos del cliente, link al diseño y alertas de cobros pendientes.", q: "Con 3 pedidos funciona la memoria. Con 15, necesitas un sistema." },
+              { lb: "Presupuestos profesionales", t: "Presupuestos que te hacen ver como un negocio serio", c: "Genera presupuestos con tu logo, compártelos por WhatsApp o email. Tu cliente los confirma y se convierten en pedido.", q: "Cuando te ven profesional, te regatean menos.", img: "/presupuesto.png" },
+              { lb: "Gestion de pedidos", t: "Cada pedido en su lugar. Ninguno se pierde.", c: "Tablero Kanban con 4 estados, datos del cliente, link al diseno y alertas de cobros pendientes.", q: "Con 3 pedidos funciona la memoria. Con 15, necesitas un sistema.", img: null },
             ].map((f,i)=><R key={i} delay={i*0.06}><div className="card" style={{ overflow: "hidden", height: "100%", display: "flex", flexDirection: "column" }}>
               <div style={{ padding: "28px 24px" }}>
                 <p className="lb" style={{ marginBottom: 6 }}>{f.lb}</p>
@@ -369,7 +369,10 @@ export default function LandingContent({ defaultLang = 'es', showLanguageBanner 
                 <p style={{ fontSize: 15, color: "#475569", lineHeight: 1.7, marginBottom: 14 }}>{f.c}</p>
                 <div style={{ borderLeft: `2px solid ${teal}`, paddingLeft: 12, fontSize: 14, fontStyle: "italic", color: "#1E293B" }}>{f.q}</div>
               </div>
-              <div style={{ flex: 1, minHeight: 170, background: "#F0FDFA", borderTop: "1px solid #E5E7EB", display: "grid", placeItems: "center", color: "#94A3B8", fontSize: 13 }}>Screenshot: {f.lb}</div>
+              {f.img
+                ? <div style={{ borderTop: "1px solid #E5E7EB", overflow: "hidden" }}><img src={f.img} alt={f.lb} style={{ width: "100%", display: "block" }} /></div>
+                : <div style={{ flex: 1, minHeight: 170, background: "#F0FDFA", borderTop: "1px solid #E5E7EB", display: "grid", placeItems: "center", color: "#94A3B8", fontSize: 13 }}>Screenshot: {f.lb}</div>
+              }
             </div></R>)}
           </div>
 
