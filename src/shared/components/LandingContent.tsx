@@ -353,7 +353,7 @@ export default function LandingContent({ defaultLang = 'es', showLanguageBanner 
               <p style={{ fontSize: 16, color: "#475569", lineHeight: 1.7, maxWidth: 560, marginBottom: 16 }}>Estamply calcula todos tus costos — producto, papel, tinta, amortización, desperdicio — y te dice exactamente cuánto cobrar. Para sublimación, DTF, vinilo y serigrafía.</p>
               <div style={{ borderLeft: `2px solid ${teal}`, paddingLeft: 14, fontSize: 15, fontStyle: "italic", color: "#1E293B" }}>Cuando un cliente te pregunta cuánto sale, le respondés con un número que te respalda.</div>
             </div>
-            <div style={{ margin: "28px 40px 0", borderRadius: "12px 12px 0 0", overflow: "hidden", border: "1px solid #E5E7EB", borderBottom: "none" }}>
+            <div style={{ margin: "28px auto 0", maxWidth: 620, borderRadius: "12px 12px 0 0", overflow: "hidden", border: "1px solid #E5E7EB", borderBottom: "none" }}>
               <img src="/cotizador-subli.png" alt="Cotizador de Estamply mostrando el calculo de costos para sublimacion de camisetas" style={{ width: "100%", display: "block" }} />
             </div>
           </div></R>
