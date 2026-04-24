@@ -33,7 +33,7 @@ export default function SignupPage() {
     <div className="flex min-h-screen">
       {/* Left panel - teal gradient with features */}
       <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12" style={{ background: 'linear-gradient(160deg, #0F766E 0%, #0D5E58 100%)' }}>
-        <Image src="/logo-full.png" alt="Estamply" width={850} height={213} style={{ height: 36, width: 'auto' }} className="brightness-0 invert" priority unoptimized />
+        <Image src="/logo-estamply-login.png" alt="Estamply" width={640} height={160} style={{ height: 36, width: 'auto' }} priority unoptimized />
         <div>
           <h1 className="text-4xl font-bold text-white leading-tight mb-6">
             El cerebro de tu taller de personalización
