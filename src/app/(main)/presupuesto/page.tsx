@@ -198,7 +198,7 @@ export default function PresupuestoPage() {
         codigo, numero: quoteNumber, validez_dias: validezDias,
         client_id: clientId || null, client_name: clientDisplayName || null,
         items: items.map(i => ({ tecnica: i.tecnica, nombre: i.nombre, cantidad: i.cantidad, precioUnit: i.precioUnit, precioSinDesc: i.precioSinDesc, subtotal: i.subtotal, notas: i.notas, origen: i.origen, variantName: i.variantName, variantBreakdown: i.variantBreakdown })),
-        total: totalVenta, condiciones, business_profile: bizProfile || {},
+        total: totalVenta, condiciones: JSON.stringify(condiciones), business_profile: bizProfile || {},
         tipo_cambio_congelado: (ws as Record<string, unknown>).tipo_cambio || null,
       }).select('id, codigo').single()
       if (error || !data) { setSaveStatus('error'); alert('Error al crear: ' + (error?.message || '')); return }
@@ -215,7 +215,7 @@ export default function PresupuestoPage() {
     const { error } = await supabase.from('presupuestos').update({
       items: itemsData, total: totalVenta,
       client_id: clientId || null, client_name: clientDisplayName || null,
-      condiciones, validez_dias: validezDias,
+      condiciones: JSON.stringify(condiciones), validez_dias: validezDias,
     }).eq('id', pid)
     if (error) { setSaveStatus('error') }
     else { setDirty(false); setSaveStatus('saved'); setTimeout(() => setSaveStatus(s => s === 'saved' ? 'idle' : s), 3000) }
