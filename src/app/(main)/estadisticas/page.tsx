@@ -486,7 +486,7 @@ export default function EstadisticasPage() {
 
       {/* Status bar — Resumen */}
       {statsTab === 'resumen' && <div className="rounded-2xl border border-[#E5E5E3] bg-white p-5 mb-6">
-        <h2 className="font-bold text-gray-800 mb-3">{t('ordersByStatus')}</h2>
+        <h2 className="text-sm font-semibold text-gray-900 mb-3">{t('ordersByStatus')}</h2>
         <div className="flex gap-4 mb-3 flex-wrap">
           {Object.entries(SL).map(([k, v]) => <button key={k} onClick={() => router.push('/orders')} className="flex items-center gap-1.5 hover:bg-gray-50 px-1.5 py-0.5 rounded-lg transition-colors"><span className="w-3 h-3 rounded-full" style={{ background: SC[k] }} /><span className="text-sm text-gray-600">{v}: <span className="font-bold">{statusCounts[k] || 0}</span>{(statusAmounts[k] || 0) > 0 && <span className="text-gray-400 ml-1">({fmt(statusAmounts[k])})</span>}</span></button>)}
         </div>
@@ -496,7 +496,7 @@ export default function EstadisticasPage() {
       {/* Revenue chart — Resumen */}
       {statsTab === 'resumen' && chartData.length > 0 && (
         <div className="rounded-2xl border border-[#E5E5E3] bg-white p-5 mb-6">
-          <h2 className="font-bold text-gray-800 mb-4">{t('revenueChart')}</h2>
+          <h2 className="text-sm font-semibold text-gray-900 mb-4">{t('revenueChart')}</h2>
           <ResponsiveContainer width="100%" height={220}>
             <ComposedChart data={chartData}>
               <XAxis dataKey="name" tick={{ fontSize: 11 }} />
@@ -507,7 +507,7 @@ export default function EstadisticasPage() {
                 return <div className="bg-white p-2 rounded-lg shadow-lg border border-gray-200 text-xs"><p className="font-semibold text-gray-800">{d.name}</p><p className="text-gray-600">{fmt(d.value)}</p><p className="text-gray-400">{d.orders} pedido{d.orders !== 1 ? 's' : ''}</p></div>
               }} />
               <Bar dataKey="value" fill="#0F766E" radius={[4, 4, 0, 0]} />
-              <Line type="monotone" dataKey="trend" stroke="#a29bfe" strokeWidth={2} dot={false} strokeDasharray="4 4" />
+              <Line type="monotone" dataKey="trend" stroke="#0F766E80" strokeWidth={2} dot={false} strokeDasharray="4 4" />
             </ComposedChart>
           </ResponsiveContainer>
           <div className="flex gap-6 mt-3 text-sm text-gray-500">
@@ -520,13 +520,13 @@ export default function EstadisticasPage() {
       {/* Rentabilidad — Ventas */}
       {statsTab === 'ventas' && showCosts && (
       <div className="rounded-2xl border border-[#E5E5E3] bg-white p-5 mb-6">
-        <h2 className="font-bold text-gray-800 mb-4">{t('profitability')}</h2>
+        <h2 className="text-sm font-semibold text-gray-900 mb-4">{t('profitability')}</h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
           <div className="p-3 rounded-lg bg-gray-50"><p className="text-xs text-gray-500">{t('revenue')}</p><p className="text-lg font-black text-gray-900">{fmt(facConCosto)}</p></div>
           <div className="p-3 rounded-lg bg-gray-50"><p className="text-xs text-gray-500">{t('costs')}</p><p className="text-lg font-black text-gray-900">{fmt(costos)}</p></div>
           <div className="p-3 rounded-lg bg-gray-50"><p className="text-xs text-gray-500">{t('grossMargin')}</p><p className="text-lg font-black" style={{ color: '#0F766E' }}>{fmt(facConCosto - costos)}</p><p className="text-xs font-semibold" style={{ color: '#0F766E' }}>{margen}%</p></div>
         </div>
-        {facConCosto > 0 && <div className="flex h-4 rounded-full overflow-hidden bg-gray-100 mb-2"><div style={{ width: `${margen}%`, background: '#0F766E' }} /><div style={{ width: `${100 - margen}%`, background: '#E0DCF8' }} /></div>}
+        {facConCosto > 0 && <div className="flex h-4 rounded-full overflow-hidden bg-gray-100 mb-2"><div style={{ width: `${margen}%`, background: '#0F766E' }} /><div style={{ width: `${100 - margen}%`, background: '#E5E5E3' }} /></div>}
         <div className="flex gap-4 text-xs text-gray-500"><span>■ {t('profit')} {margen}%</span><span className="text-gray-300">□ {t('costs')} {100 - margen}%</span></div>
         {sinCosto > 0 && <p className="text-xs text-amber-600 mt-2">⚠️ {sinCosto} {t('noCostWarning')}</p>}
       </div>
@@ -535,17 +535,17 @@ export default function EstadisticasPage() {
       {/* Products — Productos */}
       {statsTab === 'productos' && <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <div className="rounded-2xl border border-[#E5E5E3] bg-white p-5">
-          <h2 className="font-bold text-gray-800 mb-3">{t('topSelling')}</h2>
+          <h2 className="text-sm font-semibold text-gray-900 mb-3">{t('topSelling')}</h2>
           {topSold.length > 0 ? <div className="space-y-2">{topSold.map(([n, v], i) => <div key={n} className="flex items-center gap-2"><span className="text-xs font-bold text-gray-400 w-5">{i + 1}.</span><div className="flex-1 min-w-0"><p className="text-sm font-medium text-gray-800 truncate">{n}</p><p className="text-xs text-gray-400">{v.units} u. — {fmt(v.revenue)}</p></div></div>)}</div> : <p className="text-sm text-gray-400">{tc('noData')}</p>}
         </div>
         {showCosts && (
         <div className="rounded-2xl border border-[#E5E5E3] bg-white p-5">
-          <h2 className="font-bold text-gray-800 mb-3">{t('topProfitable')}</h2>
+          <h2 className="text-sm font-semibold text-gray-900 mb-3">{t('topProfitable')}</h2>
           {topMargin.length > 0 ? <div className="space-y-2">{topMargin.map((p, i) => <div key={p.name} className="flex items-center gap-2"><span className="text-xs font-bold text-gray-400 w-5">{i + 1}.</span><div className="flex-1 min-w-0"><p className="text-sm font-medium text-gray-800 truncate">{p.name}</p><p className="text-xs text-gray-400">margen {p.margin}% — {fmt(p.profit)}</p></div></div>)}</div> : (
             <div className="text-center py-6">
               <DollarSign size={24} className="mx-auto text-gray-300 mb-2" />
               <p className="text-sm text-gray-500">Cargá los costos de tus productos para ver cuáles son más rentables</p>
-              <button onClick={() => router.push('/catalogo')} className="mt-2 text-xs font-semibold text-teal-700 hover:text-teal-900">Ir al Catálogo →</button>
+              <button onClick={() => router.push('/catalogo')} className="mt-2 text-sm font-medium text-[#0F766E] hover:text-[#0D9488] transition-colors">Ir al Catálogo →</button>
             </div>
           )}
         </div>
@@ -555,18 +555,18 @@ export default function EstadisticasPage() {
       {/* By technique + origin — Ventas */}
       {statsTab === 'ventas' && <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <div className="rounded-2xl border border-[#E5E5E3] bg-white p-5">
-          <h2 className="font-bold text-gray-800 mb-3">{t('salesByTechnique')}</h2>
+          <h2 className="text-sm font-semibold text-gray-900 mb-3">{t('salesByTechnique')}</h2>
           {techData.length > 0 && techTotal > 0 ? <Donut data={techData} total={techTotal} /> : <p className="text-sm text-gray-400">{tc('noData')}</p>}
         </div>
         <div className="rounded-2xl border border-[#E5E5E3] bg-white p-5">
-          <h2 className="font-bold text-gray-800 mb-3">{t('salesByOrigin')}</h2>
+          <h2 className="text-sm font-semibold text-gray-900 mb-3">{t('salesByOrigin')}</h2>
           {facturacion > 0 ? <Donut data={originData} total={facturacion} /> : <p className="text-sm text-gray-400">{tc('noData')}</p>}
         </div>
       </div>}
 
       {/* Client ranking — Clientes */}
       {statsTab === 'clientes' && <div className="rounded-2xl border border-[#E5E5E3] bg-white p-5 mb-6">
-        <h2 className="font-bold text-gray-800 mb-3">{t('clientRanking')}</h2>
+        <h2 className="text-sm font-semibold text-gray-900 mb-3">{t('clientRanking')}</h2>
         {clientRanking.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full text-sm"><thead><tr className="border-b border-gray-100">
@@ -595,7 +595,7 @@ export default function EstadisticasPage() {
 
       {/* Conversion — Resumen */}
       {statsTab === 'resumen' && <div className="rounded-2xl border border-[#E5E5E3] bg-white p-5 mb-6">
-        <h2 className="font-bold text-gray-800 mb-4">{t('quoteConversion')}</h2>
+        <h2 className="text-sm font-semibold text-gray-900 mb-4">{t('quoteConversion')}</h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
           <div className="p-3 rounded-lg bg-gray-50"><p className="text-xs text-gray-500">{t('created')}</p><p className="text-lg font-black text-gray-900">{curPres.length}</p></div>
           <div className="p-3 rounded-lg bg-gray-50"><p className="text-xs text-gray-500">{t('converted')}</p><p className="text-lg font-black text-gray-900">{convertedCount}</p></div>
@@ -606,7 +606,7 @@ export default function EstadisticasPage() {
         {curPres.length > 0 && (
           <div className="flex h-4 rounded-full overflow-hidden bg-gray-100">
             <div style={{ width: `${Math.min(convRate, 100)}%`, background: '#0F766E' }} />
-            <div style={{ width: `${100 - Math.min(convRate, 100)}%`, background: '#E0DCF8' }} />
+            <div style={{ width: `${100 - Math.min(convRate, 100)}%`, background: '#E5E5E3' }} />
           </div>
         )}
         <div className="flex gap-4 text-xs text-gray-500 mt-2"><span>■ {t('converted')} {convRate}%</span><span className="text-gray-300">□ {100 - Math.min(convRate, 100)}%</span></div>
@@ -634,7 +634,7 @@ export default function EstadisticasPage() {
                       <span className="text-gray-500">{step.count} ({step.pct}%) · {fmt(step.amount)}</span>
                     </div>
                     <div className="h-6 rounded-lg overflow-hidden" style={{ background: '#F3F4F6' }}>
-                      <div className="h-full rounded-lg transition-all" style={{ width: `${step.pct}%`, background: i === 0 ? '#0F766E' : '#a29bfe' }} />
+                      <div className="h-full rounded-lg transition-all" style={{ width: `${step.pct}%`, background: i === 0 ? '#0F766E' : '#0F766E80' }} />
                     </div>
                     {i < steps.length - 1 && steps[i].count > steps[i + 1].count && (
                       <p className="text-[10px] text-red-400 mt-0.5 ml-1">↓ Perdidos: {steps[i].count - steps[i + 1].count} ({100 - steps[i + 1].pct}%)</p>
@@ -650,7 +650,7 @@ export default function EstadisticasPage() {
       {/* Payment methods + Production — Ventas */}
       {statsTab === 'ventas' && <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <div className="rounded-2xl border border-[#E5E5E3] bg-white p-5">
-          <h2 className="font-bold text-gray-800 mb-3">Facturación por método de pago</h2>
+          <h2 className="text-sm font-semibold text-gray-900 mb-3">Facturación por método de pago</h2>
           {payMethodData.length > 0 ? <Donut data={payMethodData} total={payMethodTotal} /> : (
             <div className="text-center py-6">
               <p className="text-gray-400 text-sm">Sin datos de pagos registrados.</p>
@@ -659,7 +659,7 @@ export default function EstadisticasPage() {
           )}
         </div>
         <div className="rounded-2xl border border-[#E5E5E3] bg-white p-5">
-          <h2 className="font-bold text-gray-800 mb-3">Producción del período</h2>
+          <h2 className="text-sm font-semibold text-gray-900 mb-3">Producción del período</h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="p-3 rounded-lg bg-gray-50"><p className="text-[10px] text-gray-500 uppercase font-semibold">Unidades</p><p className="text-lg font-black text-gray-900">{totalUnits.toLocaleString('es-AR')}</p></div>
             <div className="p-3 rounded-lg bg-gray-50"><p className="text-[10px] text-gray-500 uppercase font-semibold">Pedidos/día</p><p className="text-lg font-black text-gray-900">{ordersPerDay}</p></div>
@@ -672,7 +672,7 @@ export default function EstadisticasPage() {
       {/* Day of week — Ventas */}
       {statsTab === 'ventas' && facturacion > 0 && (
         <div className="rounded-2xl border border-[#E5E5E3] bg-white p-5 mb-6">
-          <h2 className="font-bold text-gray-800 mb-3">Facturación por día de la semana</h2>
+          <h2 className="text-sm font-semibold text-gray-900 mb-3">Facturación por día de la semana</h2>
           <div className="space-y-2">
             {dayOfWeekData.map(d => {
               const maxVal = bestDay.value || 1
@@ -694,7 +694,7 @@ export default function EstadisticasPage() {
       {/* Clientes nuevos vs recurrentes — Clientes */}
       {statsTab === 'clientes' && (newClients.count + recurringClients.count) > 0 && (
         <div className="rounded-2xl border border-[#E5E5E3] bg-white p-5 mb-6">
-          <h2 className="font-bold text-gray-800 mb-3">Clientes nuevos vs recurrentes</h2>
+          <h2 className="text-sm font-semibold text-gray-900 mb-3">Clientes nuevos vs recurrentes</h2>
           <div className="grid grid-cols-2 gap-3 mb-3">
             <div className="p-3 rounded-lg bg-green-50 border border-green-100">
               <p className="text-[10px] text-green-600 uppercase font-semibold">Nuevos</p>
@@ -716,7 +716,7 @@ export default function EstadisticasPage() {
       {/* Clientes sin actividad reciente — Clientes */}
       {statsTab === 'clientes' && atRiskClients.length > 0 && (
         <div className="rounded-2xl border border-[#E5E5E3] bg-white p-5 mb-6">
-          <h2 className="font-bold text-gray-800 mb-3">Clientes sin actividad reciente</h2>
+          <h2 className="text-sm font-semibold text-gray-900 mb-3">Clientes sin actividad reciente</h2>
           <div className="overflow-x-auto">
             <table className="w-full text-sm"><thead><tr className="border-b border-gray-100">
               <th className="text-left px-2 py-2 text-xs text-gray-400 font-semibold">Cliente</th>
@@ -742,7 +742,7 @@ export default function EstadisticasPage() {
       {/* Productos sin ventas — Productos */}
       {statsTab === 'productos' && productsWithoutSales.length > 0 && (
         <div className="rounded-2xl border border-[#E5E5E3] bg-white p-5 mb-6">
-          <h2 className="font-bold text-gray-800 mb-3">Productos sin ventas en el período</h2>
+          <h2 className="text-sm font-semibold text-gray-900 mb-3">Productos sin ventas en el período</h2>
           <div className="overflow-x-auto">
             <table className="w-full text-sm"><thead><tr className="border-b border-gray-100">
               <th className="text-left px-2 py-2 text-xs text-gray-400 font-semibold">Producto</th>
@@ -765,7 +765,7 @@ export default function EstadisticasPage() {
 
       {/* Evolution — Ventas */}
       {statsTab === 'ventas' && showCosts && <div className="rounded-2xl border border-[#E5E5E3] bg-white p-5 mb-6">
-        <h2 className="font-bold text-gray-800 mb-4">{t('profitEvolution')}</h2>
+        <h2 className="text-sm font-semibold text-gray-900 mb-4">{t('profitEvolution')}</h2>
         {evolutionData.some(d => d.revenue > 0) ? (<>
           <ResponsiveContainer width="100%" height={200}>
             <LineChart data={evolutionData}>
@@ -785,7 +785,7 @@ export default function EstadisticasPage() {
 
       {/* Compare periods — Ventas */}
       {statsTab === 'ventas' && <div className="rounded-2xl border border-[#E5E5E3] bg-white p-5 mb-6">
-        <h2 className="font-bold text-gray-800 mb-4">{t('comparePeriods')}</h2>
+        <h2 className="text-sm font-semibold text-gray-900 mb-4">{t('comparePeriods')}</h2>
         <div className="flex flex-col sm:flex-row gap-3 mb-4 items-end">
           <div className="flex-1"><label className="block text-xs text-gray-500 mb-1">{t('periodA')}</label><input type="date" className="input-base text-sm" value={cmpA} onChange={e => setCmpA(e.target.value)} /></div>
           <span className="text-gray-400 text-sm hidden sm:block pb-2">vs</span>
