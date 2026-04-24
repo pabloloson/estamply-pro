@@ -106,15 +106,20 @@ export default function CotizadorPage() {
   const dtfUv = tecnicas.find(t => t.slug === 'dtf_uv' && t.activa)
   const hasDtf = !!(dtfTextil || dtfUv)
 
+  const vinylTextil = tecnicas.find(t => t.slug === 'vinyl' && t.activa)
+  const vinylAdh = tecnicas.find(t => t.slug === 'vinyl_adhesivo' && t.activa)
+  const hasVinyl = !!(vinylTextil || vinylAdh)
+
   const cotizadorTabs: { id: CotizadorTab; label: string; color: string }[] = []
   if (tecnicas.find(t => t.slug === 'subli' && t.activa)) cotizadorTabs.push({ id: 'subli', label: 'Sublimación', color: '#0F766E' })
   if (hasDtf) cotizadorTabs.push({ id: 'dtf_unified', label: 'DTF', color: '#E17055' })
-  const hasVinyl = tecnicas.some(t => (t.slug === 'vinyl' || t.slug === 'vinyl_adhesivo') && t.activa)
   if (hasVinyl) cotizadorTabs.push({ id: 'vinyl_unified', label: 'Vinilo', color: '#E84393' })
   if (tecnicas.find(t => t.slug === 'serigrafia' && t.activa)) cotizadorTabs.push({ id: 'serigrafia', label: 'Serigrafía', color: '#FDCB6E' })
 
-  // Resolve which actual technique to use
-  const resolvedSlug: TecnicaSlug = cotizadorTab === 'dtf_unified' ? dtfVariant : cotizadorTab === 'vinyl_unified' ? vinylVariant : cotizadorTab as TecnicaSlug
+  // Resolve which actual technique to use — auto-select the active variant when only one is active
+  const effectiveDtfVariant = dtfTextil && dtfUv ? dtfVariant : dtfTextil ? 'dtf' as const : 'dtf_uv' as const
+  const effectiveVinylVariant = vinylTextil && vinylAdh ? vinylVariant : vinylTextil ? 'vinyl' as const : 'vinyl_adhesivo' as const
+  const resolvedSlug: TecnicaSlug = cotizadorTab === 'dtf_unified' ? effectiveDtfVariant : cotizadorTab === 'vinyl_unified' ? effectiveVinylVariant : cotizadorTab as TecnicaSlug
   const activeTecnicasForEngine = tecnicas.filter(t => t.activa)
 
   // Pass ALL active to engine but set the selected one
