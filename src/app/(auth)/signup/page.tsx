@@ -108,6 +108,12 @@ export default function SignupPage() {
             <button type="submit" disabled={loading} className="btn-primary mt-2">
               {loading ? t('creating') : to('createFreeAccount')}
             </button>
+            <p className="text-[11px] text-gray-400 text-center mt-3 leading-relaxed">
+              Al crear tu cuenta, aceptas nuestros{' '}
+              <Link href="/legal/terminos" className="underline hover:text-gray-600">Terminos y Condiciones</Link>
+              {' '}y nuestra{' '}
+              <Link href="/legal/privacidad" className="underline hover:text-gray-600">Politica de Privacidad</Link>.
+            </p>
           </form>
 
           <p className="mt-6 text-center text-sm text-gray-500">

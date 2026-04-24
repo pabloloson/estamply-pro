@@ -571,8 +571,9 @@ export default function LandingContent({ defaultLang = 'es', showLanguageBanner 
             </div>
             <div>
               <h4 style={{ fontSize: 12, fontWeight: 700, color: "#0F172A", marginBottom: 12, letterSpacing: "0.03em" }}>Legal</h4>
-              <a href="#" style={{ display: "block", fontSize: 13, color: "#475569", textDecoration: "none", marginBottom: 8 }}>Términos y condiciones</a>
-              <a href="#" style={{ display: "block", fontSize: 13, color: "#475569", textDecoration: "none", marginBottom: 8 }}>Política de privacidad</a>
+              <Link href="/legal/terminos" style={{ display: "block", fontSize: 13, color: "#475569", textDecoration: "none", marginBottom: 8 }}>Terminos y condiciones</Link>
+              <Link href="/legal/privacidad" style={{ display: "block", fontSize: 13, color: "#475569", textDecoration: "none", marginBottom: 8 }}>Politica de privacidad</Link>
+              <Link href="/legal/cookies" style={{ display: "block", fontSize: 13, color: "#475569", textDecoration: "none", marginBottom: 8 }}>Politica de cookies</Link>
             </div>
             <div>
               <h4 style={{ fontSize: 12, fontWeight: 700, color: "#0F172A", marginBottom: 12, letterSpacing: "0.03em" }}>Contacto</h4>

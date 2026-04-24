@@ -18,8 +18,8 @@ const appRoutes = [
 // Routes that belong to the landing (served on estamply.app)
 const landingRoutes = ['/', '/br', '/precios', '/features', '/blog', '/contacto', '/legal', '/privacidad']
 
-// Prefixes that are always public
-const publicPrefixes = ['/p/', '/api/']
+// Prefixes that are always public (on both domains)
+const publicPrefixes = ['/p/', '/api/', '/legal/']
 
 export default auth((req) => {
   const { pathname } = req.nextUrl
