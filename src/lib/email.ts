@@ -1,6 +1,10 @@
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+let _resend: Resend | null = null
+function resend() {
+  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY)
+  return _resend
+}
 const FROM = 'Estamply <no-reply@estamply.app>'
 const LOGO = 'https://estamply-cdn.b-cdn.net/logos/estamply-logo.png'
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://app.estamply.app'
@@ -88,7 +92,7 @@ export async function sendWelcome(email: string, name: string, locale = 'es') {
     <p style="color:#999;font-size:12px">— El equipo de Estamply</p>
   `, locale)
 
-  return resend.emails.send({
+  return resend().emails.send({
     from: FROM, to: email, subject: tr('welcome_subject', locale), html,
   })
 }
@@ -102,7 +106,7 @@ export async function sendPasswordReset(email: string, resetToken: string, local
     <p style="color:#999;font-size:12px">${tr('reset_expire', locale)}</p>
   `, locale)
 
-  return resend.emails.send({
+  return resend().emails.send({
     from: FROM, to: email, subject: tr('reset_subject', locale), html,
   })
 }
@@ -118,7 +122,7 @@ export async function sendTeamInvite(email: string, ownerName: string, workshopN
     ${btn(tr('invite_cta', locale), `${APP_URL}/login`)}
   `, locale)
 
-  return resend.emails.send({
+  return resend().emails.send({
     from: FROM, to: email, subject: tr('invite_subject', locale), html,
   })
 }
@@ -130,7 +134,7 @@ export async function sendQuoteEmail(to: string, workshopName: string, code: str
     ${btn(tr('quote_cta', locale), quoteUrl)}
   `, locale)
 
-  return resend.emails.send({
+  return resend().emails.send({
     from: FROM, to, subject: tr('quote_subject', locale, { code, workshop: workshopName }), html,
   })
 }
@@ -141,7 +145,7 @@ export async function sendOrderConfirmed(to: string, workshopName: string, total
     <p style="color:#555;font-size:14px;line-height:1.6">${tr('order_body', locale, { workshop: workshopName, total })}</p>
   `, locale)
 
-  return resend.emails.send({
+  return resend().emails.send({
     from: FROM, to, subject: tr('order_subject', locale, { workshop: workshopName }), html,
   })
 }
