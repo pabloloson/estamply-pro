@@ -62,11 +62,11 @@ export function Sidebar({ workshopName = 'Mi Taller' }: SidebarProps) {
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
       {/* ── Logo area ── */}
-      <div className="px-5 pt-6 pb-5">
-        <div className="flex flex-col gap-1.5">
+      <div className="px-5 pt-5 pb-4">
+        <div className="flex flex-col gap-1">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo-full.png" alt="Estamply" style={{ height: 30, width: 'auto' }} />
-          <span className="text-[11.5px] text-gray-400 block leading-tight truncate">
+          <img src="/logo-full.png" alt="Estamply" style={{ height: 22, width: 'auto' }} className="self-start" />
+          <span className="text-[11px] text-gray-400 block leading-tight truncate">
             {workshopName}
           </span>
         </div>
