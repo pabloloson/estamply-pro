@@ -48,7 +48,7 @@ export async function signup(formData: FormData) {
         email: user.email,
         fullName,
         onboardingCompleted: false,
-        trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+        trialEndsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         plan: 'pro',
         planStatus: 'trial',
       },

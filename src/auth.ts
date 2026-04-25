@@ -59,7 +59,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               email: user.email!,
               fullName: user.name || '',
               onboardingCompleted: false,
-              trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+              trialEndsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
               plan: 'pro',
               planStatus: 'trial',
             },

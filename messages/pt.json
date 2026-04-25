@@ -118,6 +118,6 @@
     "subscribeTo": "Assinar o plano",
     "completePayment": "Complete os dados de pagamento para ativar sua assinatura.",
     "successMessage": "Sua assinatura foi ativada! Agora você pode usar todas as funções do seu plano.",
-    "footer": "Todos os planos incluem 14 dias de teste grátis. Cancele a qualquer momento. Pagamentos seguros com Stripe."
+    "footer": "Todos os planos incluem 7 dias de teste grátis. Cancele a qualquer momento. Pagamentos seguros com Stripe."
   }
 }

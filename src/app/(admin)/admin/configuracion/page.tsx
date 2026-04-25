@@ -17,7 +17,7 @@ const DEFAULT_PLANS: Plan[] = [
 
 export default function ConfiguracionPage() {
   const [plans, setPlans] = useState<Plan[]>(DEFAULT_PLANS)
-  const [trialDays, setTrialDays] = useState(14)
+  const [trialDays, setTrialDays] = useState(7)
   const [posthogKey, setPosthogKey] = useState('')
   const [emailKey, setEmailKey] = useState('')
   const [emailFrom, setEmailFrom] = useState('hello@estamply.app')

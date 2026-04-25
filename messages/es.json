@@ -118,6 +118,6 @@
     "subscribeTo": "Suscribirte a",
     "completePayment": "Completá los datos de pago para activar tu suscripción.",
     "successMessage": "¡Tu suscripción se activó correctamente! Ya podés usar todas las funciones de tu plan.",
-    "footer": "Todos los planes incluyen 14 días de prueba gratis. Cancelá en cualquier momento. Pagos seguros con Stripe."
+    "footer": "Todos los planes incluyen 7 días de prueba gratis. Cancelá en cualquier momento. Pagos seguros con Stripe."
   }
 }

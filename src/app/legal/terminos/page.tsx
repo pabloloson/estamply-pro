@@ -30,7 +30,7 @@ export default function TerminosPage() {
       <p>4.1. Estamply ofrece distintos planes de suscripcion (Emprendedor, Pro y Negocio) con diferentes funcionalidades y limites. Los detalles actualizados de precios se encuentran en <a href="https://estamply.app">https://estamply.app</a>.</p>
       <p>4.2. Al seleccionar un plan pago, usted autoriza a Zophix a cobrar la tarifa correspondiente de forma recurrente (mensual o anual, segun la modalidad elegida) a traves de los procesadores de pago habilitados (Stripe, MercadoPago u Hotmart, segun su region y moneda).</p>
       <p>4.3. Los precios pueden ser modificados con un aviso previo de al menos 30 dias. Los cambios de precio aplicaran al siguiente periodo de facturacion posterior a la notificacion.</p>
-      <p>4.4. Estamply ofrece un periodo de prueba gratuito de 14 dias del plan Pro, sin necesidad de ingresar datos de pago. Al finalizar el periodo de prueba, el Usuario debera seleccionar un plan pago para continuar utilizando las funcionalidades Pro.</p>
+      <p>4.4. Estamply ofrece un periodo de prueba gratuito de 7 dias del plan Pro, sin necesidad de ingresar datos de pago. Al finalizar el periodo de prueba, el Usuario debera seleccionar un plan pago para continuar utilizando las funcionalidades Pro.</p>
       <p>4.5. Los pagos realizados no son reembolsables, salvo lo establecido por la legislacion aplicable en la jurisdiccion del Usuario o lo indicado expresamente en estos Terminos.</p>
 
       <h2>5. Uso Aceptable</h2>
