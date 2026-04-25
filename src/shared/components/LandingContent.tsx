@@ -36,6 +36,23 @@ const I = {
   dash: <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M5 9H13" stroke="#CBD5E1" strokeWidth="1.5" strokeLinecap="round"/></svg>,
 };
 
+function AppScreenshot({ src, alt, placeholder }: { src?: string; alt?: string; placeholder?: string }) {
+  return (
+    <div style={{ maxWidth: 560, margin: "0 auto", borderRadius: 12, overflow: "hidden", border: "1px solid #E2E5EA", boxShadow: "0 8px 32px rgba(0,0,0,0.08)" }}>
+      <div style={{ background: "#F3F4F6", padding: "8px 12px", display: "flex", gap: 6, alignItems: "center", borderBottom: "1px solid #E5E7EB" }}>
+        <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#EF4444" }} />
+        <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#F59E0B" }} />
+        <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#22C55E" }} />
+        <span style={{ flex: 1, marginLeft: 8, background: "#E5E7EB", borderRadius: 4, height: 16, maxWidth: 180 }} />
+      </div>
+      {src
+        ? <img src={src} alt={alt || ""} style={{ width: "100%", display: "block" }} />
+        : <div style={{ height: 220, background: "#F9FAFB", display: "grid", placeItems: "center", color: "#94A3B8", fontSize: 14 }}>{placeholder || "Proximamente"}</div>
+      }
+    </div>
+  )
+}
+
 const pains = [
   "Calculas tus precios con la calculadora del celular y siempre te olvidas de algún costo",
   "Mandas presupuestos por WhatsApp como un mensaje de texto más",
@@ -346,21 +363,28 @@ export default function LandingContent({ defaultLang = 'es', showLanguageBanner 
         <div style={w}>
           <R><div style={{ textAlign: "center", marginBottom: 56 }}><p className="lb" style={{ marginBottom: 10 }}>Funciones</p><h2 className="h2">Todo lo que tu negocio necesita.<br/>En un solo lugar.</h2><p className="sub" style={{ margin: "14px auto 0" }}>Estamply reemplaza la calculadora, el cuaderno, el Excel y las notas del celular con un solo sistema.</p></div></R>
 
+          {/* Cotizador inteligente */}
           <R><div className="card" style={{ overflow: "hidden", marginBottom: 20 }}>
-            <div style={{ padding: "40px 40px 0" }}>
+            <div style={{ padding: "40px 40px 24px" }}>
               <p className="lb" style={{ marginBottom: 6 }}>Cotizador inteligente</p>
-              <h3 style={{ fontSize: "clamp(22px,3vw,30px)", fontWeight: 800, color: "#0F172A", lineHeight: 1.15, marginBottom: 12, letterSpacing: "-0.02em" }}>Nunca más pierdas plata por cotizar mal</h3>
-              <p style={{ fontSize: 16, color: "#475569", lineHeight: 1.7, maxWidth: 560, marginBottom: 16 }}>Estamply calcula todos tus costos — producto, papel, tinta, amortización, desperdicio — y te dice exactamente cuánto cobrar. Para sublimación, DTF, vinilo y serigrafía.</p>
-              <div style={{ borderLeft: `2px solid ${teal}`, paddingLeft: 14, fontSize: 15, fontStyle: "italic", color: "#1E293B" }}>Cuando un cliente te pregunta cuánto sale, le respondés con un número que te respalda.</div>
+              <h3 style={{ fontSize: "clamp(22px,3vw,30px)", fontWeight: 800, color: "#0F172A", lineHeight: 1.15, marginBottom: 12, letterSpacing: "-0.02em" }}>Nunca mas pierdas plata por cotizar mal</h3>
+              <p style={{ fontSize: 16, color: "#475569", lineHeight: 1.7, maxWidth: 560, marginBottom: 16 }}>Estamply calcula todos tus costos — producto, papel, tinta, amortizacion, desperdicio — y te dice exactamente cuanto cobrar. Para sublimacion, DTF, vinilo y serigrafia.</p>
+              <div style={{ borderLeft: `2px solid ${teal}`, paddingLeft: 14, fontSize: 15, fontStyle: "italic", color: "#1E293B" }}>Cuando un cliente te pregunta cuanto sale, le respondes con un numero que te respalda.</div>
             </div>
-            <div style={{ margin: "28px auto 0", maxWidth: 620, borderRadius: "12px 12px 0 0", overflow: "hidden", border: "1px solid #E5E7EB", borderBottom: "none" }}>
-              <img src="/cotizador-subli.png" alt="Cotizador de Estamply mostrando el calculo de costos para sublimacion de camisetas" style={{ width: "100%", display: "block" }} />
+            <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", padding: "0 40px 20px" }}>
+              {["Sublimacion", "DTF Textil", "DTF UV", "Vinilo", "Serigrafia"].map(t => (
+                <span key={t} style={{ padding: "5px 14px", borderRadius: 20, fontSize: 12, fontWeight: 600, background: t === "Sublimacion" ? teal : "#F1F5F9", color: t === "Sublimacion" ? "#fff" : "#475569", border: t === "Sublimacion" ? "none" : "1px solid #E2E5EA" }}>{t}</span>
+              ))}
+            </div>
+            <div style={{ padding: "0 40px 32px" }}>
+              <AppScreenshot src="/cotizador-subli.png" alt="Cotizador de Estamply mostrando el calculo de costos para sublimacion" />
             </div>
           </div></R>
 
+          {/* Presupuestos + Pedidos */}
           <div className="f2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
             {[
-              { lb: "Presupuestos profesionales", t: "Presupuestos que te hacen ver como un negocio serio", c: "Genera presupuestos con tu logo, compártelos por WhatsApp o email. Tu cliente los confirma y se convierten en pedido.", q: "Cuando te ven profesional, te regatean menos.", img: "/presupuesto.png" },
+              { lb: "Presupuestos profesionales", t: "Presupuestos que te hacen ver como un negocio serio", c: "Genera presupuestos con tu logo, compartilos por WhatsApp o email. Tu cliente los confirma y se convierten en pedido.", q: "Cuando te ven profesional, te regatean menos.", img: "/presupuesto.png" },
               { lb: "Gestion de pedidos", t: "Cada pedido en su lugar. Ninguno se pierde.", c: "Tablero Kanban con 4 estados, datos del cliente, link al diseno y alertas de cobros pendientes.", q: "Con 3 pedidos funciona la memoria. Con 15, necesitas un sistema.", img: null },
             ].map((f,i)=><R key={i} delay={i*0.06}><div className="card" style={{ overflow: "hidden", height: "100%", display: "flex", flexDirection: "column" }}>
               <div style={{ padding: "28px 24px" }}>
@@ -369,17 +393,17 @@ export default function LandingContent({ defaultLang = 'es', showLanguageBanner 
                 <p style={{ fontSize: 15, color: "#475569", lineHeight: 1.7, marginBottom: 14 }}>{f.c}</p>
                 <div style={{ borderLeft: `2px solid ${teal}`, paddingLeft: 12, fontSize: 14, fontStyle: "italic", color: "#1E293B" }}>{f.q}</div>
               </div>
-              {f.img
-                ? <div style={{ borderTop: "1px solid #E5E7EB", overflow: "hidden" }}><img src={f.img} alt={f.lb} style={{ width: "100%", display: "block" }} /></div>
-                : <div style={{ flex: 1, minHeight: 170, background: "#F0FDFA", borderTop: "1px solid #E5E7EB", display: "grid", placeItems: "center", color: "#94A3B8", fontSize: 13 }}>Screenshot: {f.lb}</div>
-              }
+              <div style={{ padding: "0 24px 24px" }}>
+                <AppScreenshot src={f.img || undefined} alt={f.lb} placeholder="Proximamente" />
+              </div>
             </div></R>)}
           </div>
 
+          {/* Estadisticas + Clientes */}
           <div className="f2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
             {[
-              { lb: "Estadísticas y rentabilidad", t: "Sabe cuánto ganas. De verdad.", c: "Facturación, costos, margen bruto, ranking de productos, ventas por técnica. No es cuánta plata entra — es cuánta te queda.", q: "La diferencia entre facturar mucho y ganar mucho es saber tus números." },
-              { lb: "Base de clientes", t: "Conoce a tus clientes.", c: "Ficha de cada cliente con historial, total facturado y último contacto. Importa, exporta e identifica quién te hace crecer.", q: null },
+              { lb: "Estadisticas y rentabilidad", t: "Sabe cuanto ganas. De verdad.", c: "Facturacion, costos, margen bruto, ranking de productos, ventas por tecnica. No es cuanta plata entra — es cuanta te queda.", q: "La diferencia entre facturar mucho y ganar mucho es saber tus numeros." },
+              { lb: "Base de clientes", t: "Conoce a tus clientes.", c: "Ficha de cada cliente con historial, total facturado y ultimo contacto. Importa, exporta e identifica quien te hace crecer.", q: null },
             ].map((f,i)=><R key={i} delay={i*0.06}><div className="card" style={{ overflow: "hidden", height: "100%", display: "flex", flexDirection: "column" }}>
               <div style={{ padding: "28px 24px" }}>
                 <p className="lb" style={{ marginBottom: 6 }}>{f.lb}</p>
@@ -387,7 +411,9 @@ export default function LandingContent({ defaultLang = 'es', showLanguageBanner 
                 <p style={{ fontSize: 15, color: "#475569", lineHeight: 1.7, marginBottom: f.q?14:0 }}>{f.c}</p>
                 {f.q && <div style={{ borderLeft: `2px solid ${teal}`, paddingLeft: 12, fontSize: 14, fontStyle: "italic", color: "#1E293B" }}>{f.q}</div>}
               </div>
-              <div style={{ flex: 1, minHeight: 170, background: "#F0FDFA", borderTop: "1px solid #E5E7EB", display: "grid", placeItems: "center", color: "#94A3B8", fontSize: 13 }}>Screenshot: {f.lb}</div>
+              <div style={{ padding: "0 24px 24px" }}>
+                <AppScreenshot placeholder="Proximamente" />
+              </div>
             </div></R>)}
           </div>
         </div>
@@ -410,7 +436,14 @@ export default function LandingContent({ defaultLang = 'es', showLanguageBanner 
             </div>
             <R delay={0.2} y={40} style={{ flex: "1 1 45%" }}>
               <div style={{ background: "rgba(255,255,255,0.05)", borderRadius: 14, border: "1px solid rgba(255,255,255,0.08)", padding: 20, boxShadow: "0 24px 48px rgba(0,0,0,0.3)" }}>
-                <div style={{ background: "#fff", borderRadius: 10, height: 340, display: "grid", placeItems: "center", color: "#94A3B8", fontSize: 14 }}>Screenshot: Catálogo Web</div>
+                <div style={{ background: "#fff", borderRadius: 10, overflow: "hidden" }}>
+                <div style={{ background: "#E5E7EB", padding: "6px 10px", display: "flex", gap: 5, alignItems: "center" }}>
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#EF4444" }} />
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#F59E0B" }} />
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#22C55E" }} />
+                </div>
+                <div style={{ height: 300, display: "grid", placeItems: "center", color: "#94A3B8", fontSize: 14 }}>Proximamente</div>
+              </div>
               </div>
             </R>
           </div>
