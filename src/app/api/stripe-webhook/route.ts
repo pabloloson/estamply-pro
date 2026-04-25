@@ -10,6 +10,7 @@ import {
   sendPlanDowngraded,
   sendSubscriptionCanceled,
 } from '@/lib/email'
+import { changePlan, removeFromGroup } from '@/lib/mailerlite'
 
 export const dynamic = 'force-dynamic'
 
@@ -94,6 +95,8 @@ export async function POST(req: NextRequest) {
         if (profile?.email) {
           const price = priceItem.price.unit_amount ? `$${(priceItem.price.unit_amount / 100).toFixed(0)}` : ''
           sendSubscriptionConfirmed(profile.email, profile.fullName || '', plan, price, formatDate(endDate)).catch(() => {})
+          // Move subscriber to new plan group in MailerLite
+          changePlan(profile.email, plan as 'trial' | 'emprendedor' | 'pro' | 'negocio')
         }
         break
       }
@@ -179,6 +182,8 @@ export async function POST(req: NextRequest) {
             const endDate = formatDate(new Date(periodEnd ? periodEnd * 1000 : Date.now()))
             sendPlanDowngraded(profileBefore.email, profileBefore.fullName || '', oldPlan, newPlan, endDate).catch(() => {})
           }
+          // Update MailerLite group
+          changePlan(profileBefore.email, newPlan as 'trial' | 'emprendedor' | 'pro' | 'negocio')
         }
         break
       }
@@ -200,6 +205,15 @@ export async function POST(req: NextRequest) {
           const periodEnd = (subscription as unknown as { current_period_end?: number }).current_period_end
           const accessUntil = periodEnd ? formatDate(new Date(periodEnd * 1000)) : 'hoy'
           sendSubscriptionCanceled(profile.email, profile.fullName || '', accessUntil).catch(() => {})
+          // Remove from plan group in MailerLite (stays in Todos)
+          const planGroup = profile.plan as 'trial' | 'emprendedor' | 'pro' | 'negocio'
+          const groupId = {
+            trial: process.env.MAILERLITE_GROUP_TRIAL,
+            emprendedor: process.env.MAILERLITE_GROUP_EMPRENDEDOR,
+            pro: process.env.MAILERLITE_GROUP_PRO,
+            negocio: process.env.MAILERLITE_GROUP_NEGOCIO,
+          }[planGroup]
+          if (groupId) removeFromGroup(profile.email, groupId)
         }
         break
       }

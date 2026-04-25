@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db/prisma"
 import bcrypt from "bcryptjs"
 import { AuthError } from "next-auth"
 import { sendWelcome } from "@/lib/email"
+import { addSubscriber } from "@/lib/mailerlite"
 
 export async function login(formData: FormData) {
   const email = formData.get('email') as string
@@ -56,6 +57,8 @@ export async function signup(formData: FormData) {
 
     // Send welcome email (fire-and-forget)
     sendWelcome(email, fullName || '').catch(() => {})
+    // Add to MailerLite (fire-and-forget)
+    addSubscriber(email, fullName || '')
 
     await signIn("credentials", {
       email,

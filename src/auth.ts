@@ -5,6 +5,7 @@ import { PrismaAdapter } from "@auth/prisma-adapter"
 import { prisma } from "@/lib/db/prisma"
 import bcrypt from "bcryptjs"
 import { sendWelcome } from "@/lib/email"
+import { addSubscriber } from "@/lib/mailerlite"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
@@ -66,6 +67,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           })
           // Send welcome email for new Google users (fire-and-forget)
           sendWelcome(user.email!, user.name || '').catch(() => {})
+          // Add to MailerLite (fire-and-forget)
+          addSubscriber(user.email!, user.name || '')
         }
       }
       return true
