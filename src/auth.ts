@@ -4,6 +4,7 @@ import Google from "next-auth/providers/google"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import { prisma } from "@/lib/db/prisma"
 import bcrypt from "bcryptjs"
+import { sendWelcome } from "@/lib/email"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
@@ -63,6 +64,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               planStatus: 'trial',
             },
           })
+          // Send welcome email for new Google users (fire-and-forget)
+          sendWelcome(user.email!, user.name || '').catch(() => {})
         }
       }
       return true

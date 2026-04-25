@@ -73,6 +73,7 @@ export default function PresupuestoPage() {
   const [emailSubject, setEmailSubject] = useState('')
   const [emailBody, setEmailBody] = useState('')
   const [linkCopied, setLinkCopied] = useState(false)
+  const [sendingEmail, setSendingEmail] = useState(false)
 
   const [breakdownOpen, setBreakdownOpen] = useState<string | null>(null)
   const [baseProducts, setBaseProducts] = useState<Array<{ name: string; variant_name: string | null; variant_options: string[] }>>([])
@@ -1334,17 +1335,33 @@ export default function PresupuestoPage() {
             </div>
             <div className="flex gap-3 mt-6">
               <button onClick={() => setShowEmailModal(false)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200">{tc('cancel')}</button>
-              <button onClick={() => {
-                navigator.clipboard.writeText(emailBody)
-                const mailto = `mailto:${emailTo}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`
-                window.open(mailto)
-                setShowEmailModal(false)
-                alert('Mensaje copiado al portapapeles y se abrió tu cliente de correo.')
-              }} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: '#4285f4' }}>
-                Abrir email
+              <button
+                disabled={sendingEmail || !emailTo.trim()}
+                onClick={async () => {
+                  const pid = dbIdRef.current || loadedPresupuestoId
+                  if (!pid || !emailTo.trim()) return
+                  setSendingEmail(true)
+                  try {
+                    const res = await fetch('/api/send-quote-email', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ to: emailTo, presupuestoId: pid }),
+                    })
+                    if (res.ok) {
+                      setShowEmailModal(false)
+                      alert('Presupuesto enviado por email.')
+                    } else {
+                      alert('Error al enviar el email. Intenta de nuevo.')
+                    }
+                  } catch { alert('Error de conexion.') }
+                  finally { setSendingEmail(false) }
+                }}
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white"
+                style={{ background: '#0F766E' }}
+              >
+                {sendingEmail ? 'Enviando...' : 'Enviar presupuesto'}
               </button>
             </div>
-            <p className="text-[10px] text-gray-400 mt-3 text-center">El mensaje también se copió al portapapeles por si tu cliente de correo no se abre.</p>
           </div>
         </div>
       )}

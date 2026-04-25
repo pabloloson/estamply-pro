@@ -2,8 +2,26 @@ import { stripe, getPlanFromPriceId } from '@/lib/stripe'
 import { prisma } from '@/lib/db/prisma'
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
+import {
+  sendSubscriptionConfirmed,
+  sendPaymentSuccess,
+  sendPaymentFailed,
+  sendPlanUpgraded,
+  sendPlanDowngraded,
+  sendSubscriptionCanceled,
+} from '@/lib/email'
 
 export const dynamic = 'force-dynamic'
+
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://app.estamply.app'
+
+function formatDate(d: Date): string {
+  return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
+
+async function getProfileByCustomerId(customerId: string) {
+  return prisma.profile.findUnique({ where: { stripeCustomerId: customerId } })
+}
 
 export async function POST(req: NextRequest) {
   const body = await req.text()
@@ -21,7 +39,6 @@ export async function POST(req: NextRequest) {
 
   try {
     switch (event.type) {
-      // Legacy: kept for backwards compat with old hosted checkout sessions
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session
         const userId = session.metadata?.userId
@@ -58,6 +75,8 @@ export async function POST(req: NextRequest) {
         const priceItem = subscription.items.data[0]
         const lookupKey = priceItem.price.lookup_key || ''
         const plan = getPlanFromPriceId(lookupKey)
+        const periodEnd = (priceItem as unknown as { current_period_end?: number }).current_period_end
+        const endDate = new Date(periodEnd ? periodEnd * 1000 : Date.now())
 
         await prisma.profile.update({
           where: { userId },
@@ -66,13 +85,16 @@ export async function POST(req: NextRequest) {
             stripePriceId: priceItem.price.id,
             plan,
             planStatus: subscription.status === 'trialing' ? 'active' : 'incomplete',
-            stripeCurrentPeriodEnd: new Date(
-              (priceItem as unknown as { current_period_end?: number }).current_period_end
-                ? (priceItem as unknown as { current_period_end: number }).current_period_end * 1000
-                : Date.now()
-            ),
+            stripeCurrentPeriodEnd: endDate,
           },
         })
+
+        // Send subscription confirmed email
+        const profile = await prisma.profile.findUnique({ where: { userId } })
+        if (profile?.email) {
+          const price = priceItem.price.unit_amount ? `$${(priceItem.price.unit_amount / 100).toFixed(0)}` : ''
+          sendSubscriptionConfirmed(profile.email, profile.fullName || '', plan, price, formatDate(endDate)).catch(() => {})
+        }
         break
       }
 
@@ -88,17 +110,17 @@ export async function POST(req: NextRequest) {
         const userId = subscription.metadata?.userId
         const customerId = typeof invoiceAny.customer === 'string' ? invoiceAny.customer : (invoiceAny.customer as { id?: string })?.id
 
-        // Try to find profile by userId from subscription metadata, or by stripeCustomerId
         const profile = userId
           ? await prisma.profile.findUnique({ where: { userId } })
           : customerId
-            ? await prisma.profile.findUnique({ where: { stripeCustomerId: customerId } })
+            ? await getProfileByCustomerId(customerId)
             : null
         if (!profile) break
 
         const priceItem = subscription.items.data[0]
         const lookupKey = priceItem.price.lookup_key || ''
         const plan = getPlanFromPriceId(lookupKey)
+        const periodEnd = (priceItem as unknown as { current_period_end?: number }).current_period_end
 
         await prisma.profile.update({
           where: { id: profile.id },
@@ -107,13 +129,16 @@ export async function POST(req: NextRequest) {
             stripePriceId: priceItem.price.id,
             plan,
             planStatus: 'active',
-            stripeCurrentPeriodEnd: new Date(
-              (priceItem as unknown as { current_period_end?: number }).current_period_end
-                ? (priceItem as unknown as { current_period_end: number }).current_period_end * 1000
-                : Date.now()
-            ),
+            stripeCurrentPeriodEnd: new Date(periodEnd ? periodEnd * 1000 : Date.now()),
           },
         })
+
+        // Send payment success email
+        if (profile.email) {
+          const amount = invoice.amount_paid ? `$${(invoice.amount_paid / 100).toFixed(2)}` : ''
+          const invoiceUrl = (invoice as unknown as { hosted_invoice_url?: string }).hosted_invoice_url || undefined
+          sendPaymentSuccess(profile.email, profile.fullName || '', amount, invoiceUrl).catch(() => {})
+        }
         break
       }
 
@@ -124,23 +149,37 @@ export async function POST(req: NextRequest) {
 
         const priceItem = subscription.items.data[0]
         const lookupKey = priceItem.price.lookup_key || ''
-        const plan = getPlanFromPriceId(lookupKey)
+        const newPlan = getPlanFromPriceId(lookupKey)
         const status = subscription.status === 'active' || subscription.status === 'trialing'
           ? 'active' : subscription.status === 'past_due' ? 'past_due' : 'inactive'
+        const periodEnd = (priceItem as unknown as { current_period_end?: number }).current_period_end
+
+        // Get current plan before update
+        const profileBefore = await prisma.profile.findUnique({ where: { userId } })
+        const oldPlan = profileBefore?.plan || ''
 
         await prisma.profile.update({
           where: { userId },
           data: {
             stripePriceId: priceItem.price.id,
-            plan,
+            plan: newPlan,
             planStatus: status,
-            stripeCurrentPeriodEnd: new Date(
-              (priceItem as unknown as { current_period_end?: number }).current_period_end
-                ? (priceItem as unknown as { current_period_end: number }).current_period_end * 1000
-                : Date.now()
-            ),
+            stripeCurrentPeriodEnd: new Date(periodEnd ? periodEnd * 1000 : Date.now()),
           },
         })
+
+        // Send upgrade/downgrade email if plan changed
+        if (profileBefore?.email && oldPlan && oldPlan !== newPlan) {
+          const price = priceItem.price.unit_amount ? `$${(priceItem.price.unit_amount / 100).toFixed(0)}/mes` : ''
+          const hierarchy = ['emprendedor', 'pro', 'negocio']
+          const isUpgrade = hierarchy.indexOf(newPlan) > hierarchy.indexOf(oldPlan)
+          if (isUpgrade) {
+            sendPlanUpgraded(profileBefore.email, profileBefore.fullName || '', oldPlan, newPlan, price).catch(() => {})
+          } else {
+            const endDate = formatDate(new Date(periodEnd ? periodEnd * 1000 : Date.now()))
+            sendPlanDowngraded(profileBefore.email, profileBefore.fullName || '', oldPlan, newPlan, endDate).catch(() => {})
+          }
+        }
         break
       }
 
@@ -149,10 +188,19 @@ export async function POST(req: NextRequest) {
         const userId = subscription.metadata?.userId
         if (!userId) break
 
+        const profile = await prisma.profile.findUnique({ where: { userId } })
+
         await prisma.profile.update({
           where: { userId },
           data: { planStatus: 'cancelled', stripeSubscriptionId: null, stripePriceId: null },
         })
+
+        // Send cancellation email
+        if (profile?.email) {
+          const periodEnd = (subscription as unknown as { current_period_end?: number }).current_period_end
+          const accessUntil = periodEnd ? formatDate(new Date(periodEnd * 1000)) : 'hoy'
+          sendSubscriptionCanceled(profile.email, profile.fullName || '', accessUntil).catch(() => {})
+        }
         break
       }
 
@@ -161,10 +209,17 @@ export async function POST(req: NextRequest) {
         const subscriptionId = invoice.subscription
         if (!subscriptionId) break
 
-        await prisma.profile.update({
+        const profile = await prisma.profile.findUnique({ where: { stripeSubscriptionId: subscriptionId } })
+
+        await prisma.profile.updateMany({
           where: { stripeSubscriptionId: subscriptionId },
           data: { planStatus: 'past_due' },
         })
+
+        // Send payment failed email
+        if (profile?.email) {
+          sendPaymentFailed(profile.email, profile.fullName || '', `${APP_URL}/cuenta`).catch(() => {})
+        }
         break
       }
     }

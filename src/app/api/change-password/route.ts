@@ -2,6 +2,7 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/db/prisma'
 import bcrypt from 'bcryptjs'
 import { NextRequest, NextResponse } from 'next/server'
+import { sendPasswordChanged } from '@/lib/email'
 
 export const dynamic = 'force-dynamic'
 
@@ -21,6 +22,9 @@ export async function POST(req: NextRequest) {
 
   const hashed = await bcrypt.hash(newPassword, 12)
   await prisma.user.update({ where: { id: session.user.id }, data: { password: hashed } })
+
+  // Notify user (fire-and-forget)
+  if (user.email) sendPasswordChanged(user.email, user.name || '').catch(() => {})
 
   return NextResponse.json({ ok: true })
 }

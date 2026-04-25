@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db/prisma'
 import { NextResponse } from 'next/server'
+import { sendNewOrderFromCatalog } from '@/lib/email'
 
 export const dynamic = 'force-dynamic'
 
@@ -58,6 +59,13 @@ export async function POST(req: Request) {
         const usedBy = [...(coupon.usedByClients || []), whatsapp].filter(Boolean)
         await prisma.coupon.update({ where: { id: coupon.id }, data: { usedCount: coupon.usedCount + 1, usedByClients: usedBy } })
       }
+    }
+
+    // Notify taller owner by email (fire-and-forget)
+    if (profile?.email) {
+      const ownerName = profile.fullName || ''
+      const totalFormatted = `$${Number(total).toLocaleString('es-AR')}`
+      sendNewOrderFromCatalog(profile.email, ownerName, nombre, totalFormatted, `${process.env.NEXT_PUBLIC_APP_URL || 'https://app.estamply.app'}/presupuesto`).catch(() => {})
     }
 
     return NextResponse.json({ codigo, clientId: client.id })
