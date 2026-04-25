@@ -13,12 +13,8 @@ export const metadata: Metadata = {
   description: 'El primer sistema diseñado para talleres de sublimación, DTF, vinilo y serigrafía. Cotiza en segundos, envía presupuestos profesionales, gestiona pedidos y ten tu propio catálogo web.',
   keywords: 'software sublimación, cotizador sublimación, gestión taller estampado, presupuesto sublimación, catálogo sublimación, DTF, vinilo, serigrafía',
   icons: {
-    icon: [
-      { url: '/favicon.svg', type: 'image/svg+xml' },
-      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
-      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
-    ],
-    apple: '/apple-touch-icon.png',
+    icon: '/favicon.png',
+    apple: '/favicon.png',
   },
   openGraph: {
     title: 'Estamply — Software para talleres de estampado',
