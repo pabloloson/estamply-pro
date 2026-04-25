@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   description: 'El primer sistema diseñado para talleres de sublimación, DTF, vinilo y serigrafía. Cotiza en segundos, envía presupuestos profesionales, gestiona pedidos y ten tu propio catálogo web.',
   keywords: 'software sublimación, cotizador sublimación, gestión taller estampado, presupuesto sublimación, catálogo sublimación, DTF, vinilo, serigrafía',
   icons: {
-    icon: '/favicon.png',
+    icon: { url: '/favicon.svg', type: 'image/svg+xml' },
     apple: '/favicon.png',
   },
   openGraph: {
