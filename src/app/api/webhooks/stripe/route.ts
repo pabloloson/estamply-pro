@@ -128,7 +128,7 @@ export async function POST(req: NextRequest) {
           const price = priceItem.price.unit_amount ? `$${(priceItem.price.unit_amount / 100).toFixed(0)}` : ''
           sendSubscriptionConfirmed(profile.email, profile.fullName || '', plan, price, formatDate(endDate)).catch(() => {})
           // Move subscriber to new plan group in MailerLite
-          changePlan(profile.email, plan as 'trial' | 'emprendedor' | 'pro' | 'negocio')
+          changePlan(profile.email, plan as 'trial' | 'emprendedor' | 'pro' | 'negocio').catch(() => {})
         }
         break
       }
@@ -217,9 +217,10 @@ export async function POST(req: NextRequest) {
             cancelDate, profileUpd.id
           ).catch(err => console.error('[webhook] stripeCancelAt update failed (column may not exist):', err))
 
-          // Send cancellation scheduled email
+          // Send cancellation scheduled email + move to Cancelados in MailerLite
           if (profileUpd.email) {
             sendSubscriptionCanceled(profileUpd.email, profileUpd.fullName || '', formatDate(cancelDate)).catch(() => {})
+            moveToCancelled(profileUpd.email, profileUpd.plan, 'cancelled').catch(() => {})
           }
           break
         }
@@ -234,6 +235,10 @@ export async function POST(req: NextRequest) {
               stripeCurrentPeriodEnd: new Date(periodEnd ? periodEnd * 1000 : Date.now()),
             },
           })
+          // Move back to plan group in MailerLite
+          if (profileUpd.email) {
+            changePlan(profileUpd.email, profileUpd.plan as 'trial' | 'emprendedor' | 'pro' | 'negocio').catch(() => {})
+          }
           await prisma.$executeRawUnsafe(
             `UPDATE profiles SET "stripeCancelAt" = NULL WHERE id = $1`,
             profileUpd.id
@@ -307,7 +312,7 @@ export async function POST(req: NextRequest) {
 
         // Move to Cancelados in MailerLite (stays in Todos)
         if (profileDel.email) {
-          moveToCancelled(profileDel.email, profileDel.plan, 'cancelled')
+          moveToCancelled(profileDel.email, profileDel.plan, 'cancelled').catch(() => {})
         }
         break
       }

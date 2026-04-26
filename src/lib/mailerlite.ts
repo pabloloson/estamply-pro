@@ -112,50 +112,61 @@ export async function removeFromGroup(email: string, groupId: string) {
 
 export async function changePlan(email: string, newPlan: PlanKey) {
   try {
+    console.log(`[mailerlite] changePlan called: email=${email}, newPlan=${newPlan}`)
     const planKeys: PlanKey[] = ['trial', 'emprendedor', 'pro', 'negocio']
 
     const subscriberId = await getSubscriberId(email)
-    if (!subscriberId) return
+    console.log(`[mailerlite] changePlan subscriberId: ${subscriberId}`)
+    if (!subscriberId) { console.error(`[mailerlite] changePlan: no subscriber found for ${email}`); return }
 
     // Remove from all plan groups + cancelados (in case reactivating)
     for (const p of planKeys) {
+      console.log(`[mailerlite] changePlan: removing from ${p} (${GROUPS[p]})`)
       await removeFromGroupById(subscriberId, GROUPS[p])
     }
+    console.log(`[mailerlite] changePlan: removing from cancelados (${GROUPS.cancelados})`)
     await removeFromGroupById(subscriberId, GROUPS.cancelados)
 
     // Add to new plan group
+    console.log(`[mailerlite] changePlan: adding to ${newPlan} (${GROUPS[newPlan]})`)
     await addToGroup(subscriberId, GROUPS[newPlan])
 
     // Update custom field
+    console.log(`[mailerlite] changePlan: updating field plan=${newPlan}`)
     await mlFetch(`/subscribers/${subscriberId}`, 'PUT', {
       fields: { plan: newPlan },
     })
+    console.log(`[mailerlite] changePlan completed for ${email}`)
   } catch (err) {
     console.error('[mailerlite] changePlan error:', err)
   }
 }
 
-/** Move subscriber to Cancelados group, remove from plan groups, update field */
+/** Move subscriber to Cancelados group, remove from all plan groups, update field */
 export async function moveToCancelled(email: string, previousPlan: string, fieldValue: 'cancelled' | 'expired') {
   try {
+    console.log(`[mailerlite] moveToCancelled called: email=${email}, previousPlan=${previousPlan}, fieldValue=${fieldValue}`)
     const subscriberId = await getSubscriberId(email)
-    if (!subscriberId) return
+    console.log(`[mailerlite] moveToCancelled subscriberId: ${subscriberId}`)
+    if (!subscriberId) { console.error(`[mailerlite] moveToCancelled: no subscriber found for ${email}`); return }
 
-    // Remove from previous plan group
+    // Remove from ALL plan groups (not just previous — safer)
     const planKeys: PlanKey[] = ['trial', 'emprendedor', 'pro', 'negocio']
     for (const p of planKeys) {
-      if (p === previousPlan) {
-        await removeFromGroupById(subscriberId, GROUPS[p])
-      }
+      console.log(`[mailerlite] moveToCancelled: removing from ${p} (${GROUPS[p]})`)
+      await removeFromGroupById(subscriberId, GROUPS[p])
     }
 
     // Add to Cancelados
+    console.log(`[mailerlite] moveToCancelled: adding to cancelados (${GROUPS.cancelados})`)
     await addToGroup(subscriberId, GROUPS.cancelados)
 
     // Update custom field
+    console.log(`[mailerlite] moveToCancelled: updating field plan=${fieldValue}`)
     await mlFetch(`/subscribers/${subscriberId}`, 'PUT', {
       fields: { plan: fieldValue },
     })
+    console.log(`[mailerlite] moveToCancelled completed for ${email}`)
   } catch (err) {
     console.error('[mailerlite] moveToCancelled error:', err)
   }
