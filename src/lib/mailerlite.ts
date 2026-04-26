@@ -38,9 +38,9 @@ async function mlFetch(path: string, method: string, body?: unknown): Promise<un
   try { return JSON.parse(text) } catch { return null }
 }
 
-async function addToGroup(groupId: string, email: string) {
-  if (!groupId) return
-  await mlFetch(`/groups/${groupId}/subscribers`, 'POST', { email })
+async function addToGroup(subscriberId: string, groupId: string) {
+  if (!subscriberId || !groupId) return
+  await mlFetch(`/subscribers/${subscriberId}/groups/${groupId}`, 'POST')
 }
 
 async function removeFromGroupById(subscriberId: string, groupId: string) {
@@ -73,14 +73,16 @@ export async function addSubscriber(
         ...(fields?.country ? { country: fields.country } : {}),
       },
       status: 'active',
-    })
-    console.log(`[mailerlite] create result:`, JSON.stringify(result).slice(0, 500))
+    }) as { data?: { id?: string } } | null
+    const subscriberId = result?.data?.id
+    console.log(`[mailerlite] subscriber created/updated, id: ${subscriberId}`)
+    if (!subscriberId) return
 
-    // 2. Assign to groups via separate POST calls
+    // 2. Assign to groups: POST /subscribers/{id}/groups/{group_id}
     console.log(`[mailerlite] assigning to Todos group...`)
-    await addToGroup(GROUPS.todos, email)
+    await addToGroup(subscriberId, GROUPS.todos)
     console.log(`[mailerlite] assigning to Trial group...`)
-    await addToGroup(GROUPS.trial, email)
+    await addToGroup(subscriberId, GROUPS.trial)
     console.log(`[mailerlite] addSubscriber completed for ${email}`)
   } catch (err) {
     console.error('[mailerlite] addSubscriber error:', err)
@@ -89,7 +91,9 @@ export async function addSubscriber(
 
 export async function moveToGroup(email: string, groupId: string) {
   try {
-    await addToGroup(groupId, email)
+    const subscriberId = await getSubscriberId(email)
+    if (!subscriberId) return
+    await addToGroup(subscriberId, groupId)
   } catch (err) {
     console.error('[mailerlite] moveToGroup error:', err)
   }
@@ -118,7 +122,7 @@ export async function changePlan(email: string, newPlan: PlanKey) {
     }
 
     // Add to new plan group
-    await addToGroup(GROUPS[newPlan], email)
+    await addToGroup(subscriberId, GROUPS[newPlan])
 
     // Update custom field
     await mlFetch(`/subscribers/${subscriberId}`, 'PUT', {
