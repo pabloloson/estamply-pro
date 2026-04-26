@@ -198,8 +198,8 @@ export async function POST(req: NextRequest) {
 
         console.log(`[webhook] cancel_at_period_end=${cancelAtPeriodEnd}, cancel_at=${cancelAt}, wasCanceling=${wasCanceling}`)
 
-        // A) User scheduled cancellation (cancel_at_period_end = true)
-        if (cancelAtPeriodEnd) {
+        // A) User scheduled cancellation (cancel_at_period_end = true OR cancel_at is set)
+        if (cancelAtPeriodEnd || (cancelAt && cancelAt > Math.floor(Date.now() / 1000))) {
           const cancelDate = cancelAt ? new Date(cancelAt * 1000) : (periodEnd ? new Date(periodEnd * 1000) : new Date())
           console.log(`[webhook] Setting planStatus=canceling, cancelDate=${cancelDate.toISOString()}`)
 
@@ -224,8 +224,8 @@ export async function POST(req: NextRequest) {
           break
         }
 
-        // B) User reverted cancellation (was canceling, now cancel_at_period_end = false)
-        if (wasCanceling && !cancelAtPeriodEnd) {
+        // B) User reverted cancellation (was canceling, now no cancel scheduled)
+        if (wasCanceling && !cancelAtPeriodEnd && !cancelAt) {
           console.log(`[webhook] Cancellation reverted`)
           await prisma.profile.update({
             where: { id: profileUpd.id },
