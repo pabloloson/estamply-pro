@@ -1,17 +1,28 @@
 import { prisma } from '@/lib/db/prisma'
 import type { Metadata } from 'next'
 import CatalogPage from './CatalogClient'
+import CatalogUnavailable from './CatalogUnavailable'
 
 export const dynamic = 'force-dynamic'
 
 interface Props { params: Promise<{ slug: string }> }
 
+async function findWorkshopBySlug(slug: string) {
+  const allSettings = await prisma.workshopSettings.findMany({ select: { settings: true, userId: true } })
+  return allSettings.find((ws: typeof allSettings[number]) => (ws.settings as Record<string, unknown>)?.catalog_slug === slug) || null
+}
+
+function isOwnerPlanExpired(profile: { planStatus: string; trialEndsAt: Date | null } | null): boolean {
+  if (!profile) return true
+  const { planStatus, trialEndsAt } = profile
+  if (planStatus === 'expired' || planStatus === 'cancelled') return true
+  if (planStatus === 'trial' && trialEndsAt && trialEndsAt.getTime() < Date.now()) return true
+  return false
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
-
-  // Find workshop by catalog_slug in JSONB settings
-  const allSettings = await prisma.workshopSettings.findMany({ select: { settings: true, userId: true } })
-  const match = allSettings.find((ws: typeof allSettings[number]) => (ws.settings as Record<string, unknown>)?.catalog_slug === slug)
+  const match = await findWorkshopBySlug(slug)
 
   if (!match) return { title: 'Catálogo no encontrado' }
 
@@ -37,6 +48,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
-export default function Page() {
+export default async function Page({ params }: Props) {
+  const { slug } = await params
+  const match = await findWorkshopBySlug(slug)
+
+  if (!match) return <CatalogUnavailable />
+
+  const profile = await prisma.profile.findUnique({
+    where: { userId: match.userId },
+    select: { planStatus: true, trialEndsAt: true },
+  })
+
+  if (isOwnerPlanExpired(profile)) return <CatalogUnavailable />
+
   return <CatalogPage />
 }

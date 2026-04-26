@@ -219,25 +219,25 @@ export async function sendTrialExpiring(email: string, userName: string, daysLef
 
 export async function sendTrialExpired(email: string, userName: string, upgradeUrl: string) {
   const html = layout(`
-    ${h2('Tu prueba gratuita termino')}
-    ${p(`Hola${userName ? ` <strong>${userName}</strong>` : ''}, tu periodo de prueba en Estamply finalizo.`)}
-    ${p('Tu cuenta sigue activa, pero algunas funcionalidades Pro estan limitadas. Elegi un plan para seguir con acceso completo.')}
+    ${h2('Tu prueba gratuita de 7 días terminó')}
+    ${p(`Hola${userName ? ` <strong>${userName}</strong>` : ''}, tu período de prueba en Estamply finalizó.`)}
+    ${p('Para seguir usando Estamply, elegí un plan. Tus datos están guardados y te esperan.')}
     ${btn('Elegir mi plan', upgradeUrl)}
     ${sig()}
   `)
-  return resend().emails.send({ from: FROM, to: email, subject: 'Tu prueba gratuita termino — Estamply', html })
+  return resend().emails.send({ from: FROM, to: email, subject: 'Tu prueba gratuita terminó — Estamply', html })
 }
 
 export async function sendSubscriptionCanceled(email: string, userName: string, accessUntilDate: string) {
   const html = layout(`
-    ${h2('Suscripcion cancelada')}
-    ${p(`Hola${userName ? ` <strong>${userName}</strong>` : ''}, tu suscripcion fue cancelada.`)}
-    ${p(`Tenes acceso a tu plan actual hasta el <strong>${accessUntilDate}</strong>. Despues de esa fecha, tu cuenta pasara al plan gratuito.`)}
-    ${p('Si cambias de opinion, podes reactivar tu suscripcion en cualquier momento.')}
-    ${btn('Reactivar suscripcion', `${APP_URL}/planes`)}
+    ${h2('Suscripción cancelada')}
+    ${p(`Hola${userName ? ` <strong>${userName}</strong>` : ''}, tu suscripción fue cancelada.`)}
+    ${p(`Tenés acceso a tu plan actual hasta el <strong>${accessUntilDate}</strong>. Después de esa fecha, tu acceso será suspendido hasta que elijas un nuevo plan.`)}
+    ${p('Si cambiás de opinión, podés reactivar tu suscripción en cualquier momento.')}
+    ${btn('Reactivar suscripción', `${APP_URL}/planes`)}
     ${sig()}
   `)
-  return resend().emails.send({ from: FROM, to: email, subject: 'Suscripcion cancelada — Estamply', html })
+  return resend().emails.send({ from: FROM, to: email, subject: 'Suscripción cancelada — Estamply', html })
 }
 
 // ══════════════════════════════════════════
@@ -258,10 +258,26 @@ export async function sendNewOrderFromCatalog(email: string, userName: string, c
 export async function sendQuoteAccepted(email: string, userName: string, clientName: string, quoteTotal: string, quoteUrl: string) {
   const html = layout(`
     ${h2('Presupuesto aceptado!')}
-    ${p(`Hola${userName ? ` <strong>${userName}</strong>` : ''}, <strong>${clientName}</strong> acepto tu presupuesto por <strong>${quoteTotal}</strong>.`)}
-    ${p('Ya podes confirmar el pedido y empezar a producir.')}
+    ${p(`Hola${userName ? ` <strong>${userName}</strong>` : ''}, <strong>${clientName}</strong> aceptó tu presupuesto por <strong>${quoteTotal}</strong>.`)}
+    ${p('Ya podés confirmar el pedido y empezar a producir.')}
     ${btn('Ver presupuesto', quoteUrl)}
     ${sig()}
   `)
-  return resend().emails.send({ from: FROM, to: email, subject: `${clientName} acepto tu presupuesto — Estamply`, html })
+  return resend().emails.send({ from: FROM, to: email, subject: `${clientName} aceptó tu presupuesto — Estamply`, html })
+}
+
+// ══════════════════════════════════════════
+// RETENCIÓN DE DATOS
+// ══════════════════════════════════════════
+
+export async function sendDataDeletionWarning(email: string, userName: string, deletionDate: string) {
+  const html = layout(`
+    ${h2('Tu cuenta en Estamply será eliminada pronto')}
+    ${p(`Hola${userName ? ` <strong>${userName}</strong>` : ''}, hace más de 3 meses que tu cuenta está inactiva.`)}
+    ${p(`Tus datos (clientes, presupuestos, pedidos, catálogo) serán eliminados el <strong>${deletionDate}</strong>.`)}
+    ${p('Si querés conservarlos, reactivá tu cuenta eligiendo un plan antes de esa fecha.')}
+    ${btn('Reactivar mi cuenta', `${APP_URL}/planes`)}
+    ${sig()}
+  `)
+  return resend().emails.send({ from: FROM, to: email, subject: 'Tu cuenta en Estamply será eliminada pronto', html })
 }

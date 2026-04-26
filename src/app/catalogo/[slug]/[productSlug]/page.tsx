@@ -2,6 +2,7 @@ import { prisma } from '@/lib/db/prisma'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import ProductPageClient from './ProductPageClient'
+import CatalogUnavailable from '../CatalogUnavailable'
 
 export const dynamic = 'force-dynamic'
 
@@ -41,10 +42,24 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
+function isOwnerPlanExpired(profile: { planStatus: string; trialEndsAt: Date | null } | null): boolean {
+  if (!profile) return true
+  const { planStatus, trialEndsAt } = profile
+  if (planStatus === 'expired' || planStatus === 'cancelled') return true
+  if (planStatus === 'trial' && trialEndsAt && trialEndsAt.getTime() < Date.now()) return true
+  return false
+}
+
 export default async function ProductPage({ params }: Props) {
   const { slug, productSlug } = await params
   const match = await findWorkshopBySlug(slug)
   if (!match) notFound()
+
+  const ownerProfile = await prisma.profile.findUnique({
+    where: { userId: match.userId },
+    select: { planStatus: true, trialEndsAt: true },
+  })
+  if (isOwnerPlanExpired(ownerProfile)) return <CatalogUnavailable />
 
   let product = await prisma.catalogProduct.findFirst({ where: { slug: productSlug, userId: match.userId }, select: { id: true } })
   if (!product) product = await prisma.catalogProduct.findFirst({ where: { id: productSlug, userId: match.userId }, select: { id: true } })
