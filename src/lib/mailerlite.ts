@@ -39,7 +39,8 @@ export async function addSubscriber(
   fields?: { plan?: string; signup_date?: string; country?: string }
 ) {
   try {
-    await mlFetch('/subscribers', 'POST', {
+    // 1. Create/update subscriber
+    const result = await mlFetch('/subscribers', 'POST', {
       email,
       fields: {
         name,
@@ -48,9 +49,22 @@ export async function addSubscriber(
         ...(fields?.signup_date ? { signup_date: fields.signup_date } : { signup_date: new Date().toISOString().slice(0, 10) }),
         ...(fields?.country ? { country: fields.country } : {}),
       },
-      groups: [groups().todos, groups().trial].filter(Boolean),
       status: 'active',
-    })
+    }) as { data?: { id?: string } }
+
+    const subscriberId = result?.data?.id
+    if (!subscriberId) return
+
+    // 2. Assign to groups via separate POST calls
+    const g = groups()
+    if (g.todos) {
+      await mlFetch(`/subscribers/${subscriberId}/groups/${g.todos}`, 'POST').catch(err =>
+        console.error('[mailerlite] assign group Todos error:', err))
+    }
+    if (g.trial) {
+      await mlFetch(`/subscribers/${subscriberId}/groups/${g.trial}`, 'POST').catch(err =>
+        console.error('[mailerlite] assign group Trial error:', err))
+    }
   } catch (err) {
     console.error('[mailerlite] addSubscriber error:', err)
   }
@@ -58,10 +72,11 @@ export async function addSubscriber(
 
 export async function moveToGroup(email: string, groupId: string) {
   try {
-    await mlFetch(`/subscribers`, 'POST', {
-      email,
-      groups: [groupId],
-    })
+    // Get subscriber ID first
+    const data = await mlFetch(`/subscribers/${encodeURIComponent(email)}`, 'GET') as { data?: { id?: string } }
+    const subscriberId = data?.data?.id
+    if (!subscriberId) return
+    await mlFetch(`/subscribers/${subscriberId}/groups/${groupId}`, 'POST')
   } catch (err) {
     console.error('[mailerlite] moveToGroup error:', err)
   }
@@ -69,11 +84,10 @@ export async function moveToGroup(email: string, groupId: string) {
 
 export async function removeFromGroup(email: string, groupId: string) {
   try {
-    // First get subscriber ID
     const data = await mlFetch(`/subscribers/${encodeURIComponent(email)}`, 'GET') as { data?: { id?: string } }
     const subscriberId = data?.data?.id
     if (!subscriberId) return
-    await mlFetch(`/groups/${groupId}/subscribers/${subscriberId}`, 'DELETE')
+    await mlFetch(`/subscribers/${subscriberId}/groups/${groupId}`, 'DELETE')
   } catch (err) {
     console.error('[mailerlite] removeFromGroup error:', err)
   }
@@ -81,28 +95,30 @@ export async function removeFromGroup(email: string, groupId: string) {
 
 export async function changePlan(email: string, newPlan: PlanKey) {
   try {
-    const planGroups: PlanKey[] = ['trial', 'emprendedor', 'pro', 'negocio']
+    const planKeys: PlanKey[] = ['trial', 'emprendedor', 'pro', 'negocio']
 
-    // Get subscriber ID
+    // 1. Get subscriber ID
     const data = await mlFetch(`/subscribers/${encodeURIComponent(email)}`, 'GET') as { data?: { id?: string } }
     const subscriberId = data?.data?.id
     if (!subscriberId) return
 
-    // Remove from all plan groups
-    for (const p of planGroups) {
-      const gid = groups()[p]
+    const g = groups()
+
+    // 2. Remove from all plan groups
+    for (const p of planKeys) {
+      const gid = g[p]
       if (gid) {
-        await mlFetch(`/groups/${gid}/subscribers/${subscriberId}`, 'DELETE').catch(() => {})
+        await mlFetch(`/subscribers/${subscriberId}/groups/${gid}`, 'DELETE').catch(() => {})
       }
     }
 
-    // Add to new plan group
-    const newGroupId = groups()[newPlan]
+    // 3. Add to new plan group
+    const newGroupId = g[newPlan]
     if (newGroupId) {
-      await mlFetch(`/groups/${newGroupId}/subscribers/${subscriberId}`, 'POST')
+      await mlFetch(`/subscribers/${subscriberId}/groups/${newGroupId}`, 'POST')
     }
 
-    // Update custom field
+    // 4. Update custom field
     await mlFetch(`/subscribers/${subscriberId}`, 'PUT', {
       fields: { plan: newPlan },
     })
