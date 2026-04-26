@@ -4,13 +4,15 @@ function token() {
   return process.env.MAILERLITE_API_TOKEN || ''
 }
 
-const GROUPS = {
-  todos: process.env.MAILERLITE_GROUP_TODOS || '',
-  trial: process.env.MAILERLITE_GROUP_TRIAL || '',
-  emprendedor: process.env.MAILERLITE_GROUP_EMPRENDEDOR || '',
-  pro: process.env.MAILERLITE_GROUP_PRO || '',
-  negocio: process.env.MAILERLITE_GROUP_NEGOCIO || '',
-} as const
+function groups() {
+  return {
+    todos: process.env.MAILERLITE_GROUP_TODOS || '',
+    trial: process.env.MAILERLITE_GROUP_TRIAL || '',
+    emprendedor: process.env.MAILERLITE_GROUP_EMPRENDEDOR || '',
+    pro: process.env.MAILERLITE_GROUP_PRO || '',
+    negocio: process.env.MAILERLITE_GROUP_NEGOCIO || '',
+  }
+}
 
 type PlanKey = 'trial' | 'emprendedor' | 'pro' | 'negocio'
 
@@ -46,7 +48,7 @@ export async function addSubscriber(
         ...(fields?.signup_date ? { signup_date: fields.signup_date } : { signup_date: new Date().toISOString().slice(0, 10) }),
         ...(fields?.country ? { country: fields.country } : {}),
       },
-      groups: [GROUPS.todos, GROUPS.trial].filter(Boolean),
+      groups: [groups().todos, groups().trial].filter(Boolean),
       status: 'active',
     })
   } catch (err) {
@@ -88,14 +90,14 @@ export async function changePlan(email: string, newPlan: PlanKey) {
 
     // Remove from all plan groups
     for (const p of planGroups) {
-      const gid = GROUPS[p]
+      const gid = groups()[p]
       if (gid) {
         await mlFetch(`/groups/${gid}/subscribers/${subscriberId}`, 'DELETE').catch(() => {})
       }
     }
 
     // Add to new plan group
-    const newGroupId = GROUPS[newPlan]
+    const newGroupId = groups()[newPlan]
     if (newGroupId) {
       await mlFetch(`/groups/${newGroupId}/subscribers/${subscriberId}`, 'POST')
     }
