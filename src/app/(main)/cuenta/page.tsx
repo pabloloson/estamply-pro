@@ -9,6 +9,7 @@ import { useTranslations } from '@/shared/hooks/useTranslations'
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   active: { label: 'Activo', color: 'bg-[#0F766E] text-white' },
   trial: { label: 'Prueba gratuita', color: 'bg-amber-100 text-amber-700' },
+  canceling: { label: 'Se cancela pronto', color: 'bg-amber-100 text-amber-700' },
   inactive: { label: 'Inactivo', color: 'bg-gray-200 text-gray-600' },
   past_due: { label: 'Pago pendiente', color: 'bg-red-100 text-red-600' },
   cancelled: { label: 'Cancelado', color: 'bg-gray-200 text-gray-600' },
@@ -55,8 +56,10 @@ export default function CuentaPage() {
   const [planStatus, setPlanStatus] = useState('trial')
   const [trialEndsAt, setTrialEndsAt] = useState<string | null>(null)
   const [currentPeriodEnd, setCurrentPeriodEnd] = useState<string | null>(null)
+  const [stripeCancelAt, setStripeCancelAt] = useState<string | null>(null)
   const [hasStripeCustomer, setHasStripeCustomer] = useState(false)
   const [redirecting, setRedirecting] = useState(false)
+  const [revertingCancel, setRevertingCancel] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -76,6 +79,7 @@ export default function CuentaPage() {
           setTrialEndsAt(prof.trial_ends_at || null)
           setCurrentPeriodEnd(prof.stripe_current_period_end || null)
           setHasStripeCustomer(!!prof.stripe_customer_id)
+          setStripeCancelAt(prof.stripe_cancel_at || null)
         }
       } catch { /* ignore */ }
       setLoading(false)
@@ -120,6 +124,18 @@ export default function CuentaPage() {
   function handlePortal() {
     setRedirecting(true)
     window.location.href = '/api/stripe-portal'
+  }
+
+  async function revertCancellation() {
+    setRevertingCancel(true)
+    try {
+      const res = await fetch('/api/stripe-revert-cancel', { method: 'POST' })
+      if (res.ok) {
+        setPlanStatus('active')
+        setStripeCancelAt(null)
+      }
+    } catch { /* ignore */ }
+    setRevertingCancel(false)
   }
 
   const planName = PLAN_NAMES[plan] || (plan ? plan.charAt(0).toUpperCase() + plan.slice(1) : 'Sin plan')
@@ -210,6 +226,12 @@ export default function CuentaPage() {
                 <span className="font-medium text-amber-600">{trialDaysLeft()} días</span>
               </div>
             )}
+            {planStatus === 'canceling' && stripeCancelAt && (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-amber-600">Acceso hasta</span>
+                <span className="font-medium text-amber-600">{formatDate(stripeCancelAt)}</span>
+              </div>
+            )}
             {planStatus === 'active' && currentPeriodEnd && (
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-500">Próxima renovación</span>
@@ -218,6 +240,20 @@ export default function CuentaPage() {
             )}
           </div>
         </div>
+
+        {/* Canceling banner */}
+        {planStatus === 'canceling' && (
+          <div className="rounded-xl bg-amber-50 border border-amber-200 p-4 mb-5">
+            <p className="text-sm font-medium text-amber-800">
+              Tu suscripción se cancela el {stripeCancelAt ? formatDate(stripeCancelAt) : '—'}. Tenés acceso completo hasta esa fecha.
+            </p>
+            <button onClick={revertCancellation} disabled={revertingCancel}
+              className="mt-3 flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl bg-[#0F766E] text-white text-sm font-semibold hover:bg-[#0D9488] transition-colors disabled:opacity-50">
+              {revertingCancel ? <Loader2 size={14} className="animate-spin" /> : <ArrowRight size={14} />}
+              Mantener mi suscripción
+            </button>
+          </div>
+        )}
 
         {/* Trial CTA */}
         {planStatus === 'trial' && (
@@ -267,14 +303,25 @@ export default function CuentaPage() {
               <ChevronRight size={16} className="text-gray-400" />
             </button>
 
-            <button onClick={handlePortal} disabled={redirecting}
-              className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-[#E5E5E3] text-sm font-medium text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50">
-              <span className="flex items-center gap-2">
-                <XCircle size={16} />
-                Cancelar suscripción
-              </span>
-              <ChevronRight size={16} />
-            </button>
+            {planStatus === 'canceling' ? (
+              <button onClick={revertCancellation} disabled={revertingCancel}
+                className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-[#0F766E] text-sm font-medium text-[#0F766E] hover:bg-[#F0FDFA] transition-colors disabled:opacity-50">
+                <span className="flex items-center gap-2">
+                  {revertingCancel ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
+                  Mantener mi suscripción
+                </span>
+                <ChevronRight size={16} />
+              </button>
+            ) : (
+              <button onClick={handlePortal} disabled={redirecting}
+                className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-[#E5E5E3] text-sm font-medium text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50">
+                <span className="flex items-center gap-2">
+                  <XCircle size={16} />
+                  Cancelar suscripción
+                </span>
+                <ChevronRight size={16} />
+              </button>
+            )}
           </div>
         )}
 

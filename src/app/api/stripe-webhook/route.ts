@@ -16,6 +16,13 @@ export const dynamic = 'force-dynamic'
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://app.estamply.app'
 
+const MAILERLITE_GROUPS = {
+  trial: '185765216948061997',
+  emprendedor: '185765240191845421',
+  pro: '185765256598914620',
+  negocio: '185765269312898329',
+} as const
+
 function formatDate(d: Date): string {
   return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
@@ -153,13 +160,53 @@ export async function POST(req: NextRequest) {
         const priceItem = subscription.items.data[0]
         const lookupKey = priceItem.price.lookup_key || ''
         const newPlan = getPlanFromPriceId(lookupKey)
-        const status = subscription.status === 'active' || subscription.status === 'trialing'
-          ? 'active' : subscription.status === 'past_due' ? 'past_due' : 'inactive'
         const periodEnd = (priceItem as unknown as { current_period_end?: number }).current_period_end
+        const cancelAtPeriodEnd = (subscription as unknown as { cancel_at_period_end?: boolean }).cancel_at_period_end
+        const cancelAt = (subscription as unknown as { cancel_at?: number | null }).cancel_at
 
-        // Get current plan before update
+        // Get current profile before update
         const profileBefore = await prisma.profile.findUnique({ where: { userId } })
         const oldPlan = profileBefore?.plan || ''
+        const wasCanceling = profileBefore?.planStatus === 'canceling'
+
+        // A) User scheduled cancellation (cancel_at_period_end = true)
+        if (cancelAtPeriodEnd) {
+          console.log(`[webhook] subscription.updated: cancel_at_period_end=true for userId=${userId}`)
+          const cancelDate = cancelAt ? new Date(cancelAt * 1000) : (periodEnd ? new Date(periodEnd * 1000) : new Date())
+
+          await prisma.profile.update({
+            where: { userId },
+            data: {
+              planStatus: 'canceling',
+              stripeCancelAt: cancelDate,
+              stripeCurrentPeriodEnd: new Date(periodEnd ? periodEnd * 1000 : Date.now()),
+            },
+          })
+
+          // Send cancellation scheduled email
+          if (profileBefore?.email) {
+            sendSubscriptionCanceled(profileBefore.email, profileBefore.fullName || '', formatDate(cancelDate)).catch(() => {})
+          }
+          break
+        }
+
+        // B) User reverted cancellation (was canceling, now cancel_at_period_end = false)
+        if (wasCanceling && !cancelAtPeriodEnd) {
+          console.log(`[webhook] subscription.updated: cancellation reverted for userId=${userId}`)
+          await prisma.profile.update({
+            where: { userId },
+            data: {
+              planStatus: 'active',
+              stripeCancelAt: null,
+              stripeCurrentPeriodEnd: new Date(periodEnd ? periodEnd * 1000 : Date.now()),
+            },
+          })
+          break
+        }
+
+        // C) Normal plan change (upgrade/downgrade)
+        const status = subscription.status === 'active' || subscription.status === 'trialing'
+          ? 'active' : subscription.status === 'past_due' ? 'past_due' : 'inactive'
 
         await prisma.profile.update({
           where: { userId },
@@ -167,6 +214,7 @@ export async function POST(req: NextRequest) {
             stripePriceId: priceItem.price.id,
             plan: newPlan,
             planStatus: status,
+            stripeCancelAt: null,
             stripeCurrentPeriodEnd: new Date(periodEnd ? periodEnd * 1000 : Date.now()),
           },
         })
@@ -192,28 +240,30 @@ export async function POST(req: NextRequest) {
         const subscription = event.data.object as Stripe.Subscription
         const userId = subscription.metadata?.userId
         if (!userId) break
+        console.log(`[webhook] subscription.deleted for userId=${userId}`)
 
         const profile = await prisma.profile.findUnique({ where: { userId } })
 
         await prisma.profile.update({
           where: { userId },
-          data: { planStatus: 'cancelled', stripeSubscriptionId: null, stripePriceId: null },
+          data: {
+            planStatus: 'expired',
+            stripeSubscriptionId: null,
+            stripePriceId: null,
+            stripeCancelAt: null,
+          },
         })
 
-        // Send cancellation email
-        if (profile?.email) {
+        // Send cancellation email only if we didn't already send it during "canceling" phase
+        if (profile?.email && profile.planStatus !== 'canceling') {
           const periodEnd = (subscription as unknown as { current_period_end?: number }).current_period_end
           const accessUntil = periodEnd ? formatDate(new Date(periodEnd * 1000)) : 'hoy'
           sendSubscriptionCanceled(profile.email, profile.fullName || '', accessUntil).catch(() => {})
-          // Remove from plan group in MailerLite (stays in Todos)
-          const planGroup = profile.plan as 'trial' | 'emprendedor' | 'pro' | 'negocio'
-          const groupId = {
-            trial: process.env.MAILERLITE_GROUP_TRIAL,
-            emprendedor: process.env.MAILERLITE_GROUP_EMPRENDEDOR,
-            pro: process.env.MAILERLITE_GROUP_PRO,
-            negocio: process.env.MAILERLITE_GROUP_NEGOCIO,
-          }[planGroup]
-          if (groupId) removeFromGroup(profile.email, groupId)
+        }
+
+        // Remove from plan group in MailerLite (stays in Todos)
+        if (profile?.email) {
+          removeFromGroup(profile.email, MAILERLITE_GROUPS[profile.plan as keyof typeof MAILERLITE_GROUPS] || '')
         }
         break
       }

@@ -14,7 +14,7 @@ export async function GET() {
 
   const [member, profile, workshopSettings] = await Promise.all([
     prisma.teamMember.findFirst({ where: { userId }, select: { permisos: true, ownerId: true } }),
-    prisma.profile.findUnique({ where: { userId: ownerId }, select: { plan: true, planStatus: true, trialEndsAt: true } }),
+    prisma.profile.findUnique({ where: { userId: ownerId }, select: { plan: true, planStatus: true, trialEndsAt: true, stripeCancelAt: true } }),
     prisma.workshopSettings.findFirst({ where: { userId: ownerId }, select: { settings: true } }),
   ])
 
@@ -29,6 +29,7 @@ export async function GET() {
     plan: profile?.plan || 'pro',
     planStatus: profile?.planStatus || 'trial',
     trialEndsAt: profile?.trialEndsAt || null,
+    stripeCancelAt: profile?.stripeCancelAt || null,
     locale: {
       pais: settings.pais || 'AR',
       moneda: settings.moneda_display || 'ARS',
