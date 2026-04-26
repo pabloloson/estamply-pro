@@ -3,7 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 
-const WHITELIST = ['/planes', '/cuenta', '/settings']
+const WHITELIST = ['/planes', '/cuenta']
 
 export default function PlanGate({ expired, children }: { expired: boolean; children: React.ReactNode }) {
   const pathname = usePathname()
