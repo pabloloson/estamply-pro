@@ -94,6 +94,7 @@ export default function PlanesPage() {
   const [billing, setBilling] = useState<Billing>('mensual')
   const [currentPlan, setCurrentPlan] = useState<string | null>(null)
   const [planStatus, setPlanStatus] = useState<string>('trial')
+  const [trialEndsAt, setTrialEndsAt] = useState<string | null>(null)
 
   // Checkout modal state (for new subscriptions)
   const [checkoutPlan, setCheckoutPlan] = useState<typeof PLANS[0] | null>(null)
@@ -109,12 +110,16 @@ export default function PlanesPage() {
   const [changingPlan, setChangingPlan] = useState(false)
   const [changeError, setChangeError] = useState<string | null>(null)
 
+  const isExpired = planStatus === 'expired' || planStatus === 'cancelled' ||
+    (planStatus === 'trial' && trialEndsAt !== null && new Date(trialEndsAt).getTime() < Date.now())
+
   useEffect(() => {
     fetch('/api/me')
       .then(r => r.json())
       .then(data => {
         if (data.plan) setCurrentPlan(data.plan)
         if (data.planStatus) setPlanStatus(data.planStatus)
+        if (data.trialEndsAt) setTrialEndsAt(data.trialEndsAt)
       })
       .catch(() => {})
   }, [])
@@ -254,6 +259,15 @@ export default function PlanesPage() {
 
   return (
     <div className="max-w-5xl mx-auto">
+      {/* Expired banner */}
+      {isExpired && (
+        <div className="mb-6 p-4 rounded-xl bg-amber-50 border border-amber-200">
+          <p className="text-sm font-medium text-amber-800">
+            Tu plan venció. Elegí un plan para seguir usando Estamply.
+          </p>
+        </div>
+      )}
+
       {/* Success banner */}
       {successBanner && (
         <div className="mb-6 flex items-center justify-between p-4 rounded-xl bg-teal-50 border border-teal-200">
