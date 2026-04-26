@@ -82,6 +82,8 @@ export async function POST(req: NextRequest) {
         const lookupKey = priceItem.price.lookup_key || ''
         const plan = getPlanFromPriceId(lookupKey)
 
+        const profileCheckout = await prisma.profile.findUnique({ where: { userId }, select: { email: true } })
+
         await prisma.profile.update({
           where: { userId },
           data: {
@@ -97,6 +99,12 @@ export async function POST(req: NextRequest) {
             ),
           },
         })
+
+        // Move to plan group in MailerLite (handles reactivation from cancelled too)
+        if (profileCheckout?.email) {
+          console.log(`[webhook] checkout.completed: calling changePlan for ${profileCheckout.email} → ${plan}`)
+          changePlan(profileCheckout.email, plan as 'trial' | 'emprendedor' | 'pro' | 'negocio').catch(() => {})
+        }
         break
       }
 
@@ -264,6 +272,12 @@ export async function POST(req: NextRequest) {
           profileUpd.id
         ).catch(() => {})
 
+        // Always update MailerLite group (handles upgrade, downgrade, and reactivation)
+        if (profileUpd.email) {
+          console.log(`[webhook] subscription.updated C: calling changePlan for ${profileUpd.email} → ${newPlan}`)
+          changePlan(profileUpd.email, newPlan as 'trial' | 'emprendedor' | 'pro' | 'negocio').catch(() => {})
+        }
+
         // Send upgrade/downgrade email if plan changed
         if (profileUpd.email && oldPlan && oldPlan !== newPlan) {
           const price = priceItem.price.unit_amount ? `$${(priceItem.price.unit_amount / 100).toFixed(0)}/mes` : ''
@@ -275,8 +289,6 @@ export async function POST(req: NextRequest) {
             const endDate = formatDate(new Date(periodEnd ? periodEnd * 1000 : Date.now()))
             sendPlanDowngraded(profileUpd.email, profileUpd.fullName || '', oldPlan, newPlan, endDate).catch(() => {})
           }
-          // Update MailerLite group
-          changePlan(profileUpd.email, newPlan as 'trial' | 'emprendedor' | 'pro' | 'negocio')
         }
         break
       }
