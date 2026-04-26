@@ -6,7 +6,7 @@ function resend() {
   return _resend
 }
 const FROM = 'Estamply <no-reply@estamply.app>'
-const LOGO = 'https://estamply-cdn.b-cdn.net/logos/estamply-logo.png'
+const LOGO = 'https://app.estamply.app/logo-full.png'
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://app.estamply.app'
 
 // ── Layout ──
@@ -44,7 +44,10 @@ function p(text: string) {
 }
 
 function info(label: string, value: string) {
-  return `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0f0"><span style="color:#555;font-size:13px">${label}</span><span style="color:#18181b;font-size:13px;font-weight:600">${value}</span></div>`
+  return `<table width="100%" cellpadding="0" cellspacing="0" style="border-bottom:1px solid #f0f0f0"><tr>
+<td style="padding:8px 0;color:#555;font-size:13px">${label}:</td>
+<td style="padding:8px 0;color:#18181b;font-size:13px;font-weight:600;text-align:right">${value}</td>
+</tr></table>`
 }
 
 function sig() {
