@@ -4,15 +4,13 @@ function token() {
   return process.env.MAILERLITE_API_TOKEN || ''
 }
 
-function groups() {
-  return {
-    todos: process.env.MAILERLITE_GROUP_TODOS || '',
-    trial: process.env.MAILERLITE_GROUP_TRIAL || '',
-    emprendedor: process.env.MAILERLITE_GROUP_EMPRENDEDOR || '',
-    pro: process.env.MAILERLITE_GROUP_PRO || '',
-    negocio: process.env.MAILERLITE_GROUP_NEGOCIO || '',
-  }
-}
+const GROUPS = {
+  todos: '185765610219636433',
+  trial: '185765216948061997',
+  emprendedor: '185765240191845421',
+  pro: '185765256598914620',
+  negocio: '185765269312898329',
+} as const
 
 type PlanKey = 'trial' | 'emprendedor' | 'pro' | 'negocio'
 
@@ -40,19 +38,16 @@ async function mlFetch(path: string, method: string, body?: unknown): Promise<un
   try { return JSON.parse(text) } catch { return null }
 }
 
-/** Add subscriber to a group by email (no subscriber_id needed) */
 async function addToGroup(groupId: string, email: string) {
   if (!groupId) return
   await mlFetch(`/groups/${groupId}/subscribers`, 'POST', { email })
 }
 
-/** Remove subscriber from a group by subscriber_id */
 async function removeFromGroupById(subscriberId: string, groupId: string) {
   if (!groupId || !subscriberId) return
   await mlFetch(`/subscribers/${subscriberId}/groups/${groupId}`, 'DELETE')
 }
 
-/** Get subscriber ID by email */
 async function getSubscriberId(email: string): Promise<string | null> {
   const data = await mlFetch(`/subscribers/${encodeURIComponent(email)}`, 'GET') as { data?: { id?: string } } | null
   return data?.data?.id || null
@@ -65,9 +60,10 @@ export async function addSubscriber(
 ) {
   try {
     console.log(`[mailerlite] addSubscriber called: email=${email}, name=${name}`)
+    console.log(`[mailerlite] group IDs — todos: "${GROUPS.todos}", trial: "${GROUPS.trial}"`)
 
     // 1. Create/update subscriber
-    const createBody = {
+    const result = await mlFetch('/subscribers', 'POST', {
       email,
       fields: {
         name,
@@ -77,19 +73,14 @@ export async function addSubscriber(
         ...(fields?.country ? { country: fields.country } : {}),
       },
       status: 'active',
-    }
-    console.log(`[mailerlite] createBody:`, JSON.stringify(createBody))
-    const result = await mlFetch('/subscribers', 'POST', createBody)
+    })
     console.log(`[mailerlite] create result:`, JSON.stringify(result).slice(0, 500))
 
-    // 2. Assign to groups (uses email, no subscriber_id needed)
-    const g = groups()
-    console.log(`[mailerlite] group IDs — todos: "${g.todos}", trial: "${g.trial}"`)
-
+    // 2. Assign to groups via separate POST calls
     console.log(`[mailerlite] assigning to Todos group...`)
-    await addToGroup(g.todos, email)
+    await addToGroup(GROUPS.todos, email)
     console.log(`[mailerlite] assigning to Trial group...`)
-    await addToGroup(g.trial, email)
+    await addToGroup(GROUPS.trial, email)
     console.log(`[mailerlite] addSubscriber completed for ${email}`)
   } catch (err) {
     console.error('[mailerlite] addSubscriber error:', err)
@@ -117,27 +108,19 @@ export async function removeFromGroup(email: string, groupId: string) {
 export async function changePlan(email: string, newPlan: PlanKey) {
   try {
     const planKeys: PlanKey[] = ['trial', 'emprendedor', 'pro', 'negocio']
-    const g = groups()
 
-    // 1. Get subscriber ID (needed for DELETE)
     const subscriberId = await getSubscriberId(email)
     if (!subscriberId) return
 
-    // 2. Remove from all plan groups
+    // Remove from all plan groups
     for (const p of planKeys) {
-      const gid = g[p]
-      if (gid) {
-        await removeFromGroupById(subscriberId, gid)
-      }
+      await removeFromGroupById(subscriberId, GROUPS[p])
     }
 
-    // 3. Add to new plan group (uses email)
-    const newGroupId = g[newPlan]
-    if (newGroupId) {
-      await addToGroup(newGroupId, email)
-    }
+    // Add to new plan group
+    await addToGroup(GROUPS[newPlan], email)
 
-    // 4. Update custom field
+    // Update custom field
     await mlFetch(`/subscribers/${subscriberId}`, 'PUT', {
       fields: { plan: newPlan },
     })
