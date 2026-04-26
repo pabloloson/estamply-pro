@@ -12,7 +12,7 @@
 
 import { prisma } from '@/lib/db/prisma'
 import { sendTrialExpiring, sendTrialExpired } from '@/lib/email'
-import { removeFromGroup } from '@/lib/mailerlite'
+import { moveToCancelled } from '@/lib/mailerlite'
 import { NextRequest, NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
@@ -63,13 +63,11 @@ export async function POST(req: NextRequest) {
     select: { email: true, fullName: true },
   })
 
-  const trialGroupId = process.env.MAILERLITE_GROUP_TRIAL || ''
-
   for (const p of expiredProfiles) {
     if (p.email) {
       sendTrialExpired(p.email, p.fullName || '', `${APP_URL}/planes`).catch(() => {})
-      // Remove from trial group in MailerLite (stays in Todos)
-      if (trialGroupId) removeFromGroup(p.email, trialGroupId)
+      // Move from Trial to Cancelados in MailerLite (stays in Todos)
+      moveToCancelled(p.email, 'trial', 'expired')
       expiredCount++
     }
   }

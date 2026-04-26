@@ -10,7 +10,7 @@ import {
   sendPlanDowngraded,
   sendSubscriptionCanceled,
 } from '@/lib/email'
-import { changePlan, removeFromGroup } from '@/lib/mailerlite'
+import { changePlan, removeFromGroup, moveToCancelled } from '@/lib/mailerlite'
 
 export const dynamic = 'force-dynamic'
 
@@ -305,9 +305,9 @@ export async function POST(req: NextRequest) {
           sendSubscriptionCanceled(profileDel.email, profileDel.fullName || '', accessUntil).catch(() => {})
         }
 
-        // Remove from plan group in MailerLite (stays in Todos)
+        // Move to Cancelados in MailerLite (stays in Todos)
         if (profileDel.email) {
-          removeFromGroup(profileDel.email, MAILERLITE_GROUPS[profileDel.plan as keyof typeof MAILERLITE_GROUPS] || '')
+          moveToCancelled(profileDel.email, profileDel.plan, 'cancelled')
         }
         break
       }

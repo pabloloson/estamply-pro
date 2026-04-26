@@ -119,6 +119,7 @@ model Profile {
   stripePriceId          String?
   stripeCurrentPeriodEnd DateTime?
   stripeCancelAt         DateTime?
+  dataDeletionNoticedAt  DateTime?
   createdAt           DateTime  @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

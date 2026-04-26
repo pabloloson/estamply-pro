@@ -10,6 +10,7 @@ const GROUPS = {
   emprendedor: '185765240191845421',
   pro: '185765256598914620',
   negocio: '185765269312898329',
+  cancelados: '185851142813517697',
 } as const
 
 type PlanKey = 'trial' | 'emprendedor' | 'pro' | 'negocio'
@@ -116,10 +117,11 @@ export async function changePlan(email: string, newPlan: PlanKey) {
     const subscriberId = await getSubscriberId(email)
     if (!subscriberId) return
 
-    // Remove from all plan groups
+    // Remove from all plan groups + cancelados (in case reactivating)
     for (const p of planKeys) {
       await removeFromGroupById(subscriberId, GROUPS[p])
     }
+    await removeFromGroupById(subscriberId, GROUPS.cancelados)
 
     // Add to new plan group
     await addToGroup(subscriberId, GROUPS[newPlan])
@@ -130,6 +132,32 @@ export async function changePlan(email: string, newPlan: PlanKey) {
     })
   } catch (err) {
     console.error('[mailerlite] changePlan error:', err)
+  }
+}
+
+/** Move subscriber to Cancelados group, remove from plan groups, update field */
+export async function moveToCancelled(email: string, previousPlan: string, fieldValue: 'cancelled' | 'expired') {
+  try {
+    const subscriberId = await getSubscriberId(email)
+    if (!subscriberId) return
+
+    // Remove from previous plan group
+    const planKeys: PlanKey[] = ['trial', 'emprendedor', 'pro', 'negocio']
+    for (const p of planKeys) {
+      if (p === previousPlan) {
+        await removeFromGroupById(subscriberId, GROUPS[p])
+      }
+    }
+
+    // Add to Cancelados
+    await addToGroup(subscriberId, GROUPS.cancelados)
+
+    // Update custom field
+    await mlFetch(`/subscribers/${subscriberId}`, 'PUT', {
+      fields: { plan: fieldValue },
+    })
+  } catch (err) {
+    console.error('[mailerlite] moveToCancelled error:', err)
   }
 }
 
