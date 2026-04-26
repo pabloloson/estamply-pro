@@ -14,9 +14,18 @@ export async function GET() {
 
   const [member, profile, workshopSettings] = await Promise.all([
     prisma.teamMember.findFirst({ where: { userId }, select: { permisos: true, ownerId: true } }),
-    prisma.profile.findUnique({ where: { userId: ownerId }, select: { plan: true, planStatus: true, trialEndsAt: true, stripeCancelAt: true } }),
+    prisma.profile.findUnique({ where: { userId: ownerId }, select: { plan: true, planStatus: true, trialEndsAt: true } }),
     prisma.workshopSettings.findFirst({ where: { userId: ownerId }, select: { settings: true } }),
   ])
+
+  // Read stripeCancelAt via raw SQL (column may not exist in Prisma client yet)
+  let stripeCancelAt: string | null = null
+  try {
+    const rows = await prisma.$queryRawUnsafe<{ stripeCancelAt: Date | null }[]>(
+      `SELECT "stripeCancelAt" FROM profiles WHERE "userId" = $1 LIMIT 1`, ownerId
+    )
+    if (rows[0]?.stripeCancelAt) stripeCancelAt = rows[0].stripeCancelAt.toISOString()
+  } catch { /* column doesn't exist yet */ }
 
   const settings = (workshopSettings?.settings || {}) as Record<string, unknown>
 
@@ -29,7 +38,7 @@ export async function GET() {
     plan: profile?.plan || 'pro',
     planStatus: profile?.planStatus || 'trial',
     trialEndsAt: profile?.trialEndsAt || null,
-    stripeCancelAt: profile?.stripeCancelAt || null,
+    stripeCancelAt,
     locale: {
       pais: settings.pais || 'AR',
       moneda: settings.moneda_display || 'ARS',

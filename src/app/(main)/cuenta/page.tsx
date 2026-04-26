@@ -69,6 +69,9 @@ export default function CuentaPage() {
         if (!me.userId) return
         setUserId(me.ownerId)
         setEmail(me.email || '')
+        // Load plan status from /api/me (most reliable, includes raw SQL fallback)
+        if (me.planStatus) setPlanStatus(me.planStatus)
+        if (me.stripeCancelAt) setStripeCancelAt(me.stripeCancelAt)
 
         const profRes = await fetch(`/api/data?table=profiles&single=true`)
         const prof = profRes.ok ? await profRes.json() : null

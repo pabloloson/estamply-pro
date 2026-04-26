@@ -29,9 +29,12 @@ export async function POST() {
       where: { userId: session.user.id },
       data: {
         planStatus: 'active',
-        stripeCancelAt: null,
       },
     })
+    await prisma.$executeRawUnsafe(
+      `UPDATE profiles SET "stripeCancelAt" = NULL WHERE "userId" = $1`,
+      session.user.id
+    ).catch(() => {})
 
     return NextResponse.json({ ok: true, planStatus: 'active' })
   } catch (error) {

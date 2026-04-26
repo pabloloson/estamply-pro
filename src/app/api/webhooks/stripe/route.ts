@@ -31,6 +31,29 @@ async function getProfileByCustomerId(customerId: string) {
   return prisma.profile.findUnique({ where: { stripeCustomerId: customerId } })
 }
 
+async function getProfileBySubscriptionId(subscriptionId: string) {
+  return prisma.profile.findUnique({ where: { stripeSubscriptionId: subscriptionId } })
+}
+
+/** Resolve profile from subscription: try metadata.userId first, then customerId, then subscriptionId */
+async function resolveProfile(subscription: Stripe.Subscription) {
+  const userId = subscription.metadata?.userId
+  if (userId) {
+    const profile = await prisma.profile.findUnique({ where: { userId } })
+    if (profile) return profile
+  }
+  // Fallback: find by customer ID
+  const customerId = typeof subscription.customer === 'string' ? subscription.customer : subscription.customer?.id
+  if (customerId) {
+    const profile = await getProfileByCustomerId(customerId)
+    if (profile) return profile
+  }
+  // Fallback: find by subscription ID
+  const profile = await getProfileBySubscriptionId(subscription.id)
+  if (profile) return profile
+  return null
+}
+
 export async function POST(req: NextRequest) {
   const body = await req.text()
   const signature = req.headers.get('stripe-signature')
@@ -44,6 +67,8 @@ export async function POST(req: NextRequest) {
     console.error('Webhook signature verification failed:', err)
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
   }
+
+  console.log(`[webhook] Received event: ${event.type}`)
 
   try {
     switch (event.type) {
@@ -154,8 +179,12 @@ export async function POST(req: NextRequest) {
 
       case 'customer.subscription.updated': {
         const subscription = event.data.object as Stripe.Subscription
-        const userId = subscription.metadata?.userId
-        if (!userId) break
+        const profileUpd = await resolveProfile(subscription)
+        if (!profileUpd) {
+          console.error(`[webhook] subscription.updated: no profile found for sub=${subscription.id}`)
+          break
+        }
+        console.log(`[webhook] subscription.updated for profile=${profileUpd.id}, email=${profileUpd.email}`)
 
         const priceItem = subscription.items.data[0]
         const lookupKey = priceItem.price.lookup_key || ''
@@ -164,43 +193,51 @@ export async function POST(req: NextRequest) {
         const cancelAtPeriodEnd = (subscription as unknown as { cancel_at_period_end?: boolean }).cancel_at_period_end
         const cancelAt = (subscription as unknown as { cancel_at?: number | null }).cancel_at
 
-        // Get current profile before update
-        const profileBefore = await prisma.profile.findUnique({ where: { userId } })
-        const oldPlan = profileBefore?.plan || ''
-        const wasCanceling = profileBefore?.planStatus === 'canceling'
+        const oldPlan = profileUpd.plan || ''
+        const wasCanceling = profileUpd.planStatus === 'canceling'
+
+        console.log(`[webhook] cancel_at_period_end=${cancelAtPeriodEnd}, cancel_at=${cancelAt}, wasCanceling=${wasCanceling}`)
 
         // A) User scheduled cancellation (cancel_at_period_end = true)
         if (cancelAtPeriodEnd) {
-          console.log(`[webhook] subscription.updated: cancel_at_period_end=true for userId=${userId}`)
           const cancelDate = cancelAt ? new Date(cancelAt * 1000) : (periodEnd ? new Date(periodEnd * 1000) : new Date())
+          console.log(`[webhook] Setting planStatus=canceling, cancelDate=${cancelDate.toISOString()}`)
 
           await prisma.profile.update({
-            where: { userId },
+            where: { id: profileUpd.id },
             data: {
               planStatus: 'canceling',
-              stripeCancelAt: cancelDate,
               stripeCurrentPeriodEnd: new Date(periodEnd ? periodEnd * 1000 : Date.now()),
             },
           })
 
+          // Also store cancel date via raw SQL since column may not exist in Prisma client yet
+          await prisma.$executeRawUnsafe(
+            `UPDATE profiles SET "stripeCancelAt" = $1 WHERE id = $2`,
+            cancelDate, profileUpd.id
+          ).catch(err => console.error('[webhook] stripeCancelAt update failed (column may not exist):', err))
+
           // Send cancellation scheduled email
-          if (profileBefore?.email) {
-            sendSubscriptionCanceled(profileBefore.email, profileBefore.fullName || '', formatDate(cancelDate)).catch(() => {})
+          if (profileUpd.email) {
+            sendSubscriptionCanceled(profileUpd.email, profileUpd.fullName || '', formatDate(cancelDate)).catch(() => {})
           }
           break
         }
 
         // B) User reverted cancellation (was canceling, now cancel_at_period_end = false)
         if (wasCanceling && !cancelAtPeriodEnd) {
-          console.log(`[webhook] subscription.updated: cancellation reverted for userId=${userId}`)
+          console.log(`[webhook] Cancellation reverted`)
           await prisma.profile.update({
-            where: { userId },
+            where: { id: profileUpd.id },
             data: {
               planStatus: 'active',
-              stripeCancelAt: null,
               stripeCurrentPeriodEnd: new Date(periodEnd ? periodEnd * 1000 : Date.now()),
             },
           })
+          await prisma.$executeRawUnsafe(
+            `UPDATE profiles SET "stripeCancelAt" = NULL WHERE id = $1`,
+            profileUpd.id
+          ).catch(() => {})
           break
         }
 
@@ -209,61 +246,68 @@ export async function POST(req: NextRequest) {
           ? 'active' : subscription.status === 'past_due' ? 'past_due' : 'inactive'
 
         await prisma.profile.update({
-          where: { userId },
+          where: { id: profileUpd.id },
           data: {
             stripePriceId: priceItem.price.id,
             plan: newPlan,
             planStatus: status,
-            stripeCancelAt: null,
             stripeCurrentPeriodEnd: new Date(periodEnd ? periodEnd * 1000 : Date.now()),
           },
         })
+        await prisma.$executeRawUnsafe(
+          `UPDATE profiles SET "stripeCancelAt" = NULL WHERE id = $1`,
+          profileUpd.id
+        ).catch(() => {})
 
         // Send upgrade/downgrade email if plan changed
-        if (profileBefore?.email && oldPlan && oldPlan !== newPlan) {
+        if (profileUpd.email && oldPlan && oldPlan !== newPlan) {
           const price = priceItem.price.unit_amount ? `$${(priceItem.price.unit_amount / 100).toFixed(0)}/mes` : ''
           const hierarchy = ['emprendedor', 'pro', 'negocio']
           const isUpgrade = hierarchy.indexOf(newPlan) > hierarchy.indexOf(oldPlan)
           if (isUpgrade) {
-            sendPlanUpgraded(profileBefore.email, profileBefore.fullName || '', oldPlan, newPlan, price).catch(() => {})
+            sendPlanUpgraded(profileUpd.email, profileUpd.fullName || '', oldPlan, newPlan, price).catch(() => {})
           } else {
             const endDate = formatDate(new Date(periodEnd ? periodEnd * 1000 : Date.now()))
-            sendPlanDowngraded(profileBefore.email, profileBefore.fullName || '', oldPlan, newPlan, endDate).catch(() => {})
+            sendPlanDowngraded(profileUpd.email, profileUpd.fullName || '', oldPlan, newPlan, endDate).catch(() => {})
           }
           // Update MailerLite group
-          changePlan(profileBefore.email, newPlan as 'trial' | 'emprendedor' | 'pro' | 'negocio')
+          changePlan(profileUpd.email, newPlan as 'trial' | 'emprendedor' | 'pro' | 'negocio')
         }
         break
       }
 
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription
-        const userId = subscription.metadata?.userId
-        if (!userId) break
-        console.log(`[webhook] subscription.deleted for userId=${userId}`)
-
-        const profile = await prisma.profile.findUnique({ where: { userId } })
+        const profileDel = await resolveProfile(subscription)
+        if (!profileDel) {
+          console.error(`[webhook] subscription.deleted: no profile found for sub=${subscription.id}`)
+          break
+        }
+        console.log(`[webhook] subscription.deleted for profile=${profileDel.id}, email=${profileDel.email}`)
 
         await prisma.profile.update({
-          where: { userId },
+          where: { id: profileDel.id },
           data: {
             planStatus: 'expired',
             stripeSubscriptionId: null,
             stripePriceId: null,
-            stripeCancelAt: null,
           },
         })
+        await prisma.$executeRawUnsafe(
+          `UPDATE profiles SET "stripeCancelAt" = NULL WHERE id = $1`,
+          profileDel.id
+        ).catch(() => {})
 
         // Send cancellation email only if we didn't already send it during "canceling" phase
-        if (profile?.email && profile.planStatus !== 'canceling') {
+        if (profileDel.email && profileDel.planStatus !== 'canceling') {
           const periodEnd = (subscription as unknown as { current_period_end?: number }).current_period_end
           const accessUntil = periodEnd ? formatDate(new Date(periodEnd * 1000)) : 'hoy'
-          sendSubscriptionCanceled(profile.email, profile.fullName || '', accessUntil).catch(() => {})
+          sendSubscriptionCanceled(profileDel.email, profileDel.fullName || '', accessUntil).catch(() => {})
         }
 
         // Remove from plan group in MailerLite (stays in Todos)
-        if (profile?.email) {
-          removeFromGroup(profile.email, MAILERLITE_GROUPS[profile.plan as keyof typeof MAILERLITE_GROUPS] || '')
+        if (profileDel.email) {
+          removeFromGroup(profileDel.email, MAILERLITE_GROUPS[profileDel.plan as keyof typeof MAILERLITE_GROUPS] || '')
         }
         break
       }
