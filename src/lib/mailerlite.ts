@@ -22,6 +22,7 @@ async function mlFetch(path: string, method: string, body?: unknown): Promise<un
     console.error('[mailerlite] MAILERLITE_API_TOKEN not set')
     return null
   }
+  console.log(`[mailerlite] >>> ${method} ${path}`, body ? JSON.stringify(body) : '(no body)')
   const res = await fetch(`${API_BASE}${path}`, {
     method,
     headers: {
@@ -32,8 +33,8 @@ async function mlFetch(path: string, method: string, body?: unknown): Promise<un
     ...(body ? { body: JSON.stringify(body) } : {}),
   })
   const text = await res.text().catch(() => '')
+  console.log(`[mailerlite] <<< ${method} ${path} → ${res.status}: ${text.slice(0, 500)}`)
   if (!res.ok) {
-    console.error(`[mailerlite] ${method} ${path} → ${res.status}: ${text}`)
     return null
   }
   try { return JSON.parse(text) } catch { return null }
@@ -63,8 +64,10 @@ export async function addSubscriber(
   fields?: { plan?: string; signup_date?: string; country?: string }
 ) {
   try {
+    console.log(`[mailerlite] addSubscriber called: email=${email}, name=${name}`)
+
     // 1. Create/update subscriber
-    await mlFetch('/subscribers', 'POST', {
+    const createBody = {
       email,
       fields: {
         name,
@@ -74,12 +77,20 @@ export async function addSubscriber(
         ...(fields?.country ? { country: fields.country } : {}),
       },
       status: 'active',
-    })
+    }
+    console.log(`[mailerlite] createBody:`, JSON.stringify(createBody))
+    const result = await mlFetch('/subscribers', 'POST', createBody)
+    console.log(`[mailerlite] create result:`, JSON.stringify(result).slice(0, 500))
 
     // 2. Assign to groups (uses email, no subscriber_id needed)
     const g = groups()
+    console.log(`[mailerlite] group IDs — todos: "${g.todos}", trial: "${g.trial}"`)
+
+    console.log(`[mailerlite] assigning to Todos group...`)
     await addToGroup(g.todos, email)
+    console.log(`[mailerlite] assigning to Trial group...`)
     await addToGroup(g.trial, email)
+    console.log(`[mailerlite] addSubscriber completed for ${email}`)
   } catch (err) {
     console.error('[mailerlite] addSubscriber error:', err)
   }
